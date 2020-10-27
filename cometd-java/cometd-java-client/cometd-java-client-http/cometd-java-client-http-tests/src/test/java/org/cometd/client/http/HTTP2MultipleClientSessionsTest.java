@@ -27,8 +27,8 @@ import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.http.AbstractHttpTransport;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class HTTP2MultipleClientSessionsTest extends HTTP2ClientServerTest {
     @Test
@@ -49,9 +49,9 @@ public class HTTP2MultipleClientSessionsTest extends HTTP2ClientServerTest {
             }
         });
         client1.handshake();
-        Assert.assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
         HttpCookie browserCookie = client1.getCookie("BAYEUX_BROWSER");
-        Assert.assertNotNull(browserCookie);
+        Assertions.assertNotNull(browserCookie);
 
         // Give some time to the first client to establish the long poll before the second client
         Thread.sleep(1000);
@@ -61,7 +61,7 @@ public class HTTP2MultipleClientSessionsTest extends HTTP2ClientServerTest {
         client2.putCookie(browserCookie);
         client2.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> connects2.offer(message));
         client2.handshake();
-        Assert.assertTrue(client2.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client2.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         Thread.sleep(1000);
 
@@ -70,28 +70,28 @@ public class HTTP2MultipleClientSessionsTest extends HTTP2ClientServerTest {
         client3.putCookie(browserCookie);
         client3.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> connects3.offer(message));
         client3.handshake();
-        Assert.assertTrue(client3.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client3.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Sleep for a while
         Thread.sleep(2 * multiSessionInterval);
 
         // All clients must remain in long poll mode.
-        Assert.assertEquals(1, connects1.size());
-        Assert.assertEquals(1, connects2.size());
-        Assert.assertEquals(1, connects3.size());
+        Assertions.assertEquals(1, connects1.size());
+        Assertions.assertEquals(1, connects2.size());
+        Assertions.assertEquals(1, connects3.size());
 
         // Wait for clients to re-issue a long poll.
         Thread.sleep(timeout);
 
         // All clients must still be in long poll mode
-        Assert.assertEquals(2, connects1.size());
-        Assert.assertEquals(2, connects2.size());
-        Assert.assertEquals(2, connects3.size());
+        Assertions.assertEquals(2, connects1.size());
+        Assertions.assertEquals(2, connects2.size());
+        Assertions.assertEquals(2, connects3.size());
         // None of the clients must have the multiple-clients advice.
         Message lastConnect = new LinkedList<>(connects1).getLast();
         Map<String, Object> advice = lastConnect.getAdvice();
         if (advice != null) {
-            Assert.assertFalse(advice.containsKey("multiple-clients"));
+            Assertions.assertFalse(advice.containsKey("multiple-clients"));
         }
 
         disconnectBayeuxClient(client1);

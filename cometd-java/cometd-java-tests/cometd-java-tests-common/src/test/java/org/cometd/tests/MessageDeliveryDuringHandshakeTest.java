@@ -34,43 +34,43 @@ import org.cometd.client.ext.AckExtension;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.ServerSessionImpl;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class MessageDeliveryDuringHandshakeTest extends AbstractClientServerTest {
-    public MessageDeliveryDuringHandshakeTest(Transport transport) {
-        super(transport);
-    }
-
-    @Test
-    public void testMessagesNotSentInHandshakeResponse() throws Exception {
-        startServer(serverOptions());
-        BayeuxClient client = newBayeuxClient();
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testMessagesNotSentInHandshakeResponse(Transport transport) throws Exception {
+        startServer(transport);
+        BayeuxClient client = newBayeuxClient(transport);
         testMessagesInHandshakeResponse(client, false);
     }
 
-    @Test
-    public void testMessagesSentInHandshakeResponse() throws Exception {
-        Map<String, String> options = serverOptions();
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testMessagesSentInHandshakeResponse(Transport transport) throws Exception {
+        Map<String, String> options = serverOptions(transport);
         options.put(AbstractServerTransport.ALLOW_MESSAGE_DELIVERY_DURING_HANDSHAKE, String.valueOf(true));
-        startServer(options);
-        BayeuxClient client = newBayeuxClient();
+        startServer(transport, options);
+        BayeuxClient client = newBayeuxClient(transport);
         testMessagesInHandshakeResponse(client, true);
     }
 
-    @Test
-    public void testMessagesSentInHandshakeResponseWithAckExtension() throws Exception {
-        Map<String, String> options = serverOptions();
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testMessagesSentInHandshakeResponseWithAckExtension(Transport transport) throws Exception {
+        Map<String, String> options = serverOptions(transport);
         options.put(AbstractServerTransport.ALLOW_MESSAGE_DELIVERY_DURING_HANDSHAKE, String.valueOf(true));
-        startServer(options);
+        startServer(transport, options);
         bayeux.addExtension(new AcknowledgedMessagesExtension());
-        BayeuxClient client = newBayeuxClient();
+        BayeuxClient client = newBayeuxClient(transport);
         client.addExtension(new AckExtension());
         testMessagesInHandshakeResponse(client, true);
     }
 
-    private void testMessagesInHandshakeResponse(BayeuxClient client, final boolean allowHandshakeMessages) throws Exception {
-        final String channelName = "/test";
+    private void testMessagesInHandshakeResponse(BayeuxClient client, boolean allowHandshakeMessages) throws Exception {
+        String channelName = "/test";
         bayeux.addListener(new BayeuxServer.SessionListener() {
             @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
@@ -80,8 +80,8 @@ public class MessageDeliveryDuringHandshakeTest extends AbstractClientServerTest
             }
         });
 
-        final CountDownLatch messagesLatch = new CountDownLatch(1);
-        final ServerChannel metaConnectChannel = bayeux.getChannel(Channel.META_CONNECT);
+        CountDownLatch messagesLatch = new CountDownLatch(1);
+        ServerChannel metaConnectChannel = bayeux.getChannel(Channel.META_CONNECT);
         metaConnectChannel.addListener(new ServerChannel.MessageListener() {
             @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
@@ -94,7 +94,7 @@ public class MessageDeliveryDuringHandshakeTest extends AbstractClientServerTest
             }
         });
 
-        final BlockingQueue<Message> messages = new LinkedBlockingQueue<>();
+        BlockingQueue<Message> messages = new LinkedBlockingQueue<>();
         ClientSessionChannel.MessageListener listener = (channel, message) -> messages.offer(message);
         client.getChannel(Channel.META_HANDSHAKE).addListener(listener);
         client.getChannel(channelName).addListener(listener);
@@ -102,29 +102,34 @@ public class MessageDeliveryDuringHandshakeTest extends AbstractClientServerTest
 
         client.handshake();
 
-        Assert.assertTrue(messagesLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(messagesLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Make sure that the messages arrive in the expected order.
         Message message = messages.poll(1, TimeUnit.SECONDS);
-        Assert.assertEquals(Channel.META_HANDSHAKE, message.getChannel());
+        Assertions.assertNotNull(message);
+        Assertions.assertEquals(Channel.META_HANDSHAKE, message.getChannel());
         message = messages.poll(1, TimeUnit.SECONDS);
-        Assert.assertEquals(channelName, message.getChannel());
+        Assertions.assertNotNull(message);
+        Assertions.assertEquals(channelName, message.getChannel());
         message = messages.poll(1, TimeUnit.SECONDS);
-        Assert.assertEquals(channelName, message.getChannel());
+        Assertions.assertNotNull(message);
+        Assertions.assertEquals(channelName, message.getChannel());
         message = messages.poll(1, TimeUnit.SECONDS);
-        Assert.assertEquals(Channel.META_CONNECT, message.getChannel());
+        Assertions.assertNotNull(message);
+        Assertions.assertEquals(Channel.META_CONNECT, message.getChannel());
         message = messages.poll(1, TimeUnit.SECONDS);
-        Assert.assertNull(message);
+        Assertions.assertNull(message);
 
         disconnectBayeuxClient(client);
     }
 
-    @Test
-    public void testMessagesSentInHandshakeResponseWithAckExtensionWithDeQueueListener() throws Exception {
-        Map<String, String> options = serverOptions();
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testMessagesSentInHandshakeResponseWithAckExtensionWithDeQueueListener(Transport transport) throws Exception {
+        Map<String, String> options = serverOptions(transport);
         options.put(AbstractServerTransport.ALLOW_MESSAGE_DELIVERY_DURING_HANDSHAKE, String.valueOf(true));
-        startServer(options);
+        startServer(transport, options);
         bayeux.addExtension(new AcknowledgedMessagesExtension());
         bayeux.addListener(new BayeuxServer.SessionListener() {
             @Override
@@ -136,10 +141,10 @@ public class MessageDeliveryDuringHandshakeTest extends AbstractClientServerTest
                 });
             }
         });
-        BayeuxClient client = newBayeuxClient();
+        BayeuxClient client = newBayeuxClient(transport);
         client.addExtension(new AckExtension());
 
-        final String channelName = "/test";
+        String channelName = "/test";
         bayeux.addListener(new BayeuxServer.SessionListener() {
             @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
@@ -149,7 +154,7 @@ public class MessageDeliveryDuringHandshakeTest extends AbstractClientServerTest
             }
         });
 
-        final BlockingQueue<Message> messages = new LinkedBlockingQueue<>();
+        BlockingQueue<Message> messages = new LinkedBlockingQueue<>();
         ClientSessionChannel.MessageListener listener = (channel, message) -> messages.offer(message);
         client.getChannel(Channel.META_HANDSHAKE).addListener(listener);
         client.getChannel(channelName).addListener(listener);
@@ -157,17 +162,20 @@ public class MessageDeliveryDuringHandshakeTest extends AbstractClientServerTest
 
         client.handshake();
 
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Make sure that the messages arrive in the expected order.
         Message message = messages.poll(1, TimeUnit.SECONDS);
-        Assert.assertEquals(Channel.META_HANDSHAKE, message.getChannel());
+        Assertions.assertNotNull(message);
+        Assertions.assertEquals(Channel.META_HANDSHAKE, message.getChannel());
         message = messages.poll(1, TimeUnit.SECONDS);
-        Assert.assertEquals(channelName, message.getChannel());
+        Assertions.assertNotNull(message);
+        Assertions.assertEquals(channelName, message.getChannel());
         message = messages.poll(1, TimeUnit.SECONDS);
-        Assert.assertEquals(Channel.META_CONNECT, message.getChannel());
+        Assertions.assertNotNull(message);
+        Assertions.assertEquals(Channel.META_CONNECT, message.getChannel());
         message = messages.poll(1, TimeUnit.SECONDS);
-        Assert.assertNull(message);
+        Assertions.assertNull(message);
 
         disconnectBayeuxClient(client);
     }

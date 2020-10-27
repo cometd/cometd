@@ -15,9 +15,6 @@
  */
 package org.cometd.server;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -25,7 +22,8 @@ import java.util.Set;
 
 import org.cometd.server.http.JSONPTransport;
 import org.cometd.server.http.JSONTransport;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class BayeuxServerCreationTest {
     @Test
@@ -34,10 +32,10 @@ public class BayeuxServerCreationTest {
         bayeuxServer.start();
 
         Set<String> knownTransports = bayeuxServer.getKnownTransportNames();
-        assertEquals(2, knownTransports.size());
-        assertTrue(knownTransports.contains(JSONTransport.NAME));
-        assertTrue(knownTransports.contains(JSONPTransport.NAME));
-        assertEquals(knownTransports, new HashSet<>(bayeuxServer.getAllowedTransports()));
+        Assertions.assertEquals(2, knownTransports.size());
+        Assertions.assertTrue(knownTransports.contains(JSONTransport.NAME));
+        Assertions.assertTrue(knownTransports.contains(JSONPTransport.NAME));
+        Assertions.assertEquals(knownTransports, new HashSet<>(bayeuxServer.getAllowedTransports()));
     }
 
     @Test
@@ -67,9 +65,9 @@ public class BayeuxServerCreationTest {
 
         bayeuxServer.start();
 
-        assertEquals(timeoutValue, bayeuxServer.getOption(timeoutKey));
-        assertEquals(jsonTimeoutValue, bayeuxServer.getTransport(JSONTransport.NAME).getOption(timeoutKey));
-        assertEquals(jsonpTimeoutValue, bayeuxServer.getTransport(JSONPTransport.NAME).getOption(timeoutKey));
+        Assertions.assertEquals(timeoutValue, bayeuxServer.getOption(timeoutKey));
+        Assertions.assertEquals(jsonTimeoutValue, bayeuxServer.getTransport(JSONTransport.NAME).getOption(timeoutKey));
+        Assertions.assertEquals(jsonpTimeoutValue, bayeuxServer.getTransport(JSONPTransport.NAME).getOption(timeoutKey));
     }
 
     @Test
@@ -84,10 +82,10 @@ public class BayeuxServerCreationTest {
 
         bayeuxServer.start();
 
-        assertEquals(1, bayeuxServer.getAllowedTransports().size());
-        assertEquals(1, bayeuxServer.getKnownTransportNames().size());
-        assertEquals(JSONTransport.NAME, bayeuxServer.getAllowedTransports().get(0));
-        assertEquals(JSONTransport.NAME, bayeuxServer.getKnownTransportNames().iterator().next());
-        assertEquals(timeout, bayeuxServer.getTransport(JSONTransport.NAME).getTimeout());
+        Assertions.assertEquals(1, bayeuxServer.getAllowedTransports().size());
+        Assertions.assertEquals(1, bayeuxServer.getKnownTransportNames().size());
+        Assertions.assertEquals(JSONTransport.NAME, bayeuxServer.getAllowedTransports().get(0));
+        Assertions.assertEquals(JSONTransport.NAME, bayeuxServer.getKnownTransportNames().iterator().next());
+        Assertions.assertEquals(timeout, bayeuxServer.getTransport(JSONTransport.NAME).getTimeout());
     }
 }

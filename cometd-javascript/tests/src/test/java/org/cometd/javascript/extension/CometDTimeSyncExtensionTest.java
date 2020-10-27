@@ -18,12 +18,16 @@ package org.cometd.javascript.extension;
 import org.cometd.javascript.AbstractCometDTransportsTest;
 import org.cometd.javascript.Latch;
 import org.cometd.server.ext.TimesyncExtension;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class CometDTimeSyncExtensionTest extends AbstractCometDTransportsTest {
-    @Test
-    public void testTimeSync() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testTimeSync(String transport) throws Exception {
+        initCometDServer(transport);
+
         bayeuxServer.addExtension(new TimesyncExtension());
 
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
@@ -33,7 +37,7 @@ public class CometDTimeSyncExtensionTest extends AbstractCometDTransportsTest {
         evaluateScript("cometd.registerExtension('test', {" +
                 "incoming: function(message) {" +
                 "    var channel = message.channel;" +
-                "    if (channel && channel.indexOf('/meta/') == 0) {" +
+                "    if (channel && channel.indexOf('/meta/') === 0) {" +
                 "        /* The timesync from the server may be missing if it's accurate enough */" +
                 "        var timesync = message.ext && message.ext.timesync;" +
                 "        if (timesync) {" +
@@ -44,7 +48,7 @@ public class CometDTimeSyncExtensionTest extends AbstractCometDTransportsTest {
                 "}," +
                 "outgoing: function(message) {" +
                 "    var channel = message.channel;" +
-                "    if (channel && channel.indexOf('/meta/') == 0) {" +
+                "    if (channel && channel.indexOf('/meta/') === 0) {" +
                 "        outTimeSync = message.ext && message.ext.timesync;" +
                 "    }" +
                 "    return message;" +
@@ -56,19 +60,19 @@ public class CometDTimeSyncExtensionTest extends AbstractCometDTransportsTest {
         Latch readyLatch = javaScript.get("readyLatch");
         evaluateScript("cometd.addListener('/meta/handshake', function() { readyLatch.countDown(); });");
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(readyLatch.await(5000));
+        Assertions.assertTrue(readyLatch.await(5000));
 
         // Both client and server should support timesync
         Object outTimeSync = javaScript.get("outTimeSync");
-        Assert.assertNotNull(outTimeSync);
+        Assertions.assertNotNull(outTimeSync);
         Object inTimeSync = javaScript.get("inTimeSync");
-        Assert.assertNotNull(inTimeSync);
+        Assertions.assertNotNull(inTimeSync);
 
         evaluateScript("var timesync = cometd.getExtension('timesync');");
         evaluateScript("var networkLag = timesync.getNetworkLag();");
         evaluateScript("var timeOffset = timesync.getTimeOffset();");
         int networkLag = ((Number)javaScript.get("networkLag")).intValue();
-        Assert.assertTrue(String.valueOf(networkLag), networkLag >= 0);
+        Assertions.assertTrue(networkLag >= 0, String.valueOf(networkLag));
 
         disconnect();
     }

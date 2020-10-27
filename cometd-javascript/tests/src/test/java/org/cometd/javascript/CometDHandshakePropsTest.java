@@ -22,15 +22,19 @@ import org.cometd.bayeux.server.SecurityPolicy;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Tests that handshake properties are passed correctly during handshake
  */
 public class CometDHandshakePropsTest extends AbstractCometDTransportsTest {
-    @Test
-    public void testHandshakeProps() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testHandshakeProps(String transport) throws Exception {
+        initCometDServer(transport);
+
         bayeuxServer.setSecurityPolicy(new TokenSecurityPolicy());
 
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
@@ -43,28 +47,28 @@ public class CometDHandshakePropsTest extends AbstractCometDTransportsTest {
 
         // Start without the token; this makes the handshake fail
         evaluateScript("cometd.handshake({})");
-        Assert.assertTrue(handshakeLatch.await(5000));
+        Assertions.assertTrue(handshakeLatch.await(5000));
         // A failed handshake arrives with an advice to not reconnect
-        Assert.assertEquals("disconnected", evaluateScript("cometd.getStatus()"));
+        Assertions.assertEquals("disconnected", evaluateScript("cometd.getStatus()"));
 
         // We are already initialized, handshake again with a token
         handshakeLatch.reset(1);
         evaluateScript("cometd.handshake({ext: {token: 'test'}})");
-        Assert.assertTrue(handshakeLatch.await(5000));
+        Assertions.assertTrue(handshakeLatch.await(5000));
 
         // Wait for the long poll to happen, so that we're sure
         // the disconnect is sent after the long poll
         Thread.sleep(1000);
 
-        Assert.assertEquals("connected", evaluateScript("cometd.getStatus();"));
+        Assertions.assertEquals("connected", evaluateScript("cometd.getStatus();"));
 
         evaluateScript("cometd.disconnect();");
-        Assert.assertTrue(disconnectLatch.await(5000));
+        Assertions.assertTrue(disconnectLatch.await(5000));
 
-        Assert.assertEquals("disconnected", evaluateScript("cometd.getStatus();"));
+        Assertions.assertEquals("disconnected", evaluateScript("cometd.getStatus();"));
     }
 
-    private class TokenSecurityPolicy implements SecurityPolicy {
+    private static class TokenSecurityPolicy implements SecurityPolicy {
         @Override
         public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message) {
             Map<String, Object> ext = message.getExt();

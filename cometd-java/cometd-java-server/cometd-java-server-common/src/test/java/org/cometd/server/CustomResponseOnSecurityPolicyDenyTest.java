@@ -15,7 +15,6 @@
  */
 package org.cometd.server;
 
-import java.io.UnsupportedEncodingException;
 import java.text.ParseException;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,22 +28,16 @@ import org.cometd.common.JSONContext;
 import org.cometd.common.JettyJSONContextClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class CustomResponseOnSecurityPolicyDenyTest extends AbstractBayeuxClientServerTest {
-    public CustomResponseOnSecurityPolicyDenyTest(String serverTransport) {
-        super(serverTransport);
-    }
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testCanHandshakeDenies(String serverTransport) throws Exception {
+        startServer(serverTransport, null);
 
-    @Before
-    public void prepare() throws Exception {
-        startServer(null);
-    }
-
-    @Test
-    public void testCanHandshakeDenies() throws Exception {
         bayeux.setSecurityPolicy(new DefaultSecurityPolicy() {
             @Override
             public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message) {
@@ -66,13 +59,16 @@ public class CustomResponseOnSecurityPolicyDenyTest extends AbstractBayeuxClient
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         checkResponse(response, Message.RECONNECT_HANDSHAKE_VALUE);
     }
 
-    @Test
-    public void testCanCreateDenies() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testCanCreateDenies(String serverTransport) throws Exception {
+        startServer(serverTransport, null);
+
         bayeux.setSecurityPolicy(new DefaultSecurityPolicy() {
             @Override
             public boolean canCreate(BayeuxServer server, ServerSession session, String channelId, ServerMessage message) {
@@ -91,8 +87,11 @@ public class CustomResponseOnSecurityPolicyDenyTest extends AbstractBayeuxClient
         checkResponse(publish(), Message.RECONNECT_NONE_VALUE);
     }
 
-    @Test
-    public void testCanPublishDenies() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testCanPublishDenies(String serverTransport) throws Exception {
+        startServer(serverTransport, null);
+
         bayeux.setSecurityPolicy(new DefaultSecurityPolicy() {
             @Override
             public boolean canPublish(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message) {
@@ -110,8 +109,11 @@ public class CustomResponseOnSecurityPolicyDenyTest extends AbstractBayeuxClient
         checkResponse(publish(), Message.RECONNECT_NONE_VALUE);
     }
 
-    @Test
-    public void testCanSubscribeDenies() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testCanSubscribeDenies(String serverTransport) throws Exception {
+        startServer(serverTransport, null);
+
         bayeux.setSecurityPolicy(new DefaultSecurityPolicy() {
             @Override
             public boolean canSubscribe(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message) {
@@ -133,7 +135,7 @@ public class CustomResponseOnSecurityPolicyDenyTest extends AbstractBayeuxClient
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -143,7 +145,7 @@ public class CustomResponseOnSecurityPolicyDenyTest extends AbstractBayeuxClient
                 "\"clientId\": \"" + clientId + "\"" +
                 "}]");
         response = subscribe.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         checkResponse(response, Message.RECONNECT_NONE_VALUE);
     }
@@ -156,7 +158,7 @@ public class CustomResponseOnSecurityPolicyDenyTest extends AbstractBayeuxClient
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -166,24 +168,24 @@ public class CustomResponseOnSecurityPolicyDenyTest extends AbstractBayeuxClient
                 "\"data\": {}" +
                 "}]");
         response = publish.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         return response;
     }
 
-    private void checkResponse(ContentResponse reply, String reconnectAdvice) throws ParseException, UnsupportedEncodingException {
+    private void checkResponse(ContentResponse reply, String reconnectAdvice) throws ParseException {
         JSONContext.Client jsonContext = new JettyJSONContextClient();
         Message.Mutable[] responses = jsonContext.parse(reply.getContentAsString());
-        Assert.assertEquals(1, responses.length);
+        Assertions.assertEquals(1, responses.length);
         Message response = responses[0];
         Map<String, Object> advice = response.getAdvice();
-        Assert.assertNotNull(advice);
-        Assert.assertEquals(reconnectAdvice, advice.get(Message.RECONNECT_FIELD));
+        Assertions.assertNotNull(advice);
+        Assertions.assertEquals(reconnectAdvice, advice.get(Message.RECONNECT_FIELD));
         Map<String, Object> ext = response.getExt();
-        Assert.assertNotNull(ext);
+        Assertions.assertNotNull(ext);
         @SuppressWarnings("unchecked")
         Map<String, Object> extra = (Map<String, Object>)ext.get("com.acme");
-        Assert.assertNotNull(extra);
-        Assert.assertEquals("test", extra.get("failure"));
+        Assertions.assertNotNull(extra);
+        Assertions.assertEquals("test", extra.get("failure"));
     }
 }

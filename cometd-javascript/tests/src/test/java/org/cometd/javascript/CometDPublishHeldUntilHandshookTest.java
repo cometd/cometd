@@ -18,12 +18,16 @@ package org.cometd.javascript;
 import java.util.Arrays;
 import java.util.List;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class CometDPublishHeldUntilHandshookTest extends AbstractCometDTransportsTest {
-    @Test
-    public void testPublishHeldUntilHandshook() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testPublishHeldUntilHandshook(String transport) throws Exception {
+        initCometDServer(transport);
+
         evaluateScript("" +
                 "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
                 "var latch = new Latch(2);" +
@@ -52,12 +56,12 @@ public class CometDPublishHeldUntilHandshookTest extends AbstractCometDTransport
         Latch latch = javaScript.get("latch");
         evaluateScript("cometd.handshake();");
 
-        Assert.assertTrue(latch.await(5000));
+        Assertions.assertTrue(latch.await(5000));
 
         String[] channels = javaScript.evaluate(null, "Java.to(savedChannels, 'java.lang.String[]')");
-        Assert.assertNotNull(channels);
+        Assertions.assertNotNull(channels);
         List<String> expectedChannels = Arrays.asList("/meta/handshake", "/bar", "/meta/subscribe", "/foo", "/meta/connect");
-        Assert.assertEquals(expectedChannels, Arrays.asList(channels));
+        Assertions.assertEquals(expectedChannels, Arrays.asList(channels));
 
         disconnect();
     }

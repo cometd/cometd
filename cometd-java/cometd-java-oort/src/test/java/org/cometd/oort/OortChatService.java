@@ -72,7 +72,7 @@ public class OortChatService {
     @SuppressWarnings("unused")
     @Configure({"/chat/**", "/members/**"})
     private void configureChatStarStar(ConfigurableServerChannel channel) {
-        final DataFilterMessageListener noMarkup = new DataFilterMessageListener(_bayeux, new NoMarkupFilter(), new BadWordFilter());
+        DataFilterMessageListener noMarkup = new DataFilterMessageListener(_bayeux, new NoMarkupFilter(), new BadWordFilter());
         channel.addListener(noMarkup);
         channel.addAuthorizer(GrantAuthorizer.GRANT_ALL);
     }
@@ -80,7 +80,7 @@ public class OortChatService {
     @SuppressWarnings("unused")
     @Configure("/service/privatechat")
     private void configurePrivateChat(ConfigurableServerChannel channel) {
-        final DataFilterMessageListener noMarkup = new DataFilterMessageListener(_bayeux, new NoMarkupFilter(), new BadWordFilter());
+        DataFilterMessageListener noMarkup = new DataFilterMessageListener(_bayeux, new NoMarkupFilter(), new BadWordFilter());
         channel.setPersistent(true);
         channel.addListener(noMarkup);
         channel.addAuthorizer(GrantAuthorizer.GRANT_PUBLISH);
@@ -106,12 +106,12 @@ public class OortChatService {
     }
 
     @Listener("/service/members")
-    public void handleMembership(final ServerSession client, ServerMessage message) {
+    public void handleMembership(ServerSession client, ServerMessage message) {
         Map<String, Object> data = message.getDataAsMap();
-        final String room = ((String)data.get("room")).substring("/chat/".length());
-        final String userName = (String)data.get("user");
+        String room = ((String)data.get("room")).substring("/chat/".length());
+        String userName = (String)data.get("user");
 
-        final Set<String> members = getMemberList(room);
+        Set<String> members = getMemberList(room);
         synchronized (members) {
             members.add(userName);
             client.addListener((ServerSession.RemovedListener)(s, m, t) -> {
@@ -131,13 +131,13 @@ public class OortChatService {
     }
 
     @Listener("/members/**")
-    public void handleMembershipBroadcast(final ServerSession client, ServerMessage message) {
+    public void handleMembershipBroadcast(ServerSession client, ServerMessage message) {
         String room = message.getChannel().substring("/members/".length());
 
         Object data = message.getData();
         Object[] newMembers = data instanceof List ? ((List)data).toArray() : (Object[])data;
 
-        final Collection<String> members = getMemberList(room);
+        Collection<String> members = getMemberList(room);
         synchronized (members) {
             boolean added = false;
             for (Object o : newMembers) {

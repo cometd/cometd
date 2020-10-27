@@ -38,8 +38,8 @@ import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.util.security.Constraint;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class HandshakeWithAuthenticationTest extends ClientServerTest {
     @Test
@@ -104,7 +104,7 @@ public class HandshakeWithAuthenticationTest extends ClientServerTest {
             }
         });
 
-        Assert.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }

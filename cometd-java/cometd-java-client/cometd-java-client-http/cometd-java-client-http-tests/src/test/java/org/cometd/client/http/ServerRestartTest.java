@@ -26,13 +26,12 @@ import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.client.transport.TransportListener;
-import org.junit.Before;
-import org.junit.Test;
-
-import static org.junit.Assert.assertTrue;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class ServerRestartTest extends ClientServerTest {
-    @Before
+    @BeforeEach
     public void init() throws Exception {
         start(null);
     }
@@ -52,7 +51,7 @@ public class ServerRestartTest extends ClientServerTest {
         client.handshake();
 
         // Be sure the second connect has been sent to the server
-        assertTrue(sendLatch.get().await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(sendLatch.get().await(5, TimeUnit.SECONDS));
 
         // Wait a little more
         Thread.sleep(1000);
@@ -75,9 +74,9 @@ public class ServerRestartTest extends ClientServerTest {
         connector.setPort(port);
         server.start();
 
-        assertTrue(handshakeLatch.await(5 * backoffIncrement, TimeUnit.MILLISECONDS));
-        assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(sendLatch.get().await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(handshakeLatch.await(5 * backoffIncrement, TimeUnit.MILLISECONDS));
+        Assertions.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(sendLatch.get().await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }

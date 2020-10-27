@@ -24,23 +24,17 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class CometDServiceWithThreadPoolTest extends AbstractBayeuxClientServerTest {
-    public CometDServiceWithThreadPoolTest(String serverTransport) {
-        super(serverTransport);
-    }
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testBayeuxServiceWithThreadPool(String serverTransport) throws Exception {
+        startServer(serverTransport, null);
 
-    @Before
-    public void prepare() throws Exception {
-        startServer(null);
-    }
-
-    @Test
-    public void testBayeuxServiceWithThreadPool() throws Exception {
-        final String channel = "/foo";
+        String channel = "/foo";
 
         TestService service = new TestService(bayeux, channel);
 
@@ -51,7 +45,7 @@ public class CometDServiceWithThreadPoolTest extends AbstractBayeuxClientServerT
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -61,7 +55,7 @@ public class CometDServiceWithThreadPoolTest extends AbstractBayeuxClientServerT
                 "\"subscription\": \"" + channel + "\"" +
                 "}]");
         response = subscribe.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         Request publish = newBayeuxRequest("[{" +
                 "\"channel\": \"" + channel + "\"," +
@@ -69,14 +63,14 @@ public class CometDServiceWithThreadPoolTest extends AbstractBayeuxClientServerT
                 "\"data\": {}" +
                 "}]");
         response = publish.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
-        Assert.assertTrue(service.await(5000));
+        Assertions.assertTrue(service.await(5000));
 
         Message message = service.getMessage();
-        Assert.assertNotNull(message);
-        Assert.assertNotNull(message.getChannel());
-        Assert.assertNotNull(message.getData());
+        Assertions.assertNotNull(message);
+        Assertions.assertNotNull(message.getChannel());
+        Assertions.assertNotNull(message.getData());
     }
 
     public static class TestService extends AbstractService {

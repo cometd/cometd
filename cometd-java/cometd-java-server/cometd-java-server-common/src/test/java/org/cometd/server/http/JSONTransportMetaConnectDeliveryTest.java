@@ -24,19 +24,17 @@ import org.cometd.common.JettyJSONContextClient;
 import org.cometd.server.AbstractBayeuxClientServerTest;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class JSONTransportMetaConnectDeliveryTest extends AbstractBayeuxClientServerTest {
-    public JSONTransportMetaConnectDeliveryTest(String serverTransport) {
-        super(serverTransport);
-    }
-
-    @Test
-    public void testJSONTransportMetaConnectDelivery() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testJSONTransportMetaConnectDelivery(String serverTransport) throws Exception {
         Map<String, String> options = new HashMap<>();
         options.put("long-polling.json.metaConnectDeliverOnly", "true");
-        startServer(options);
+        startServer(serverTransport, options);
 
         Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
@@ -45,7 +43,7 @@ public class JSONTransportMetaConnectDeliveryTest extends AbstractBayeuxClientSe
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -55,7 +53,7 @@ public class JSONTransportMetaConnectDeliveryTest extends AbstractBayeuxClientSe
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
         response = connect.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         String channel = "/foo";
 
@@ -65,7 +63,7 @@ public class JSONTransportMetaConnectDeliveryTest extends AbstractBayeuxClientSe
                 "\"subscription\": \"" + channel + "\"" +
                 "}]");
         response = subscribe.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         Request publish = newBayeuxRequest("[{" +
                 "\"channel\": \"" + channel + "\"," +
@@ -73,12 +71,12 @@ public class JSONTransportMetaConnectDeliveryTest extends AbstractBayeuxClientSe
                 "\"data\": {}" +
                 "}]");
         response = publish.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         // Expect only the meta response to the publish
         JSONContext.Client jsonContext = new JettyJSONContextClient();
         Message.Mutable[] messages = jsonContext.parse(response.getContentAsString());
-        Assert.assertEquals(1, messages.length);
+        Assertions.assertEquals(1, messages.length);
 
         connect = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/connect\"," +
@@ -86,10 +84,10 @@ public class JSONTransportMetaConnectDeliveryTest extends AbstractBayeuxClientSe
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
         response = connect.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         // Expect meta response to the connect plus the published message
         messages = jsonContext.parse(response.getContentAsString());
-        Assert.assertEquals(2, messages.length);
+        Assertions.assertEquals(2, messages.length);
     }
 }

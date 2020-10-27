@@ -20,8 +20,8 @@ import java.util.Map;
 
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.http.jetty.JettyHttpClientTransport;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class DuplicateHandshakeTest extends ClientServerTest {
     @Test
@@ -36,7 +36,7 @@ public class DuplicateHandshakeTest extends ClientServerTest {
 
         TestBayeuxClient client = new TestBayeuxClient();
         client.handshake();
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         String sessionId = client.getId();
 
@@ -46,9 +46,9 @@ public class DuplicateHandshakeTest extends ClientServerTest {
         // Wait until the /meta/connect returns, and the maxInterval expires.
         Thread.sleep(timeout * 3 / 2 + sweepPeriod);
 
-        Assert.assertEquals(sessionId, client.getId());
-        Assert.assertEquals(1, bayeux.getSessions().size());
-        Assert.assertNotNull(bayeux.getSession(sessionId));
+        Assertions.assertEquals(sessionId, client.getId());
+        Assertions.assertEquals(1, bayeux.getSessions().size());
+        Assertions.assertNotNull(bayeux.getSession(sessionId));
 
         disconnectBayeuxClient(client);
     }

@@ -18,16 +18,45 @@ package org.cometd.javascript;
 import java.util.Map;
 
 import org.cometd.server.websocket.common.AbstractWebSocketTransport;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class CometDWebSocketClientProtocolTest extends AbstractCometDWebSocketTest {
     private static final String PROTOCOL = "bayeux/1.0";
 
     @Override
-    protected void initCometDServer(Map<String, String> options) throws Exception {
+    protected void initCometDServer(String transport, Map<String, String> options) throws Exception {
         options.put(AbstractWebSocketTransport.PROTOCOL_OPTION, PROTOCOL);
-        super.initCometDServer(options);
+        super.initCometDServer(transport, options);
+    }
+
+    @Test
+    public void testClientWithoutWebSocketProtocolServerWithoutWebSocketProtocol() throws Exception {
+        evaluateScript("cometd.configure({" +
+                "url: '" + cometdURL + "', " +
+                "logLevel: '" + getLogLevel() + "'" +
+                "});");
+
+        evaluateScript("var latch = new Latch(1);");
+        Latch latch = javaScript.get("latch");
+        String channelName = "/bar";
+        evaluateScript("cometd.addListener('/meta/handshake', function(message) {" +
+                "   if (message.successful) {" +
+                "       cometd.batch(function() {" +
+                "           cometd.subscribe('" + channelName + "', function() { latch.countDown(); });" +
+                "           cometd.publish('" + channelName + "', {});" +
+                "       });" +
+                "   }" +
+                "});");
+
+        evaluateScript("cometd.handshake();");
+        Assertions.assertTrue(latch.await(5000));
+
+        evaluateScript("var disconnectLatch = new Latch(1);");
+        Latch disconnectLatch = javaScript.get("disconnectLatch");
+        evaluateScript("cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });");
+        evaluateScript("cometd.disconnect();");
+        Assertions.assertTrue(disconnectLatch.await(5000));
     }
 
     @Test
@@ -53,12 +82,12 @@ public class CometDWebSocketClientProtocolTest extends AbstractCometDWebSocketTe
         evaluateScript("cometd.handshake();");
         // The server tries to match the client protocol but if it can't tries
         // as if the client sent no protocol, which in this case will match
-        Assert.assertTrue(latch.await(5000));
+        Assertions.assertTrue(latch.await(5000));
 
         evaluateScript("var disconnectLatch = new Latch(1);");
         Latch disconnectLatch = javaScript.get("disconnectLatch");
         evaluateScript("cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });");
         evaluateScript("cometd.disconnect();");
-        Assert.assertTrue(disconnectLatch.await(5000));
+        Assertions.assertTrue(disconnectLatch.await(5000));
     }
 }

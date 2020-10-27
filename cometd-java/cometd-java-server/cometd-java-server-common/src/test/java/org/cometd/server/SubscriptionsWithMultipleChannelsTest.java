@@ -20,22 +20,16 @@ import org.cometd.common.JSONContext;
 import org.cometd.common.JettyJSONContextClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class SubscriptionsWithMultipleChannelsTest extends AbstractBayeuxClientServerTest {
-    public SubscriptionsWithMultipleChannelsTest(String serverTransport) {
-        super(serverTransport);
-    }
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testSubscribeWithMultipleChannels(String serverTransport) throws Exception {
+        startServer(serverTransport, null);
 
-    @Before
-    public void prepare() throws Exception {
-        startServer(null);
-    }
-
-    @Test
-    public void testSubscribeWithMultipleChannels() throws Exception {
         Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
@@ -43,7 +37,7 @@ public class SubscriptionsWithMultipleChannelsTest extends AbstractBayeuxClientS
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -53,19 +47,22 @@ public class SubscriptionsWithMultipleChannelsTest extends AbstractBayeuxClientS
                 "\"subscription\": [\"/foo\",\"/bar\"]" +
                 "}]");
         response = subscribe.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         JSONContext.Client jsonContext = new JettyJSONContextClient();
         Message.Mutable[] messages = jsonContext.parse(response.getContentAsString());
-        Assert.assertEquals(1, messages.length);
+        Assertions.assertEquals(1, messages.length);
         Message.Mutable message = messages[0];
-        Assert.assertTrue(message.isSuccessful());
+        Assertions.assertTrue(message.isSuccessful());
         Object subscriptions = message.get(Message.SUBSCRIPTION_FIELD);
-        Assert.assertTrue(subscriptions instanceof Object[]);
+        Assertions.assertTrue(subscriptions instanceof Object[]);
     }
 
-    @Test
-    public void testUnsubscribeWithMultipleChannels() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testUnsubscribeWithMultipleChannels(String serverTransport) throws Exception {
+        startServer(serverTransport, null);
+
         Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
@@ -73,7 +70,7 @@ public class SubscriptionsWithMultipleChannelsTest extends AbstractBayeuxClientS
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -83,7 +80,7 @@ public class SubscriptionsWithMultipleChannelsTest extends AbstractBayeuxClientS
                 "\"subscription\": [\"/foo\",\"/bar\"]" +
                 "}]");
         response = subscribe.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         Request unsubscribe = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/unsubscribe\"," +
@@ -91,14 +88,14 @@ public class SubscriptionsWithMultipleChannelsTest extends AbstractBayeuxClientS
                 "\"subscription\": [\"/foo\",\"/bar\"]" +
                 "}]");
         response = unsubscribe.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         JSONContext.Client jsonContext = new JettyJSONContextClient();
         Message.Mutable[] messages = jsonContext.parse(response.getContentAsString());
-        Assert.assertEquals(1, messages.length);
+        Assertions.assertEquals(1, messages.length);
         Message.Mutable message = messages[0];
-        Assert.assertTrue(message.isSuccessful());
+        Assertions.assertTrue(message.isSuccessful());
         Object subscriptions = message.get(Message.SUBSCRIPTION_FIELD);
-        Assert.assertTrue(subscriptions instanceof Object[]);
+        Assertions.assertTrue(subscriptions instanceof Object[]);
     }
 }

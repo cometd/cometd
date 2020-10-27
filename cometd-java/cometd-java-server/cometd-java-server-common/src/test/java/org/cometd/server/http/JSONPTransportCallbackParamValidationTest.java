@@ -27,47 +27,43 @@ import org.cometd.server.AbstractBayeuxClientServerTest;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpMethod;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class JSONPTransportCallbackParamValidationTest extends AbstractBayeuxClientServerTest {
+    // We want to test only the JSONPTransport.
+    private final String serverTransport = JSONPTransport.class.getName();
     private final Map<String, String> initParams = new HashMap<>();
     private final String jsonpPath = "/?jsonp=";
-    private final String messagePath = "&message=";
 
-    public JSONPTransportCallbackParamValidationTest(String serverTransport) {
-        // We want to test only the JSONPTransport.
-        super(JSONPTransport.class.getName());
+    public JSONPTransportCallbackParamValidationTest() {
         initParams.put("long-polling.jsonp.callbackParameterMaxLength", "10");
     }
 
     @Test
     public void testValidCallbackParamLength() throws Exception {
-        startServer(initParams);
+        startServer(serverTransport, initParams);
         cometdURL = cometdURL + jsonpPath + "short";
-
         testSubscribe(200);
     }
 
     @Test
     public void testInvalidCallbackParamLength() throws Exception {
-        startServer(initParams);
+        startServer(serverTransport, initParams);
         cometdURL = cometdURL + jsonpPath + "waytoolongforthistest";
-
         testSubscribe(400);
     }
 
     @Test
     public void testValidCallbackParamCharacters() throws Exception {
-        startServer(initParams);
+        startServer(serverTransport, initParams);
         cometdURL = cometdURL + jsonpPath + "s-h_o.R1";
-
         testSubscribe(200);
     }
 
     @Test
     public void testInvalidCallbackParamCharacters() throws Exception {
-        startServer(initParams);
+        startServer(serverTransport, initParams);
         cometdURL = cometdURL + jsonpPath + "sh%20rt";
         testSubscribe(400);
         cometdURL = cometdURL + jsonpPath + "sh%0d%0art";
@@ -78,6 +74,7 @@ public class JSONPTransportCallbackParamValidationTest extends AbstractBayeuxCli
 
     @Override
     protected Request newBayeuxRequest(String requestBody) throws UnsupportedEncodingException {
+        String messagePath = "&message=";
         Request request = httpClient.newRequest(cometdURL + messagePath + URLEncoder.encode(requestBody, "UTF-8"));
         request.timeout(5, TimeUnit.SECONDS);
         request.method(HttpMethod.GET);
@@ -92,6 +89,6 @@ public class JSONPTransportCallbackParamValidationTest extends AbstractBayeuxCli
                 "\"supportedConnectionTypes\": [\"callback-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertEquals(errorCode, response.getStatus());
+        Assertions.assertEquals(errorCode, response.getStatus());
     }
 }

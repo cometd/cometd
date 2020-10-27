@@ -15,8 +15,8 @@
  */
 package org.cometd.javascript;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class CometDWebSocketDifferentURLsTest extends AbstractCometDWebSocketTest {
     @Test
@@ -38,12 +38,12 @@ public class CometDWebSocketDifferentURLsTest extends AbstractCometDWebSocketTes
                 "});");
 
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(latch.await(5000));
+        Assertions.assertTrue(latch.await(5000));
 
         evaluateScript("var disconnectLatch = new Latch(1);");
         Latch disconnectLatch = javaScript.get("disconnectLatch");
         evaluateScript("cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });");
         evaluateScript("cometd.disconnect();");
-        Assert.assertTrue(disconnectLatch.await(5000));
+        Assertions.assertTrue(disconnectLatch.await(5000));
     }
 }

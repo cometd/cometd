@@ -17,8 +17,8 @@ package org.cometd.tests.spring.annotation;
 
 import java.util.Arrays;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 public class SpringAnnotationTest {
@@ -32,18 +32,18 @@ public class SpringAnnotationTest {
         String beanName = Character.toLowerCase(serviceClass.charAt(0)) + serviceClass.substring(1);
 
         String[] beanNames = applicationContext.getBeanDefinitionNames();
-        Assert.assertTrue(Arrays.asList(beanNames).contains(beanName));
+        Assertions.assertTrue(Arrays.asList(beanNames).contains(beanName));
 
         SpringBayeuxService service = (SpringBayeuxService)applicationContext.getBean(beanName);
-        Assert.assertNotNull(service);
-        Assert.assertNotNull(service.dependency);
-        Assert.assertNotNull(service.bayeuxServer);
-        Assert.assertNotNull(service.serverSession);
-        Assert.assertTrue(service.active);
-        Assert.assertEquals(1, service.bayeuxServer.getChannel(SpringBayeuxService.CHANNEL).getSubscribers().size());
+        Assertions.assertNotNull(service);
+        Assertions.assertNotNull(service.dependency);
+        Assertions.assertNotNull(service.bayeuxServer);
+        Assertions.assertNotNull(service.serverSession);
+        Assertions.assertTrue(service.active);
+        Assertions.assertEquals(1, service.bayeuxServer.getChannel(SpringBayeuxService.CHANNEL).getSubscribers().size());
 
         applicationContext.close();
 
-        Assert.assertFalse(service.active);
+        Assertions.assertFalse(service.active);
     }
 }

@@ -21,33 +21,33 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class OortLongMapTest extends AbstractOortObjectTest {
-    public OortLongMapTest(String serverTransport) {
-        super(serverTransport);
-    }
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testShare(String serverTransport) throws Exception {
+        prepare(serverTransport);
 
-    @Test
-    public void testShare() throws Exception {
         String name = "test";
         OortObject.Factory<ConcurrentMap<Long, Object>> factory = OortObjectFactories.forConcurrentMap();
         OortLongMap<Object> oortMap1 = new OortLongMap<>(oort1, name, factory);
         OortLongMap<Object> oortMap2 = new OortLongMap<>(oort2, name, factory);
         startOortObjects(oortMap1, oortMap2);
 
-        final long key1 = 13L;
-        final String value1 = "value1";
+        long key1 = 13L;
+        String value1 = "value1";
         final CountDownLatch objectLatch1 = new CountDownLatch(1);
         oortMap1.addListener(new OortObject.Listener<ConcurrentMap<Long, Object>>() {
             @Override
             public void onUpdated(OortObject.Info<ConcurrentMap<Long, Object>> oldInfo, OortObject.Info<ConcurrentMap<Long, Object>> newInfo) {
-                Assert.assertTrue(newInfo.isLocal());
-                Assert.assertNotNull(oldInfo);
-                Assert.assertTrue(oldInfo.getObject().isEmpty());
-                Assert.assertNotSame(oldInfo, newInfo);
-                Assert.assertEquals(value1, newInfo.getObject().get(key1));
+                Assertions.assertTrue(newInfo.isLocal());
+                Assertions.assertNotNull(oldInfo);
+                Assertions.assertTrue(oldInfo.getObject().isEmpty());
+                Assertions.assertNotSame(oldInfo, newInfo);
+                Assertions.assertEquals(value1, newInfo.getObject().get(key1));
                 objectLatch1.countDown();
             }
         });
@@ -57,11 +57,11 @@ public class OortLongMapTest extends AbstractOortObjectTest {
         oortMap2.addListener(new OortObject.Listener<ConcurrentMap<Long, Object>>() {
             @Override
             public void onUpdated(OortObject.Info<ConcurrentMap<Long, Object>> oldInfo, OortObject.Info<ConcurrentMap<Long, Object>> newInfo) {
-                Assert.assertFalse(newInfo.isLocal());
-                Assert.assertNotNull(oldInfo);
-                Assert.assertTrue(oldInfo.getObject().isEmpty());
-                Assert.assertNotSame(oldInfo, newInfo);
-                Assert.assertEquals(value1, newInfo.getObject().get(key1));
+                Assertions.assertFalse(newInfo.isLocal());
+                Assertions.assertNotNull(oldInfo);
+                Assertions.assertTrue(oldInfo.getObject().isEmpty());
+                Assertions.assertNotSame(oldInfo, newInfo);
+                Assertions.assertEquals(value1, newInfo.getObject().get(key1));
                 objectLatch2.countDown();
             }
         });
@@ -71,21 +71,24 @@ public class OortLongMapTest extends AbstractOortObjectTest {
         object1.put(key1, value1);
         oortMap1.setAndShare(object1, null);
 
-        Assert.assertTrue(objectLatch1.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(objectLatch2.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(objectLatch1.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(objectLatch2.await(5, TimeUnit.SECONDS));
 
-        Assert.assertEquals(value1, oortMap1.getInfo(oort1.getURL()).getObject().get(key1));
-        Assert.assertTrue(oortMap1.getInfo(oort2.getURL()).getObject().isEmpty());
+        Assertions.assertEquals(value1, oortMap1.getInfo(oort1.getURL()).getObject().get(key1));
+        Assertions.assertTrue(oortMap1.getInfo(oort2.getURL()).getObject().isEmpty());
 
-        Assert.assertTrue(oortMap2.getInfo(oort2.getURL()).getObject().isEmpty());
-        Assert.assertEquals(object1, oortMap2.getInfo(oort1.getURL()).getObject());
+        Assertions.assertTrue(oortMap2.getInfo(oort2.getURL()).getObject().isEmpty());
+        Assertions.assertEquals(object1, oortMap2.getInfo(oort1.getURL()).getObject());
 
         ConcurrentMap<Long, Object> objectAtOort2 = oortMap2.merge(OortObjectMergers.concurrentMapUnion());
-        Assert.assertEquals(object1, objectAtOort2);
+        Assertions.assertEquals(object1, objectAtOort2);
     }
 
-    @Test
-    public void testHowToDealWitMutableValues() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testHowToDealWitMutableValues(String serverTransport) throws Exception {
+        prepare(serverTransport);
+
         // We are using a Map as mutable value because it serializes easily in JSON.
         // Any other mutable data structure would require a serializer/deserializer.
 
@@ -116,7 +119,7 @@ public class OortLongMapTest extends AbstractOortObjectTest {
             node1Value = existing;
         }
 
-        Assert.assertTrue(putLatch1.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(putLatch1.await(5, TimeUnit.SECONDS));
         oortMap1.removeEntryListener(listener1);
         oortMap2.removeEntryListener(listener1);
 
@@ -144,11 +147,11 @@ public class OortLongMapTest extends AbstractOortObjectTest {
 
         // Share the value notifying EntryListeners
         oortMap1.putAndShare(key, node1Value, null);
-        Assert.assertTrue(putLatch2.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(putLatch2.await(5, TimeUnit.SECONDS));
         oortMap1.removeEntryListener(listener2);
         oortMap2.removeEntryListener(listener2);
 
         Map<String, Boolean> node2Value = oortMap2.find(key);
-        Assert.assertEquals(2, node2Value.size());
+        Assertions.assertEquals(2, node2Value.size());
     }
 }

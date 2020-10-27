@@ -33,8 +33,8 @@ import org.cometd.common.JacksonJSONContextClient;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.AbstractService;
 import org.cometd.server.JacksonJSONContextServer;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class JacksonContextTest extends ClientServerTest {
     @Test
@@ -48,7 +48,7 @@ public class JacksonContextTest extends ClientServerTest {
         BayeuxClient client = new BayeuxClient(cometdURL, new JettyHttpClientTransport(clientParams, httpClient));
 
         client.handshake();
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Wait for the long poll
         Thread.sleep(1000);
@@ -67,11 +67,11 @@ public class JacksonContextTest extends ClientServerTest {
                 @Override
                 public void onMessage(ClientSessionChannel channel1, Message message) {
                     Map<String, Object> data = message.getDataAsMap();
-                    Assert.assertTrue(data.containsKey("publish"));
+                    Assertions.assertTrue(data.containsKey("publish"));
                     republishSeen |= data.containsKey("republish");
                     deliverSeen |= data.containsKey("deliver");
                     if (clientLatch.getCount() == 1 && !republishSeen && !deliverSeen) {
-                        Assert.fail();
+                        Assertions.fail();
                     }
                     clientLatch.countDown();
                 }
@@ -81,8 +81,8 @@ public class JacksonContextTest extends ClientServerTest {
             channel.publish(data);
         });
 
-        Assert.assertTrue(localLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(localLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -101,10 +101,10 @@ public class JacksonContextTest extends ClientServerTest {
                 @Override
                 public void onMessage(ClientSessionChannel channel, Message message) {
                     Map<String, Object> data = message.getDataAsMap();
-                    Assert.assertTrue(data.containsKey("publish"));
+                    Assertions.assertTrue(data.containsKey("publish"));
                     republishSeen |= data.containsKey("republish");
                     if (localLatch.getCount() == 1 && !republishSeen) {
-                        Assert.fail();
+                        Assertions.fail();
                     }
                     localLatch.countDown();
                 }

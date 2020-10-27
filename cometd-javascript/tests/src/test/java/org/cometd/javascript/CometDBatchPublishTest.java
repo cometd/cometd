@@ -15,12 +15,16 @@
  */
 package org.cometd.javascript;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class CometDBatchPublishTest extends AbstractCometDTransportsTest {
-    @Test
-    public void testBatchPublish() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testBatchPublish(String transport) throws Exception {
+        initCometDServer(transport);
+
         evaluateScript("var latch = new Latch(1);");
         Latch latch = javaScript.get("latch");
 
@@ -38,7 +42,7 @@ public class CometDBatchPublishTest extends AbstractCometDTransportsTest {
                 "});" +
                 "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
                 "cometd.handshake();");
-        Assert.assertTrue(latch.await(5000));
+        Assertions.assertTrue(latch.await(5000));
 
         disconnect();
     }

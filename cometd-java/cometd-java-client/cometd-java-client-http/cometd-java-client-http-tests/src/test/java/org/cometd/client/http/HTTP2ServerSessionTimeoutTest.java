@@ -29,8 +29,8 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
 import org.cometd.server.AbstractServerTransport;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class HTTP2ServerSessionTimeoutTest extends HTTP2ClientServerTest {
     @Test
@@ -70,8 +70,8 @@ public class HTTP2ServerSessionTimeoutTest extends HTTP2ClientServerTest {
 
         client.handshake();
 
-        Assert.assertTrue(addLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(removeLatch.await(timeout + 2 * maxInterval, TimeUnit.MILLISECONDS));
+        Assertions.assertTrue(addLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(removeLatch.await(timeout + 2 * maxInterval, TimeUnit.MILLISECONDS));
 
         disconnectBayeuxClient(client);
     }

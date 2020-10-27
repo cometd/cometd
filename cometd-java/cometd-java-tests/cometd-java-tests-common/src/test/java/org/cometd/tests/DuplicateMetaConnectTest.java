@@ -31,24 +31,22 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.server.AbstractServerTransport;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class DuplicateMetaConnectTest extends AbstractClientServerTest {
-    public DuplicateMetaConnectTest(Transport transport) {
-        super(transport);
-    }
-
-    @Test
-    public void testDuplicateMetaConnectWithoutFailingExistingMetaConnect() throws Exception {
-        startServer(serverOptions());
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testDuplicateMetaConnectWithoutFailingExistingMetaConnect(Transport transport) throws Exception {
+        startServer(transport);
 
         long backoff = 500;
         Map<String, Object> clientOptions = new HashMap<>();
         clientOptions.put(BayeuxClient.BACKOFF_INCREMENT_OPTION, backoff);
-        TestBayeuxClient client = new TestBayeuxClient(cometdURL, newClientTransport(clientOptions));
+        TestBayeuxClient client = new TestBayeuxClient(cometdURL, newClientTransport(transport, clientOptions));
 
-        final BlockingQueue<Message> connects = new LinkedBlockingDeque<>();
+        BlockingQueue<Message> connects = new LinkedBlockingDeque<>();
         client.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> connects.offer(message));
 
         client.handshake();
@@ -57,42 +55,44 @@ public class DuplicateMetaConnectTest extends AbstractClientServerTest {
         sleep(1000);
 
         Message connect1 = connects.poll(1, TimeUnit.SECONDS);
-        Assert.assertNotNull(connect1);
-        Assert.assertTrue(connect1.isSuccessful());
+        Assertions.assertNotNull(connect1);
+        Assertions.assertTrue(connect1.isSuccessful());
 
         // Send a duplicate /meta/connect without failing the existing one.
         client.sendConnect();
 
         // The previous /meta/connect should be dropped.
         Message connect2 = connects.poll(1, TimeUnit.SECONDS);
-        Assert.assertNull(connect2);
+        Assertions.assertNull(connect2);
 
         // Wait for the backoff in case the /meta/connect failure triggers a retry.
         sleep(2 * backoff);
 
         // The new /meta/connect should be held.
         Message connect3 = connects.poll(1, TimeUnit.SECONDS);
-        Assert.assertNull(connect3);
+        Assertions.assertNull(connect3);
 
         disconnectBayeuxClient(client);
     }
 
-    @Test
-    public void testDuplicateMetaConnectWithExistingMetaConnectFailedOnClient() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testDuplicateMetaConnectWithExistingMetaConnectFailedOnClient(Transport transport) throws Exception {
         long timeout = 2000;
-        Map<String, String> serverOptions = serverOptions();
+        Map<String, String> serverOptions = serverOptions(transport);
         serverOptions.put(AbstractServerTransport.TIMEOUT_OPTION, String.valueOf(timeout));
-        startServer(serverOptions);
+        startServer(transport, serverOptions);
 
         Map<String, Object> clientOptions = new HashMap<>();
-        final long maxNetworkDelay = 1000;
+        long maxNetworkDelay = 1000;
         clientOptions.put(ClientTransport.MAX_NETWORK_DELAY_OPTION, maxNetworkDelay);
         long backoff = 1000;
         clientOptions.put(BayeuxClient.BACKOFF_INCREMENT_OPTION, backoff);
-        BayeuxClient client = new BayeuxClient(cometdURL, newClientTransport(clientOptions));
+        BayeuxClient client = new BayeuxClient(cometdURL, newClientTransport(transport, clientOptions));
 
         bayeux.getChannel(Channel.META_CONNECT).addListener(new ServerChannel.MessageListener() {
             private final AtomicInteger metaConnects = new AtomicInteger();
+
             @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 if (metaConnects.incrementAndGet() == 2) {
@@ -102,7 +102,7 @@ public class DuplicateMetaConnectTest extends AbstractClientServerTest {
             }
         });
 
-        final BlockingQueue<Message> connects = new LinkedBlockingDeque<>();
+        BlockingQueue<Message> connects = new LinkedBlockingDeque<>();
         client.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> connects.offer(message));
 
         client.handshake();
@@ -111,26 +111,26 @@ public class DuplicateMetaConnectTest extends AbstractClientServerTest {
         sleep(1000);
 
         Message connect1 = connects.poll(1, TimeUnit.SECONDS);
-        Assert.assertNotNull(connect1);
-        Assert.assertTrue(connect1.isSuccessful());
+        Assertions.assertNotNull(connect1);
+        Assertions.assertTrue(connect1.isSuccessful());
 
         // The second /meta/connect should be timed out by the client
         // and trigger the send of a third /meta/connect after one backoff.
         Message connect2 = connects.poll(timeout + maxNetworkDelay * 2, TimeUnit.MILLISECONDS);
-        Assert.assertNotNull(connect2);
-        Assert.assertFalse(connect2.isSuccessful());
+        Assertions.assertNotNull(connect2);
+        Assertions.assertFalse(connect2.isSuccessful());
 
         // The server returns the second /meta/connect,
         // but the client has closed the connection.
 
         // The client sends the third /meta/connect with advice: { timeout: 0 }.
         Message connect3 = connects.poll(2 * backoff, TimeUnit.MILLISECONDS);
-        Assert.assertNotNull(connect3);
-        Assert.assertTrue(connect3.isSuccessful());
+        Assertions.assertNotNull(connect3);
+        Assertions.assertTrue(connect3.isSuccessful());
 
         // The fourth connect is held by the server.
         Message connect4 = connects.poll(timeout / 2, TimeUnit.MILLISECONDS);
-        Assert.assertNull(connect4);
+        Assertions.assertNull(connect4);
 
         disconnectBayeuxClient(client);
     }

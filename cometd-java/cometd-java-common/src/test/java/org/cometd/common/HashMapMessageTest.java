@@ -15,14 +15,13 @@
  */
 package org.cometd.common;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class HashMapMessageTest {
     @Test
@@ -43,6 +42,6 @@ public class HashMapMessageTest {
         ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray()));
         HashMapMessage deserialized = (HashMapMessage)ois.readObject();
 
-        assertEquals(message, deserialized);
+        Assertions.assertEquals(message, deserialized);
     }
 }

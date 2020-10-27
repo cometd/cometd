@@ -25,12 +25,16 @@ import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.BayeuxServerImpl;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class CometDAdviceTest extends AbstractCometDTransportsTest {
-    @Test
-    public void testNoHandshakeAdviceAfterSessionExpired() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testNoHandshakeAdviceAfterSessionExpired(String transport) throws Exception {
+        initCometDServer(transport);
+
         // Removed handshake advices to make sure the client behaves well without them.
         bayeuxServer.addExtension(new BayeuxServer.Extension() {
             @Override
@@ -59,8 +63,8 @@ public class CometDAdviceTest extends AbstractCometDTransportsTest {
                 "});");
         evaluateScript("cometd.handshake(function(hs) { handshakeListener.handle(hs); });");
 
-        Assert.assertTrue(handshakeListener.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(connectLatch.await(5000));
+        Assertions.assertTrue(handshakeListener.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(connectLatch.await(5000));
 
         disconnect();
     }

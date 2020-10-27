@@ -29,23 +29,17 @@ import org.cometd.common.JettyJSONContextClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.FutureResponseListener;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class CustomAdviceTest extends AbstractBayeuxClientServerTest {
-    public CustomAdviceTest(String serverTransport) {
-        super(serverTransport);
-    }
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testCustomTimeoutViaMessage(String serverTransport) throws Exception {
+        startServer(serverTransport, null);
 
-    @Before
-    public void prepare() throws Exception {
-        startServer(null);
-    }
-
-    @Test
-    public void testCustomTimeoutViaMessage() throws Exception {
-        final CountDownLatch connectLatch = new CountDownLatch(2);
+        CountDownLatch connectLatch = new CountDownLatch(2);
         bayeux.getChannel(Channel.META_CONNECT).addListener(new ServerChannel.MessageListener() {
             @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
@@ -71,7 +65,7 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest {
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -81,7 +75,7 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest {
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
         response = connect1.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         Request connect2 = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/connect\"," +
@@ -90,7 +84,7 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest {
                 "}]");
         FutureResponseListener futureResponse = new FutureResponseListener(connect2);
         connect2.send(futureResponse);
-        Assert.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
 
         Request publish = newBayeuxRequest("[{" +
                 "\"channel\":\"" + channelName + "\"," +
@@ -98,24 +92,27 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest {
                 "\"data\": {}" +
                 "}]");
         response = publish.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         // Wait for the second connect to return
         response = futureResponse.get(timeout * 2, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         JSONContext.Client jsonContext = new JettyJSONContextClient();
         Message.Mutable[] messages = jsonContext.parse(response.getContentAsString());
         Message.Mutable connect = messages[0];
         Map<String, Object> advice = connect.getAdvice();
-        Assert.assertNotNull(advice);
+        Assertions.assertNotNull(advice);
         Number timeout = (Number)advice.get("timeout");
-        Assert.assertNotNull(timeout);
-        Assert.assertEquals(newTimeout, timeout.longValue());
+        Assertions.assertNotNull(timeout);
+        Assertions.assertEquals(newTimeout, timeout.longValue());
     }
 
-    @Test
-    public void testCustomIntervalViaMessage() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testCustomIntervalViaMessage(String serverTransport) throws Exception {
+        startServer(serverTransport, null);
+
         final CountDownLatch connectLatch = new CountDownLatch(2);
         bayeux.getChannel(Channel.META_CONNECT).addListener(new ServerChannel.MessageListener() {
             @Override
@@ -142,7 +139,7 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest {
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -152,7 +149,7 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest {
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
         response = connect1.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         Request connect2 = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/connect\"," +
@@ -161,7 +158,7 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest {
                 "}]");
         FutureResponseListener futureResponse = new FutureResponseListener(connect2);
         connect2.send(futureResponse);
-        Assert.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
 
         Request publish = newBayeuxRequest("[{" +
                 "\"channel\":\"" + channelName + "\"," +
@@ -169,24 +166,27 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest {
                 "\"data\": {}" +
                 "}]");
         response = publish.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         // Wait for the second connect to return
         response = futureResponse.get(timeout * 2, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         JSONContext.Client jsonContext = new JettyJSONContextClient();
         Message.Mutable[] messages = jsonContext.parse(response.getContentAsString());
         Message.Mutable connect = messages[0];
         Map<String, Object> advice = connect.getAdvice();
-        Assert.assertNotNull(advice);
+        Assertions.assertNotNull(advice);
         Number interval = (Number)advice.get("interval");
-        Assert.assertNotNull(interval);
-        Assert.assertEquals(newInterval, interval.longValue());
+        Assertions.assertNotNull(interval);
+        Assertions.assertEquals(newInterval, interval.longValue());
     }
 
-    @Test
-    public void testCustomIntervalViaAdvice() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testCustomIntervalViaAdvice(String serverTransport) throws Exception {
+        startServer(serverTransport, null);
+
         Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
@@ -194,7 +194,7 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest {
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -204,7 +204,7 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest {
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
         response = connect1.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         // The client tells the server that it's going to sleep and won't connect for a while
         // The server must adjust to not expire its session
@@ -219,20 +219,20 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest {
                 "}" +
                 "}]");
         response = connect2.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         JSONContext.Client jsonContext = new JettyJSONContextClient();
         Message.Mutable[] messages = jsonContext.parse(response.getContentAsString());
         Message.Mutable connect = messages[0];
         Map<String, Object> advice = connect.getAdvice();
-        Assert.assertNotNull(advice);
+        Assertions.assertNotNull(advice);
         Number interval = (Number)advice.get("interval");
-        Assert.assertNotNull(interval);
-        Assert.assertEquals(newInterval, interval.longValue());
+        Assertions.assertNotNull(interval);
+        Assertions.assertEquals(newInterval, interval.longValue());
 
         // Verify that the server is aware of the interval and will not expire the session
         ServerSessionImpl session = (ServerSessionImpl)bayeux.getSession(clientId);
         long expectedExpire = TimeUnit.NANOSECONDS.toMillis(session.getIntervalTimestamp() - System.nanoTime());
-        Assert.assertTrue(expectedExpire > session.getServerTransport().getMaxInterval() + newInterval / 2);
+        Assertions.assertTrue(expectedExpire > session.getServerTransport().getMaxInterval() + newInterval / 2);
     }
 }

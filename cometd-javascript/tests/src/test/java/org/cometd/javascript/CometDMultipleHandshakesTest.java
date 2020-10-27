@@ -15,18 +15,22 @@
  */
 package org.cometd.javascript;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class CometDMultipleHandshakesTest extends AbstractCometDTransportsTest {
-    @Test
-    public void testMultipleHandshakes() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testMultipleHandshakes(String transport) throws Exception {
+        initCometDServer(transport);
+
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var handshakeLatch = new Latch(1);");
         Latch handshakeLatch = javaScript.get("handshakeLatch");
         evaluateScript("cometd.addListener('/meta/handshake', function(m) { handshakeLatch.countDown(); });");
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(handshakeLatch.await(5000));
+        Assertions.assertTrue(handshakeLatch.await(5000));
 
         // Handshake again.
         evaluateScript("" +

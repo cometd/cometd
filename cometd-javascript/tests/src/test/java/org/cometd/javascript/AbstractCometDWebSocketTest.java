@@ -15,16 +15,15 @@
  */
 package org.cometd.javascript;
 
+import org.junit.jupiter.api.BeforeEach;
+
 /**
  * A base test class to be extended for tests
  * valid only for the websocket transport.
  */
 public class AbstractCometDWebSocketTest extends AbstractCometDTest {
-    @Override
-    protected void initPage() throws Exception {
-        super.initPage();
-        evaluateScript("keep_only_websocket_transport",
-                "cometd.unregisterTransports();" +
-                        "cometd.registerTransport('websocket', originalTransports['websocket']);");
+    @BeforeEach
+    public void init() throws Exception {
+        initCometDServer("websocket");
     }
 }

@@ -21,17 +21,15 @@ import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.common.JettyJSONContextClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class MetaConnectWithOtherMessagesTest extends AbstractBayeuxClientServerTest {
-    public MetaConnectWithOtherMessagesTest(String serverTransport) {
-        super(serverTransport);
-    }
-
-    @Test
-    public void testFirstMetaConnectWithOtherMessages() throws Exception {
-        startServer(null);
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testFirstMetaConnectWithOtherMessages(String serverTransport) throws Exception {
+        startServer(serverTransport, null);
 
         Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
@@ -39,7 +37,7 @@ public class MetaConnectWithOtherMessagesTest extends AbstractBayeuxClientServer
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -54,22 +52,22 @@ public class MetaConnectWithOtherMessagesTest extends AbstractBayeuxClientServer
                 "\"subscription\": \"" + channelName + "\"" +
                 "}]");
         response = connect1.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         JettyJSONContextClient parser = new JettyJSONContextClient();
         Message.Mutable[] messages = parser.parse(response.getContentAsString());
 
-        Assert.assertEquals(2, messages.length);
+        Assertions.assertEquals(2, messages.length);
 
         Message.Mutable connectReply = messages[0];
-        Assert.assertEquals(Channel.META_CONNECT, connectReply.getChannel());
+        Assertions.assertEquals(Channel.META_CONNECT, connectReply.getChannel());
 
         Message.Mutable subscribeReply = messages[1];
-        Assert.assertEquals(Channel.META_SUBSCRIBE, subscribeReply.getChannel());
+        Assertions.assertEquals(Channel.META_SUBSCRIBE, subscribeReply.getChannel());
 
         ServerChannel channel = bayeux.getChannel(channelName);
         // Cannot be null since it has a subscriber.
-        Assert.assertNotNull(channel);
-        Assert.assertEquals(1, channel.getSubscribers().size());
+        Assertions.assertNotNull(channel);
+        Assertions.assertEquals(1, channel.getSubscribers().size());
     }
 }

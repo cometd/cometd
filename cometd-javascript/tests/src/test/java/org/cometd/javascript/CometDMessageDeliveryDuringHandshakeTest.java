@@ -29,41 +29,40 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.ServerSessionImpl;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class CometDMessageDeliveryDuringHandshakeTest extends AbstractCometDTransportsTest {
-    @Override
-    public void initCometDServer() throws Exception {
-    }
-
-    @Test
-    public void testMessagesNotSentInHandshakeResponse() throws Exception {
-        Map<String, String> options = new HashMap<>();
-        initCometDServer(options);
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testMessagesNotSentInHandshakeResponse(String transport) throws Exception {
+        initCometDServer(transport);
         testMessagesInHandshakeResponse(false);
     }
 
-    @Test
-    public void testMessagesSentInHandshakeResponse() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testMessagesSentInHandshakeResponse(String transport) throws Exception {
         Map<String, String> options = new HashMap<>();
         options.put(AbstractServerTransport.ALLOW_MESSAGE_DELIVERY_DURING_HANDSHAKE, String.valueOf(true));
-        initCometDServer(options);
+        initCometDServer(transport, options);
         testMessagesInHandshakeResponse(true);
     }
 
-    @Test
-    public void testMessagesSentInHandshakeResponseWithAckExtension() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testMessagesSentInHandshakeResponseWithAckExtension(String transport) throws Exception {
         Map<String, String> options = new HashMap<>();
         options.put(AbstractServerTransport.ALLOW_MESSAGE_DELIVERY_DURING_HANDSHAKE, String.valueOf(true));
-        initCometDServer(options);
+        initCometDServer(transport, options);
         bayeuxServer.addExtension(new AcknowledgedMessagesExtension());
         provideMessageAcknowledgeExtension();
         testMessagesInHandshakeResponse(true);
     }
 
-    private void testMessagesInHandshakeResponse(final boolean allowHandshakeMessages) throws Exception {
-        final String channelName = "/test";
+    private void testMessagesInHandshakeResponse(boolean allowHandshakeMessages) throws Exception {
+        String channelName = "/test";
         bayeuxServer.addListener(new BayeuxServer.SessionListener() {
             @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
@@ -73,8 +72,8 @@ public class CometDMessageDeliveryDuringHandshakeTest extends AbstractCometDTran
             }
         });
 
-        final CountDownLatch serverMessagesLatch = new CountDownLatch(1);
-        final ServerChannel metaConnectChannel = bayeuxServer.getChannel(Channel.META_CONNECT);
+        CountDownLatch serverMessagesLatch = new CountDownLatch(1);
+        ServerChannel metaConnectChannel = bayeuxServer.getChannel(Channel.META_CONNECT);
         metaConnectChannel.addListener(new ServerChannel.MessageListener() {
             @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
@@ -110,8 +109,8 @@ public class CometDMessageDeliveryDuringHandshakeTest extends AbstractCometDTran
         evaluateScript("" +
                 "cometd.handshake();");
 
-        Assert.assertTrue(serverMessagesLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(clientMessagesLatch.await(5000));
+        Assertions.assertTrue(serverMessagesLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(clientMessagesLatch.await(5000));
 
         evaluateScript("window.assert(messages[0].channel === '/meta/handshake', 'not handshake' + JSON.stringify(messages[0]));");
         evaluateScript("window.assert(messages[1].channel === '" + channelName + "', 'not message' + JSON.stringify(messages[1]));");
@@ -119,11 +118,12 @@ public class CometDMessageDeliveryDuringHandshakeTest extends AbstractCometDTran
         evaluateScript("window.assert(messages[3].channel === '/meta/connect', 'not connect: ' + JSON.stringify(messages[3]));");
     }
 
-    @Test
-    public void testMessagesSentInHandshakeResponseWithAckExtensionWithDeQueueListener() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testMessagesSentInHandshakeResponseWithAckExtensionWithDeQueueListener(String transport) throws Exception {
         Map<String, String> options = new HashMap<>();
         options.put(AbstractServerTransport.ALLOW_MESSAGE_DELIVERY_DURING_HANDSHAKE, String.valueOf(true));
-        initCometDServer(options);
+        initCometDServer(transport, options);
         bayeuxServer.addExtension(new AcknowledgedMessagesExtension());
         bayeuxServer.addListener(new BayeuxServer.SessionListener() {
             @Override
@@ -137,7 +137,7 @@ public class CometDMessageDeliveryDuringHandshakeTest extends AbstractCometDTran
         });
         provideMessageAcknowledgeExtension();
 
-        final String channelName = "/test";
+        String channelName = "/test";
         bayeuxServer.addListener(new BayeuxServer.SessionListener() {
             @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
@@ -170,7 +170,7 @@ public class CometDMessageDeliveryDuringHandshakeTest extends AbstractCometDTran
         evaluateScript("" +
                 "cometd.handshake();");
 
-        Assert.assertTrue(clientMessagesLatch.await(5000));
+        Assertions.assertTrue(clientMessagesLatch.await(5000));
 
         evaluateScript("window.assert(messages[0].channel === '/meta/handshake', 'not handshake' + JSON.stringify(messages[0]));");
         evaluateScript("window.assert(messages[1].channel === '" + channelName + "', 'not message' + JSON.stringify(messages[1]));");

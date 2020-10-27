@@ -18,12 +18,12 @@ package org.cometd.server.ext;
 import java.util.ArrayDeque;
 import java.util.Queue;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class BatchArrayQueueTest {
     @Test
-    public void test_Offer_Next_Offer_Export_Clear() throws Exception {
+    public void test_Offer_Next_Offer_Export_Clear() {
         BatchArrayQueue<String> queue = new BatchArrayQueue<>(16, this);
 
         queue.offer("A");
@@ -35,17 +35,17 @@ public class BatchArrayQueueTest {
         Queue<String> target = new ArrayDeque<>();
         queue.exportMessagesToBatch(target, batch);
 
-        Assert.assertEquals(1, target.size());
-        Assert.assertTrue(target.peek().startsWith("A"));
+        Assertions.assertEquals(1, target.size());
+        Assertions.assertTrue(target.peek().startsWith("A"));
 
         queue.clearToBatch(batch);
 
-        Assert.assertEquals(1, queue.size());
-        Assert.assertTrue(queue.peek().startsWith("B"));
+        Assertions.assertEquals(1, queue.size());
+        Assertions.assertTrue(queue.peek().startsWith("B"));
     }
 
     @Test
-    public void test_Offer_Grow_Poll_Offer() throws Exception {
+    public void test_Offer_Grow_Poll_Offer() {
         BatchArrayQueue<String> queue = new BatchArrayQueue<>(2, this);
 
         queue.offer("A1");
@@ -58,22 +58,22 @@ public class BatchArrayQueueTest {
 
         queue.offer("B1");
 
-        Assert.assertEquals(batch, queue.batchOf(0));
-        Assert.assertEquals(batch, queue.batchOf(1));
-        Assert.assertEquals(batch, queue.batchOf(2));
-        Assert.assertEquals(nextBatch, queue.batchOf(3));
+        Assertions.assertEquals(batch, queue.batchOf(0));
+        Assertions.assertEquals(batch, queue.batchOf(1));
+        Assertions.assertEquals(batch, queue.batchOf(2));
+        Assertions.assertEquals(nextBatch, queue.batchOf(3));
 
         queue.poll();
         queue.offer("B2");
 
-        Assert.assertEquals(batch, queue.batchOf(0));
-        Assert.assertEquals(batch, queue.batchOf(1));
-        Assert.assertEquals(nextBatch, queue.batchOf(2));
-        Assert.assertEquals(nextBatch, queue.batchOf(3));
+        Assertions.assertEquals(batch, queue.batchOf(0));
+        Assertions.assertEquals(batch, queue.batchOf(1));
+        Assertions.assertEquals(nextBatch, queue.batchOf(2));
+        Assertions.assertEquals(nextBatch, queue.batchOf(3));
     }
 
     @Test
-    public void test_Offer_Grow_Next_Offer_Grow_Export_Clear() throws Exception {
+    public void test_Offer_Grow_Next_Offer_Grow_Export_Clear() {
         BatchArrayQueue<String> queue = new BatchArrayQueue<>(2, this);
 
         queue.offer("A1");
@@ -89,15 +89,15 @@ public class BatchArrayQueueTest {
         Queue<String> target = new ArrayDeque<>();
         queue.exportMessagesToBatch(target, batch);
 
-        Assert.assertEquals(3, target.size());
+        Assertions.assertEquals(3, target.size());
         for (String element : target) {
-            Assert.assertTrue(element.startsWith("A"));
+            Assertions.assertTrue(element.startsWith("A"));
         }
 
         queue.clearToBatch(batch);
 
         for (String element : queue) {
-            Assert.assertTrue(element.startsWith("B"));
+            Assertions.assertTrue(element.startsWith("B"));
         }
     }
 }

@@ -29,17 +29,17 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 
 import org.eclipse.jetty.servlet.FilterHolder;
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
-@Ignore("The test filter is not called because the WSUpgradeFilter is added first")
+@Disabled("The test filter is not called because the WSUpgradeFilter is added first")
 public class CometDWebSocketHeaderRemovedTest extends AbstractCometDWebSocketTest {
     @Test
     public void testWebSocketHeaderRemoved() throws Exception {
         context.addFilter(new FilterHolder(new Filter() {
             @Override
-            public void init(FilterConfig filterConfig) throws ServletException {
+            public void init(FilterConfig filterConfig) {
             }
 
             @Override
@@ -81,12 +81,12 @@ public class CometDWebSocketHeaderRemovedTest extends AbstractCometDWebSocketTes
                 "});");
 
         evaluateScript("cometd.handshake()");
-        Assert.assertTrue(latch.await(5000));
+        Assertions.assertTrue(latch.await(5000));
 
         evaluateScript("var disconnectLatch = new Latch(1);");
         Latch disconnectLatch = javaScript.get("disconnectLatch");
         evaluateScript("cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });");
         evaluateScript("cometd.disconnect();");
-        Assert.assertTrue(disconnectLatch.await(5000));
+        Assertions.assertTrue(disconnectLatch.await(5000));
     }
 }

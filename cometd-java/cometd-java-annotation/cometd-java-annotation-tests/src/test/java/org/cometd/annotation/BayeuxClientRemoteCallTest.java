@@ -30,8 +30,8 @@ import org.cometd.common.JettyJSONContextClient;
 import org.cometd.server.JettyJSONContextServer;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.eclipse.jetty.util.ajax.JSON;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class BayeuxClientRemoteCallTest extends AbstractClientServerTest {
     @Test
@@ -50,20 +50,20 @@ public class BayeuxClientRemoteCallTest extends AbstractClientServerTest {
 
     private void testRemoteCallWithResult(BayeuxClient client) throws Exception {
         ServerAnnotationProcessor processor = new ServerAnnotationProcessor(bayeux);
-        final String response = "response";
-        Assert.assertTrue(processor.process(new RemoteCallWithResultService(response)));
+        String response = "response";
+        Assertions.assertTrue(processor.process(new RemoteCallWithResultService(response)));
 
         client.handshake();
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         client.remoteCall(RemoteCallWithResultService.TARGET, "request", message -> {
-            Assert.assertTrue(message.isSuccessful());
-            Assert.assertEquals(response, message.getData());
+            Assertions.assertTrue(message.isSuccessful());
+            Assertions.assertEquals(response, message.getData());
             latch.countDown();
         });
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -88,20 +88,20 @@ public class BayeuxClientRemoteCallTest extends AbstractClientServerTest {
         long timeout = 1000;
 
         ServerAnnotationProcessor processor = new ServerAnnotationProcessor(bayeux);
-        Assert.assertTrue(processor.process(new RemoteCallWithTimeoutService(2 * timeout)));
+        Assertions.assertTrue(processor.process(new RemoteCallWithTimeoutService(2 * timeout)));
 
         BayeuxClient client = newBayeuxClient();
         client.setOption(ClientTransport.MAX_NETWORK_DELAY_OPTION, timeout);
         client.handshake();
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         client.remoteCall(RemoteCallWithTimeoutService.TARGET, "", message -> {
-            Assert.assertFalse(message.isSuccessful());
+            Assertions.assertFalse(message.isSuccessful());
             latch.countDown();
         });
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -129,21 +129,21 @@ public class BayeuxClientRemoteCallTest extends AbstractClientServerTest {
     @Test
     public void testRemoteCallWithFailure() throws Exception {
         ServerAnnotationProcessor processor = new ServerAnnotationProcessor(bayeux);
-        final String failure = "failure";
-        Assert.assertTrue(processor.process(new RemoteCallWithFailureService(failure)));
+        String failure = "failure";
+        Assertions.assertTrue(processor.process(new RemoteCallWithFailureService(failure)));
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         client.remoteCall(RemoteCallWithFailureService.TARGET, "request", message -> {
-            Assert.assertFalse(message.isSuccessful());
-            Assert.assertEquals(failure, message.getData());
+            Assertions.assertFalse(message.isSuccessful());
+            Assertions.assertEquals(failure, message.getData());
             latch.countDown();
         });
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -168,12 +168,12 @@ public class BayeuxClientRemoteCallTest extends AbstractClientServerTest {
         JettyJSONContextServer jsonContextServer = (JettyJSONContextServer)bayeux.getJSONContext();
         jsonContextServer.getJSON().addConvertor(Custom.class, new CustomConvertor());
 
-        final String request = "request";
-        final String response = "response";
+        String request = "request";
+        String response = "response";
 
         ServerAnnotationProcessor processor = new ServerAnnotationProcessor(bayeux);
         boolean processed = processor.process(new RemoteCallWithCustomDataService(request, response));
-        Assert.assertTrue(processed);
+        Assertions.assertTrue(processed);
 
         Map<String, Object> options = new HashMap<>();
         JettyJSONContextClient jsonContextClient = new JettyJSONContextClient();
@@ -181,17 +181,17 @@ public class BayeuxClientRemoteCallTest extends AbstractClientServerTest {
         options.put(ClientTransport.JSON_CONTEXT_OPTION, jsonContextClient);
         BayeuxClient client = new BayeuxClient(cometdURL, new JettyHttpClientTransport(options, httpClient));
         client.handshake();
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         client.remoteCall(RemoteCallWithCustomDataService.TARGET, new Custom(request), message -> {
-            Assert.assertTrue(message.isSuccessful());
+            Assertions.assertTrue(message.isSuccessful());
             Custom data = (Custom)message.getData();
-            Assert.assertEquals(response, data.payload);
+            Assertions.assertEquals(response, data.payload);
             latch.countDown();
         });
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -200,8 +200,8 @@ public class BayeuxClientRemoteCallTest extends AbstractClientServerTest {
     public static class RemoteCallWithCustomDataService {
         public static final String TARGET = "/custom_data";
 
-        private String request;
-        private String response;
+        private final String request;
+        private final String response;
 
         public RemoteCallWithCustomDataService(String request, String response) {
             this.request = request;
@@ -243,21 +243,21 @@ public class BayeuxClientRemoteCallTest extends AbstractClientServerTest {
     @Test
     public void testRemoteCallWithAsyncResult() throws Exception {
         ServerAnnotationProcessor processor = new ServerAnnotationProcessor(bayeux);
-        final String response = "response";
-        Assert.assertTrue(processor.process(new RemoteCallWithAsyncResultService(response)));
+        String response = "response";
+        Assertions.assertTrue(processor.process(new RemoteCallWithAsyncResultService(response)));
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         client.remoteCall(RemoteCallWithResultService.TARGET, "request", message -> {
-            Assert.assertTrue(message.isSuccessful());
-            Assert.assertEquals(response, message.getData());
+            Assertions.assertTrue(message.isSuccessful());
+            Assertions.assertEquals(response, message.getData());
             latch.countDown();
         });
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -272,7 +272,7 @@ public class BayeuxClientRemoteCallTest extends AbstractClientServerTest {
         }
 
         @RemoteCall(TARGET)
-        public void service(final RemoteCall.Caller caller, Object data) {
+        public void service(RemoteCall.Caller caller, Object data) {
             new Thread(() -> {
                 try {
                     Thread.sleep(1000);

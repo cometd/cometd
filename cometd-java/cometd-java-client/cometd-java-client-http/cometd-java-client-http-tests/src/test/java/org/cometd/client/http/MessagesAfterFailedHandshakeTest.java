@@ -29,14 +29,12 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
 import org.cometd.server.DefaultSecurityPolicy;
-import org.junit.Before;
-import org.junit.Test;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class MessagesAfterFailedHandshakeTest extends ClientServerTest {
-    @Before
+    @BeforeEach
     public void init() throws Exception {
         start(null);
         bayeux.setSecurityPolicy(new Policy());
@@ -72,9 +70,9 @@ public class MessagesAfterFailedHandshakeTest extends ClientServerTest {
         });
         client.handshake();
 
-        assertTrue(handshakeLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
-        assertFalse(serverLatch.await(1, TimeUnit.SECONDS));
+        Assertions.assertTrue(handshakeLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertFalse(serverLatch.await(1, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -109,9 +107,9 @@ public class MessagesAfterFailedHandshakeTest extends ClientServerTest {
         });
         client.handshake();
 
-        assertTrue(handshakeLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(publishLatch.await(5, TimeUnit.SECONDS));
-        assertFalse(serverLatch.await(1, TimeUnit.SECONDS));
+        Assertions.assertTrue(handshakeLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(publishLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertFalse(serverLatch.await(1, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }

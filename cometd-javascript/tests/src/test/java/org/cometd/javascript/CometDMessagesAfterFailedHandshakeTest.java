@@ -19,18 +19,22 @@ import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.DefaultSecurityPolicy;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class CometDMessagesAfterFailedHandshakeTest extends AbstractCometDTransportsTest {
-    @Before
-    public void init() {
+    @Override
+    public void initCometDServer(String transport) throws Exception {
+        super.initCometDServer(transport);
         bayeuxServer.setSecurityPolicy(new Policy());
     }
 
-    @Test
-    public void testSubscribeAfterFailedHandshake() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testSubscribeAfterFailedHandshake(String transport) throws Exception {
+        initCometDServer(transport);
+
         evaluateScript("var handshakeLatch = new Latch(1);");
         Latch handshakeLatch = javaScript.get("handshakeLatch");
         evaluateScript("var subscribeLatch = new Latch(1);");
@@ -49,14 +53,17 @@ public class CometDMessagesAfterFailedHandshakeTest extends AbstractCometDTransp
                 "});" +
                 "cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
 
-        Assert.assertTrue(handshakeLatch.await(5000));
-        Assert.assertTrue(subscribeLatch.await(5000));
+        Assertions.assertTrue(handshakeLatch.await(5000));
+        Assertions.assertTrue(subscribeLatch.await(5000));
 
         disconnect();
     }
 
-    @Test
-    public void testPublishAfterFailedHandshake() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testPublishAfterFailedHandshake(String transport) throws Exception {
+        initCometDServer(transport);
+
         evaluateScript("var handshakeLatch = new Latch(1);");
         Latch handshakeLatch = javaScript.get("handshakeLatch");
         evaluateScript("var publishLatch = new Latch(1);");
@@ -75,13 +82,13 @@ public class CometDMessagesAfterFailedHandshakeTest extends AbstractCometDTransp
                 "});" +
                 "cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
 
-        Assert.assertTrue(handshakeLatch.await(5000));
-        Assert.assertTrue(publishLatch.await(5000));
+        Assertions.assertTrue(handshakeLatch.await(5000));
+        Assertions.assertTrue(publishLatch.await(5000));
 
         disconnect();
     }
 
-    private class Policy extends DefaultSecurityPolicy {
+    private static class Policy extends DefaultSecurityPolicy {
         @Override
         public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message) {
             return false;

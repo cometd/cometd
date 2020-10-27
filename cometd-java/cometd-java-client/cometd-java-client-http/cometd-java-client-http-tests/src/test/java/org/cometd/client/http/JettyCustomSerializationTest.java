@@ -37,8 +37,8 @@ import org.cometd.common.JettyJSONContextClient;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.JettyJSONContextServer;
 import org.eclipse.jetty.util.ajax.JSON;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class JettyCustomSerializationTest extends ClientServerTest {
     @Test
@@ -60,11 +60,11 @@ public class JettyCustomSerializationTest extends ClientServerTest {
         service.handshake();
         service.getChannel(broadcastChannelName).subscribe((channel, message) -> {
             Data data = (Data)message.getData();
-            Assert.assertEquals(content, data.content);
+            Assertions.assertEquals(content, data.content);
             Map<String, Object> ext = message.getExt();
-            Assert.assertNotNull(ext);
+            Assertions.assertNotNull(ext);
             Extra extra = (Extra)ext.get("extra");
-            Assert.assertEquals(content, extra.content);
+            Assertions.assertEquals(content, extra.content);
             broadcastLatch.countDown();
         });
 
@@ -72,11 +72,11 @@ public class JettyCustomSerializationTest extends ClientServerTest {
             @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 Data data = (Data)message.getData();
-                Assert.assertEquals(content, data.content);
+                Assertions.assertEquals(content, data.content);
                 Map<String, Object> ext = message.getExt();
-                Assert.assertNotNull(ext);
+                Assertions.assertNotNull(ext);
                 Extra extra = (Extra)ext.get("extra");
-                Assert.assertEquals(content, extra.content);
+                Assertions.assertEquals(content, extra.content);
                 serviceLatch.countDown();
 
                 ServerMessage.Mutable mutable = bayeux.newMessage();
@@ -94,24 +94,24 @@ public class JettyCustomSerializationTest extends ClientServerTest {
         client.getChannel(serviceChannelName).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
             if (!message.isPublishReply()) {
                 Data data = (Data)message.getData();
-                Assert.assertEquals(content, data.content);
+                Assertions.assertEquals(content, data.content);
                 Map<String, Object> ext = message.getExt();
-                Assert.assertNotNull(ext);
+                Assertions.assertNotNull(ext);
                 Extra extra = (Extra)ext.get("extra");
-                Assert.assertEquals(content, extra.content);
+                Assertions.assertEquals(content, extra.content);
                 serviceLatch.countDown();
             }
         });
 
         client.handshake();
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
         // Wait for the /meta/connect.
         Thread.sleep(1000);
 
         client.getChannel(broadcastChannelName).publish(new Data(content));
         client.getChannel(serviceChannelName).publish(new Data(content));
-        Assert.assertTrue(broadcastLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(serviceLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(broadcastLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(serviceLatch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -129,8 +129,8 @@ public class JettyCustomSerializationTest extends ClientServerTest {
         Map<String, Object> map2 = jsonContext.getParser().parse(new StringReader(json), Map.class);
         Data data2 = (Data)map2.get("data");
         Extra extra2 = (Extra)map2.get("extra");
-        Assert.assertEquals(data1.content, data2.content);
-        Assert.assertEquals(extra1.content, extra2.content);
+        Assertions.assertEquals(data1.content, data2.content);
+        Assertions.assertEquals(extra1.content, extra2.content);
     }
 
     private static class ExtraExtension implements ClientSession.Extension {

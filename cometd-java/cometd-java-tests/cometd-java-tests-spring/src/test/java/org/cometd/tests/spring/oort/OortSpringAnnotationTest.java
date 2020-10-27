@@ -24,14 +24,13 @@ import org.cometd.oort.Seti;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationContext;
 import org.springframework.web.context.ContextLoader;
 import org.springframework.web.context.ContextLoaderListener;
 import org.springframework.web.context.support.WebApplicationContextUtils;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 public class OortSpringAnnotationTest {
     @Test
@@ -44,26 +43,26 @@ public class OortSpringAnnotationTest {
         server.start();
 
         ApplicationContext applicationContext = WebApplicationContextUtils.getWebApplicationContext(context.getServletContext());
-        assertNotNull(applicationContext);
+        Assertions.assertNotNull(applicationContext);
 
         String serviceClass = OortService.class.getSimpleName();
         String beanName = Character.toLowerCase(serviceClass.charAt(0)) + serviceClass.substring(1);
 
         String[] beanNames = applicationContext.getBeanDefinitionNames();
-        assertTrue(Arrays.asList(beanNames).contains(beanName));
+        Assertions.assertTrue(Arrays.asList(beanNames).contains(beanName));
 
         OortService service = (OortService)applicationContext.getBean(beanName);
-        assertNotNull(service);
+        Assertions.assertNotNull(service);
         Seti seti = service.seti;
-        assertNotNull(seti);
+        Assertions.assertNotNull(seti);
         Oort oort = seti.getOort();
-        assertNotNull(oort);
+        Assertions.assertNotNull(oort);
         BayeuxServer bayeux = oort.getBayeuxServer();
-        assertNotNull(bayeux);
+        Assertions.assertNotNull(bayeux);
 
         SecurityPolicy policy = bayeux.getSecurityPolicy();
-        assertNotNull(policy);
-        assertTrue(policy instanceof OortSecurityPolicy);
+        Assertions.assertNotNull(policy);
+        Assertions.assertTrue(policy instanceof OortSecurityPolicy);
 
         server.stop();
     }

@@ -28,21 +28,19 @@ import org.cometd.client.BayeuxClient;
 import org.cometd.common.HashMapMessage;
 import org.cometd.server.DefaultSecurityPolicy;
 import org.eclipse.jetty.server.Server;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class OortAuthenticationTest extends OortTest {
-    public OortAuthenticationTest(String serverTransport) {
-        super(serverTransport);
-    }
-
-    @Test
-    public void testAuthenticationWithSecurityPolicy() throws Exception {
-        Server server1 = startServer(0);
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testAuthenticationWithSecurityPolicy(String serverTransport) throws Exception {
+        Server server1 = startServer(serverTransport, 0);
         Oort oort1 = startOort(server1);
         oort1.setSecret("test_secret");
         oort1.getBayeuxServer().setSecurityPolicy(new TestSecurityPolicy(oort1));
-        Server server2 = startServer(0);
+        Server server2 = startServer(serverTransport, 0);
         Oort oort2 = startOort(server2);
         oort2.setSecret(oort1.getSecret());
         oort2.getBayeuxServer().setSecurityPolicy(new TestSecurityPolicy(oort2));
@@ -51,23 +49,23 @@ public class OortAuthenticationTest extends OortTest {
         oort2.addCometListener(new CometJoinedListener(latch));
 
         OortComet oortComet12 = oort1.observeComet(oort2.getURL());
-        Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
         OortComet oortComet21 = oort2.findComet(oort1.getURL());
-        Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Test that a valid remote client can connect
         Message.Mutable authFields = new HashMapMessage();
         authFields.getExt(true).put(TestSecurityPolicy.TOKEN_FIELD, "something");
         BayeuxClient client1 = startClient(oort1, authFields);
-        Assert.assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
         // Wait for long poll to be established
         Thread.sleep(1000);
-        Assert.assertTrue(client1.disconnect(5000));
+        Assertions.assertTrue(client1.disconnect(5000));
 
         // An invalid client may not connect
         BayeuxClient client2 = startClient(oort1, null);
-        Assert.assertTrue(client2.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+        Assertions.assertTrue(client2.waitFor(5000, BayeuxClient.State.DISCONNECTED));
 
         // Wait for the /meta/connect to return.
         Thread.sleep(1000);
@@ -81,10 +79,10 @@ public class OortAuthenticationTest extends OortTest {
         oortExt.put(Oort.EXT_OORT_SECRET_FIELD, "anything");
         oortExt.put(Oort.EXT_COMET_URL_FIELD, oort2.getURL());
         BayeuxClient client3 = startClient(oort1, forgedAuthFields);
-        Assert.assertTrue(client3.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+        Assertions.assertTrue(client3.waitFor(5000, BayeuxClient.State.DISCONNECTED));
     }
 
-    private class TestSecurityPolicy extends DefaultSecurityPolicy {
+    private static class TestSecurityPolicy extends DefaultSecurityPolicy {
         private static final String TOKEN_FIELD = "token";
         private final Oort oort;
 

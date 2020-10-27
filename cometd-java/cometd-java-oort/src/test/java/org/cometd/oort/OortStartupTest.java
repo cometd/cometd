@@ -32,23 +32,17 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class OortStartupTest {
-    @Rule
-    public final TestWatcher testName = new TestWatcher() {
-        @Override
-        protected void starting(Description description) {
-            super.starting(description);
-            System.err.printf("Running %s.%s%n", description.getTestClass().getName(), description.getMethodName());
-        }
-    };
+    @RegisterExtension
+    final BeforeTestExecutionCallback printMethodName = context ->
+            System.err.printf("Running %s.%s()%n", context.getRequiredTestClass().getSimpleName(), context.getRequiredTestMethod().getName());
     private final Map<Integer, Server> servers = new ConcurrentHashMap<>();
-    private Map<Integer, ServletContextHandler> contexts = new ConcurrentHashMap<>();
+    private final Map<Integer, ServletContextHandler> contexts = new ConcurrentHashMap<>();
 
     protected int[] startTwoNodes(Class<? extends HttpServlet> startupServletClass, Map<String, String> options) throws Exception {
         int port1;
@@ -128,9 +122,9 @@ public class OortStartupTest {
         Thread.sleep(1000);
 
         OortComet oortComet12 = oort1.findComet(oort2.getURL());
-        Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
         OortComet oortComet21 = oort2.findComet(oort1.getURL());
-        Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Kill one node.
         Server server2 = servers.get(port2);
@@ -143,13 +137,13 @@ public class OortStartupTest {
         // Stop the node.
         server2.stop();
 
-        Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.UNCONNECTED));
-        Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+        Assertions.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.UNCONNECTED));
+        Assertions.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.DISCONNECTED));
 
         // Wait to let the comets disconnect, but less than maxInterval.
         Thread.sleep(maxInterval / 2);
 
-        final String oldOortId2 = oort2.getId();
+        String oldOortId2 = oort2.getId();
 
         // Restore the connectivity.
         connector1.setPort(port1);
@@ -165,8 +159,8 @@ public class OortStartupTest {
 
         oortComet21 = oort2.findComet(oort1.getURL());
 
-        Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
-        Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Wait for the OortObject to sync.
         Thread.sleep(1000);
@@ -175,10 +169,10 @@ public class OortStartupTest {
         OortObject<String> oortObject1 = (OortObject<String>)context1.getAttribute(OortObjectStartupServlet.NAME);
         @SuppressWarnings("unchecked")
         OortObject<String> oortObject2 = (OortObject<String>)context2.getAttribute(OortObjectStartupServlet.NAME);
-        Assert.assertEquals(2, oortObject1.getInfos().size());
-        Assert.assertEquals(2, oortObject2.getInfos().size());
+        Assertions.assertEquals(2, oortObject1.getInfos().size());
+        Assertions.assertEquals(2, oortObject2.getInfos().size());
 
-        Assert.assertNotEquals(oldOortId2, oortObject1.getInfo(oort2.getURL()).getObject());
+        Assertions.assertNotEquals(oldOortId2, oortObject1.getInfo(oort2.getURL()).getObject());
     }
 
     public static class OortObjectStartupServlet extends HttpServlet {

@@ -15,8 +15,8 @@
  */
 package org.cometd.javascript;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class CometDWebSocketExceptionTest extends AbstractCometDWebSocketTest {
     @Test
@@ -44,8 +44,8 @@ public class CometDWebSocketExceptionTest extends AbstractCometDWebSocketTest {
                 "   }" +
                 "});");
 
-        Assert.assertTrue(wsLatch.await(5000));
-        Assert.assertTrue(lpLatch.await(5000));
+        Assertions.assertTrue(wsLatch.await(5000));
+        Assertions.assertTrue(lpLatch.await(5000));
 
         disconnect();
     }

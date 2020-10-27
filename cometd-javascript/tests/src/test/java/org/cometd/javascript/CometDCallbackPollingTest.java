@@ -15,8 +15,8 @@
  */
 package org.cometd.javascript;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class CometDCallbackPollingTest extends AbstractCometDCallbackPollingTest {
     @Test
@@ -34,8 +34,8 @@ public class CometDCallbackPollingTest extends AbstractCometDCallbackPollingTest
         Latch connectLatch = javaScript.get("connectLatch");
 
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(handshakeLatch.await(5000));
-        Assert.assertTrue(connectLatch.await(5000));
+        Assertions.assertTrue(handshakeLatch.await(5000));
+        Assertions.assertTrue(connectLatch.await(5000));
 
         evaluateScript("" +
                 "var subscribeLatch = new Latch(1);" +
@@ -43,25 +43,25 @@ public class CometDCallbackPollingTest extends AbstractCometDCallbackPollingTest
                 "cometd.addListener('/meta/subscribe', function() { subscribeLatch.countDown(); });" +
                 "var subscription = cometd.subscribe('/test', function() { messageLatch.countDown(); });");
         Latch subscribeLatch = javaScript.get("subscribeLatch");
-        Assert.assertTrue(subscribeLatch.await(5000));
+        Assertions.assertTrue(subscribeLatch.await(5000));
 
         evaluateScript("cometd.publish('/test', {});");
         Latch messageLatch = javaScript.get("messageLatch");
-        Assert.assertTrue(messageLatch.await(5000));
+        Assertions.assertTrue(messageLatch.await(5000));
 
         evaluateScript("" +
                 "var unsubscribeLatch = new Latch(1);" +
                 "cometd.addListener('/meta/unsubscribe', function() { unsubscribeLatch.countDown(); });" +
                 "cometd.unsubscribe(subscription);");
         Latch unsubscribeLatch = javaScript.get("unsubscribeLatch");
-        Assert.assertTrue(unsubscribeLatch.await(5000));
+        Assertions.assertTrue(unsubscribeLatch.await(5000));
 
         evaluateScript("" +
                 "var disconnectLatch = new Latch(1);" +
                 "cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });" +
                 "cometd.disconnect();");
         Latch disconnectLatch = javaScript.get("disconnectLatch");
-        Assert.assertTrue(disconnectLatch.await(5000));
+        Assertions.assertTrue(disconnectLatch.await(5000));
     }
 
     @Test
@@ -76,7 +76,7 @@ public class CometDCallbackPollingTest extends AbstractCometDCallbackPollingTest
         evaluateScript("" +
                 "cometd.addListener('/meta/connect', function() { connectLatch.countDown(); });" +
                 "cometd.handshake();");
-        Assert.assertTrue(connectLatch.await(5000));
+        Assertions.assertTrue(connectLatch.await(5000));
 
         evaluateScript("var publishLatch = new Latch(1);");
         Latch publishLatch = javaScript.get("publishLatch");
@@ -93,7 +93,7 @@ public class CometDCallbackPollingTest extends AbstractCometDCallbackPollingTest
                 "});" +
                 "cometd.publish('/foo', data);" +
                 "");
-        Assert.assertTrue(publishLatch.await(5000));
+        Assertions.assertTrue(publishLatch.await(5000));
 
         disconnect();
     }
@@ -110,7 +110,7 @@ public class CometDCallbackPollingTest extends AbstractCometDCallbackPollingTest
         evaluateScript("" +
                 "cometd.addListener('/meta/connect', function() { connectLatch.countDown(); });" +
                 "cometd.handshake();");
-        Assert.assertTrue(connectLatch.await(5000));
+        Assertions.assertTrue(connectLatch.await(5000));
 
         evaluateScript("var publishLatch = new Latch(3);");
         Latch publishLatch = javaScript.get("publishLatch");
@@ -131,7 +131,7 @@ public class CometDCallbackPollingTest extends AbstractCometDCallbackPollingTest
                 "    cometd.publish('/foo', data + data + data + data);" +
                 "});" +
                 "");
-        Assert.assertTrue(publishLatch.await(5000));
+        Assertions.assertTrue(publishLatch.await(5000));
 
         disconnect();
     }
@@ -148,7 +148,7 @@ public class CometDCallbackPollingTest extends AbstractCometDCallbackPollingTest
         evaluateScript("" +
                 "cometd.addListener('/meta/connect', function() { connectLatch.countDown(); });" +
                 "cometd.handshake();");
-        Assert.assertTrue(connectLatch.await(5000));
+        Assertions.assertTrue(connectLatch.await(5000));
 
         evaluateScript("var publishLatch = new Latch(3);");
         Latch publishLatch = javaScript.get("publishLatch");
@@ -169,7 +169,7 @@ public class CometDCallbackPollingTest extends AbstractCometDCallbackPollingTest
                 "    cometd.publish('/foo', data + data);" +
                 "});" +
                 "");
-        Assert.assertTrue(publishLatch.await(5000));
+        Assertions.assertTrue(publishLatch.await(5000));
 
         disconnect();
     }
@@ -186,7 +186,7 @@ public class CometDCallbackPollingTest extends AbstractCometDCallbackPollingTest
         evaluateScript("" +
                 "cometd.addListener('/meta/connect', function() { connectLatch.countDown(); });" +
                 "cometd.handshake();");
-        Assert.assertTrue(connectLatch.await(5000));
+        Assertions.assertTrue(connectLatch.await(5000));
 
         evaluateScript("var subscribeLatch = new Latch(1);");
         Latch subscribeLatch = javaScript.get("subscribeLatch");
@@ -201,7 +201,7 @@ public class CometDCallbackPollingTest extends AbstractCometDCallbackPollingTest
                 "    orders.push(message.order);" +
                 "    publishLatch.countDown();" +
                 "});");
-        Assert.assertTrue(subscribeLatch.await(5000));
+        Assertions.assertTrue(subscribeLatch.await(5000));
 
         evaluateScript("" +
                 "var data = '';" +
@@ -223,7 +223,7 @@ public class CometDCallbackPollingTest extends AbstractCometDCallbackPollingTest
                 "/* This additional publish must be sent after the split batch */" +
                 "cometd.publish(channel, data, {order:6});" +
                 "");
-        Assert.assertTrue(publishLatch.await(5000));
+        Assertions.assertTrue(publishLatch.await(5000));
 
         evaluateScript("window.assert([1,2,3,4,5,6].join(',') === orders.join(','), 'Order not respected ' + orders.join(','));");
 

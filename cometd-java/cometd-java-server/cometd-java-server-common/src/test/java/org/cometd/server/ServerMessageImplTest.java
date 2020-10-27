@@ -23,36 +23,19 @@ import java.util.Map;
 
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.ServerMessage;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class ServerMessageImplTest {
-    @Rule
-    public final TestWatcher testName = new TestWatcher() {
-        @Override
-        protected void starting(Description description) {
-            super.starting(description);
-            System.err.printf("Running %s.%s%n", description.getTestClass().getName(), description.getMethodName());
-        }
-    };
-
     @Test
-    public void testSimpleContent() throws Exception {
+    public void testSimpleContent() {
         ServerMessageImpl message = new ServerMessageImpl();
         message.put("channel", "/foo/bar");
 
-        assertEquals(1, message.size());
-        assertEquals("/foo/bar", message.getChannel());
-        Assert.assertEquals("channel", message.keySet().iterator().next());
-        Assert.assertEquals("/foo/bar", message.values().iterator().next());
+        Assertions.assertEquals(1, message.size());
+        Assertions.assertEquals("/foo/bar", message.getChannel());
+        Assertions.assertEquals("channel", message.keySet().iterator().next());
+        Assertions.assertEquals("/foo/bar", message.values().iterator().next());
     }
 
     @Test
@@ -75,47 +58,47 @@ public class ServerMessageImplTest {
         ServerMessageImpl message = (ServerMessageImpl)messages[0];
 
         String json = jsonContext.generate(message);
-        assertTrue(json.contains("\"ext\":{\"extName\":\"extValue\"}"));
-        assertTrue(json.contains("\"clientId\":\"jva73siaj92jdafa\""));
-        assertTrue(json.contains("\"dataName\":\"dataValue\""));
-        assertTrue(json.contains("\"id\":\"12345\""));
-        assertEquals("12345", message.getId());
+        Assertions.assertTrue(json.contains("\"ext\":{\"extName\":\"extValue\"}"));
+        Assertions.assertTrue(json.contains("\"clientId\":\"jva73siaj92jdafa\""));
+        Assertions.assertTrue(json.contains("\"dataName\":\"dataValue\""));
+        Assertions.assertTrue(json.contains("\"id\":\"12345\""));
+        Assertions.assertEquals("12345", message.getId());
 
         // Modify the message
         message.put("id", "54321");
-        Assert.assertEquals("54321", message.getId());
+        Assertions.assertEquals("54321", message.getId());
 
         // Be sure the JSON reflects the modifications
         json = jsonContext.generate(message);
-        assertTrue(json.contains("\"id\":\"54321\""));
+        Assertions.assertTrue(json.contains("\"id\":\"54321\""));
 
         // Freeze the message
         message.freeze(json);
 
         try {
             message.put("id", "666");
-            fail();
+            Assertions.fail();
         } catch (UnsupportedOperationException expected) {
         }
 
-        Assert.assertEquals("54321", message.getId());
-        Assert.assertEquals("54321", message.get(Message.ID_FIELD));
+        Assertions.assertEquals("54321", message.getId());
+        Assertions.assertEquals("54321", message.get(Message.ID_FIELD));
 
         try {
             message.getDataAsMap().put("x", "9");
-            fail();
+            Assertions.fail();
         } catch (UnsupportedOperationException expected) {
         }
 
         try {
             message.getDataAsMap().put("x", "9");
-            fail();
+            Assertions.fail();
         } catch (UnsupportedOperationException expected) {
         }
 
         try {
             message.getExt().put("x", "9");
-            fail();
+            Assertions.fail();
         } catch (UnsupportedOperationException expected) {
         }
 
@@ -125,7 +108,7 @@ public class ServerMessageImplTest {
         innerData.put("newContent", true);
 
         String json2 = message.getJSON();
-        assertEquals(json, json2);
+        Assertions.assertEquals(json, json2);
     }
 
     @Test
@@ -153,20 +136,20 @@ public class ServerMessageImplTest {
         ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray()));
         ServerMessageImpl deserialized = (ServerMessageImpl)ois.readObject();
 
-        assertEquals(message, deserialized);
-        assertTrue(deserialized.isLazy());
-        assertNull(deserialized.getAssociated());
+        Assertions.assertEquals(message, deserialized);
+        Assertions.assertTrue(deserialized.isLazy());
+        Assertions.assertNull(deserialized.getAssociated());
 
         // Make sure the message is still frozen
         try {
             deserialized.put("a", "b");
-            fail();
+            Assertions.fail();
         } catch (UnsupportedOperationException expected) {
         }
     }
 
     @Test
-    public void testModificationViaEntrySet() throws Exception {
+    public void testModificationViaEntrySet() {
         ServerMessageImpl message = new ServerMessageImpl();
         message.setChannel("/channel");
 
@@ -184,7 +167,7 @@ public class ServerMessageImplTest {
             if (Message.CHANNEL_FIELD.equals(field.getKey())) {
                 try {
                     field.setValue("/foo");
-                    fail();
+                    Assertions.fail();
                 } catch (UnsupportedOperationException expected) {
                     break;
                 }
@@ -207,8 +190,8 @@ public class ServerMessageImplTest {
         ServerMessage.Mutable[] messages = jsonContext.parse(originalJSON);
         ServerMessageImpl message = (ServerMessageImpl)messages[0];
         Map<String, Object> data = message.getDataAsMap();
-        assertNull(data.get("nullData"));
-        assertTrue(data.containsKey("nullData"));
-        assertEquals(2, data.size());
+        Assertions.assertNull(data.get("nullData"));
+        Assertions.assertTrue(data.containsKey("nullData"));
+        Assertions.assertEquals(2, data.size());
     }
 }

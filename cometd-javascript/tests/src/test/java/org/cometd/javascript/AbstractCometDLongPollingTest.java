@@ -15,16 +15,15 @@
  */
 package org.cometd.javascript;
 
+import org.junit.jupiter.api.BeforeEach;
+
 /**
  * A base test class to be extended for tests
  * valid only for the long-polling transport.
  */
 public class AbstractCometDLongPollingTest extends AbstractCometDTest {
-    @Override
-    protected void initPage() throws Exception {
-        super.initPage();
-        evaluateScript("keep_only_long_polling_transport", "" +
-                        "cometd.unregisterTransports();" +
-                        "cometd.registerTransport('long-polling', originalTransports['long-polling']);");
+    @BeforeEach
+    public void init() throws Exception {
+        initCometDServer("long-polling");
     }
 }

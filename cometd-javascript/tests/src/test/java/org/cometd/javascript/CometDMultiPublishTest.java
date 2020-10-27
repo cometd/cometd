@@ -36,8 +36,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class CometDMultiPublishTest extends AbstractCometDLongPollingTest {
     @Override
@@ -54,7 +54,7 @@ public class CometDMultiPublishTest extends AbstractCometDLongPollingTest {
         Latch readyLatch = javaScript.get("readyLatch");
         evaluateScript("cometd.addListener('/meta/connect', function() { readyLatch.countDown(); });");
         evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
-        Assert.assertTrue(readyLatch.await(5000));
+        Assertions.assertTrue(readyLatch.await(5000));
 
         evaluateScript("var subscribeLatch = new Latch(1);");
         Latch subscribeLatch = javaScript.get("subscribeLatch");
@@ -62,7 +62,7 @@ public class CometDMultiPublishTest extends AbstractCometDLongPollingTest {
         evaluateScript("var latch = new Latch(1);");
         Latch latch = javaScript.get("latch");
         evaluateScript("cometd.subscribe('/echo', function() { latch.countDown(); });");
-        Assert.assertTrue(subscribeLatch.await(5000));
+        Assertions.assertTrue(subscribeLatch.await(5000));
 
         evaluateScript("var Handler = Java.type('" + Handler.class.getName() + "')");
         evaluateScript("var handler = new Handler();");
@@ -85,10 +85,10 @@ public class CometDMultiPublishTest extends AbstractCometDLongPollingTest {
                 "cometd.publish('/echo', {id: 4});" +
                 "cometd.disconnect();");
 
-        Assert.assertTrue(latch.await(5000));
-        Assert.assertTrue(failures.get().toString(), handler.await(5000));
-        Assert.assertTrue(failures.get().toString(), failures.get().isEmpty());
-        Assert.assertTrue(disconnect.await(5000));
+        Assertions.assertTrue(latch.await(5000));
+        Assertions.assertTrue(handler.await(5000), failures.get().toString());
+        Assertions.assertTrue(failures.get().isEmpty(), failures.get().toString());
+        Assertions.assertTrue(disconnect.await(5000));
     }
 
     public static class Handler {

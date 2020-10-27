@@ -26,50 +26,49 @@ import javax.websocket.WebSocketContainer;
 import okhttp3.OkHttpClient;
 import org.cometd.bayeux.Message;
 import org.cometd.client.BayeuxClient;
+import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.TransportListener;
 import org.cometd.client.websocket.javax.WebSocketTransport;
 import org.cometd.client.websocket.jetty.JettyWebSocketTransport;
 import org.cometd.client.websocket.okhttp.OkHttpWebSocketTransport;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class ConcurrentAbortPublishTest extends ClientServerWebSocketTest {
     private Throwable _abort;
 
-    public ConcurrentAbortPublishTest(String wsTransportType) {
-        super(wsTransportType);
-    }
-
     @Override
-    protected WebSocketTransport newWebSocketTransport(String url, Map<String, Object> options, WebSocketContainer wsContainer) {
+    protected ClientTransport newWebSocketTransport(String url, Map<String, Object> options, WebSocketContainer wsContainer) {
         return new WSTransport(url, options, wsContainer);
     }
 
     @Override
-    protected JettyWebSocketTransport newJettyWebSocketTransport(String url, Map<String, Object> options, WebSocketClient wsClient) {
+    protected ClientTransport newJettyWebSocketTransport(String url, Map<String, Object> options, WebSocketClient wsClient) {
         return new JettyWSTransport(url, options, wsClient);
     }
 
     @Override
-    protected OkHttpWebSocketTransport newOkHttpWebSocketTransport(String url, Map<String, Object> options, OkHttpClient okHttpClient) {
+    protected ClientTransport newOkHttpWebSocketTransport(String url, Map<String, Object> options, OkHttpClient okHttpClient) {
         return new OkHttpWSTransport(url, options, okHttpClient);
     }
 
-    @Test
-    public void testConcurrentAbortPublish() throws Exception {
-        prepareAndStart(null);
+    @ParameterizedTest
+    @MethodSource("wsTypes")
+    public void testConcurrentAbortPublish(String wsType) throws Exception {
+        prepareAndStart(wsType, null);
 
-        BayeuxClient client = newBayeuxClient();
+        BayeuxClient client = newBayeuxClient(wsType);
         client.handshake();
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
         // Wait for the /meta/connect to be held.
         Thread.sleep(1000);
 
         // Simulate abort() concurrent with publish().
         _abort = new IOException("aborted");
 
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         String data = "Hello World";
         client.getChannel("/test").publish(data, message -> {
             if (!message.isSuccessful()) {
@@ -77,7 +76,7 @@ public class ConcurrentAbortPublishTest extends ClientServerWebSocketTest {
             }
         });
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -169,6 +168,6 @@ public class ConcurrentAbortPublishTest extends ClientServerWebSocketTest {
                     super.shutdown(reason);
                 }
             }
-        }
+        };
     }
 }

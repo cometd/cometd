@@ -37,8 +37,8 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class BayeuxClientUsageTest extends ClientServerTest {
     @Test
@@ -121,13 +121,13 @@ public class BayeuxClientUsageTest extends ClientServerTest {
         client.handshake();
 
         Message message = metaMessages.poll(5, TimeUnit.SECONDS);
-        Assert.assertNotNull(message);
-        Assert.assertEquals(Channel.META_HANDSHAKE, message.getChannel());
-        Assert.assertTrue(message.isSuccessful());
+        Assertions.assertNotNull(message);
+        Assertions.assertEquals(Channel.META_HANDSHAKE, message.getChannel());
+        Assertions.assertTrue(message.isSuccessful());
         String id = client.getId();
-        Assert.assertNotNull(id);
+        Assertions.assertNotNull(id);
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         BlockingQueue<Message> messages = new ArrayBlockingQueue<>(16);
         ClientSessionChannel.MessageListener subscriber = (c, m) -> messages.offer(m);
@@ -135,21 +135,21 @@ public class BayeuxClientUsageTest extends ClientServerTest {
         aChannel.subscribe(subscriber);
 
         message = metaMessages.poll(5, TimeUnit.SECONDS);
-        Assert.assertNotNull(message);
-        Assert.assertEquals(Channel.META_SUBSCRIBE, message.getChannel());
-        Assert.assertTrue(message.isSuccessful());
+        Assertions.assertNotNull(message);
+        Assertions.assertEquals(Channel.META_SUBSCRIBE, message.getChannel());
+        Assertions.assertTrue(message.isSuccessful());
 
         String data = "data";
         aChannel.publish(data);
         message = messages.poll(5, TimeUnit.SECONDS);
-        Assert.assertNotNull(message);
-        Assert.assertEquals(data, message.getData());
+        Assertions.assertNotNull(message);
+        Assertions.assertEquals(data, message.getData());
 
         aChannel.unsubscribe(subscriber);
         message = metaMessages.poll(5, TimeUnit.SECONDS);
-        Assert.assertNotNull(message);
-        Assert.assertEquals(Channel.META_UNSUBSCRIBE, message.getChannel());
-        Assert.assertTrue(message.isSuccessful());
+        Assertions.assertNotNull(message);
+        Assertions.assertEquals(Channel.META_UNSUBSCRIBE, message.getChannel());
+        Assertions.assertTrue(message.isSuccessful());
 
         disconnectBayeuxClient(client);
     }

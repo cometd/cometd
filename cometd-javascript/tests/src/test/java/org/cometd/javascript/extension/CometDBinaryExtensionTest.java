@@ -26,19 +26,23 @@ import org.cometd.javascript.AbstractCometDTransportsTest;
 import org.cometd.javascript.Latch;
 import org.cometd.server.AbstractService;
 import org.cometd.server.ext.BinaryExtension;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class CometDBinaryExtensionTest extends AbstractCometDTransportsTest {
-    @Before
-    public void initExtension() throws Exception {
+    @Override
+    public void initCometDServer(String transport) throws Exception {
+        super.initCometDServer(transport);
         bayeuxServer.addExtension(new BinaryExtension());
         provideBinaryExtension();
     }
 
-    @Test
-    public void testZ85Basic() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testZ85Basic(String transport) throws Exception {
+        initCometDServer(transport);
+
         evaluateScript("" +
                 "var binaryExt = cometd.getExtension('binary');" +
                 "" +
@@ -69,8 +73,11 @@ public class CometDBinaryExtensionTest extends AbstractCometDTransportsTest {
                 "window.assert(m3.data.data === payload);");
     }
 
-    @Test
-    public void testZ85Unpadded() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testZ85Unpadded(String transport) throws Exception {
+        initCometDServer(transport);
+
         evaluateScript("" +
                 "var binaryExt = cometd.getExtension('binary');" +
                 "" +
@@ -101,8 +108,11 @@ public class CometDBinaryExtensionTest extends AbstractCometDTransportsTest {
                 "}");
     }
 
-    @Test
-    public void testBinaryExtension() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testBinaryExtension(String transport) throws Exception {
+        initCometDServer(transport);
+
         new BinaryService(bayeuxServer);
 
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
@@ -110,7 +120,7 @@ public class CometDBinaryExtensionTest extends AbstractCometDTransportsTest {
         Latch readyLatch = javaScript.get("readyLatch");
         evaluateScript("cometd.addListener('/meta/connect', function(message) { readyLatch.countDown(); });");
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(readyLatch.await(5000));
+        Assertions.assertTrue(readyLatch.await(5000));
 
         evaluateScript("var binaryLatch = new Latch(1);");
         Latch binaryLatch = javaScript.get("binaryLatch");
@@ -129,7 +139,7 @@ public class CometDBinaryExtensionTest extends AbstractCometDTransportsTest {
                 "});" +
                 "cometd.publishBinary('/binary', view1, true);" +
                 "");
-        Assert.assertTrue(binaryLatch.await(5000));
+        Assertions.assertTrue(binaryLatch.await(5000));
     }
 
     public static class BinaryService extends AbstractService {
@@ -140,7 +150,7 @@ public class CometDBinaryExtensionTest extends AbstractCometDTransportsTest {
 
         public void binary(ServerSession session, ServerMessage message) {
             BinaryData data = (BinaryData)message.getData();
-            Assert.assertTrue(data.get("data") instanceof ByteBuffer);
+            Assertions.assertTrue(data.get("data") instanceof ByteBuffer);
             session.deliver(getServerSession(), message.getChannel(), data, Promise.noop());
         }
     }

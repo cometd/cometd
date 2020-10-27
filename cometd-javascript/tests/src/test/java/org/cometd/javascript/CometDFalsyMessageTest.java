@@ -17,21 +17,26 @@ package org.cometd.javascript;
 
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.ServerSession;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class CometDFalsyMessageTest extends AbstractCometDTransportsTest {
-    @Test
-    public void testEmptyStringMessage() throws Exception {
-        testFalsyMessage("");
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testEmptyStringMessage(String transport) throws Exception {
+        testFalsyMessage(transport, "");
     }
 
-    @Test
-    public void testZeroMessage() throws Exception {
-        testFalsyMessage(0);
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testZeroMessage(String transport) throws Exception {
+        testFalsyMessage(transport, 0);
     }
 
-    private void testFalsyMessage(Object content) throws Exception {
+    private void testFalsyMessage(String transport, Object content) throws Exception {
+        initCometDServer(transport);
+
         String channelName = "/foo";
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
 
@@ -48,12 +53,12 @@ public class CometDFalsyMessageTest extends AbstractCometDTransportsTest {
         evaluateScript("cometd.addListener('/meta/subscribe', function() { subscribeLatch.countDown(); });");
 
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(subscribeLatch.await(5000));
+        Assertions.assertTrue(subscribeLatch.await(5000));
 
         String sessionId = evaluateScript("cometd.getClientId();");
         ServerSession session = bayeuxServer.getSession(sessionId);
         session.deliver(null, channelName, content, Promise.noop());
 
-        Assert.assertTrue(messageLatch.await(5000));
+        Assertions.assertTrue(messageLatch.await(5000));
     }
 }

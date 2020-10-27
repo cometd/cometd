@@ -43,9 +43,9 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class ProxyTest {
     private Server server;
@@ -118,7 +118,7 @@ public class ProxyTest {
         httpClient.start();
     }
 
-    @After
+    @AfterEach
     public void dispose() throws Exception {
         if (httpClient != null) {
             httpClient.stop();
@@ -151,11 +151,11 @@ public class ProxyTest {
             }
         });
 
-        Assert.assertTrue(handshakeLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertEquals(1, extension.sessions.size());
+        Assertions.assertTrue(handshakeLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertEquals(1, extension.sessions.size());
         BayeuxClient proxy = extension.sessions.values().iterator().next();
-        Assert.assertTrue(proxy.isHandshook());
-        Assert.assertNotEquals(client.getId(), proxy.getId());
+        Assertions.assertTrue(proxy.isHandshook());
+        Assertions.assertNotEquals(client.getId(), proxy.getId());
 
         CountDownLatch proxyDisconnectLatch = new CountDownLatch(1);
         proxy.getChannel(Channel.META_DISCONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
@@ -165,10 +165,10 @@ public class ProxyTest {
         CountDownLatch disconnectLatch = new CountDownLatch(1);
         client.disconnect(message -> disconnectLatch.countDown());
 
-        Assert.assertTrue(disconnectLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertEquals(0, extension.sessions.size());
+        Assertions.assertTrue(disconnectLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertEquals(0, extension.sessions.size());
 
-        Assert.assertTrue(proxyDisconnectLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(proxyDisconnectLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -198,7 +198,7 @@ public class ProxyTest {
             }
         });
 
-        Assert.assertTrue(subscriptionLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(subscriptionLatch.await(5, TimeUnit.SECONDS));
 
         // Publish from the client.
         CountDownLatch publishLatch = new CountDownLatch(1);
@@ -208,22 +208,22 @@ public class ProxyTest {
             }
         });
 
-        Assert.assertTrue(publishLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(messageLatch.get().await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(publishLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(messageLatch.get().await(5, TimeUnit.SECONDS));
 
         // Publish from the server.
         messageLatch.set(new CountDownLatch(1));
         ServerChannel serverChannel = serverBayeux.getChannel(channelName);
         serverChannel.publish(null, "data_from_server", Promise.noop());
 
-        Assert.assertTrue(messageLatch.get().await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(messageLatch.get().await(5, TimeUnit.SECONDS));
 
         // Publish from the proxy should fail.
         messageLatch.set(new CountDownLatch(1));
         ServerChannel proxyChannel = proxyBayeux.createChannelIfAbsent(channelName).getReference();
         proxyChannel.publish(null, "data_from_proxy", Promise.noop());
 
-        Assert.assertFalse(messageLatch.get().await(1, TimeUnit.SECONDS));
+        Assertions.assertFalse(messageLatch.get().await(1, TimeUnit.SECONDS));
 
         CountDownLatch unsubscribeLatch = new CountDownLatch(1);
         clientChannel.unsubscribe(messageListener, r -> {
@@ -232,7 +232,7 @@ public class ProxyTest {
             }
         });
 
-        Assert.assertTrue(unsubscribeLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(unsubscribeLatch.await(5, TimeUnit.SECONDS));
 
         // After unsubscription, messages are not relayed.
         messageLatch.set(new CountDownLatch(1));
@@ -240,7 +240,7 @@ public class ProxyTest {
         proxyBayeux.createChannelIfAbsent(channelName).getReference().publish(null, "data_from_proxy_2", Promise.noop());
         serverChannel.publish(null, "data_from_server_2", Promise.noop());
 
-        Assert.assertFalse(messageLatch.get().await(1, TimeUnit.SECONDS));
+        Assertions.assertFalse(messageLatch.get().await(1, TimeUnit.SECONDS));
 
         client.disconnect();
     }

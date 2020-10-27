@@ -22,8 +22,9 @@ import javax.servlet.DispatcherType;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class CometDCrossOriginTest extends AbstractCometDTransportsTest {
     @Override
@@ -34,8 +35,11 @@ public class CometDCrossOriginTest extends AbstractCometDTransportsTest {
         context.addFilter(filterHolder, cometdServletPath + "/*", EnumSet.of(DispatcherType.REQUEST));
     }
 
-    @Test
-    public void testCrossOriginSupported() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testCrossOriginSupported(String transport) throws Exception {
+        initCometDServer(transport);
+
         String crossOriginCometDURL = cometdURL.replace("localhost", "127.0.0.1");
         evaluateScript("cometd.configure({" +
                 "url: '" + crossOriginCometDURL + "', " +
@@ -51,7 +55,7 @@ public class CometDCrossOriginTest extends AbstractCometDTransportsTest {
                 "});");
         evaluateScript("cometd.handshake();");
 
-        Assert.assertTrue(connectLatch.await(5000));
+        Assertions.assertTrue(connectLatch.await(5000));
 
         disconnect();
     }

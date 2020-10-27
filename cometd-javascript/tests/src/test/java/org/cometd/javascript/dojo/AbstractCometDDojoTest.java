@@ -16,10 +16,16 @@
 package org.cometd.javascript.dojo;
 
 import org.cometd.javascript.AbstractCometDTest;
+import org.junit.jupiter.api.BeforeEach;
 
 public abstract class AbstractCometDDojoTest extends AbstractCometDTest {
+    @BeforeEach
+    public void init() throws Exception {
+        initCometDServer(null);
+    }
+
     @Override
-    protected void provideCometD() throws Exception {
+    protected void provideCometD(String transport) {
         String dojoBaseURL = "/js/dojo";
         javaScript.evaluate(getClass().getResource(dojoBaseURL + "/dojo.js.uncompressed.js"));
         evaluateScript("cometd", "" +
@@ -38,5 +44,10 @@ public abstract class AbstractCometDDojoTest extends AbstractCometDTest {
                 "        originalTransports[transportName] = cometd.findTransport(transportName);" +
                 "    }" +
                 "});");
+        if (transport != null) {
+            evaluateScript("only_" + transport, "" +
+                    "cometd.unregisterTransports();" +
+                    "cometd.registerTransport('" + transport + "', originalTransports['" + transport + "']);");
+        }
     }
 }

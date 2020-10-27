@@ -17,12 +17,16 @@ package org.cometd.javascript.extension;
 
 import org.cometd.javascript.AbstractCometDTransportsTest;
 import org.cometd.javascript.Latch;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class CometDExtensionsTest extends AbstractCometDTransportsTest {
-    @Test
-    public void testRegisterUnregister() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testRegisterUnregister(String transport) throws Exception {
+        initCometDServer(transport);
+
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var inCount = 0;");
         evaluateScript("var outCount = 0;");
@@ -38,37 +42,40 @@ public class CometDExtensionsTest extends AbstractCometDTransportsTest {
         Latch readyLatch = javaScript.get("readyLatch");
         evaluateScript("cometd.addListener('/meta/connect', function() { readyLatch.countDown(); });");
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(readyLatch.await(5000));
+        Assertions.assertTrue(readyLatch.await(5000));
 
         // Wait for the long poll to be established
         Thread.sleep(1000);
 
         Number inCount = javaScript.get("inCount");
         Number outCount = javaScript.get("outCount");
-        Assert.assertEquals(2, inCount.intValue()); // handshake, connect1
-        Assert.assertEquals(3, outCount.intValue()); // handshake, connect1, connect2
+        Assertions.assertEquals(2, inCount.intValue()); // handshake, connect1
+        Assertions.assertEquals(3, outCount.intValue()); // handshake, connect1, connect2
 
         Boolean unregistered = evaluateScript("cometd.unregisterExtension('testin');");
-        Assert.assertTrue(unregistered);
+        Assertions.assertTrue(unregistered);
         unregistered = evaluateScript("cometd.unregisterExtension('testout');");
-        Assert.assertTrue(unregistered);
+        Assertions.assertTrue(unregistered);
 
         evaluateScript("var publishLatch = new Latch(1);");
         Latch publishLatch = javaScript.get("publishLatch");
         evaluateScript("cometd.addListener('/meta/publish', function() { publishLatch.countDown(); });");
         evaluateScript("cometd.publish('/echo', 'ping');");
-        Assert.assertTrue(publishLatch.await(5000));
+        Assertions.assertTrue(publishLatch.await(5000));
 
         inCount = javaScript.get("inCount");
         outCount = javaScript.get("outCount");
-        Assert.assertEquals(2, inCount.intValue());
-        Assert.assertEquals(3, outCount.intValue());
+        Assertions.assertEquals(2, inCount.intValue());
+        Assertions.assertEquals(3, outCount.intValue());
 
         disconnect();
     }
 
-    @Test
-    public void testExtensions() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testExtensions(String transport) throws Exception {
+        initCometDServer(transport);
+
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
 
         evaluateScript("" +
@@ -84,14 +91,14 @@ public class CometDExtensionsTest extends AbstractCometDTransportsTest {
         Latch readyLatch = javaScript.get("readyLatch");
         evaluateScript("cometd.addListener('/meta/connect', function() { readyLatch.countDown(); });");
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(readyLatch.await(5000));
+        Assertions.assertTrue(readyLatch.await(5000));
 
         // Wait for the long poll to be established
         // Cannot rely on latches for this, since we need to intercept the connect2
         Thread.sleep(1000);
 
-        Assert.assertEquals(3, listener.getOutgoingMessageCount()); // handshake, connect1, connect2
-        Assert.assertEquals(2, listener.getIncomingMessageCount()); // handshake, connect1
+        Assertions.assertEquals(3, listener.getOutgoingMessageCount()); // handshake, connect1, connect2
+        Assertions.assertEquals(2, listener.getIncomingMessageCount()); // handshake, connect1
 
         listener.reset();
         evaluateScript("var subscribeLatch = new Latch(1);");
@@ -100,43 +107,46 @@ public class CometDExtensionsTest extends AbstractCometDTransportsTest {
         evaluateScript("var messageLatch = new Latch(1);");
         Latch messageLatch = javaScript.get("messageLatch");
         evaluateScript("var subscription = cometd.subscribe('/echo', function() { messageLatch.countDown(); });");
-        Assert.assertTrue(subscribeLatch.await(5000));
-        Assert.assertEquals(1, listener.getOutgoingMessageCount()); // subscribe
-        Assert.assertEquals(1, listener.getIncomingMessageCount()); // subscribe
+        Assertions.assertTrue(subscribeLatch.await(5000));
+        Assertions.assertEquals(1, listener.getOutgoingMessageCount()); // subscribe
+        Assertions.assertEquals(1, listener.getIncomingMessageCount()); // subscribe
 
         listener.reset();
         evaluateScript("var publishLatch = new Latch(1);");
         Latch publishLatch = javaScript.get("publishLatch");
         evaluateScript("cometd.addListener('/meta/publish', function() { publishLatch.countDown(); });");
         evaluateScript("cometd.publish('/echo', 'test');");
-        Assert.assertTrue(publishLatch.await(5000));
-        Assert.assertTrue(messageLatch.await(5000));
-        Assert.assertEquals(1, listener.getOutgoingMessageCount()); // publish
-        Assert.assertEquals(2, listener.getIncomingMessageCount()); // publish, message
+        Assertions.assertTrue(publishLatch.await(5000));
+        Assertions.assertTrue(messageLatch.await(5000));
+        Assertions.assertEquals(1, listener.getOutgoingMessageCount()); // publish
+        Assertions.assertEquals(2, listener.getIncomingMessageCount()); // publish, message
 
         listener.reset();
         evaluateScript("var unsubscribeLatch = new Latch(1);");
         Latch unsubscribeLatch = javaScript.get("unsubscribeLatch");
         evaluateScript("cometd.addListener('/meta/unsubscribe', function() { unsubscribeLatch.countDown(); });");
         evaluateScript("cometd.unsubscribe(subscription);");
-        Assert.assertTrue(unsubscribeLatch.await(5000));
-        Assert.assertEquals(1, listener.getOutgoingMessageCount()); // unsubscribe
-        Assert.assertEquals(1, listener.getIncomingMessageCount()); // unsubscribe
+        Assertions.assertTrue(unsubscribeLatch.await(5000));
+        Assertions.assertEquals(1, listener.getOutgoingMessageCount()); // unsubscribe
+        Assertions.assertEquals(1, listener.getIncomingMessageCount()); // unsubscribe
 
         readyLatch.reset(1);
         listener.reset();
         disconnect();
-        Assert.assertTrue(readyLatch.await(5000));
+        Assertions.assertTrue(readyLatch.await(5000));
 
         // Wait for the connect to return
         Thread.sleep(1000);
 
-        Assert.assertEquals(1, listener.getOutgoingMessageCount()); // disconnect
-        Assert.assertEquals(2, listener.getIncomingMessageCount()); // connect2, disconnect
+        Assertions.assertEquals(1, listener.getOutgoingMessageCount()); // disconnect
+        Assertions.assertEquals(2, listener.getIncomingMessageCount()); // connect2, disconnect
     }
 
-    @Test
-    public void testExtensionOrder() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testExtensionOrder(String transport) throws Exception {
+        initCometDServer(transport);
+
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
 
         String channelName = "/ext_order";
@@ -183,13 +193,16 @@ public class CometDExtensionsTest extends AbstractCometDTransportsTest {
                 "});" +
                 "});");
 
-        Assert.assertTrue(latch.await(5000));
+        Assertions.assertTrue(latch.await(5000));
 
         disconnect();
     }
 
-    @Test
-    public void testExtensionRegistrationCallbacks() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testExtensionRegistrationCallbacks(String transport) throws Exception {
+        initCometDServer(transport);
+
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var n;");
         evaluateScript("var c;");
@@ -204,15 +217,15 @@ public class CometDExtensionsTest extends AbstractCometDTransportsTest {
                 "}" +
                 "});");
         Object extName = javaScript.get("n");
-        Assert.assertNotNull(extName);
+        Assertions.assertNotNull(extName);
         Object extCometD = javaScript.get("c");
-        Assert.assertNotNull(extCometD);
+        Assertions.assertNotNull(extCometD);
 
         evaluateScript("cometd.unregisterExtension('ext1');");
         extName = javaScript.get("n");
-        Assert.assertNull(extName);
+        Assertions.assertNull(extName);
         extCometD = javaScript.get("c");
-        Assert.assertNull(extCometD);
+        Assertions.assertNull(extCometD);
     }
 
     public static class Listener {

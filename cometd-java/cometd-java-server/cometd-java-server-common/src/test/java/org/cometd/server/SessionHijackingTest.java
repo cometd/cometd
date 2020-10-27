@@ -28,25 +28,23 @@ import org.cometd.common.JettyJSONContextClient;
 import org.cometd.server.http.AbstractHttpTransport;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class SessionHijackingTest extends AbstractBayeuxClientServerTest {
-    public SessionHijackingTest(String serverTransport) {
-        super(serverTransport);
-    }
-
-    @Test
-    public void testSessionHijackingAllowed() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testSessionHijackingAllowed(String serverTransport) throws Exception {
         Map<String, String> settings = new HashMap<>();
         settings.put(AbstractHttpTransport.TRUST_CLIENT_SESSION_OPTION, String.valueOf(true));
-        startServer(settings);
+        startServer(serverTransport, settings);
 
         // Message should succeed.
         Message.Mutable[] messages = testSessionHijacking();
-        Assert.assertEquals(1, messages.length);
+        Assertions.assertEquals(1, messages.length);
         Message message = messages[0];
-        Assert.assertTrue(message.isSuccessful());
+        Assertions.assertTrue(message.isSuccessful());
     }
 
     private Message.Mutable[] testSessionHijacking() throws UnsupportedEncodingException, InterruptedException, TimeoutException, ExecutionException, java.text.ParseException {
@@ -58,7 +56,7 @@ public class SessionHijackingTest extends AbstractBayeuxClientServerTest {
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response1 = handshake1.send();
-        Assert.assertEquals(200, response1.getStatus());
+        Assertions.assertEquals(200, response1.getStatus());
 
         String cookie1 = extractCookie(cookieName);
         // Reset cookies to control what cookies this test sends.
@@ -70,7 +68,7 @@ public class SessionHijackingTest extends AbstractBayeuxClientServerTest {
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response2 = handshake2.send();
-        Assert.assertEquals(200, response2.getStatus());
+        Assertions.assertEquals(200, response2.getStatus());
 
         String clientId2 = extractClientId(response2);
         // Reset cookies to control what cookies this test sends.
@@ -84,7 +82,7 @@ public class SessionHijackingTest extends AbstractBayeuxClientServerTest {
                 "}]");
         publish1.cookie(new HttpCookie(cookieName, cookie1));
         response1 = publish1.send();
-        Assert.assertEquals(200, response1.getStatus());
+        Assertions.assertEquals(200, response1.getStatus());
 
         JSONContext.Client parser = new JettyJSONContextClient();
         return parser.parse(response1.getContentAsString());

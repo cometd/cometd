@@ -24,12 +24,16 @@ import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.DefaultSecurityPolicy;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class CometDSubscribeTest extends AbstractCometDTransportsTest {
-    @Test
-    public void testSubscriptionsUnsubscriptionsForSameChannelOnlySentOnce() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testSubscriptionsUnsubscriptionsForSameChannelOnlySentOnce(String transport) throws Exception {
+        initCometDServer(transport);
+
         evaluateScript("var subscribeLatch = new Latch(1);");
         Latch subscribeLatch = javaScript.get("subscribeLatch");
         evaluateScript("cometd.addListener('/meta/subscribe', function() { subscribeLatch.countDown(); });");
@@ -41,10 +45,10 @@ public class CometDSubscribeTest extends AbstractCometDTransportsTest {
         Thread.sleep(1000); // Wait for long poll
 
         evaluateScript("var subscription = cometd.subscribe('/foo', function() {});");
-        Assert.assertTrue(subscribeLatch.await(5000));
+        Assertions.assertTrue(subscribeLatch.await(5000));
 
         evaluateScript("cometd.unsubscribe(subscription);");
-        Assert.assertTrue(unsubscribeLatch.await(5000));
+        Assertions.assertTrue(unsubscribeLatch.await(5000));
 
         // Two subscriptions to the same channel generate only one message to the server.
         subscribeLatch.reset(2);
@@ -53,29 +57,32 @@ public class CometDSubscribeTest extends AbstractCometDTransportsTest {
         evaluateScript("var subscription1 = cometd.subscribe('/foo', function() {}, function() { callbackLatch.countDown(); });");
         evaluateScript("var subscription2 = cometd.subscribe('/foo', function() {}, function() { callbackLatch.countDown(); });");
         // The callback should be notified even if the message was not sent to the server.
-        Assert.assertTrue(callbackLatch.await(5000));
-        Assert.assertFalse(subscribeLatch.await(1000));
+        Assertions.assertTrue(callbackLatch.await(5000));
+        Assertions.assertFalse(subscribeLatch.await(1000));
 
         // No message sent to server if there still are subscriptions.
         unsubscribeLatch.reset(1);
         callbackLatch.reset(1);
         evaluateScript("cometd.unsubscribe(subscription2, function() { callbackLatch.countDown(); });");
         // The callback should be notified even if the message was not sent to the server.
-        Assert.assertTrue(callbackLatch.await(5000));
-        Assert.assertFalse(unsubscribeLatch.await(1000));
+        Assertions.assertTrue(callbackLatch.await(5000));
+        Assertions.assertFalse(unsubscribeLatch.await(1000));
 
         // Expect message sent to the server for last unsubscription on the channel.
         unsubscribeLatch.reset(1);
         callbackLatch.reset(1);
         evaluateScript("cometd.unsubscribe(subscription1, function() { callbackLatch.countDown(); });");
-        Assert.assertTrue(callbackLatch.await(5000));
-        Assert.assertTrue(unsubscribeLatch.await(5000));
+        Assertions.assertTrue(callbackLatch.await(5000));
+        Assertions.assertTrue(unsubscribeLatch.await(5000));
 
         disconnect();
     }
 
-    @Test
-    public void testSubscriptionsRemovedOnReHandshake() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testSubscriptionsRemovedOnReHandshake(String transport) throws Exception {
+        initCometDServer(transport);
+
         // Listeners are not removed in case of re-handshake
         // since they are not dependent on the clientId
         evaluateScript("var latch = new Latch(1);");
@@ -94,7 +101,7 @@ public class CometDSubscribeTest extends AbstractCometDTransportsTest {
 
         // Wait for the message on the listener
         evaluateScript("cometd.publish('/foo', {});");
-        Assert.assertTrue(latch.await(5000));
+        Assertions.assertTrue(latch.await(5000));
 
         evaluateScript("var subscriber = new Latch(1);");
         Latch subscriber = javaScript.get("subscriber");
@@ -102,8 +109,8 @@ public class CometDSubscribeTest extends AbstractCometDTransportsTest {
         // Wait for the message on the subscriber and on the listener
         latch.reset(1);
         evaluateScript("cometd.publish('/test', {});");
-        Assert.assertTrue(latch.await(5000));
-        Assert.assertTrue(subscriber.await(5000));
+        Assertions.assertTrue(latch.await(5000));
+        Assertions.assertTrue(subscriber.await(5000));
 
         disconnect();
         // Wait for the connect to return
@@ -119,14 +126,17 @@ public class CometDSubscribeTest extends AbstractCometDTransportsTest {
         latch.reset(1);
         subscriber.reset(2);
         evaluateScript("cometd.publish('/test', {});");
-        Assert.assertTrue(latch.await(5000));
-        Assert.assertFalse(subscriber.await(5000));
+        Assertions.assertTrue(latch.await(5000));
+        Assertions.assertFalse(subscriber.await(5000));
 
         disconnect();
     }
 
-    @Test
-    public void testDynamicResubscription() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testDynamicResubscription(String transport) throws Exception {
+        initCometDServer(transport);
+
         evaluateScript("var latch = new Latch(1);");
         Latch latch = javaScript.get("latch");
         evaluateScript("" +
@@ -152,7 +162,7 @@ public class CometDSubscribeTest extends AbstractCometDTransportsTest {
 
         evaluateScript("cometd.publish('/static', {});");
 
-        Assert.assertTrue(latch.await(5000));
+        Assertions.assertTrue(latch.await(5000));
         latch.reset(2);
 
         evaluateScript("" +
@@ -163,7 +173,7 @@ public class CometDSubscribeTest extends AbstractCometDTransportsTest {
                 "});" +
                 "");
 
-        Assert.assertTrue(latch.await(5000));
+        Assertions.assertTrue(latch.await(5000));
         latch.reset(2);
 
         stopServer();
@@ -182,7 +192,7 @@ public class CometDSubscribeTest extends AbstractCometDTransportsTest {
         prepareAndStartServer(new HashMap<>());
 
         // Wait until we are fully reconnected
-        Assert.assertTrue(connectLatch.await(5000));
+        Assertions.assertTrue(connectLatch.await(5000));
 
         evaluateScript("" +
                 "cometd.batch(function() {" +
@@ -191,12 +201,15 @@ public class CometDSubscribeTest extends AbstractCometDTransportsTest {
                 "});" +
                 "");
 
-        Assert.assertTrue(latch.await(5000));
+        Assertions.assertTrue(latch.await(5000));
     }
 
-    @Test
-    public void testSubscriptionDeniedRemovesListener() throws Exception {
-        final AtomicBoolean subscriptionAllowed = new AtomicBoolean(false);
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testSubscriptionDeniedRemovesListener(String transport) throws Exception {
+        initCometDServer(transport);
+
+        AtomicBoolean subscriptionAllowed = new AtomicBoolean(false);
         evaluateScript("var subscriptionAllowed = false;");
         bayeuxServer.setSecurityPolicy(new DefaultSecurityPolicy() {
             @Override
@@ -225,15 +238,15 @@ public class CometDSubscribeTest extends AbstractCometDTransportsTest {
 
         String sessionId = evaluateScript("cometd.getClientId();");
 
-        final String channelName = "/test";
+        String channelName = "/test";
         evaluateScript("var messageLatch = new Latch(1);");
         Latch messageLatch = javaScript.get("messageLatch");
         evaluateScript("cometd.subscribe('" + channelName + "', function() { messageLatch.countDown(); });");
-        Assert.assertTrue(subscribeLatch.await(5000));
+        Assertions.assertTrue(subscribeLatch.await(5000));
 
         // Verify that messages are not received
         bayeuxServer.getSession(sessionId).deliver(null, channelName, "data", Promise.noop());
-        Assert.assertFalse(messageLatch.await(1000));
+        Assertions.assertFalse(messageLatch.await(1000));
 
         // Reset and allow subscriptions
         subscribeLatch.reset(1);
@@ -241,17 +254,19 @@ public class CometDSubscribeTest extends AbstractCometDTransportsTest {
         subscriptionAllowed.set(true);
         evaluateScript("subscriptionAllowed = true");
         evaluateScript("cometd.subscribe('" + channelName + "', function() { messageLatch.countDown(); });");
-        Assert.assertTrue(subscribeLatch.await(5000));
+        Assertions.assertTrue(subscribeLatch.await(5000));
 
         // Verify that messages are received
         bayeuxServer.getChannel(channelName).publish(null, "data", Promise.noop());
-        Assert.assertTrue(messageLatch.await(1000));
+        Assertions.assertTrue(messageLatch.await(1000));
     }
 
-    @Test
-    public void testSubscriptionSuccessfulInvokesCallback() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testSubscriptionSuccessfulInvokesCallback(String transport) throws Exception {
+        initCometDServer(transport);
 
-        final String channelName = "/foo";
+        String channelName = "/foo";
 
         evaluateScript("var latch = new Latch(2);");
         Latch latch = javaScript.get("latch");
@@ -267,15 +282,17 @@ public class CometDSubscribeTest extends AbstractCometDTransportsTest {
                 "});");
         evaluateScript("cometd.handshake();");
 
-        Assert.assertTrue(latch.await(5000));
+        Assertions.assertTrue(latch.await(5000));
 
         disconnect();
     }
 
-    @Test
-    public void testSubscriptionDeniedInvokesCallback() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testSubscriptionDeniedInvokesCallback(String transport) throws Exception {
+        initCometDServer(transport);
 
-        final String channelName = "/foo";
+        String channelName = "/foo";
         bayeuxServer.setSecurityPolicy(new DefaultSecurityPolicy() {
             @Override
             public boolean canSubscribe(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message) {
@@ -296,12 +313,12 @@ public class CometDSubscribeTest extends AbstractCometDTransportsTest {
                 "    });" +
                 "});");
 
-        Assert.assertTrue(subscribeLatch.await(5000));
+        Assertions.assertTrue(subscribeLatch.await(5000));
 
         evaluateScript("var disconnectLatch = new Latch(1);");
         Latch disconnectLatch = javaScript.get("disconnectLatch");
         evaluateScript("cometd.disconnect(function(){ disconnectLatch.countDown(); });");
 
-        Assert.assertTrue(disconnectLatch.await(5000));
+        Assertions.assertTrue(disconnectLatch.await(5000));
     }
 }

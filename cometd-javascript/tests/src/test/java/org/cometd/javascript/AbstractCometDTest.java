@@ -33,25 +33,16 @@ import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.LoggerFactory;
 
 public abstract class AbstractCometDTest {
-    @Rule
-    public final TestWatcher testName = new TestWatcher() {
-        @Override
-        public void starting(Description description) {
-            super.starting(description);
-            System.err.printf("Running %s.%s()%n",
-                    description.getClassName(),
-                    description.getMethodName());
-        }
-    };
+    @RegisterExtension
+    final BeforeTestExecutionCallback printMethodName = context ->
+            System.err.printf("Running %s.%s()%n", context.getRequiredTestClass().getSimpleName(), context.getRequiredTestMethod().getName());
     private final CookieStore cookieStore = new HttpCookieStore() {
         @Override
         public boolean removeAll() {
@@ -74,15 +65,14 @@ public abstract class AbstractCometDTest {
     private XMLHttpRequestClient xhrClient;
     private WebSocketConnector wsConnector;
 
-    @Before
-    public void initCometDServer() throws Exception {
+    public void initCometDServer(String transport) throws Exception {
         Map<String, String> options = new HashMap<>();
-        initCometDServer(options);
+        initCometDServer(transport, options);
     }
 
-    protected void initCometDServer(Map<String, String> options) throws Exception {
+    protected void initCometDServer(String transport, Map<String, String> options) throws Exception {
         prepareAndStartServer(options);
-        initPage();
+        initPage(transport);
     }
 
     protected void prepareAndStartServer(Map<String, String> options) throws Exception {
@@ -129,7 +119,7 @@ public abstract class AbstractCometDTest {
         bayeuxServer = cometdServlet.getBayeux();
     }
 
-    @After
+    @AfterEach
     public void destroyCometDServer() throws Exception {
         destroyPage();
         stopServer();
@@ -158,9 +148,9 @@ public abstract class AbstractCometDTest {
         }));
     }
 
-    protected void initPage() throws Exception {
+    protected void initPage(String transport) throws Exception {
         initJavaScript();
-        provideCometD();
+        provideCometD(transport);
     }
 
     protected void initJavaScript() throws Exception {
@@ -185,7 +175,7 @@ public abstract class AbstractCometDTest {
         javaScript.bindings().getMember("window").putMember("location", contextURL);
     }
 
-    protected void provideCometD() throws Exception {
+    protected void provideCometD(String transport) {
         javaScript.evaluate(getClass().getResource("/js/cometd/cometd.js"));
         evaluateScript("cometd", "" +
                 "var cometdModule = org.cometd;" +
@@ -200,33 +190,38 @@ public abstract class AbstractCometDTest {
                 "cometd.registerTransport('long-polling', originalTransports['long-polling']);" +
                 "cometd.registerTransport('callback-polling', originalTransports['callback-polling']);" +
                 "");
+        if (transport != null) {
+            evaluateScript("only_" + transport, "" +
+                    "cometd.unregisterTransports();" +
+                    "cometd.registerTransport('" + transport + "', originalTransports['" + transport + "']);");
+        }
     }
 
-    protected void provideTimestampExtension() throws Exception {
+    protected void provideTimestampExtension() {
         javaScript.evaluate(getClass().getResource("/js/cometd/TimeStampExtension.js"));
         javaScript.evaluate("timestamp_extension", "" +
                 "cometd.registerExtension('timestamp', new cometdModule.TimeStampExtension());");
     }
 
-    protected void provideTimesyncExtension() throws Exception {
+    protected void provideTimesyncExtension() {
         javaScript.evaluate(getClass().getResource("/js/cometd/TimeSyncExtension.js"));
         javaScript.evaluate("timesync_extension", "" +
                 "cometd.registerExtension('timesync', new cometdModule.TimeSyncExtension());");
     }
 
-    protected void provideMessageAcknowledgeExtension() throws Exception {
+    protected void provideMessageAcknowledgeExtension() {
         javaScript.evaluate(getClass().getResource("/js/cometd/AckExtension.js"));
         javaScript.evaluate("ack_extension", "" +
                 "cometd.registerExtension('ack', new cometdModule.AckExtension());");
     }
 
-    protected void provideReloadExtension() throws Exception {
+    protected void provideReloadExtension() {
         javaScript.evaluate(getClass().getResource("/js/cometd/ReloadExtension.js"));
         javaScript.evaluate("reload_extension", "" +
                 "cometd.registerExtension('reload', new cometdModule.ReloadExtension());");
     }
 
-    protected void provideBinaryExtension() throws Exception {
+    protected void provideBinaryExtension() {
         javaScript.evaluate(getClass().getResource("/js/cometd/BinaryExtension.js"));
         javaScript.evaluate("binary_extension", "" +
                 "cometd.registerExtension('binary', new cometdModule.BinaryExtension());");
@@ -249,14 +244,12 @@ public abstract class AbstractCometDTest {
         }
     }
 
-    @SuppressWarnings("unchecked")
     protected <T> T evaluateScript(String script) {
         return evaluateScript(null, script);
     }
 
-    @SuppressWarnings("unchecked")
     protected <T> T evaluateScript(String scriptName, String script) {
-        return (T)javaScript.evaluate(scriptName, script);
+        return javaScript.evaluate(scriptName, script);
     }
 
     protected void sleep(long time) {
@@ -278,8 +271,8 @@ public abstract class AbstractCometDTest {
                 "    cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });" +
                 "    cometd.disconnect();" +
                 "}");
-        Assert.assertTrue(disconnectLatch.await(5000));
+        Assertions.assertTrue(disconnectLatch.await(5000));
         String status = evaluateScript("cometd.getStatus();");
-        Assert.assertEquals("disconnected", status);
+        Assertions.assertEquals("disconnected", status);
     }
 }

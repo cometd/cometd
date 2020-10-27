@@ -15,8 +15,8 @@
  */
 package org.cometd.javascript;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class CometDAutoBatchTest extends AbstractCometDLongPollingTest {
     @Test
@@ -25,7 +25,7 @@ public class CometDAutoBatchTest extends AbstractCometDLongPollingTest {
         Latch readyLatch = javaScript.get("readyLatch");
         evaluateScript("cometd.addListener('/meta/connect', function() { readyLatch.countDown(); });");
         evaluateScript("cometd.init({url: '" + cometdURL + "', autoBatch: true, logLevel: '" + getLogLevel() + "'});");
-        Assert.assertTrue(readyLatch.await(5000));
+        Assertions.assertTrue(readyLatch.await(5000));
 
         evaluateScript("" +
                 "var channel = '/autobatch';" +
@@ -33,7 +33,7 @@ public class CometDAutoBatchTest extends AbstractCometDLongPollingTest {
                 "var transport = cometd.getTransport();" +
                 "var _super = transport.transportSend;" +
                 "transport.transportSend = function(envelope, request) {" +
-                "   if (envelope.messages[0].channel == channel) {" +
+                "   if (envelope.messages[0].channel === channel) {" +
                 "       autobatch.push(envelope.messages.length);" +
                 "   }" +
                 "   _super.apply(this, arguments);" +
@@ -44,7 +44,7 @@ public class CometDAutoBatchTest extends AbstractCometDLongPollingTest {
         evaluateScript("" +
                 "cometd.addListener('/meta/subscribe', function() { readyLatch.countDown(); });" +
                 "cometd.subscribe(channel, function() { readyLatch.countDown(); });");
-        Assert.assertTrue(readyLatch.await(5000));
+        Assertions.assertTrue(readyLatch.await(5000));
 
         // Publish multiple times without batching explicitly
         // so the autobatch can trigger in
@@ -54,7 +54,7 @@ public class CometDAutoBatchTest extends AbstractCometDLongPollingTest {
                 "for (var i = 0; i < " + count + "; ++i) {" +
                 "   cometd.publish(channel, {id: i});" +
                 "}");
-        Assert.assertTrue(readyLatch.await(5000));
+        Assertions.assertTrue(readyLatch.await(5000));
 
         evaluateScript("autobatch_assertion", "window.assert([1,4] == autobatch.join(), autobatch);");
 

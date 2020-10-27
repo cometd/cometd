@@ -18,8 +18,8 @@ package org.cometd.server;
 import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.server.LocalSession;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class SweepTest {
     @Test
@@ -44,8 +44,8 @@ public class SweepTest {
 
         long elapsedMicros = TimeUnit.NANOSECONDS.toMicros(end - start);
         int microsPerSweepPerChannel = 100;
-        final int expectedMicros = count * children * microsPerSweepPerChannel;
-        Assert.assertTrue("elapsed micros " + elapsedMicros + ", expecting < " + expectedMicros, elapsedMicros < expectedMicros);
+        int expectedMicros = count * children * microsPerSweepPerChannel;
+        Assertions.assertTrue(elapsedMicros < expectedMicros, "elapsed micros " + elapsedMicros + ", expecting < " + expectedMicros);
     }
 
     @Test
@@ -75,7 +75,7 @@ public class SweepTest {
             }
         }
 
-        Assert.assertEquals(0, bayeuxServer.getChannels().size());
+        Assertions.assertEquals(0, bayeuxServer.getChannels().size());
     }
 
     @Test
@@ -93,8 +93,8 @@ public class SweepTest {
 
         long elapsedMicros = TimeUnit.NANOSECONDS.toMicros(end - start);
         int microsPerSweepPerChannel = 100;
-        final int expectedMicros = count * microsPerSweepPerChannel;
-        Assert.assertTrue("elapsed micros " + elapsedMicros + ", expecting < " + expectedMicros, elapsedMicros < expectedMicros);
+        int expectedMicros = count * microsPerSweepPerChannel;
+        Assertions.assertTrue(elapsedMicros < expectedMicros, "elapsed micros " + elapsedMicros + ", expecting < " + expectedMicros);
     }
 
     @Test
@@ -112,13 +112,13 @@ public class SweepTest {
 
         bayeuxServer.sweep();
 
-        Assert.assertNotNull(bayeuxServer.getSession(localSession.getId()));
+        Assertions.assertNotNull(bayeuxServer.getSession(localSession.getId()));
 
         Thread.sleep(maxInterval * 2);
 
         bayeuxServer.sweep();
 
-        Assert.assertNotNull(bayeuxServer.getSession(localSession.getId()));
+        Assertions.assertNotNull(bayeuxServer.getSession(localSession.getId()));
 
         localSession.disconnect();
         bayeuxServer.stop();
@@ -135,8 +135,8 @@ public class SweepTest {
 
         ServerSessionImpl normal = bayeuxServer.newServerSession();
         bayeuxServer.addServerSession(normal, bayeuxServer.newMessage());
-        Assert.assertTrue(normal.handshake(null));
-        Assert.assertTrue(normal.connected());
+        Assertions.assertTrue(normal.handshake(null));
+        Assertions.assertTrue(normal.connected());
         normal.cancelExpiration(true);
         normal.scheduleExpiration(0, maxInterval);
 
@@ -144,21 +144,21 @@ public class SweepTest {
         long customMaxInterval = 3 * maxInterval;
         custom.setMaxInterval(customMaxInterval);
         bayeuxServer.addServerSession(custom, bayeuxServer.newMessage());
-        Assert.assertTrue(custom.handshake(null));
-        Assert.assertTrue(custom.connected());
+        Assertions.assertTrue(custom.handshake(null));
+        Assertions.assertTrue(custom.connected());
         custom.cancelExpiration(true);
         custom.scheduleExpiration(0, customMaxInterval);
 
         // Wait one maxInterval, the normal session should be swept.
         Thread.sleep(maxInterval + 2 * sweepPeriod);
 
-        Assert.assertNull(bayeuxServer.getSession(normal.getId()));
-        Assert.assertNotNull(bayeuxServer.getSession(custom.getId()));
+        Assertions.assertNull(bayeuxServer.getSession(normal.getId()));
+        Assertions.assertNotNull(bayeuxServer.getSession(custom.getId()));
 
         // Wait another 2 maxIntervals, the custom session should be swept.
         Thread.sleep(2 * maxInterval);
 
-        Assert.assertNull(bayeuxServer.getSession(custom.getId()));
+        Assertions.assertNull(bayeuxServer.getSession(custom.getId()));
 
         bayeuxServer.stop();
     }

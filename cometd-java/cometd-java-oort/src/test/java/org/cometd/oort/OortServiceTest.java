@@ -19,16 +19,16 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class OortServiceTest extends AbstractOortObjectTest {
-    public OortServiceTest(String serverTransport) {
-        super(serverTransport);
-    }
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testActionIsForwarded(String serverTransport) throws Exception {
+        prepare(serverTransport);
 
-    @Test
-    public void testActionIsForwarded() throws Exception {
         CountDownLatch latch1 = new CountDownLatch(1);
         Service service1 = new Service(oort1, latch1);
         service1.start();
@@ -36,32 +36,38 @@ public class OortServiceTest extends AbstractOortObjectTest {
         Service service2 = new Service(oort2, latch2);
         service2.start();
 
-        Assert.assertTrue(service1.perform(oort2.getURL(), oort1.getURL()));
-        Assert.assertTrue(latch1.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(service1.result);
-        Assert.assertNull(service1.failure);
+        Assertions.assertTrue(service1.perform(oort2.getURL(), oort1.getURL()));
+        Assertions.assertTrue(latch1.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(service1.result);
+        Assertions.assertNull(service1.failure);
 
-        Assert.assertTrue(service2.perform(oort2.getURL(), oort2.getURL()));
-        Assert.assertTrue(latch2.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(service2.result);
-        Assert.assertNull(service2.failure);
+        Assertions.assertTrue(service2.perform(oort2.getURL(), oort2.getURL()));
+        Assertions.assertTrue(latch2.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(service2.result);
+        Assertions.assertNull(service2.failure);
 
         service2.stop();
         service1.stop();
     }
 
-    @Test
-    public void testActionIsNotForwardedForUnknownURL() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testActionIsNotForwardedForUnknownURL(String serverTransport) throws Exception {
+        prepare(serverTransport);
+
         Service service1 = new Service(oort1, null);
         service1.start();
 
-        Assert.assertFalse(service1.perform("unknownURL", "context1"));
+        Assertions.assertFalse(service1.perform("unknownURL", "context1"));
 
         service1.stop();
     }
 
-    @Test
-    public void testActionIsBroadcast() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testActionIsBroadcast(String serverTransport) throws Exception {
+        prepare(serverTransport);
+
         CountDownLatch latch1 = new CountDownLatch(1);
         BroadcastService service1 = new BroadcastService(oort1, latch1);
         CountDownLatch latch2 = new CountDownLatch(1);
@@ -73,32 +79,35 @@ public class OortServiceTest extends AbstractOortObjectTest {
         oort2.getBayeuxServer().addListener(listener2);
         service1.start();
         // Wait for node1 to be subscribed on node2
-        Assert.assertTrue(listener2.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(listener2.await(5, TimeUnit.SECONDS));
         service2.start();
         // Wait for node2 to be subscribed on node1
-        Assert.assertTrue(listener1.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(listener1.await(5, TimeUnit.SECONDS));
 
         // Broadcast to all services, only one will reply
         String replier = oort2.getURL();
-        Assert.assertTrue(service1.perform(null, replier, "context"));
-        Assert.assertTrue(latch1.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(service1.result);
-        Assert.assertNull(service1.failure);
+        Assertions.assertTrue(service1.perform(null, replier, "context"));
+        Assertions.assertTrue(latch1.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(service1.result);
+        Assertions.assertNull(service1.failure);
 
         // Send to the wrong service, ignore must be converted to failure
         String target = oort1.getURL();
         replier = oort2.getURL();
-        Assert.assertTrue(service2.perform(target, replier, "context"));
-        Assert.assertTrue(latch2.await(5, TimeUnit.SECONDS));
-        Assert.assertNull(service2.result);
-        Assert.assertNotNull(service2.failure);
+        Assertions.assertTrue(service2.perform(target, replier, "context"));
+        Assertions.assertTrue(latch2.await(5, TimeUnit.SECONDS));
+        Assertions.assertNull(service2.result);
+        Assertions.assertNotNull(service2.failure);
 
         service2.stop();
         service1.stop();
     }
 
-    @Test
-    public void testActionFailsOnRuntimeException() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testActionFailsOnRuntimeException(String serverTransport) throws Exception {
+        prepare(serverTransport);
+
         CountDownLatch latch1 = new CountDownLatch(1);
         Service service1 = new Service(oort1, latch1) {
             @Override
@@ -116,23 +125,26 @@ public class OortServiceTest extends AbstractOortObjectTest {
         };
         service2.start();
 
-        Assert.assertTrue(service1.perform(oort2.getURL(), oort1.getURL()));
-        Assert.assertTrue(latch1.await(5, TimeUnit.SECONDS));
-        Assert.assertNull(service1.result);
-        Assert.assertEquals(NullPointerException.class.getName(), service1.failure);
+        Assertions.assertTrue(service1.perform(oort2.getURL(), oort1.getURL()));
+        Assertions.assertTrue(latch1.await(5, TimeUnit.SECONDS));
+        Assertions.assertNull(service1.result);
+        Assertions.assertEquals(NullPointerException.class.getName(), service1.failure);
 
-        Assert.assertTrue(service2.perform(oort2.getURL(), oort2.getURL()));
-        Assert.assertTrue(latch2.await(5, TimeUnit.SECONDS));
-        Assert.assertNull(service2.result);
-        Assert.assertEquals(NullPointerException.class.getName(), service2.failure);
+        Assertions.assertTrue(service2.perform(oort2.getURL(), oort2.getURL()));
+        Assertions.assertTrue(latch2.await(5, TimeUnit.SECONDS));
+        Assertions.assertNull(service2.result);
+        Assertions.assertEquals(NullPointerException.class.getName(), service2.failure);
 
         service2.stop();
         service1.stop();
     }
 
-    @Test
-    public void testActionFailsOnFailure() throws Exception {
-        final String failure = "failure";
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testActionFailsOnFailure(String serverTransport) throws Exception {
+        prepare(serverTransport);
+
+        String failure = "failure";
         CountDownLatch latch1 = new CountDownLatch(1);
         Service service1 = new Service(oort1, latch1) {
             @Override
@@ -150,22 +162,25 @@ public class OortServiceTest extends AbstractOortObjectTest {
         };
         service2.start();
 
-        Assert.assertTrue(service1.perform(oort2.getURL(), oort1.getURL()));
-        Assert.assertTrue(latch1.await(5, TimeUnit.SECONDS));
-        Assert.assertNull(service1.result);
-        Assert.assertEquals(failure, service1.failure);
+        Assertions.assertTrue(service1.perform(oort2.getURL(), oort1.getURL()));
+        Assertions.assertTrue(latch1.await(5, TimeUnit.SECONDS));
+        Assertions.assertNull(service1.result);
+        Assertions.assertEquals(failure, service1.failure);
 
-        Assert.assertTrue(service2.perform(oort2.getURL(), oort2.getURL()));
-        Assert.assertTrue(latch2.await(5, TimeUnit.SECONDS));
-        Assert.assertNull(service2.result);
-        Assert.assertEquals(failure, service2.failure);
+        Assertions.assertTrue(service2.perform(oort2.getURL(), oort2.getURL()));
+        Assertions.assertTrue(latch2.await(5, TimeUnit.SECONDS));
+        Assertions.assertNull(service2.result);
+        Assertions.assertEquals(failure, service2.failure);
 
         service2.stop();
         service1.stop();
     }
 
-    @Test
-    public void testActionBroadcastTimeout() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testActionBroadcastTimeout(String serverTransport) throws Exception {
+        prepare(serverTransport);
+
         long timeout = 1000;
         CountDownLatch latch1 = new CountDownLatch(1);
         ExpireService service1 = new ExpireService(oort1, latch1) {
@@ -190,21 +205,24 @@ public class OortServiceTest extends AbstractOortObjectTest {
         oort2.getBayeuxServer().addListener(listener2);
         service1.start();
         // Wait for node1 to be subscribed on node2
-        Assert.assertTrue(listener2.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(listener2.await(5, TimeUnit.SECONDS));
         service2.start();
         // Wait for node2 to be subscribed on node1
-        Assert.assertTrue(listener1.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(listener1.await(5, TimeUnit.SECONDS));
 
-        Assert.assertTrue(service1.perform(null));
-        Assert.assertTrue(latch1.await(2 * timeout, TimeUnit.MILLISECONDS));
+        Assertions.assertTrue(service1.perform(null));
+        Assertions.assertTrue(latch1.await(2 * timeout, TimeUnit.MILLISECONDS));
 
-        Assert.assertTrue(service2.perform(null));
-        Assert.assertTrue(latch2.await(2 * timeout, TimeUnit.MILLISECONDS));
+        Assertions.assertTrue(service2.perform(null));
+        Assertions.assertTrue(latch2.await(2 * timeout, TimeUnit.MILLISECONDS));
     }
 
-    @Test
-    public void testActionForwardTimeout() throws Exception {
-        final long timeout = 1000;
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testActionForwardTimeout(String serverTransport) throws Exception {
+        prepare(serverTransport);
+
+        long timeout = 1000;
         CountDownLatch latch1 = new CountDownLatch(1);
         ExpireService service1 = new ExpireService(oort1, latch1) {
             @Override
@@ -234,13 +252,13 @@ public class OortServiceTest extends AbstractOortObjectTest {
         service2.setTimeout(timeout);
         service2.start();
 
-        Assert.assertTrue(service1.perform(oort2.getURL()));
-        Assert.assertTrue(latch1.await(3 * timeout, TimeUnit.MILLISECONDS));
+        Assertions.assertTrue(service1.perform(oort2.getURL()));
+        Assertions.assertTrue(latch1.await(3 * timeout, TimeUnit.MILLISECONDS));
 
         TimeUnit.MILLISECONDS.sleep(2 * timeout);
 
-        Assert.assertTrue(service2.perform(oort2.getURL()));
-        Assert.assertTrue(latch2.await(3 * timeout, TimeUnit.MILLISECONDS));
+        Assertions.assertTrue(service2.perform(oort2.getURL()));
+        Assertions.assertTrue(latch2.await(3 * timeout, TimeUnit.MILLISECONDS));
 
         // Allow last perform to complete without exceptions
         TimeUnit.MILLISECONDS.sleep(2 * timeout);
@@ -265,21 +283,21 @@ public class OortServiceTest extends AbstractOortObjectTest {
         @Override
         protected Result<Boolean> onForward(Request request) {
             if (request.isLocal()) {
-                Assert.assertEquals(context, request.getOortURL());
+                Assertions.assertEquals(context, request.getOortURL());
             }
             return Result.success(getOort().getURL().equals(request.getData()));
         }
 
         @Override
         protected void onForwardSucceeded(Boolean result, String context) {
-            Assert.assertSame(this.context, context);
+            Assertions.assertSame(this.context, context);
             this.result = result;
             latch.countDown();
         }
 
         @Override
         protected void onForwardFailed(Object failure, String context) {
-            Assert.assertSame(this.context, context);
+            Assertions.assertSame(this.context, context);
             this.failure = failure;
             latch.countDown();
         }
@@ -316,14 +334,14 @@ public class OortServiceTest extends AbstractOortObjectTest {
 
         @Override
         protected void onForwardSucceeded(Boolean result, String context) {
-            Assert.assertSame(this.context, context);
+            Assertions.assertSame(this.context, context);
             this.result = result;
             latch.countDown();
         }
 
         @Override
         protected void onForwardFailed(Object failure, String context) {
-            Assert.assertSame(this.context, context);
+            Assertions.assertSame(this.context, context);
             this.failure = failure;
             latch.countDown();
         }

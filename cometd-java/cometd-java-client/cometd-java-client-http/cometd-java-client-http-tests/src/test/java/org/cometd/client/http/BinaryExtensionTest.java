@@ -30,12 +30,12 @@ import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.ext.BinaryExtension;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class BinaryExtensionTest extends ClientServerTest {
-    @Before
+    @BeforeEach
     public void prepare() throws Exception {
         start(null);
         bayeux.addExtension(new org.cometd.server.ext.BinaryExtension());
@@ -82,7 +82,7 @@ public class BinaryExtensionTest extends ClientServerTest {
             client.getChannel(channelName).publish(new BinaryData(buffer, true, meta));
         });
 
-        Assert.assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -108,12 +108,12 @@ public class BinaryExtensionTest extends ClientServerTest {
                 }
             }
         }, m -> subscribeLatch.countDown()));
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        Assert.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
         bayeux.getChannel(channelName).publish(null, new BinaryData(buffer, true, null), Promise.noop());
 
-        Assert.assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }

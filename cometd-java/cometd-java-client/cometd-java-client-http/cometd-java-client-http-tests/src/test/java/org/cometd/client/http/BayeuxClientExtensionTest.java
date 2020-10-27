@@ -33,12 +33,12 @@ import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class BayeuxClientExtensionTest extends ClientServerTest {
-    @Before
+    @BeforeEach
     public void init() throws Exception {
         start(null);
     }
@@ -49,12 +49,12 @@ public class BayeuxClientExtensionTest extends ClientServerTest {
         CountingExtension extension = new CountingExtension(Channel.META_HANDSHAKE);
         client.addExtension(extension);
         client.handshake();
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        Assert.assertEquals(0, extension.rcvs.size());
-        Assert.assertEquals(1, extension.rcvMetas.size());
-        Assert.assertEquals(0, extension.sends.size());
-        Assert.assertEquals(1, extension.sendMetas.size());
+        Assertions.assertEquals(0, extension.rcvs.size());
+        Assertions.assertEquals(1, extension.rcvMetas.size());
+        Assertions.assertEquals(0, extension.sends.size());
+        Assertions.assertEquals(1, extension.sendMetas.size());
 
         disconnectBayeuxClient(client);
     }
@@ -65,15 +65,15 @@ public class BayeuxClientExtensionTest extends ClientServerTest {
         CountingExtension extension = new CountingExtension(Channel.META_CONNECT);
         client.addExtension(extension);
         client.handshake();
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Wait for the second connect to be sent
         Thread.sleep(1000);
 
-        Assert.assertEquals(0, extension.rcvs.size());
-        Assert.assertEquals(1, extension.rcvMetas.size());
-        Assert.assertEquals(0, extension.sends.size());
-        Assert.assertEquals(2, extension.sendMetas.size());
+        Assertions.assertEquals(0, extension.rcvs.size());
+        Assertions.assertEquals(1, extension.rcvMetas.size());
+        Assertions.assertEquals(0, extension.sends.size());
+        Assertions.assertEquals(2, extension.sendMetas.size());
 
         disconnectBayeuxClient(client);
     }
@@ -84,18 +84,18 @@ public class BayeuxClientExtensionTest extends ClientServerTest {
         CountingExtension extension = new CountingExtension(Channel.META_SUBSCRIBE);
         client.addExtension(extension);
         client.handshake();
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         CountDownLatch latch = new CountDownLatch(1);
         client.getChannel(Channel.META_SUBSCRIBE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> latch.countDown());
         client.getChannel("/foo").subscribe((channel, message) -> {
         });
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
-        Assert.assertEquals(0, extension.rcvs.size());
-        Assert.assertEquals(1, extension.rcvMetas.size());
-        Assert.assertEquals(0, extension.sends.size());
-        Assert.assertEquals(1, extension.sendMetas.size());
+        Assertions.assertEquals(0, extension.rcvs.size());
+        Assertions.assertEquals(1, extension.rcvMetas.size());
+        Assertions.assertEquals(0, extension.sends.size());
+        Assertions.assertEquals(1, extension.sendMetas.size());
 
         disconnectBayeuxClient(client);
     }
@@ -106,7 +106,7 @@ public class BayeuxClientExtensionTest extends ClientServerTest {
         CountingExtension extension = new CountingExtension(Channel.META_UNSUBSCRIBE);
         client.addExtension(extension);
         client.handshake();
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         CountDownLatch latch = new CountDownLatch(1);
         client.getChannel(Channel.META_UNSUBSCRIBE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> latch.countDown());
@@ -117,12 +117,12 @@ public class BayeuxClientExtensionTest extends ClientServerTest {
             channel.subscribe(listener);
             channel.unsubscribe(listener);
         });
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
-        Assert.assertEquals(0, extension.rcvs.size());
-        Assert.assertEquals(1, extension.rcvMetas.size());
-        Assert.assertEquals(0, extension.sends.size());
-        Assert.assertEquals(1, extension.sendMetas.size());
+        Assertions.assertEquals(0, extension.rcvs.size());
+        Assertions.assertEquals(1, extension.rcvMetas.size());
+        Assertions.assertEquals(0, extension.sends.size());
+        Assertions.assertEquals(1, extension.sendMetas.size());
 
         disconnectBayeuxClient(client);
     }
@@ -134,7 +134,7 @@ public class BayeuxClientExtensionTest extends ClientServerTest {
         CountingExtension extension = new CountingExtension(channelName);
         client.addExtension(extension);
         client.handshake();
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         ClientSessionChannel channel = client.getChannel(channelName);
         client.batch(() -> {
@@ -146,10 +146,10 @@ public class BayeuxClientExtensionTest extends ClientServerTest {
         // Wait for the message to arrive, along with the publish response
         Thread.sleep(1000);
 
-        Assert.assertEquals(2, extension.rcvs.size());
-        Assert.assertEquals(0, extension.rcvMetas.size());
-        Assert.assertEquals(1, extension.sends.size());
-        Assert.assertEquals(0, extension.sendMetas.size());
+        Assertions.assertEquals(2, extension.rcvs.size());
+        Assertions.assertEquals(0, extension.rcvMetas.size());
+        Assertions.assertEquals(1, extension.sends.size());
+        Assertions.assertEquals(0, extension.sendMetas.size());
 
         disconnectBayeuxClient(client);
     }
@@ -160,17 +160,17 @@ public class BayeuxClientExtensionTest extends ClientServerTest {
         CountingExtension extension = new CountingExtension(Channel.META_DISCONNECT);
         client.addExtension(extension);
         client.handshake();
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Wait for the second connect to be sent
         Thread.sleep(1000);
 
         disconnectBayeuxClient(client);
 
-        Assert.assertEquals(0, extension.rcvs.size());
-        Assert.assertEquals(1, extension.rcvMetas.size());
-        Assert.assertEquals(0, extension.sends.size());
-        Assert.assertEquals(1, extension.sendMetas.size());
+        Assertions.assertEquals(0, extension.rcvs.size());
+        Assertions.assertEquals(1, extension.rcvMetas.size());
+        Assertions.assertEquals(0, extension.sends.size());
+        Assertions.assertEquals(1, extension.sendMetas.size());
     }
 
     @Test
@@ -194,11 +194,11 @@ public class BayeuxClientExtensionTest extends ClientServerTest {
             }
         });
         client.handshake();
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         client.getChannel(channelName).publish(new HashMap<>());
 
-        Assert.assertFalse(latch.await(1, TimeUnit.SECONDS));
+        Assertions.assertFalse(latch.await(1, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -224,26 +224,26 @@ public class BayeuxClientExtensionTest extends ClientServerTest {
                 subscribeLatch.countDown();
             }
         }));
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
-        Assert.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
 
         // This message will be delivered via /meta/connect.
         bayeux.createChannelIfAbsent(channelName).getReference().publish(null, "data1", Promise.noop());
-        Assert.assertTrue(rcv.get().await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(rcv.get().await(5, TimeUnit.SECONDS));
         // Wait for the /meta/connect to be established again.
         Thread.sleep(1000);
 
         httpClient.stop();
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.UNCONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.UNCONNECTED));
 
         rcv.set(new CountDownLatch(1));
         httpClient.start();
 
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // This message will be delivered via /meta/connect.
         bayeux.createChannelIfAbsent(channelName).getReference().publish(null, "data2", Promise.noop());
-        Assert.assertTrue(rcv.get().await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(rcv.get().await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }

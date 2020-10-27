@@ -30,18 +30,16 @@ import org.cometd.server.ServerSessionImpl;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.FutureResponseListener;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class AcknowledgeExtensionTest extends AbstractBayeuxClientServerTest {
-    public AcknowledgeExtensionTest(String serverTransport) {
-        super(serverTransport);
-    }
-
-    @Test
-    public void testMetaConnectResendReturnsUnacknowledgedMessages() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testMetaConnectResendReturnsUnacknowledgedMessages(String serverTransport) throws Exception {
         timeout = 5000;
-        startServer(null);
+        startServer(serverTransport, null);
         bayeux.addExtension(new AcknowledgedMessagesExtension());
 
         Request handshake = newBayeuxRequest("[{" +
@@ -52,7 +50,7 @@ public class AcknowledgeExtensionTest extends AbstractBayeuxClientServerTest {
                 "\"ext\": { \"ack\": true }" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -63,7 +61,7 @@ public class AcknowledgeExtensionTest extends AbstractBayeuxClientServerTest {
                 "\"ext\": { \"ack\": -1 }" +
                 "}]");
         response = connect.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         String channel = "/foo";
         Request subscribe = newBayeuxRequest("[{" +
@@ -72,7 +70,7 @@ public class AcknowledgeExtensionTest extends AbstractBayeuxClientServerTest {
                 "\"subscription\": \"" + channel + "\"" +
                 "}]");
         response = subscribe.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         connect = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/connect\"," +
@@ -98,7 +96,7 @@ public class AcknowledgeExtensionTest extends AbstractBayeuxClientServerTest {
         bayeux.getChannel(channel).publish(null, data, Promise.noop());
         // Wait for the message to be lost.
         Thread.sleep(1000);
-        Assert.assertEquals(0, session.getQueue().size());
+        Assertions.assertEquals(0, session.getQueue().size());
 
         connector.setPort(port);
         connector.start();
@@ -106,7 +104,7 @@ public class AcknowledgeExtensionTest extends AbstractBayeuxClientServerTest {
         // Be sure there is one message in the unacknowledged queue.
         AcknowledgedMessagesSessionExtension extension = (AcknowledgedMessagesSessionExtension)session.getExtensions().get(0);
         BatchArrayQueue<ServerMessage> ackQueue = extension.getBatchArrayQueue();
-        Assert.assertEquals(1, ackQueue.size());
+        Assertions.assertEquals(1, ackQueue.size());
 
         // Send the same /meta/connect *without* advice: { timeout: 0 }.
         connect = newBayeuxRequest("[{" +
@@ -120,20 +118,20 @@ public class AcknowledgeExtensionTest extends AbstractBayeuxClientServerTest {
 
         // It must return immediately because there is a message in the unacknowledged queue.
         response = listener.get(1, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         JSONContext.Client parser = new JettyJSONContextClient();
         Message.Mutable[] messages = parser.parse(response.getContentAsString());
-        Assert.assertEquals(2, messages.length);
+        Assertions.assertEquals(2, messages.length);
         Message.Mutable m1 = messages[0];
         Message.Mutable m2 = messages[1];
         if (channel.equals(m1.getChannel())) {
-            Assert.assertEquals(Channel.META_CONNECT, m2.getChannel());
-            Assert.assertEquals(data, m1.getData());
+            Assertions.assertEquals(Channel.META_CONNECT, m2.getChannel());
+            Assertions.assertEquals(data, m1.getData());
         } else {
-            Assert.assertEquals(Channel.META_CONNECT, m1.getChannel());
-            Assert.assertEquals(channel, m2.getChannel());
-            Assert.assertEquals(data, m2.getData());
+            Assertions.assertEquals(Channel.META_CONNECT, m1.getChannel());
+            Assertions.assertEquals(channel, m2.getChannel());
+            Assertions.assertEquals(data, m2.getData());
         }
 
         Request disconnect = newBayeuxRequest("[{" +
@@ -141,13 +139,14 @@ public class AcknowledgeExtensionTest extends AbstractBayeuxClientServerTest {
                 "\"clientId\": \"" + clientId + "\"" +
                 "}]");
         response = disconnect.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
     }
 
-    @Test
-    public void testMetaConnectResendHoldsUnacknowledgedLazyMessages() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testMetaConnectResendHoldsUnacknowledgedLazyMessages(String serverTransport) throws Exception {
         timeout = 5000;
-        startServer(null);
+        startServer(serverTransport, null);
         bayeux.addExtension(new AcknowledgedMessagesExtension());
 
         Request handshake = newBayeuxRequest("[{" +
@@ -158,7 +157,7 @@ public class AcknowledgeExtensionTest extends AbstractBayeuxClientServerTest {
                 "\"ext\": { \"ack\": true }" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -169,7 +168,7 @@ public class AcknowledgeExtensionTest extends AbstractBayeuxClientServerTest {
                 "\"ext\": { \"ack\": -1 }" +
                 "}]");
         response = connect.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         String channel = "/foo";
         Request subscribe = newBayeuxRequest("[{" +
@@ -178,7 +177,7 @@ public class AcknowledgeExtensionTest extends AbstractBayeuxClientServerTest {
                 "\"subscription\": \"" + channel + "\"" +
                 "}]");
         response = subscribe.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         connect = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/connect\"," +
@@ -204,7 +203,7 @@ public class AcknowledgeExtensionTest extends AbstractBayeuxClientServerTest {
         serverChannel.setLazy(true);
         serverChannel.publish(null, data, Promise.noop());
         Thread.sleep(1000);
-        Assert.assertEquals(1, session.getQueue().size());
+        Assertions.assertEquals(1, session.getQueue().size());
 
         connector.setPort(port);
         connector.start();
@@ -212,7 +211,7 @@ public class AcknowledgeExtensionTest extends AbstractBayeuxClientServerTest {
         // Be sure there is one message in the unacknowledged queue.
         AcknowledgedMessagesSessionExtension extension = (AcknowledgedMessagesSessionExtension)session.getExtensions().get(0);
         BatchArrayQueue<ServerMessage> ackQueue = extension.getBatchArrayQueue();
-        Assert.assertEquals(1, ackQueue.size());
+        Assertions.assertEquals(1, ackQueue.size());
 
         // Send the same /meta/connect *without* advice: { timeout: 0 }.
         connect = newBayeuxRequest("[{" +
@@ -227,26 +226,26 @@ public class AcknowledgeExtensionTest extends AbstractBayeuxClientServerTest {
         // It must be held because there are only lazy messages.
         try {
             listener.get(1, TimeUnit.SECONDS);
-            Assert.fail();
+            Assertions.fail();
         } catch (TimeoutException x) {
             // Expected.
         }
 
         response = listener.get(2 * timeout, TimeUnit.MILLISECONDS);
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         JSONContext.Client parser = new JettyJSONContextClient();
         Message.Mutable[] messages = parser.parse(response.getContentAsString());
-        Assert.assertEquals(2, messages.length);
+        Assertions.assertEquals(2, messages.length);
         Message.Mutable m1 = messages[0];
         Message.Mutable m2 = messages[1];
         if (channel.equals(m1.getChannel())) {
-            Assert.assertEquals(Channel.META_CONNECT, m2.getChannel());
-            Assert.assertEquals(data, m1.getData());
+            Assertions.assertEquals(Channel.META_CONNECT, m2.getChannel());
+            Assertions.assertEquals(data, m1.getData());
         } else {
-            Assert.assertEquals(Channel.META_CONNECT, m1.getChannel());
-            Assert.assertEquals(channel, m2.getChannel());
-            Assert.assertEquals(data, m2.getData());
+            Assertions.assertEquals(Channel.META_CONNECT, m1.getChannel());
+            Assertions.assertEquals(channel, m2.getChannel());
+            Assertions.assertEquals(data, m2.getData());
         }
 
         Request disconnect = newBayeuxRequest("[{" +
@@ -254,6 +253,6 @@ public class AcknowledgeExtensionTest extends AbstractBayeuxClientServerTest {
                 "\"clientId\": \"" + clientId + "\"" +
                 "}]");
         response = disconnect.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
     }
 }

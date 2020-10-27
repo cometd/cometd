@@ -26,22 +26,16 @@ import org.cometd.common.JettyJSONContextClient;
 import org.cometd.server.http.JSONTransport;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class BadJSONTest extends AbstractBayeuxClientServerTest {
-    public BadJSONTest(String serverTransport) {
-        super(serverTransport);
-    }
-
-    @Before
-    public void prepare() throws Exception {
-        startServer(null);
-    }
-
     @Test
     public void testBadJSON() throws Exception {
+        startServer(JSONTransport.class.getName(), null);
+
         JSONTransport transport = new JSONTransport(bayeux) {
             @Override
             protected void handleJSONParseException(HttpServletRequest request, HttpServletResponse response, String json, Throwable exception) throws IOException {
@@ -61,7 +55,7 @@ public class BadJSONTest extends AbstractBayeuxClientServerTest {
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -72,7 +66,7 @@ public class BadJSONTest extends AbstractBayeuxClientServerTest {
                 "}]");
         response = connect.send();
 
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         // Forge a bad JSON message
         Request badConnect = newBayeuxRequest("[{" +
@@ -81,11 +75,14 @@ public class BadJSONTest extends AbstractBayeuxClientServerTest {
                 "\"connectionType\": \"long-polling\"");
         //"}]"); Bad JSON, missing this line
         response = badConnect.send();
-        Assert.assertEquals(400, response.getStatus());
+        Assertions.assertEquals(400, response.getStatus());
     }
 
-    @Test
-    public void testValidation() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testValidation(String serverTransport) throws Exception {
+        startServer(serverTransport, null);
+
         Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
@@ -93,7 +90,7 @@ public class BadJSONTest extends AbstractBayeuxClientServerTest {
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -104,11 +101,11 @@ public class BadJSONTest extends AbstractBayeuxClientServerTest {
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
         response = connect.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
         JSONContext.Client jsonContext = new JettyJSONContextClient();
         Message.Mutable[] replies = jsonContext.parse(response.getContentAsString());
         Message.Mutable reply = replies[0];
-        Assert.assertFalse(reply.isSuccessful());
+        Assertions.assertFalse(reply.isSuccessful());
 
         Request subscribe = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/subscribe\"," +
@@ -116,10 +113,10 @@ public class BadJSONTest extends AbstractBayeuxClientServerTest {
                 "\"subscription\": \"/bar<script>\"" +
                 "}]");
         response = subscribe.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
         replies = jsonContext.parse(response.getContentAsString());
         reply = replies[0];
-        Assert.assertFalse(reply.isSuccessful());
+        Assertions.assertFalse(reply.isSuccessful());
 
         Request publish = newBayeuxRequest("[{" +
                 "\"channel\": \"/foo<>\"," +
@@ -127,10 +124,10 @@ public class BadJSONTest extends AbstractBayeuxClientServerTest {
                 "\"data\": \"{}\"" +
                 "}]");
         response = publish.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
         replies = jsonContext.parse(response.getContentAsString());
         reply = replies[0];
-        Assert.assertFalse(reply.isSuccessful());
+        Assertions.assertFalse(reply.isSuccessful());
 
         Request unsubscribe = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/unsubscribe\"," +
@@ -138,9 +135,9 @@ public class BadJSONTest extends AbstractBayeuxClientServerTest {
                 "\"subscription\": \"/bar<script>\"" +
                 "}]");
         response = unsubscribe.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
         replies = jsonContext.parse(response.getContentAsString());
         reply = replies[0];
-        Assert.assertFalse(reply.isSuccessful());
+        Assertions.assertFalse(reply.isSuccessful());
     }
 }

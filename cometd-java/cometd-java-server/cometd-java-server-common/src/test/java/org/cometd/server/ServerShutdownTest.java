@@ -21,22 +21,16 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.FutureResponseListener;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class ServerShutdownTest extends AbstractBayeuxClientServerTest {
-    public ServerShutdownTest(String serverTransport) {
-        super(serverTransport);
-    }
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testServerShutdown(String serverTransport) throws Exception {
+        startServer(serverTransport, null);
 
-    @Before
-    public void prepare() throws Exception {
-        startServer(null);
-    }
-
-    @Test
-    public void testServerShutdown() throws Exception {
         Request handshake = newBayeuxRequest("" +
                 "[{" +
                 "\"channel\": \"/meta/handshake\"," +
@@ -45,7 +39,7 @@ public class ServerShutdownTest extends AbstractBayeuxClientServerTest {
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -58,7 +52,7 @@ public class ServerShutdownTest extends AbstractBayeuxClientServerTest {
                 "}]");
         response = connect.send();
 
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         connect = newBayeuxRequest("" +
                 "[{" +
@@ -79,7 +73,7 @@ public class ServerShutdownTest extends AbstractBayeuxClientServerTest {
         // Expect the connect to be back with an exception
         try {
             futureResponse.get(timeout * 2, TimeUnit.SECONDS);
-            Assert.fail();
+            Assertions.fail();
         } catch (ExecutionException expected) {
         }
     }

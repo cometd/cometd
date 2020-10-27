@@ -17,12 +17,16 @@ package org.cometd.javascript.extension;
 
 import org.cometd.javascript.AbstractCometDTransportsTest;
 import org.cometd.javascript.Latch;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class CometDTimestampAndReloadExtensionsTest extends AbstractCometDTransportsTest {
-    @Test
-    public void testReloadWithTimestamp() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testReloadWithTimestamp(String transport) throws Exception {
+        initCometDServer(transport);
+
         evaluateScript("cometd.setLogLevel('debug');");
         provideTimestampExtension();
         provideReloadExtension();
@@ -32,7 +36,7 @@ public class CometDTimestampAndReloadExtensionsTest extends AbstractCometDTransp
         Latch readyLatch = javaScript.get("readyLatch");
         evaluateScript("cometd.addListener('/meta/connect', function() { readyLatch.countDown(); });");
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(readyLatch.await(5000));
+        Assertions.assertTrue(readyLatch.await(5000));
 
         // Get the clientId
         String clientId = evaluateScript("cometd.getClientId();");
@@ -42,7 +46,7 @@ public class CometDTimestampAndReloadExtensionsTest extends AbstractCometDTransp
 
         // Reload the page
         destroyPage();
-        initPage();
+        initPage(transport);
 
         evaluateScript("cometd.setLogLevel('" + getLogLevel() + "');");
         provideTimestampExtension();
@@ -58,10 +62,10 @@ public class CometDTimestampAndReloadExtensionsTest extends AbstractCometDTransp
                 "   }" +
                 "});");
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(readyLatch.await(5000));
+        Assertions.assertTrue(readyLatch.await(5000));
 
         String newClientId = evaluateScript("cometd.getClientId();");
-        Assert.assertEquals(clientId, newClientId);
+        Assertions.assertEquals(clientId, newClientId);
 
         disconnect();
     }

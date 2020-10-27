@@ -26,22 +26,20 @@ import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.websocket.okhttp.OkHttpWebSocketTransport;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class BatchedRepliesWebSocketTest extends ClientServerWebSocketTest {
-    public BatchedRepliesWebSocketTest(String wsTransportType) {
-        super(wsTransportType);
-    }
+    @ParameterizedTest
+    @MethodSource("wsTypes")
+    public void testBatchedReplies(String wsType) throws Exception {
+        prepareAndStart(wsType, null);
 
-    @Test
-    public void testBatchedReplies() throws Exception {
-        prepareAndStart(null);
-
-        final AtomicReference<List<Message.Mutable>> batch = new AtomicReference<>();
-        final CountDownLatch repliesLatch = new CountDownLatch(1);
+        AtomicReference<List<Message.Mutable>> batch = new AtomicReference<>();
+        CountDownLatch repliesLatch = new CountDownLatch(1);
         ClientTransport transport;
-        switch (wsTransportType) {
+        switch (wsType) {
             case WEBSOCKET_JSR356:
                 transport = new WSTransport(batch, repliesLatch);
                 break;
@@ -55,27 +53,27 @@ public class BatchedRepliesWebSocketTest extends ClientServerWebSocketTest {
                 throw new IllegalArgumentException();
         }
 
-        final BayeuxClient client = new BayeuxClient(cometdURL, transport);
+        BayeuxClient client = new BayeuxClient(cometdURL, transport);
         client.handshake();
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        final String channelName = "/autobatch";
-        final CountDownLatch messageLatch = new CountDownLatch(1);
+        String channelName = "/autobatch";
+        CountDownLatch messageLatch = new CountDownLatch(1);
         client.batch(() -> {
             ClientSessionChannel channel = client.getChannel(channelName);
             channel.subscribe((c, m) -> messageLatch.countDown());
             channel.publish("data");
         });
 
-        Assert.assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(repliesLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(repliesLatch.await(5, TimeUnit.SECONDS));
         List<Message.Mutable> messages = batch.get();
-        Assert.assertNotNull(messages);
+        Assertions.assertNotNull(messages);
         // List must contain subscribe reply and message reply
-        Assert.assertEquals(2, messages.size());
+        Assertions.assertEquals(2, messages.size());
         // Replies must be in order.
-        Assert.assertEquals(Channel.META_SUBSCRIBE, messages.get(0).getChannel());
-        Assert.assertEquals(channelName, messages.get(1).getChannel());
+        Assertions.assertEquals(Channel.META_SUBSCRIBE, messages.get(0).getChannel());
+        Assertions.assertEquals(channelName, messages.get(1).getChannel());
 
         disconnectBayeuxClient(client);
     }

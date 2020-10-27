@@ -30,25 +30,19 @@ import org.cometd.server.http.JSONTransport;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.FutureResponseListener;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerTest {
-    public ConcurrentConnectDisconnectTest(String serverTransport) {
-        super(serverTransport);
-    }
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testConnectListenerThenDisconnectThenConnectHandler(String serverTransport) throws Exception {
+        startServer(serverTransport, null);
 
-    @Before
-    public void prepare() throws Exception {
-        startServer(null);
-    }
-
-    @Test
-    public void testConnectListenerThenDisconnectThenConnectHandler() throws Exception {
-        final CountDownLatch connectLatch = new CountDownLatch(2);
-        final CountDownLatch disconnectLatch = new CountDownLatch(1);
+        CountDownLatch connectLatch = new CountDownLatch(2);
+        CountDownLatch disconnectLatch = new CountDownLatch(1);
         bayeux.getChannel("/meta/connect").addListener(new ServerChannel.MessageListener() {
             @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
@@ -67,7 +61,7 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -78,7 +72,7 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
                 "\"subscription\": \"" + channelName + "\"" +
                 "}]");
         response = subscribe.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         Request connect1 = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/connect\"," +
@@ -86,7 +80,7 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
         response = connect1.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         Request connect2 = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/connect\"," +
@@ -97,30 +91,30 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
         connect2.send(futureResponse);
 
         // Wait for the second connect to arrive, then disconnect
-        Assert.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
 
         Request disconnect = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/disconnect\"," +
                 "\"clientId\": \"" + clientId + "\"" +
                 "}]");
         response = disconnect.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         disconnectLatch.countDown();
 
         response = futureResponse.get(timeout * 2, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         JettyJSONContextClient parser = new JettyJSONContextClient();
         Message.Mutable connectReply2 = parser.parse(response.getContentAsString())[0];
-        Assert.assertFalse(connectReply2.isSuccessful());
+        Assertions.assertFalse(connectReply2.isSuccessful());
         String error = (String)connectReply2.get(Message.ERROR_FIELD);
-        Assert.assertNotNull(error);
+        Assertions.assertNotNull(error);
         Map<String, Object> advice = connectReply2.getAdvice();
-        Assert.assertNotNull(advice);
-        Assert.assertEquals(Message.RECONNECT_NONE_VALUE, advice.get(Message.RECONNECT_FIELD));
+        Assertions.assertNotNull(advice);
+        Assertions.assertEquals(Message.RECONNECT_NONE_VALUE, advice.get(Message.RECONNECT_FIELD));
 
-        Assert.assertNull(bayeux.getSession(clientId));
+        Assertions.assertNull(bayeux.getSession(clientId));
 
         // Test that sending a connect for an expired session
         // will return an advice with reconnect:"handshake"
@@ -130,19 +124,22 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
         response = connect3.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
         Message.Mutable connectReply3 = parser.parse(response.getContentAsString())[0];
         advice = connectReply3.getAdvice();
-        Assert.assertNotNull(advice);
-        Assert.assertEquals(Message.RECONNECT_HANDSHAKE_VALUE, advice.get(Message.RECONNECT_FIELD));
+        Assertions.assertNotNull(advice);
+        Assertions.assertEquals(Message.RECONNECT_HANDSHAKE_VALUE, advice.get(Message.RECONNECT_FIELD));
     }
 
-    @Test
-    @Ignore("fix this test using session suspend listener")
-    public void testConnectHandlerThenDisconnect() throws Exception {
-        final CountDownLatch connectLatch = new CountDownLatch(2);
-        final CountDownLatch disconnectLatch = new CountDownLatch(1);
-        final CountDownLatch suspendLatch = new CountDownLatch(1);
+    @ParameterizedTest
+    @MethodSource("transports")
+    @Disabled("fix this test using session suspend listener")
+    public void testConnectHandlerThenDisconnect(String serverTransport) throws Exception {
+        startServer(serverTransport, null);
+
+        CountDownLatch connectLatch = new CountDownLatch(2);
+        CountDownLatch disconnectLatch = new CountDownLatch(1);
+        CountDownLatch suspendLatch = new CountDownLatch(1);
         JSONTransport transport = new JSONTransport(bayeux) {
             @Override
             protected void handleMessage(Context context, ServerMessage.Mutable message, Promise<ServerMessage.Mutable> promise) {
@@ -172,7 +169,7 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -183,7 +180,7 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
                 "\"subscription\": \"" + channelName + "\"" +
                 "}]");
         response = subscribe.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         Request connect1 = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/connect\"," +
@@ -191,7 +188,7 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
         response = connect1.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         Request connect2 = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/connect\"," +
@@ -202,26 +199,26 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
         connect2.send(futureResponse);
 
         // Wait for the second connect to arrive, then disconnect
-        Assert.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
 
         Request disconnect = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/disconnect\"," +
                 "\"clientId\": \"" + clientId + "\"" +
                 "}]");
         response = disconnect.send();
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
         disconnectLatch.countDown();
 
         // The connect must not be suspended
-        Assert.assertFalse(suspendLatch.await(1, TimeUnit.SECONDS));
+        Assertions.assertFalse(suspendLatch.await(1, TimeUnit.SECONDS));
 
         response = futureResponse.get(timeout * 2, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.getStatus());
+        Assertions.assertEquals(200, response.getStatus());
 
-        Assert.assertTrue(response.getContentAsString().toLowerCase().contains("\"none\""));
+        Assertions.assertTrue(response.getContentAsString().toLowerCase().contains("\"none\""));
 
-        Assert.assertNull(bayeux.getSession(clientId));
+        Assertions.assertNull(bayeux.getSession(clientId));
     }
 
     private void await(CountDownLatch latch) {

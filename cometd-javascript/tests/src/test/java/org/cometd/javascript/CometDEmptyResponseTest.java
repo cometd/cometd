@@ -15,14 +15,12 @@
  */
 package org.cometd.javascript;
 
-import java.io.IOException;
 import java.util.EnumSet;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
@@ -30,8 +28,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class CometDEmptyResponseTest extends AbstractCometDLongPollingTest {
     @Override
@@ -53,23 +51,23 @@ public class CometDEmptyResponseTest extends AbstractCometDLongPollingTest {
         evaluateScript("cometd.addListener('/meta/unsuccessful', function() { failureLatch.countDown(); });");
 
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(handshakeLatch.await(5000));
-        Assert.assertTrue(failureLatch.await(5000));
+        Assertions.assertTrue(handshakeLatch.await(5000));
+        Assertions.assertTrue(failureLatch.await(5000));
 
         disconnect();
     }
 
     public static class EmptyResponseFilter implements Filter {
         @Override
-        public void init(FilterConfig filterConfig) throws ServletException {
+        public void init(FilterConfig filterConfig) {
         }
 
         @Override
-        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) {
             doFilter((HttpServletRequest)request, (HttpServletResponse)response, chain);
         }
 
-        private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
+        private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) {
             response.setContentType("application/json;charset=UTF-8");
         }
 

@@ -15,11 +15,6 @@
  */
 package org.cometd.annotation;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -33,23 +28,23 @@ import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.server.BayeuxServerImpl;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class RemoteCallTest {
     private BayeuxServerImpl bayeuxServer;
     private ServerAnnotationProcessor processor;
 
-    @Before
+    @BeforeEach
     public void init() throws Exception {
         bayeuxServer = new BayeuxServerImpl();
         bayeuxServer.start();
         processor = new ServerAnnotationProcessor(bayeuxServer);
     }
 
-    @After
+    @AfterEach
     public void destroy() throws Exception {
         bayeuxServer.stop();
     }
@@ -57,27 +52,27 @@ public class RemoteCallTest {
     @Test
     public void testRemoteCallWithResult() throws Exception {
         Object callerData = "callerData";
-        final Object calleeData = "calleeData";
+        Object calleeData = "calleeData";
 
         Object service = new RemoteCallWithResultService(callerData, calleeData);
         boolean processed = processor.process(service);
-        assertTrue(processed);
+        Assertions.assertTrue(processed);
 
         LocalSession remote = bayeuxServer.newLocalSession("remoteCall");
         remote.handshake();
         ClientSessionChannel channel = remote.getChannel(Channel.SERVICE + RemoteCallWithResultService.CHANNEL);
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         channel.addListener((ClientSessionChannel.MessageListener)(c, m) -> {
             if (m.isPublishReply()) {
                 return;
             }
-            assertTrue(m.isSuccessful());
-            Assert.assertEquals(calleeData, m.getData());
+            Assertions.assertTrue(m.isSuccessful());
+            Assertions.assertEquals(calleeData, m.getData());
             latch.countDown();
         });
         channel.publish(callerData);
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     @Service
@@ -93,7 +88,7 @@ public class RemoteCallTest {
         }
 
         @RemoteCall(CHANNEL)
-        public void service(final RemoteCall.Caller caller, Object data) {
+        public void service(RemoteCall.Caller caller, Object data) {
             if (!callerData.equals(data)) {
                 caller.failure("Invalid data from caller: " + data);
                 return;
@@ -107,24 +102,24 @@ public class RemoteCallTest {
     public void testRemoteCallWithParametersWithResult() throws Exception {
         Object service = new RemoteCallWithParametersWithResultService();
         boolean processed = processor.process(service);
-        assertTrue(processed);
+        Assertions.assertTrue(processed);
 
         LocalSession remote = bayeuxServer.newLocalSession("remoteCall");
         remote.handshake();
 
-        final String parameter = "param1";
+        String parameter = "param1";
         ClientSessionChannel channel = remote.getChannel(Channel.SERVICE + "/test/" + parameter);
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         channel.addListener((ClientSessionChannel.MessageListener)(c, m) -> {
             if (m.isPublishReply()) {
                 return;
             }
-            Assert.assertEquals(parameter, m.getData());
+            Assertions.assertEquals(parameter, m.getData());
             latch.countDown();
         });
         channel.publish(new HashMap<>());
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     @Service
@@ -139,7 +134,7 @@ public class RemoteCallTest {
     public void testTwoRemoteCallsWithResult() throws Exception {
         Object service = new TwoRemoteCallsWithResultService();
         boolean processed = processor.process(service);
-        assertTrue(processed);
+        Assertions.assertTrue(processed);
 
         LocalSession remote1 = bayeuxServer.newLocalSession("remoteCall1");
         remote1.handshake();
@@ -147,8 +142,8 @@ public class RemoteCallTest {
         LocalSession remote2 = bayeuxServer.newLocalSession("remoteCall2");
         remote2.handshake();
 
-        final CountDownLatch latch = new CountDownLatch(2);
-        final List<Message> responses = new ArrayList<>();
+        CountDownLatch latch = new CountDownLatch(2);
+        List<Message> responses = new ArrayList<>();
 
         ClientSessionChannel channel1 = remote1.getChannel(Channel.SERVICE + TwoRemoteCallsWithResultService.CHANNEL);
         channel1.addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
@@ -171,13 +166,13 @@ public class RemoteCallTest {
         channel1.publish("1");
         channel2.publish("2");
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
-        assertEquals(2, responses.size());
+        Assertions.assertEquals(2, responses.size());
         Message response1 = responses.get(0);
-        assertEquals("1", response1.getData());
+        Assertions.assertEquals("1", response1.getData());
         Message response2 = responses.get(1);
-        assertEquals("2", response2.getData());
+        Assertions.assertEquals("2", response2.getData());
     }
 
     @Service
@@ -192,27 +187,27 @@ public class RemoteCallTest {
 
     @Test
     public void testRemoteCallWithFailure() throws Exception {
-        final String failure = "failure";
+        String failure = "failure";
 
         Object service = new RemoteCallWithFailureService();
         boolean processed = processor.process(service);
-        assertTrue(processed);
+        Assertions.assertTrue(processed);
 
         LocalSession remote = bayeuxServer.newLocalSession("remoteCall");
         remote.handshake();
         ClientSessionChannel channel = remote.getChannel(Channel.SERVICE + RemoteCallWithFailureService.CHANNEL);
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         channel.addListener((ClientSessionChannel.MessageListener)(c, m) -> {
             if (m.isPublishReply()) {
                 return;
             }
-            assertFalse(m.isSuccessful());
-            Assert.assertEquals(failure, m.getData());
+            Assertions.assertFalse(m.isSuccessful());
+            Assertions.assertEquals(failure, m.getData());
             latch.countDown();
         });
         channel.publish(failure);
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     @Service
@@ -229,23 +224,23 @@ public class RemoteCallTest {
     public void testRemoteCallWithUncaughtException() throws Exception {
         Object service = new RemoteCallWithUncaughtExceptionService();
         boolean processed = processor.process(service);
-        assertTrue(processed);
+        Assertions.assertTrue(processed);
 
         LocalSession remote = bayeuxServer.newLocalSession("remoteCall");
         remote.handshake();
         ClientSessionChannel channel = remote.getChannel(Channel.SERVICE + RemoteCallWithUncaughtExceptionService.CHANNEL);
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         channel.addListener((ClientSessionChannel.MessageListener)(c, m) -> {
             if (m.isPublishReply()) {
                 return;
             }
-            assertFalse(m.isSuccessful());
-            assertNotNull(m.getData());
+            Assertions.assertFalse(m.isSuccessful());
+            Assertions.assertNotNull(m.getData());
             latch.countDown();
         });
         channel.publish("throw");
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     @Service

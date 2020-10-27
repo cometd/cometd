@@ -21,20 +21,28 @@ import org.cometd.javascript.Latch;
 import org.cometd.server.AbstractService;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class CometDAckAndReloadExtensionsTest extends AbstractCometDTransportsTest {
-    @Before
-    public void initExtensions() throws Exception {
+    @Override
+    public void initCometDServer(String transport) throws Exception {
+        super.initCometDServer(transport);
+        initExtensions();
+    }
+
+    private void initExtensions() {
         bayeuxServer.addExtension(new AcknowledgedMessagesExtension());
         provideMessageAcknowledgeExtension();
         provideReloadExtension();
     }
 
-    @Test
-    public void testAckAndReloadExtensions() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testAckAndReloadExtensions(String transport) throws Exception {
+        initCometDServer(transport);
+
         AckService ackService = new AckService(bayeuxServer);
 
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
@@ -42,7 +50,7 @@ public class CometDAckAndReloadExtensionsTest extends AbstractCometDTransportsTe
         Latch readyLatch = javaScript.get("readyLatch");
         evaluateScript("cometd.addListener('/meta/connect', function() { readyLatch.countDown(); });");
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(readyLatch.await(5000));
+        Assertions.assertTrue(readyLatch.await(5000));
 
         // Send a message so that the ack counter is initialized
         evaluateScript("var latch = new Latch(1);");
@@ -50,7 +58,7 @@ public class CometDAckAndReloadExtensionsTest extends AbstractCometDTransportsTe
         evaluateScript("" +
                 "cometd.subscribe('/test', function() { latch.countDown(); });" +
                 "cometd.publish('/test', 'message1');");
-        Assert.assertTrue(latch.await(5000));
+        Assertions.assertTrue(latch.await(5000));
 
         // Wait to allow the long poll to go to the server and tell it the ack id
         Thread.sleep(1000);
@@ -61,7 +69,7 @@ public class CometDAckAndReloadExtensionsTest extends AbstractCometDTransportsTe
         // Reload the page, and simulate that a message has been received meanwhile on server
         destroyPage();
         ackService.emit("message2");
-        initPage();
+        initPage(transport);
         initExtensions();
 
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
@@ -81,14 +89,14 @@ public class CometDAckAndReloadExtensionsTest extends AbstractCometDTransportsTe
                 "   });" +
                 "});" +
                 "cometd.handshake();");
-        Assert.assertTrue(readyLatch.await(5000));
+        Assertions.assertTrue(readyLatch.await(5000));
 
         ackService.emit("message3");
-        Assert.assertTrue(latch.await(5000));
+        Assertions.assertTrue(latch.await(5000));
 
         evaluateScript("window.assert(testMessage.length === 2, 'testMessage.length');");
-        evaluateScript("window.assert(testMessage[0].data == 'message2', 'message2');");
-        evaluateScript("window.assert(testMessage[1].data == 'message3', 'message3');");
+        evaluateScript("window.assert(testMessage[0].data === 'message2', 'message2');");
+        evaluateScript("window.assert(testMessage[1].data === 'message3', 'message3');");
 
         disconnect();
     }

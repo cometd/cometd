@@ -15,13 +15,16 @@
  */
 package org.cometd.javascript;
 
-import static org.junit.Assert.assertTrue;
-
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class CometDCharsetTest extends AbstractCometDTransportsTest {
-    @Test
-    public void testCharset() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testCharset(String transport) throws Exception {
+        initCometDServer(transport);
+
         String cyrillic = "\u0436"; // zhe
         String greek = "\u0398"; // theta
         String hebrew = "\u05d0"; // aleph
@@ -42,7 +45,7 @@ public class CometDCharsetTest extends AbstractCometDTransportsTest {
                 "hiragana: '" + hiragana + "'," +
                 "chinese: '" + chinese + "'" +
                 "});");
-        assertTrue(latch.await(5000));
+        Assertions.assertTrue(latch.await(5000));
         evaluateScript("window.assert(data !== undefined, 'data is undefined');");
         evaluateScript("window.assert(data.cyrillic === '" + cyrillic + "', 'bad cyrillic');");
         evaluateScript("window.assert(data.greek === '" + greek + "', 'bad greek');");
