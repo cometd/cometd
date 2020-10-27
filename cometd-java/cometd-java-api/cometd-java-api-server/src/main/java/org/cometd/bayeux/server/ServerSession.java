@@ -20,7 +20,6 @@ import java.util.Queue;
 import java.util.Set;
 
 import org.cometd.bayeux.Bayeux;
-import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.Session;
 
