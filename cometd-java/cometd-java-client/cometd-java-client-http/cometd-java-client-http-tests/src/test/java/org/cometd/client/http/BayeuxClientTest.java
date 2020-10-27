@@ -886,10 +886,10 @@ public class BayeuxClientTest extends ClientServerTest {
 
         BayeuxClient client = newBayeuxClient();
         CountDownLatch latch = new CountDownLatch(1);
-        client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
+        client.handshake(hsReply -> {
             // Verify the failure object is there
             @SuppressWarnings("unchecked")
-            Map<String, Object> failure = (Map<String, Object>)message.get("failure");
+            Map<String, Object> failure = (Map<String, Object>)hsReply.get("failure");
             Assertions.assertNotNull(failure);
             // Verify that the transport is there
             Assertions.assertEquals("long-polling", failure.get(Message.CONNECTION_TYPE_FIELD));
@@ -899,13 +899,12 @@ public class BayeuxClientTest extends ClientServerTest {
             Assertions.assertEquals(400, failure.get("httpCode"));
             // Verify the exception string is there
             Assertions.assertNotNull(failure.get("exception"));
+            // Disconnect to avoid rehandshaking.
+            client.disconnect();
             latch.countDown();
         });
-        client.handshake();
 
         Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
-
-        disconnectBayeuxClient(client);
     }
 
     @Test
