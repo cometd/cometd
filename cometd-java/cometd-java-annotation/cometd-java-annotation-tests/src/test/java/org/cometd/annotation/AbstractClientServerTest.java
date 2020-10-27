@@ -27,8 +27,13 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public abstract class AbstractClientServerTest {
+    @RegisterExtension
+    final BeforeTestExecutionCallback printMethodName = context ->
+            System.err.printf("Running %s.%s()%n", context.getRequiredTestClass().getSimpleName(), context.getRequiredTestMethod().getName());
     protected Server server;
     protected String cometdURL;
     protected BayeuxServerImpl bayeux;
