@@ -60,18 +60,18 @@ public class Z85 {
             int padding = 4 - (remainder == 0 ? 4 : remainder);
             StringBuilder result = new StringBuilder();
             long value = 0;
+            char[] inv = new char[5];
             for (int i = 0; i < length + padding; ++i) {
                 boolean isPadding = i >= length;
-                value = value * 256 + (isPadding ? 0 : bytes[i] & 0xFF);
+                value = (value << 8) + (isPadding ? 0 : bytes[i] & 0xFF);
                 if ((i + 1) % 4 == 0) {
-                    int divisor = 85 * 85 * 85 * 85;
-                    for (int j = 5; j > 0; --j) {
-                        if (!isPadding || j > padding) {
-                            int code = (int)((value / divisor) % 85);
-                            result.append(encodeTable[code]);
-                        }
-                        divisor /= 85;
+                    for (int j = 0; j <= 4; ++j) {
+                        inv[j] = encodeTable[(int)(value % 85)];
+                        value /= 85;
                     }
+                    for (int j = 4; j >= 0; --j)
+                        if (!isPadding || j >= padding)
+                            result.append(inv[j]);
                     value = 0;
                 }
             }
@@ -101,13 +101,10 @@ public class Z85 {
                 int code = string.charAt(i) - 32;
                 value = value * 85 + decodeTable[code];
                 if ((i + 1) % 5 == 0) {
-                    int divisor = 256 * 256 * 256;
-                    while (divisor >= 1) {
-                        if (index < bytes.length) {
-                            bytes[index++] = (byte)((value / divisor) % 256);
-                        }
-                        divisor /= 256;
-                    }
+                    if (index < bytes.length) bytes[index++] = (byte)((value >>> 24) & 0xFF);
+                    if (index < bytes.length) bytes[index++] = (byte)((value >>> 16) & 0xFF);
+                    if (index < bytes.length) bytes[index++] = (byte)((value >>> 8) & 0xFF);
+                    if (index < bytes.length) bytes[index++] = (byte)(value & 0xFF);
                     value = 0;
                 }
             }
