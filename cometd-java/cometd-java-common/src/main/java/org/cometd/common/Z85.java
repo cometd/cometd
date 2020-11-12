@@ -64,14 +64,16 @@ public class Z85 {
             for (int i = 0; i < length + padding; ++i) {
                 boolean isPadding = i >= length;
                 value = (value << 8) + (isPadding ? 0 : bytes[i] & 0xFF);
-                if ((i + 1) % 4 == 0) {
-                    for (int j = 0; j <= 4; ++j) {
+                if (((i + 1) & 3) == 0) {
+                    for (int j = 0; j < inv.length; ++j) {
                         inv[j] = encodeTable[(int)(value % 85)];
                         value /= 85;
                     }
-                    for (int j = 4; j >= 0; --j)
-                        if (!isPadding || j >= padding)
+                    for (int j = inv.length - 1; j >= 0; --j) {
+                        if (!isPadding || j >= padding) {
                             result.append(inv[j]);
+                        }
+                    }
                     value = 0;
                 }
             }
@@ -101,10 +103,18 @@ public class Z85 {
                 int code = string.charAt(i) - 32;
                 value = value * 85 + decodeTable[code];
                 if ((i + 1) % 5 == 0) {
-                    if (index < bytes.length) bytes[index++] = (byte)((value >>> 24) & 0xFF);
-                    if (index < bytes.length) bytes[index++] = (byte)((value >>> 16) & 0xFF);
-                    if (index < bytes.length) bytes[index++] = (byte)((value >>> 8) & 0xFF);
-                    if (index < bytes.length) bytes[index++] = (byte)(value & 0xFF);
+                    if (index < bytes.length) {
+                        bytes[index++] = (byte) ((value >>> 24) & 0xFF);
+                    }
+                    if (index < bytes.length) {
+                        bytes[index++] = (byte) ((value >>> 16) & 0xFF);
+                    }
+                    if (index < bytes.length) {
+                        bytes[index++] = (byte) ((value >>> 8) & 0xFF);
+                    }
+                    if (index < bytes.length) {
+                        bytes[index++] = (byte) (value & 0xFF);
+                    }
                     value = 0;
                 }
             }
