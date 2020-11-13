@@ -197,36 +197,41 @@
         };
 
         this.incoming = function(message) {
-            if (message.successful) {
-                switch (message.channel) {
-                    case '/meta/handshake':
-                    {
+            switch (message.channel) {
+                case '/meta/handshake':
+                {
+                    // Only record the handshake response if it's successful.
+                    if (message.successful) {
                         // If the handshake response is already present, then we're replaying it.
-                        // Since the replay may have modified the handshake response, do not record it here.
+                        // Since the replay may have modified the handshake response, do not record it again.
                         if (!_state.handshakeResponse) {
                             // Save successful handshake response
                             _state.handshakeResponse = message;
                             _debug('Reload extension tracked handshake response', message);
                         }
-                        break;
                     }
-                    case '/meta/connect':
-                    {
-                        if (_batch) {
-                            _batch = false;
-                            _cometd.endBatch();
-                        }
-                        break;
+                    break;
+                }
+                case '/meta/connect':
+                {
+                    if (_batch) {
+                        _batch = false;
+                        _cometd.endBatch();
                     }
-                    case '/meta/disconnect':
-                    {
-                        _state = {};
-                        break;
+                    break;
+                }
+                case '/meta/disconnect':
+                {
+                    if (_batch) {
+                        _batch = false;
+                        _cometd.endBatch();
                     }
-                    default:
-                    {
-                        break;
-                    }
+                    _state = {};
+                    break;
+                }
+                default:
+                {
+                    break;
                 }
             }
             return message;
