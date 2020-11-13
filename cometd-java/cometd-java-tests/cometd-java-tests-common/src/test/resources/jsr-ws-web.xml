@@ -21,13 +21,13 @@
   </filter-mapping>
 
   <filter>
-    <filter-name>wsuf</filter-name>
+    <filter-name>org.eclipse.jetty.websocket.util.server.WebSocketUpgradeFilter</filter-name>
     <filter-class>org.eclipse.jetty.websocket.util.server.WebSocketUpgradeFilter</filter-class>
     <async-supported>true</async-supported>
   </filter>
 
   <filter-mapping>
-    <filter-name>wsuf</filter-name>
+    <filter-name>org.eclipse.jetty.websocket.util.server.WebSocketUpgradeFilter</filter-name>
     <url-pattern>/cometd/*</url-pattern>
   </filter-mapping>
 
