@@ -108,7 +108,10 @@ public class WebSocketConnection implements WebSocketListener {
         if (logger.isDebugEnabled()) {
             logger.debug("WebSocket opened session {}", session);
         }
-        javaScript.invoke(false, jsWebSocket, "onopen");
+        // This method may be invoked from JavaScript (from new window.WebSocket()),
+        // but we want to execute the onopen() function asynchronously, otherwise
+        // the onopen() function may not be assigned yet in cometd.js.
+        wsClient.getExecutor().execute(() -> javaScript.invoke(false, jsWebSocket, "onopen"));
     }
 
     @Override
