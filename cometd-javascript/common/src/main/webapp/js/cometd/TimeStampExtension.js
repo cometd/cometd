@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-(function(root, factory){
+(((root, factory) => {
     if (typeof exports === 'object') {
         module.exports = factory(require('./cometd'));
     } else if (typeof define === 'function' && define.amd) {
@@ -22,10 +22,10 @@
     } else {
         factory(root.org.cometd);
     }
-}(this, function(cometdModule) {
+})(this, cometdModule => {
     // The timestamp extension adds the optional timestamp field to all outgoing messages.
     return cometdModule.TimeStampExtension = function() {
-        this.outgoing = function(message) {
+        this.outgoing = message => {
             message.timestamp = new Date().toUTCString();
             return message;
         };
