@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-(function(root, factory){
+(((root, factory) => {
     if (typeof exports === 'object') {
         module.exports = factory(require('./cometd'));
     } else if (typeof define === 'function' && define.amd) {
@@ -22,18 +22,18 @@
     } else {
         factory(root.org.cometd);
     }
-}(this, function(cometdModule) {
+})(this, cometdModule => {
     /**
      * Client-side extension that converts binary JavaScript objects
      * (ArrayBuffer, DataView and TypedArrays) into a textual
      * representation suitable for JSON, using the Z85 algorithm.
      */
     return cometdModule.BinaryExtension = function() {
-        this.incoming = function(message) {
+        this.incoming = message => {
             if (!/^\/meta\//.test(message.channel)) {
-                var ext = message.ext;
+                const ext = message.ext;
                 if (ext) {
-                    var binaryExt = ext.binary;
+                    const binaryExt = ext.binary;
                     if (binaryExt) {
                         message.data.data = cometdModule.Z85.decode(message.data.data);
                     }
@@ -42,11 +42,11 @@
             return message;
         };
 
-        this.outgoing = function(message) {
+        this.outgoing = message => {
             if (!/^\/meta\//.test(message.channel)) {
-                var ext = message.ext;
+                const ext = message.ext;
                 if (ext) {
-                    var binaryExt = ext.binary;
+                    const binaryExt = ext.binary;
                     if (binaryExt) {
                         message.data.data = cometdModule.Z85.encode(message.data.data);
                     }
