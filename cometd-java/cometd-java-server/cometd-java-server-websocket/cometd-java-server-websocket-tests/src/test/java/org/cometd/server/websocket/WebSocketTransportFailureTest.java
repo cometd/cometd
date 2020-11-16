@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -45,7 +46,6 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -138,9 +138,11 @@ public class WebSocketTransportFailureTest {
         Assertions.assertTrue(message.isSuccessful());
         String clientId = message.getClientId();
 
+        CountDownLatch removeLatch = new CountDownLatch(1);
         bayeux.getChannel(Channel.META_CONNECT).addListener(new ServerChannel.MessageListener() {
             @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
+                from.addListener((ServerSession.RemovedListener)(s, m, t) -> removeLatch.countDown());
                 // Disconnect the client abruptly.
                 disconnect(session);
                 // Add messages for the client; the first message is written to
@@ -161,13 +163,9 @@ public class WebSocketTransportFailureTest {
         session.getRemote().sendString(connect);
 
         // The session should expire on the server.
-        Thread.sleep(2 * maxInterval);
-
+        Assertions.assertTrue(removeLatch.await(3 * maxInterval, TimeUnit.MILLISECONDS));
         ServerSession serverSession = bayeux.getSession(clientId);
         Assertions.assertNull(serverSession);
-
-        ServerContainer container = (ServerContainer)context.getServletContext().getAttribute(javax.websocket.server.ServerContainer.class.getName());
-        Assertions.assertTrue(container.getOpenSessions().isEmpty());
     }
 
     @Test
