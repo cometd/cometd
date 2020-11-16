@@ -15,11 +15,8 @@
  */
 package org.cometd.server;
 
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.cometd.bayeux.server.ServerMessage;
-import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.FutureResponseListener;
@@ -45,15 +42,6 @@ public class ServerRedeployTest extends AbstractBayeuxClientServerTest {
         Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
-        ServerSession session = bayeux.getSession(clientId);
-
-        CountDownLatch connectLatch = new CountDownLatch(1);
-        session.addListener(new ServerSession.HeartBeatListener() {
-            @Override
-            public void onSuspended(ServerSession session, ServerMessage message, long timeout) {
-                connectLatch.countDown();
-            }
-        });
 
         Request connect = newBayeuxRequest("" +
                 "[{" +
@@ -74,13 +62,18 @@ public class ServerRedeployTest extends AbstractBayeuxClientServerTest {
         FutureResponseListener futureResponse = new FutureResponseListener(connect);
         connect.send(futureResponse);
 
-        Assertions.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
+        // Wait for the /meta/connect to be suspended.
+        // We cannot rely on the HeartBeatListener because the "suspended" event
+        // happens before ServerSessionImpl.setScheduler() and the context stop
+        // may not find the scheduler to cancel that wold produce the 500 response.
+        Thread.sleep(1000);
 
-        // Stop the context; this is the first half of a redeploy
+        // Stop the context; this is the first half of a
+        // redeploy since we don't restart the context.
         context.stop();
 
-        // Expect the connect to be back with an exception
-        response = futureResponse.get(timeout * 2, TimeUnit.SECONDS);
+        // Expect the /meta/connect to be back with an exception.
+        response = futureResponse.get(timeout * 2, TimeUnit.MILLISECONDS);
         Assertions.assertEquals(HttpStatus.INTERNAL_SERVER_ERROR_500, response.getStatus());
     }
 }
