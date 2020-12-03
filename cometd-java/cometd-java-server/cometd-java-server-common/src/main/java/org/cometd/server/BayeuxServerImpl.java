@@ -33,7 +33,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
 import jakarta.servlet.http.HttpServletRequest;
 
 import org.cometd.bayeux.Bayeux;
@@ -111,12 +110,15 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         if (sweepPeriodOption < 0) {
             sweepPeriodOption = defaultSweepPeriod;
         }
-        final long sweepPeriod = sweepPeriodOption;
+        long sweepPeriod = sweepPeriodOption;
         schedule(new Runnable() {
             @Override
             public void run() {
-                sweep();
-                schedule(this, sweepPeriod);
+                try {
+                    sweep();
+                } finally {
+                    schedule(this, sweepPeriod);
+                }
             }
         }, sweepPeriod);
 

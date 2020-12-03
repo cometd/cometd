@@ -5,11 +5,6 @@
          metadata-complete="true"
          version="5.0">
 
-  <context-param>
-    <param-name>org.eclipse.jetty.websocket.jsr356</param-name>
-    <param-value>false</param-value>
-  </context-param>
-
   <filter>
     <filter-name>cross-origin</filter-name>
     <filter-class>org.eclipse.jetty.servlets.CrossOriginFilter</filter-class>
@@ -21,13 +16,13 @@
   </filter-mapping>
 
   <filter>
-    <filter-name>wsuf</filter-name>
-    <filter-class>org.eclipse.jetty.websocket.util.server.WebSocketUpgradeFilter</filter-class>
+    <filter-name>org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter</filter-name>
+    <filter-class>org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter</filter-class>
     <async-supported>true</async-supported>
   </filter>
 
   <filter-mapping>
-    <filter-name>wsuf</filter-name>
+    <filter-name>org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter</filter-name>
     <url-pattern>/cometd/*</url-pattern>
   </filter-mapping>
 
