@@ -18,6 +18,7 @@ package org.cometd.tests;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -25,40 +26,29 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
-
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
 
-import org.cometd.annotation.Service;
-import org.cometd.annotation.server.RemoteCall;
-import org.cometd.bayeux.Message;
-import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
-import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.client.BayeuxClient;
-import org.cometd.client.http.common.AbstractHttpClientTransport;
 import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.client.websocket.javax.WebSocketTransport;
 import org.cometd.client.websocket.jetty.JettyWebSocketTransport;
-import org.cometd.common.JSONContext;
-import org.cometd.server.BayeuxServerImpl;
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.jmx.ObjectMBean;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.servlets.CrossOriginFilter;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.ajax.JSON;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.webapp.JndiConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
@@ -71,6 +61,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+
 public class WebAppTest {
     private String testName;
     @RegisterExtension
@@ -79,8 +70,8 @@ public class WebAppTest {
         System.err.printf("Running %s.%s()%n", context.getRequiredTestClass().getSimpleName(), testName);
     };
     private Path baseDir;
-    private Server server;
-    private ServerConnector connector;
+    private AutoCloseable server;
+    private int serverPort;
     private String contextPath = "/ctx";
     private WebSocketClient wsClient;
     private WebSocketContainer wsContainer;
@@ -92,92 +83,123 @@ public class WebAppTest {
     }
 
     private void start(Path webXML) throws Exception {
+        // Setup the CometD application *.war file.
         Path contextDir = baseDir.resolve("target/test-webapp/" + testName);
         removeDirectory(contextDir);
+
         Path webINF = Files.createDirectories(contextDir.resolve("WEB-INF"));
         Path classes = Files.createDirectory(webINF.resolve("classes"));
         Files.createDirectory(webINF.resolve("lib"));
-
         Files.copy(webXML, webINF.resolve("web.xml"));
         // CometD dependencies in a CometD web application.
-        copyWebAppDependency(Service.class, webINF);
-        copyWebAppDependency(RemoteCall.class, webINF);
-        copyWebAppDependency(Message.class, webINF);
-        copyWebAppDependency(ClientSession.class, webINF);
-        copyWebAppDependency(BayeuxServer.class, webINF);
-        copyWebAppDependency(JSONContext.class, webINF);
-        copyWebAppDependency(BayeuxServerImpl.class, webINF);
+        copyWebAppDependency(org.cometd.annotation.Service.class, webINF);
+        copyWebAppDependency(org.cometd.annotation.server.RemoteCall.class, webINF);
+        copyWebAppDependency(org.cometd.bayeux.Message.class, webINF);
+        copyWebAppDependency(org.cometd.bayeux.client.ClientSession.class, webINF);
+        copyWebAppDependency(org.cometd.bayeux.server.BayeuxServer.class, webINF);
+        copyWebAppDependency(org.cometd.common.JSONContext.class, webINF);
+        copyWebAppDependency(org.cometd.server.BayeuxServerImpl.class, webINF);
         copyWebAppDependency(org.cometd.server.websocket.common.AbstractWebSocketTransport.class, webINF);
         copyWebAppDependency(org.cometd.server.websocket.javax.WebSocketTransport.class, webINF);
         copyWebAppDependency(org.cometd.server.websocket.jetty.JettyWebSocketTransport.class, webINF);
-        copyWebAppDependency(BayeuxClient.class, webINF);
-        copyWebAppDependency(AbstractHttpClientTransport.class, webINF);
-        copyWebAppDependency(JettyHttpClientTransport.class, webINF);
+        copyWebAppDependency(org.cometd.client.BayeuxClient.class, webINF);
+        copyWebAppDependency(org.cometd.client.http.common.AbstractHttpClientTransport.class, webINF);
+        copyWebAppDependency(org.cometd.client.http.jetty.JettyHttpClientTransport.class, webINF);
         copyWebAppDependency(org.cometd.client.websocket.common.AbstractWebSocketTransport.class, webINF);
         copyWebAppDependency(org.cometd.client.websocket.javax.WebSocketTransport.class, webINF);
         copyWebAppDependency(org.cometd.client.websocket.jetty.JettyWebSocketTransport.class, webINF);
         // Jetty dependencies in a CometD web application.
-        copyWebAppDependency(HttpClient.class, webINF);
-        copyWebAppDependency(HttpStatus.class, webINF);
-        copyWebAppDependency(EndPoint.class, webINF);
-        copyWebAppDependency(ObjectMBean.class, webINF);
-        copyWebAppDependency(CrossOriginFilter.class, webINF);
-        copyWebAppDependency(Callback.class, webINF);
-        copyWebAppDependency(JSON.class, webINF);
+        copyWebAppDependency(org.eclipse.jetty.client.HttpClient.class, webINF);
+        copyWebAppDependency(org.eclipse.jetty.http.HttpStatus.class, webINF);
+        copyWebAppDependency(org.eclipse.jetty.io.EndPoint.class, webINF);
+        copyWebAppDependency(org.eclipse.jetty.jmx.ObjectMBean.class, webINF);
+        copyWebAppDependency(org.eclipse.jetty.servlets.CrossOriginFilter.class, webINF);
+        copyWebAppDependency(org.eclipse.jetty.util.Callback.class, webINF);
+        copyWebAppDependency(org.eclipse.jetty.util.ajax.JSON.class, webINF);
         copyWebAppDependency(org.eclipse.jetty.websocket.api.WebSocketPolicy.class, webINF);
         copyWebAppDependency(org.eclipse.jetty.websocket.common.WebSocketSession.class, webINF);
         copyWebAppDependency(org.eclipse.jetty.websocket.client.WebSocketClient.class, webINF);
         copyWebAppDependency(org.eclipse.jetty.websocket.core.client.WebSocketCoreClient.class, webINF);
         copyWebAppDependency(org.eclipse.jetty.websocket.core.Configuration.class, webINF);
-        // Application classes.
+        // Other dependencies in a CometD web application.
+        copyWebAppDependency(javax.inject.Inject.class, webINF);
+        copyWebAppDependency(javax.annotation.PostConstruct.class, webINF);
+        // Web application classes.
         Path testClasses = baseDir.resolve("target/test-classes/");
         String serviceClass = WebAppService.class.getName().replace('.', '/') + ".class";
         Path servicePath = classes.resolve(serviceClass);
         Files.createDirectories(servicePath.getParent());
         Files.copy(testClasses.resolve(serviceClass), servicePath);
 
-        server = new Server();
-        connector = new ServerConnector(server, 1, 1);
-        server.addConnector(connector);
-        ContextHandlerCollection contexts = new ContextHandlerCollection();
-        server.setHandler(contexts);
+        // Setup the server classpath, so that it does not conflict with the test classpath,
+        // which has all dependencies that may confuse with the server (e.g. ServiceLoader).
+        List<URL> serverClassPath = new ArrayList<>();
+        serverClassPath.add(testClasses.toUri().toURL());
+        serverClassPath.add(org.slf4j.Logger.class.getProtectionDomain().getCodeSource().getLocation());
+        serverClassPath.add(org.apache.logging.slf4j.SLF4JServiceProvider.class.getProtectionDomain().getCodeSource().getLocation());
+        serverClassPath.add(org.apache.logging.log4j.Logger.class.getProtectionDomain().getCodeSource().getLocation());
+        serverClassPath.add(org.apache.logging.log4j.core.Appender.class.getProtectionDomain().getCodeSource().getLocation());
+        serverClassPath.add(javax.servlet.Servlet.class.getProtectionDomain().getCodeSource().getLocation());
+        serverClassPath.add(javax.websocket.Session.class.getProtectionDomain().getCodeSource().getLocation());
+        serverClassPath.add(org.eclipse.jetty.annotations.AnnotationConfiguration.class.getProtectionDomain().getCodeSource().getLocation());
+        serverClassPath.add(org.eclipse.jetty.client.HttpClient.class.getProtectionDomain().getCodeSource().getLocation());
+        serverClassPath.add(org.eclipse.jetty.http.HttpStatus.class.getProtectionDomain().getCodeSource().getLocation());
+        serverClassPath.add(org.eclipse.jetty.io.EndPoint.class.getProtectionDomain().getCodeSource().getLocation());
+        serverClassPath.add(org.eclipse.jetty.jndi.NamingContext.class.getProtectionDomain().getCodeSource().getLocation());
+        serverClassPath.add(org.eclipse.jetty.plus.webapp.PlusConfiguration.class.getProtectionDomain().getCodeSource().getLocation());
+        serverClassPath.add(org.eclipse.jetty.security.SecurityHandler.class.getProtectionDomain().getCodeSource().getLocation());
+        serverClassPath.add(org.eclipse.jetty.server.Server.class.getProtectionDomain().getCodeSource().getLocation());
+        serverClassPath.add(org.eclipse.jetty.servlet.ServletContextHandler.class.getProtectionDomain().getCodeSource().getLocation());
+        serverClassPath.add(org.eclipse.jetty.util.Callback.class.getProtectionDomain().getCodeSource().getLocation());
+        serverClassPath.add(org.eclipse.jetty.webapp.WebAppContext.class.getProtectionDomain().getCodeSource().getLocation());
+        serverClassPath.add(org.eclipse.jetty.websocket.api.Session.class.getProtectionDomain().getCodeSource().getLocation());
+        serverClassPath.add(org.eclipse.jetty.websocket.core.CoreSession.class.getProtectionDomain().getCodeSource().getLocation());
+        serverClassPath.add(org.eclipse.jetty.websocket.core.client.WebSocketCoreClient.class.getProtectionDomain().getCodeSource().getLocation());
+        serverClassPath.add(org.eclipse.jetty.websocket.core.server.WebSocketServerComponents.class.getProtectionDomain().getCodeSource().getLocation());
+        serverClassPath.add(org.eclipse.jetty.websocket.javax.client.JavaxWebSocketClientContainerProvider.class.getProtectionDomain().getCodeSource().getLocation());
+        serverClassPath.add(org.eclipse.jetty.websocket.javax.common.JavaxWebSocketContainer.class.getProtectionDomain().getCodeSource().getLocation());
+        serverClassPath.add(org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketConfiguration.class.getProtectionDomain().getCodeSource().getLocation());
+        serverClassPath.add(org.eclipse.jetty.websocket.common.WebSocketSession.class.getProtectionDomain().getCodeSource().getLocation());
+        serverClassPath.add(org.eclipse.jetty.websocket.server.config.JettyWebSocketConfiguration.class.getProtectionDomain().getCodeSource().getLocation());
+        serverClassPath.add(org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter.class.getProtectionDomain().getCodeSource().getLocation());
+        serverClassPath.add(org.eclipse.jetty.xml.XmlConfiguration.class.getProtectionDomain().getCodeSource().getLocation());
+        serverClassPath.add(org.objectweb.asm.ClassVisitor.class.getProtectionDomain().getCodeSource().getLocation());
+        URLClassLoader serverClassLoader = new URLClassLoader(serverClassPath.toArray(URL[]::new), getClass().getClassLoader().getParent());
+        // Need to setup the context class loader for ServiceLoader to work properly.
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(serverClassLoader);
+        try {
+            Class<?> serverClass = serverClassLoader.loadClass(JettyServer.class.getName());
+            server = (AutoCloseable)serverClass.getConstructor(Path.class, String.class).newInstance(contextDir, contextPath);
+            serverPort = (Integer)serverClass.getMethod("start").invoke(server);
+        } finally {
+            Thread.currentThread().setContextClassLoader(classLoader);
+        }
 
-        WebAppContext webApp = new WebAppContext();
-        webApp.setContextPath(contextPath);
-        webApp.setBaseResource(Resource.newResource(contextDir.toUri()));
-        webApp.addConfiguration(
-                new AnnotationConfiguration(),
-                new JavaxWebSocketConfiguration(),
-                new JettyWebSocketConfiguration(),
-                new JndiConfiguration()
-        );
-
-        contexts.addHandler(webApp);
-
-        wsClient = new WebSocketClient();
-        server.addBean(wsClient);
-
-        wsContainer = ContainerProvider.getWebSocketContainer();
-        server.addBean(wsContainer);
-
+        // Finally, setup the clients.
+        QueuedThreadPool clientThreads = new QueuedThreadPool();
+        clientThreads.setName("client");
         httpClient = new HttpClient();
-        server.addBean(httpClient);
-
-        server.start();
+        httpClient.setExecutor(clientThreads);
+        wsClient = new WebSocketClient(httpClient);
+        httpClient.addBean(wsClient);
+        wsContainer = ContainerProvider.getWebSocketContainer();
+        httpClient.addBean(wsContainer);
+        httpClient.start();
     }
 
     @AfterEach
     public void dispose() throws Exception {
+        LifeCycle.stop(httpClient);
         if (server != null) {
-            server.stop();
+            server.close();
         }
     }
 
     @Test
     public void testWebAppWithNativeJettyWebSocketTransport() throws Exception {
         start(baseDir.resolve("src/test/resources/jetty-ws-web.xml"));
-
-        BayeuxClient client = new BayeuxClient("http://localhost:" + connector.getLocalPort() + contextPath + "/cometd", new JettyWebSocketTransport(null, null, wsClient));
+        BayeuxClient client = new BayeuxClient("http://localhost:" + serverPort + contextPath + "/cometd", new JettyWebSocketTransport(null, null, wsClient));
         subscribePublishReceive(client);
         client.disconnect();
     }
@@ -185,8 +207,7 @@ public class WebAppTest {
     @Test
     public void testWebAppWithWebSocketTransport() throws Exception {
         start(baseDir.resolve("src/test/resources/jsr-ws-web.xml"));
-
-        BayeuxClient client = new BayeuxClient("http://localhost:" + connector.getLocalPort() + contextPath + "/cometd", new WebSocketTransport(null, null, wsContainer));
+        BayeuxClient client = new BayeuxClient("http://localhost:" + serverPort + contextPath + "/cometd", new WebSocketTransport(null, null, wsContainer));
         subscribePublishReceive(client);
         client.disconnect();
     }
@@ -194,8 +215,7 @@ public class WebAppTest {
     @Test
     public void testWebAppWithHTTPTransport() throws Exception {
         start(baseDir.resolve("src/test/resources/http-web.xml"));
-
-        BayeuxClient client = new BayeuxClient("http://localhost:" + connector.getLocalPort() + contextPath + "/cometd", new JettyHttpClientTransport(null, httpClient));
+        BayeuxClient client = new BayeuxClient("http://localhost:" + serverPort + contextPath + "/cometd", new JettyHttpClientTransport(null, httpClient));
         subscribePublishReceive(client);
         client.disconnect();
     }
@@ -203,8 +223,7 @@ public class WebAppTest {
     @Test
     public void testWebAppWithService() throws Exception {
         start(baseDir.resolve("src/test/resources/http-service-web.xml"));
-
-        String uri = "http://localhost:" + connector.getLocalPort() + contextPath + "/cometd";
+        String uri = "http://localhost:" + serverPort + contextPath + "/cometd";
         BayeuxClient client = new BayeuxClient(uri, new JettyHttpClientTransport(null, httpClient));
         client.handshake();
         Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
@@ -282,6 +301,47 @@ public class WebAppTest {
         } catch (FileAlreadyExistsException ignored) {
         } catch (IOException x) {
             throw new UncheckedIOException(x);
+        }
+    }
+
+    public static class JettyServer implements AutoCloseable {
+        private final Path contextDir;
+        private final String contextPath;
+        private Server server;
+
+        public JettyServer(Path contextDir, String contextPath) {
+            this.contextDir = contextDir;
+            this.contextPath = contextPath;
+        }
+
+        public int start() throws Exception {
+            QueuedThreadPool serverThreads = new QueuedThreadPool();
+            serverThreads.setName("server");
+            server = new Server(serverThreads);
+            ServerConnector connector = new ServerConnector(server, 1, 1);
+            server.addConnector(connector);
+            ContextHandlerCollection contexts = new ContextHandlerCollection();
+            server.setHandler(contexts);
+
+            WebAppContext webApp = new WebAppContext();
+            webApp.setContextPath(contextPath);
+            webApp.setBaseResource(Resource.newResource(contextDir.toUri()));
+            webApp.addConfiguration(
+                    new AnnotationConfiguration(),
+                    new JavaxWebSocketConfiguration(),
+                    new JettyWebSocketConfiguration(),
+                    new JndiConfiguration()
+            );
+            contexts.addHandler(webApp);
+            server.start();
+            return connector.getLocalPort();
+        }
+
+        @Override
+        public void close() throws Exception {
+            if (server != null) {
+                server.stop();
+            }
         }
     }
 }
