@@ -19,10 +19,8 @@ import java.net.ServerSocket;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
-
 import org.cometd.client.BayeuxClient;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.CometDServlet;

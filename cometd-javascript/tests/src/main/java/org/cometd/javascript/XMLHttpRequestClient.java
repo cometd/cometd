@@ -17,7 +17,6 @@ package org.cometd.javascript;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;

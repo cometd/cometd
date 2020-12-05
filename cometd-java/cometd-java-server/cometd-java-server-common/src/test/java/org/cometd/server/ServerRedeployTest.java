@@ -16,7 +16,6 @@
 package org.cometd.server;
 
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.FutureResponseListener;

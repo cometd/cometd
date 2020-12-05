@@ -19,7 +19,6 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
-
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSession;
 

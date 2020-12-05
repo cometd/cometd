@@ -16,10 +16,8 @@
 package org.cometd.annotation;
 
 import java.util.List;
-
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-
 import org.cometd.annotation.server.AnnotationCometDServlet;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerCollection;

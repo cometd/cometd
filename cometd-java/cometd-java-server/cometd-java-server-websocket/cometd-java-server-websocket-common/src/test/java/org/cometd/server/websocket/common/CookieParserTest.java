@@ -18,7 +18,6 @@ package org.cometd.server.websocket.common;
 import java.net.HttpCookie;
 import java.text.ParseException;
 import java.util.List;
-
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 

@@ -5,12 +5,10 @@
 package ${package};
 
 import java.io.IOException;
-
 import jakarta.servlet.GenericServlet;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
-
 import org.cometd.bayeux.server.BayeuxServer;
 
 public class CometDInitializer extends GenericServlet {

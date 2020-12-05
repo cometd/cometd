@@ -18,7 +18,6 @@ package org.cometd.server;
 import java.text.ParseException;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerChannel;

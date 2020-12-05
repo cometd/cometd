@@ -26,7 +26,6 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.Session;

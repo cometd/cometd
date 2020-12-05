@@ -25,7 +25,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
-
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.CookieJar;
@@ -43,6 +42,7 @@ import org.cometd.client.http.common.AbstractHttpClientTransport;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.TransportListener;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,8 +50,9 @@ public class OkHttpClientTransport extends AbstractHttpClientTransport {
     private static final Logger LOGGER = LoggerFactory.getLogger(OkHttpClientTransport.class);
     private static final MediaType JSON_MEDIA_TYPE = MediaType.get("application/json;charset=UTF-8");
 
-    private final List<Call> _calls = new ArrayList<>();
-    private final OkHttpClient _client;
+    private final AutoLock lock = new AutoLock();
+    private final List<Call> calls = new ArrayList<>();
+    private final OkHttpClient client;
 
     public OkHttpClientTransport(Map<String, Object> options, OkHttpClient client) {
         this(null, options, client);
@@ -63,14 +64,14 @@ public class OkHttpClientTransport extends AbstractHttpClientTransport {
 
     public OkHttpClientTransport(String url, Map<String, Object> options, ScheduledExecutorService scheduler, OkHttpClient client) {
         super(url, options, scheduler);
-        _client = client.newBuilder()
+        this.client = client.newBuilder()
                 .cookieJar(CookieJar.NO_COOKIES)
                 .addInterceptor(new SendingInterceptor())
                 .build();
     }
 
     protected OkHttpClient getOkHttpClient() {
-        return _client;
+        return client;
     }
 
     @Override
@@ -87,10 +88,10 @@ public class OkHttpClientTransport extends AbstractHttpClientTransport {
     @Override
     public void abort(Throwable failure) {
         List<Call> requests;
-        synchronized (this) {
+        try (AutoLock l = lock.lock()) {
             super.abort(failure);
-            requests = new ArrayList<>(_calls);
-            _calls.clear();
+            requests = new ArrayList<>(calls);
+            calls.clear();
         }
         requests.forEach(Call::cancel);
     }
@@ -120,7 +121,7 @@ public class OkHttpClientTransport extends AbstractHttpClientTransport {
 
     private void send(TransportListener listener, List<Message.Mutable> messages, URI cookieURI, Request.Builder request) {
         long maxNetworkDelay = calculateMaxNetworkDelay(messages);
-        OkHttpClient client = _client.newBuilder()
+        OkHttpClient client = this.client.newBuilder()
                 // Disable the read timeout.
                 .readTimeout(0, TimeUnit.MILLISECONDS)
                 // Schedule a task to timeout the request.
@@ -142,9 +143,9 @@ public class OkHttpClientTransport extends AbstractHttpClientTransport {
             }
         }
 
-        synchronized (this) {
+        try (AutoLock l = lock.lock()) {
             if (!isAborted()) {
-                _calls.add(call);
+                calls.add(call);
             }
         }
 

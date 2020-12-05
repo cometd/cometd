@@ -18,7 +18,6 @@ package org.cometd.common;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
 

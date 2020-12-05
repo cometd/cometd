@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
-
 import org.cometd.bayeux.Message;
 import org.cometd.client.BayeuxClient;
 import org.cometd.common.AbstractTransport;

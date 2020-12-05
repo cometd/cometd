@@ -16,7 +16,6 @@
 package org.cometd.server;
 
 import java.util.concurrent.TimeUnit;
-
 import org.cometd.bayeux.server.LocalSession;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

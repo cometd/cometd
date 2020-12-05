@@ -16,7 +16,6 @@
 package org.cometd.oort;
 
 import jakarta.servlet.ServletConfig;
-
 import org.cometd.bayeux.server.BayeuxServer;
 
 /**

@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -40,6 +41,7 @@ public class ChannelId {
     public static final String DEEPWILD = "**";
     private static final Pattern VAR = Pattern.compile("\\{(\\w+)}");
 
+    private final ReentrantLock lock = new ReentrantLock();
     private final String _id;
     private String[] _segments;
     private int _wild;
@@ -66,11 +68,14 @@ public class ChannelId {
     }
 
     private void resolve() {
-        synchronized (this) {
+        lock.lock();
+        try {
             if (_segments != null) {
                 return;
             }
             resolve(_id);
+        } finally {
+            lock.unlock();
         }
     }
 

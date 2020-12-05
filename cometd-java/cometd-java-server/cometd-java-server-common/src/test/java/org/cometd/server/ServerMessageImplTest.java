@@ -20,7 +20,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.Map;
-
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.ServerMessage;
 import org.junit.jupiter.api.Assertions;

@@ -17,7 +17,6 @@ package org.cometd.client.ext;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import org.cometd.bayeux.Message.Mutable;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSession.Extension;

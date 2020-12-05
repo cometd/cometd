@@ -29,7 +29,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
-
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Message.Mutable;
@@ -37,6 +36,7 @@ import org.cometd.bayeux.Promise;
 import org.cometd.client.transport.HttpClientTransport;
 import org.cometd.client.transport.MessageClientTransport;
 import org.cometd.client.transport.TransportListener;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +52,7 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
     protected static final String COOKIE_HEADER = "Cookie";
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractWebSocketTransport.class);
 
-    private final Object _lock = this;
+    private final AutoLock lock = new AutoLock();
     private boolean _open;
     private String _protocol;
     private long _connectTimeout;
@@ -99,7 +99,7 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
     }
 
     protected <T> T locked(Supplier<T> block) {
-        synchronized (_lock) {
+        try (AutoLock l = lock.lock()) {
             return block.get();
         }
     }

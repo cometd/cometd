@@ -17,7 +17,6 @@ package org.cometd.javascript;
 
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerChannel;

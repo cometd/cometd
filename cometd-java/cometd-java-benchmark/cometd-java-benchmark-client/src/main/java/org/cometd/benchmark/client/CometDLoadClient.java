@@ -23,28 +23,24 @@ import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicStampedReference;
-
 import jakarta.websocket.ContainerProvider;
 import jakarta.websocket.WebSocketContainer;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.HdrHistogram.Histogram;
@@ -76,6 +72,7 @@ import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.toolchain.perf.HistogramSnapshot;
 import org.eclipse.jetty.toolchain.perf.MeasureConverter;
 import org.eclipse.jetty.toolchain.perf.PlatformMonitor;
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
@@ -89,10 +86,9 @@ public class CometDLoadClient implements MeasureConverter {
         allHistograms.add(histogram);
         return histogram;
     });
-    private final Random random = new Random();
     private final PlatformMonitor monitor = new PlatformMonitor();
     private final AtomicLong ids = new AtomicLong();
-    private final List<LoadBayeuxClient> bayeuxClients = Collections.synchronizedList(new ArrayList<>());
+    private final List<LoadBayeuxClient> bayeuxClients = new BlockingArrayQueue<>();
     private final ConcurrentMap<String, ChannelId> channelIds = new ConcurrentHashMap<>();
     private final ConcurrentMap<Integer, AtomicInteger> roomMap = new ConcurrentHashMap<>();
     private final AtomicLong start = new AtomicLong();
@@ -700,9 +696,7 @@ public class CometDLoadClient implements MeasureConverter {
     }
 
     private int nextRandom(int limit) {
-        synchronized (this) {
-            return random.nextInt(limit);
-        }
+        return ThreadLocalRandom.current().nextInt(limit);
     }
 
     private void updateLatencies(long startTime, long sendTime, long arrivalTime, long endTime) {
@@ -970,8 +964,7 @@ public class CometDLoadClient implements MeasureConverter {
                     int clientsInRoom = roomMap.get(room).get();
                     String id = (String)data.get(Config.ID_FIELD);
                     sendTimes.put(id, new AtomicStampedReference<>(now, clientsInRoom));
-                    // There is no write-cheap concurrent list in JDK, so let's use a synchronized wrapper
-                    arrivalTimes.put(id, new AtomicStampedReference<>(Collections.synchronizedList(new LinkedList<>()), clientsInRoom));
+                    arrivalTimes.put(id, new AtomicStampedReference<>(new BlockingArrayQueue<>(), clientsInRoom));
                 }
             }
         }

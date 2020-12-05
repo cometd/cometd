@@ -16,7 +16,6 @@
 package org.cometd.client.http;
 
 import java.util.Map;
-
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.http.jetty.JettyHttpClientTransport;

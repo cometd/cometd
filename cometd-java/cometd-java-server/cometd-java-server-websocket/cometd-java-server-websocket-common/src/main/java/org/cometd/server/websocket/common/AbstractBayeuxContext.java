@@ -23,10 +23,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
-
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpSession;
-
 import org.cometd.bayeux.server.BayeuxContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

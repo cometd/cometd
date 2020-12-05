@@ -15,12 +15,11 @@
  */
 package org.cometd.oort;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -99,7 +98,7 @@ public class OortLongMapTest extends AbstractOortObjectTest {
         startOortObjects(oortMap1, oortMap2);
 
         long key = 13L;
-        Map<String, Boolean> node1Value = new HashMap<>();
+        Map<String, Boolean> node1Value = new ConcurrentHashMap<>();
 
         final CountDownLatch putLatch1 = new CountDownLatch(2);
         OortMap.EntryListener<Long, Map<String, Boolean>> listener1 = new OortMap.EntryListener<Long, Map<String, Boolean>>() {
@@ -125,15 +124,11 @@ public class OortLongMapTest extends AbstractOortObjectTest {
 
         // Now we have a reference to the value object for that key.
         // We mutate the value object.
-        synchronized (node1Value) {
-            node1Value.put("1", true);
-        }
+        node1Value.put("1", true);
 
         // Another thread may just get the value and modify it
         node1Value = oortMap1.get(key);
-        synchronized (node1Value) {
-            node1Value.put("2", true);
-        }
+        node1Value.put("2", true);
 
         final CountDownLatch putLatch2 = new CountDownLatch(2);
         OortMap.EntryListener<Long, Map<String, Boolean>> listener2 = new OortMap.EntryListener<Long, Map<String, Boolean>>() {

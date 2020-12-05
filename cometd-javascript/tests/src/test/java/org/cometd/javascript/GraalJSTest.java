@@ -16,7 +16,6 @@
 package org.cometd.javascript;
 
 import java.util.function.Function;
-
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Value;
 import org.junit.jupiter.api.Assertions;

@@ -17,9 +17,7 @@ package org.cometd.annotation.server;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import jakarta.servlet.ServletException;
-
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.server.CometDServlet;
 import org.eclipse.jetty.util.Loader;

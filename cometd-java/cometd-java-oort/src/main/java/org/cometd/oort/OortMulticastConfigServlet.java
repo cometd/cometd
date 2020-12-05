@@ -20,9 +20,7 @@ import java.net.MulticastSocket;
 import java.net.NetworkInterface;
 import java.util.ArrayList;
 import java.util.List;
-
 import jakarta.servlet.ServletConfig;
-
 import org.cometd.bayeux.server.BayeuxServer;
 
 /**

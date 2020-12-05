@@ -28,7 +28,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
@@ -51,8 +52,9 @@ import org.slf4j.LoggerFactory;
 
 public class ServerSessionImpl implements ServerSession, Dumpable {
     private static final AtomicLong _idCount = new AtomicLong();
-
     private static final Logger _logger = LoggerFactory.getLogger(ServerSession.class);
+
+    private final ReentrantLock lock = new ReentrantLock();
     private final BayeuxServerImpl _bayeux;
     private final String _id;
     private final List<ServerSessionListener> _listeners = new CopyOnWriteArrayList<>();
@@ -154,7 +156,8 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
 
         boolean remove = false;
         Scheduler scheduler = null;
-        synchronized (getLock()) {
+        lock.lock();
+        try {
             if (_expireTime == 0) {
                 if (_maxProcessing > 0 && now > _messageTime + _maxProcessing) {
                     _logger.info("Sweeping session during processing {}", this);
@@ -171,6 +174,8 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
             if (remove) {
                 scheduler = _scheduler;
             }
+        } finally {
+            lock.unlock();
         }
         if (remove) {
             if (scheduler != null) {
@@ -281,7 +286,8 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
     }
 
     private Boolean enqueueMessage(ServerSession sender, ServerMessage.Mutable message) {
-        synchronized (getLock()) {
+        lock.lock();
+        try {
             for (ServerSessionListener listener : _listeners) {
                 if (listener instanceof QueueMaxedListener) {
                     final int maxQueueSize = _maxQueue;
@@ -299,6 +305,8 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
                 }
             }
             return _batch == 0;
+        } finally {
+            lock.unlock();
         }
     }
 
@@ -361,22 +369,28 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
             _maxLazy = transport.getMaxLazyTimeout();
         }
 
-        synchronized (getLock()) {
+        lock.lock();
+        try {
             if (_state == State.NEW) {
                 _state = State.HANDSHAKEN;
                 return true;
             }
             return false;
+        } finally {
+            lock.unlock();
         }
     }
 
     protected boolean connected() {
-        synchronized (getLock()) {
+        lock.lock();
+        try {
             if (_state == State.HANDSHAKEN || _state == State.CONNECTED) {
                 _state = State.CONNECTED;
                 return true;
             }
             return false;
+        } finally {
+            lock.unlock();
         }
     }
 
@@ -387,7 +401,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
             ServerMessage.Mutable message = _bayeux.newMessage();
             message.setSuccessful(true);
             message.setChannel(Channel.META_DISCONNECT);
-            deliver(this, message, new Promise<Boolean>() {
+            deliver(this, message, new Promise<>() {
                 @Override
                 public void succeed(Boolean result) {
                     flush();
@@ -398,18 +412,24 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
 
     @Override
     public void startBatch() {
-        synchronized (getLock()) {
+        lock.lock();
+        try {
             ++_batch;
+        } finally {
+            lock.unlock();
         }
     }
 
     @Override
     public boolean endBatch() {
         boolean result = false;
-        synchronized (getLock()) {
+        lock.lock();
+        try {
             if (--_batch == 0 && _nonLazyMessages) {
                 result = true;
             }
+        } finally {
+            lock.unlock();
         }
         if (result) {
             flush();
@@ -437,8 +457,8 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         return _id;
     }
 
-    public Object getLock() {
-        return this;
+    public Lock getLock() {
+        return lock;
     }
 
     public Queue<ServerMessage> getQueue() {
@@ -446,21 +466,28 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
     }
 
     public boolean hasNonLazyMessages() {
-        synchronized (getLock()) {
+        lock.lock();
+        try {
             return _nonLazyMessages;
+        } finally {
+            lock.unlock();
         }
     }
 
     protected void addMessage(ServerMessage message) {
-        synchronized (getLock()) {
+        lock.lock();
+        try {
             _queue.add(message);
             _nonLazyMessages |= !message.isLazy();
+        } finally {
+            lock.unlock();
         }
     }
 
     public List<ServerMessage> takeQueue(List<ServerMessage.Mutable> replies) {
         List<ServerMessage> copy = Collections.emptyList();
-        synchronized (getLock()) {
+        lock.lock();
+        try {
             // Always call listeners, even if the queue is
             // empty since they may add messages to the queue.
             for (ServerSessionListener listener : _listeners) {
@@ -477,6 +504,8 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
             }
 
             _nonLazyMessages = false;
+        } finally {
+            lock.unlock();
         }
         return copy;
     }
@@ -517,11 +546,14 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
     public void setScheduler(AbstractServerTransport.Scheduler newScheduler) {
         if (newScheduler == null) {
             Scheduler oldScheduler;
-            synchronized (getLock()) {
+            lock.lock();
+            try {
                 oldScheduler = _scheduler;
                 if (oldScheduler != null) {
                     _scheduler = null;
                 }
+            } finally {
+                lock.unlock();
             }
             if (oldScheduler != null) {
                 oldScheduler.cancel();
@@ -529,7 +561,8 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         } else {
             Scheduler oldScheduler;
             boolean schedule = false;
-            synchronized (getLock()) {
+            lock.lock();
+            try {
                 oldScheduler = _scheduler;
                 _scheduler = newScheduler;
                 if (shouldSchedule()) {
@@ -538,6 +571,8 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
                         _scheduler = null;
                     }
                 }
+            } finally {
+                lock.unlock();
             }
             if (oldScheduler != null && oldScheduler != newScheduler) {
                 oldScheduler.cancel();
@@ -549,14 +584,18 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
     }
 
     public boolean shouldSchedule() {
-        synchronized (getLock()) {
+        lock.lock();
+        try {
             return hasNonLazyMessages() && _batch == 0;
+        } finally {
+            lock.unlock();
         }
     }
 
     public void flush() {
         Scheduler scheduler;
-        synchronized (getLock()) {
+        lock.lock();
+        try {
             _lazyTask.cancel();
 
             scheduler = _scheduler;
@@ -566,6 +605,8 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
                     _scheduler = null;
                 }
             }
+        } finally {
+            lock.unlock();
         }
         if (scheduler != null) {
             scheduler.schedule();
@@ -583,7 +624,8 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
     }
 
     private void flushLazy(ServerMessage message) {
-        synchronized (getLock()) {
+        lock.lock();
+        try {
             ServerChannel channel = _bayeux.getChannel(message.getChannel());
             long lazyTimeout = -1;
             if (channel != null) {
@@ -598,16 +640,21 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
             } else {
                 _lazyTask.schedule(lazyTimeout);
             }
+        } finally {
+            lock.unlock();
         }
     }
 
     public void destroyScheduler() {
         Scheduler scheduler;
-        synchronized (getLock()) {
+        lock.lock();
+        try {
             scheduler = _scheduler;
             if (scheduler != null) {
                 _scheduler = null;
             }
+        } finally {
+            lock.unlock();
         }
         if (scheduler != null) {
             scheduler.destroy();
@@ -616,7 +663,8 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
 
     public void cancelExpiration(boolean metaConnect) {
         long now = System.nanoTime();
-        synchronized (getLock()) {
+        lock.lock();
+        try {
             _messageTime = now;
             if (metaConnect) {
                 // A /meta/connect was received and possibly
@@ -629,6 +677,8 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
                 long maxInterval = calculateMaxInterval(getServerTransport().getMaxInterval());
                 _expireTime = Math.max(_expireTime, now + TimeUnit.MILLISECONDS.toNanos(maxInterval));
             }
+        } finally {
+            lock.unlock();
         }
         if (_logger.isDebugEnabled()) {
             _logger.debug("{} expiration for {}", metaConnect ? "Cancelling" : "Delaying", this);
@@ -639,8 +689,11 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         long interval = calculateInterval(defaultInterval);
         long maxInterval = calculateMaxInterval(defaultMaxInterval);
         long now = System.nanoTime();
-        synchronized (getLock()) {
+        lock.lock();
+        try {
             _expireTime = now + TimeUnit.MILLISECONDS.toNanos(interval + maxInterval);
+        } finally {
+            lock.unlock();
         }
         if (_logger.isDebugEnabled()) {
             _logger.debug("Scheduled expiration for {}", this);
@@ -685,27 +738,39 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
 
     @Override
     public boolean isHandshook() {
-        synchronized (getLock()) {
+        lock.lock();
+        try {
             return _state == State.HANDSHAKEN || _state == State.CONNECTED;
+        } finally {
+            lock.unlock();
         }
     }
 
     @Override
     public boolean isConnected() {
-        synchronized (getLock()) {
+        lock.lock();
+        try {
             return _state == State.CONNECTED;
+        } finally {
+            lock.unlock();
         }
     }
 
     public boolean isDisconnected() {
-        synchronized (getLock()) {
+        lock.lock();
+        try {
             return _state == State.DISCONNECTED;
+        } finally {
+            lock.unlock();
         }
     }
 
     public boolean isTerminated() {
-        synchronized (getLock()) {
+        lock.lock();
+        try {
             return _state == State.DISCONNECTED || _state == State.EXPIRED;
+        } finally {
+            lock.unlock();
         }
     }
 
@@ -820,9 +885,12 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
      */
     protected boolean removed(ServerMessage message, boolean timeout) {
         boolean result;
-        synchronized (this) {
+        lock.lock();
+        try {
             result = isHandshook();
             _state = timeout ? State.EXPIRED : State.DISCONNECTED;
+        } finally {
+            lock.unlock();
         }
         if (result) {
             for (ServerChannelImpl channel : subscriptions) {
@@ -873,13 +941,16 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
     }
 
     protected boolean subscribe(ServerChannelImpl channel) {
-        synchronized (getLock()) {
+        lock.lock();
+        try {
             if (isTerminated()) {
                 return false;
             } else {
                 subscriptions.add(channel);
                 return true;
             }
+        } finally {
+            lock.unlock();
         }
     }
 
@@ -956,10 +1027,13 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         long expire;
         State state;
         long now = System.nanoTime();
-        synchronized (getLock()) {
+        lock.lock();
+        try {
             last = now - _messageTime;
             expire = _expireTime == 0 ? 0 : _expireTime - now;
             state = _state;
+        } finally {
+            lock.unlock();
         }
         return String.format("%s,%s,last=%d,expire=%d",
                 _id,

@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.TimeoutException;
-
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
@@ -40,12 +39,14 @@ import org.cometd.server.ServerSessionImpl;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class AbstractWebSocketEndPoint {
     private final Logger _logger = LoggerFactory.getLogger(getClass());
+    private final AutoLock lock = new AutoLock();
     private final Flusher flusher = new Flusher();
     private final AbstractWebSocketTransport _transport;
     private final BayeuxContext _bayeuxContext;
@@ -355,7 +356,7 @@ public abstract class AbstractWebSocketEndPoint {
 
         private boolean cancelTimeout() {
             Scheduler.Task task;
-            synchronized (this) {
+            try (AutoLock l = lock.lock()) {
                 task = this.task;
                 if (task != null) {
                     this.task = null;
@@ -390,7 +391,7 @@ public abstract class AbstractWebSocketEndPoint {
 
         private boolean queue(Entry entry) {
             Throwable failure;
-            synchronized (this) {
+            try (AutoLock l = lock.lock()) {
                 failure = _failure;
                 if (failure == null) {
                     return _entries.offer(entry);
@@ -408,7 +409,7 @@ public abstract class AbstractWebSocketEndPoint {
             while (true) {
                 switch (_state) {
                     case IDLE: {
-                        synchronized (this) {
+                        try (AutoLock l = lock.lock()) {
                             _entry = _entries.poll();
                         }
                         if (_logger.isDebugEnabled()) {
@@ -526,7 +527,7 @@ public abstract class AbstractWebSocketEndPoint {
         @Override
         protected void onCompleteFailure(Throwable x) {
             Entry entry;
-            synchronized (this) {
+            try (AutoLock l = lock.lock()) {
                 _failure = x;
                 entry = this._entry;
             }

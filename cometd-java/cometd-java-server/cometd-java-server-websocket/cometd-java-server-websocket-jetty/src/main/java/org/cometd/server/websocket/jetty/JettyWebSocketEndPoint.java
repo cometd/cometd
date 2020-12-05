@@ -16,7 +16,6 @@
 package org.cometd.server.websocket.jetty;
 
 import java.util.concurrent.ExecutionException;
-
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.ServerSession;

@@ -17,17 +17,15 @@
 package org.cometd.oort;
 
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
-
 import org.cometd.annotation.Listener;
 import org.cometd.annotation.Service;
 import org.cometd.annotation.Session;
@@ -69,7 +67,6 @@ public class OortChatService {
         _oort.deobserveChannel("/chat/**");
     }
 
-    @SuppressWarnings("unused")
     @Configure({"/chat/**", "/members/**"})
     private void configureChatStarStar(ConfigurableServerChannel channel) {
         DataFilterMessageListener noMarkup = new DataFilterMessageListener(_bayeux, new NoMarkupFilter(), new BadWordFilter());
@@ -77,7 +74,6 @@ public class OortChatService {
         channel.addAuthorizer(GrantAuthorizer.GRANT_ALL);
     }
 
-    @SuppressWarnings("unused")
     @Configure("/service/privatechat")
     private void configurePrivateChat(ConfigurableServerChannel channel) {
         DataFilterMessageListener noMarkup = new DataFilterMessageListener(_bayeux, new NoMarkupFilter(), new BadWordFilter());
@@ -86,7 +82,6 @@ public class OortChatService {
         channel.addAuthorizer(GrantAuthorizer.GRANT_PUBLISH);
     }
 
-    @SuppressWarnings("unused")
     @Configure("/service/members")
     private void configureMembers(ConfigurableServerChannel channel) {
         channel.addAuthorizer(GrantAuthorizer.GRANT_PUBLISH);
@@ -96,7 +91,7 @@ public class OortChatService {
     private Set<String> getMemberList(String room) {
         Set<String> members = _members.get(room);
         if (members == null) {
-            Set<String> newMembers = new HashSet<>();
+            Set<String> newMembers = Collections.newSetFromMap(new ConcurrentHashMap<>());
             members = _members.putIfAbsent(room, newMembers);
             if (members == null) {
                 members = newMembers;
@@ -112,22 +107,20 @@ public class OortChatService {
         String userName = (String)data.get("user");
 
         Set<String> members = getMemberList(room);
-        synchronized (members) {
-            members.add(userName);
-            client.addListener((ServerSession.RemovedListener)(s, m, t) -> {
-                if (!_oort.isOort(client)) {
-                    _seti.disassociate(userName, s);
-                }
-                members.remove(userName);
-                broadcastMembers(room, members);
-            });
-
+        members.add(userName);
+        client.addListener((ServerSession.RemovedListener)(s, m, t) -> {
             if (!_oort.isOort(client)) {
-                _seti.associate(userName, client);
+                _seti.disassociate(userName, s);
             }
-
+            members.remove(userName);
             broadcastMembers(room, members);
+        });
+
+        if (!_oort.isOort(client)) {
+            _seti.associate(userName, client);
         }
+
+        broadcastMembers(room, members);
     }
 
     @Listener("/members/**")
@@ -135,18 +128,16 @@ public class OortChatService {
         String room = message.getChannel().substring("/members/".length());
 
         Object data = message.getData();
-        Object[] newMembers = data instanceof List ? ((List)data).toArray() : (Object[])data;
+        Object[] newMembers = data instanceof List ? ((List<?>)data).toArray() : (Object[])data;
 
         Collection<String> members = getMemberList(room);
-        synchronized (members) {
-            boolean added = false;
-            for (Object o : newMembers) {
-                added |= members.add(o.toString());
-            }
+        boolean added = false;
+        for (Object o : newMembers) {
+            added |= members.add(o.toString());
+        }
 
-            if (added) {
-                broadcastMembers(room, members);
-            }
+        if (added) {
+            broadcastMembers(room, members);
         }
     }
 

@@ -19,10 +19,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import jakarta.websocket.ContainerProvider;
 import jakarta.websocket.WebSocketContainer;
-
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.server.CometDServlet;

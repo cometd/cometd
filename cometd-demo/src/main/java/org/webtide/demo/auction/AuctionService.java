@@ -18,9 +18,7 @@ package org.webtide.demo.auction;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import jakarta.servlet.ServletContext;
-
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSessionChannel;
@@ -34,6 +32,7 @@ import org.cometd.oort.Seti;
 import org.cometd.oort.SetiServlet;
 import org.cometd.server.AbstractService;
 import org.cometd.server.authorizer.GrantAuthorizer;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.webtide.demo.auction.dao.AuctionDao;
 import org.webtide.demo.auction.dao.BidderDao;
 import org.webtide.demo.auction.dao.CategoryDao;
@@ -41,6 +40,7 @@ import org.webtide.demo.auction.dao.CategoryDao;
 public class AuctionService extends AbstractService implements ClientSessionChannel.MessageListener, BayeuxServer.ChannelListener, BayeuxServer.SubscriptionListener {
     public static final String AUCTION_ROOT = "/auction/";
 
+    private final AutoLock lock = new AutoLock();
     private final AuctionDao _auctionDao = new AuctionDao();
     private final BidderDao _bidderDao = new BidderDao();
     private final CategoryDao _categoryDao = new CategoryDao();
@@ -77,36 +77,38 @@ public class AuctionService extends AbstractService implements ClientSessionChan
         addService("/service" + AUCTION_ROOT + "categories", "categories");
     }
 
-    public synchronized void bids(ServerSession source, ServerMessage message) {
-        // TODO Other half of the non atomic bid hack when used in Oort
-        Map<String, Object> bidMap = message.getDataAsMap();
-        Integer itemId = ((Number)bidMap.get("itemId")).intValue();
-        Double amount = Double.parseDouble(bidMap.get("amount").toString());
-        @SuppressWarnings("unchecked")
-        Map<String, Object> bidderMap = (Map<String, Object>)bidMap.get("bidder");
-        String username = (String)bidderMap.get("username");
-        Bidder bidder = _bidderDao.getBidder(username);
-        if (bidder == null) {
-            bidder = new Bidder();
-            bidder.setUsername(username);
-            bidder.setName((String)bidderMap.get("name"));
-            _bidderDao.addBidder(bidder);
-            bidder = _bidderDao.getBidder(username);
-        }
+    public void bids(ServerSession source, ServerMessage message) {
+        try (AutoLock l = lock.lock()) {
+            // TODO Other half of the non atomic bid hack when used in Oort
+            Map<String, Object> bidMap = message.getDataAsMap();
+            Integer itemId = ((Number)bidMap.get("itemId")).intValue();
+            Double amount = Double.parseDouble(bidMap.get("amount").toString());
+            @SuppressWarnings("unchecked")
+            Map<String, Object> bidderMap = (Map<String, Object>)bidMap.get("bidder");
+            String username = (String)bidderMap.get("username");
+            Bidder bidder = _bidderDao.getBidder(username);
+            if (bidder == null) {
+                bidder = new Bidder();
+                bidder.setUsername(username);
+                bidder.setName((String)bidderMap.get("name"));
+                _bidderDao.addBidder(bidder);
+                bidder = _bidderDao.getBidder(username);
+            }
 
-        Bid bid = new Bid();
-        bid.setItemId(itemId);
-        bid.setAmount(amount);
-        bid.setBidder(bidder);
+            Bid bid = new Bid();
+            bid.setItemId(itemId);
+            bid.setAmount(amount);
+            bid.setBidder(bidder);
 
-        Bid highest = _auctionDao.getHighestBid(itemId);
-        if (highest == null || amount > highest.getAmount()) {
-            _auctionDao.saveAuctionBid(bid);
+            Bid highest = _auctionDao.getHighestBid(itemId);
+            if (highest == null || amount > highest.getAmount()) {
+                _auctionDao.saveAuctionBid(bid);
+            }
         }
     }
 
-    public synchronized void bid(ServerSession source, ServerMessage message) {
-        try {
+    public void bid(ServerSession source, ServerMessage message) {
+        try (AutoLock l = lock.lock()) {
             Map<String, Object> bidMap = message.getDataAsMap();
             Integer itemId = ((Number)bidMap.get("itemId")).intValue();
             Double amount = Double.parseDouble(bidMap.get("amount").toString());

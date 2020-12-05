@@ -31,7 +31,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 import jakarta.websocket.ClientEndpointConfig;
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.ContainerProvider;
@@ -42,7 +41,6 @@ import jakarta.websocket.HandshakeResponse;
 import jakarta.websocket.MessageHandler;
 import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
-
 import org.cometd.bayeux.Message.Mutable;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.TransportListener;

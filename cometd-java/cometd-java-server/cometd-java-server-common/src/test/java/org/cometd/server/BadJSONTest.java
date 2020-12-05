@@ -16,10 +16,8 @@
 package org.cometd.server;
 
 import java.io.IOException;
-
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
 import org.cometd.bayeux.Message;
 import org.cometd.common.JSONContext;
 import org.cometd.common.JettyJSONContextClient;

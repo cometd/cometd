@@ -19,7 +19,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.ServerMessage;
@@ -69,7 +68,8 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
     }
 
     private void updateAdvice(Mutable message) {
-        synchronized (_session.getLock()) {
+        _session.getLock().lock();
+        try {
             if (!_session.hasNonLazyMessages() && _session.getQueue().size() != _queue.size()) {
                 Map<String, Object> advice = message.getAdvice(true);
                 if (advice.get(Message.TIMEOUT_FIELD) == null) {
@@ -79,16 +79,21 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
                     }
                 }
             }
+        } finally {
+            _session.getLock().unlock();
         }
     }
 
     protected void processBatch(long batch) {
-        synchronized (_session.getLock()) {
+        _session.getLock().lock();
+        try {
             if (_logger.isDebugEnabled()) {
                 _logger.debug("Processing batch: last={}, client={}, server={} for {}", _lastBatch, batch, _queue.getBatch(), _session);
             }
             _lastBatch = batch;
             _queue.clearToBatch(batch);
+        } finally {
+            _session.getLock().unlock();
         }
     }
 
@@ -103,11 +108,14 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
     public void queued(ServerSession sender, ServerMessage message) {
         // This method is called after all the extensions and the other
         // listeners, so only here are sure that the message is not vetoed.
-        synchronized (_session.getLock()) {
+        _session.getLock().lock();
+        try {
             _queue.offer(message);
             if (_logger.isDebugEnabled()) {
                 _logger.debug("Stored at batch {} {} for {}", _queue.getBatch(), message, _session);
             }
+        } finally {
+            _session.getLock().unlock();
         }
     }
 
@@ -139,11 +147,14 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
     }
 
     private long closeBatch(Mutable message) {
-        synchronized (_session.getLock()) {
+        _session.getLock().lock();
+        try {
             long batch = _queue.getBatch();
             _batches.put(message.getId(), batch);
             _queue.nextBatch();
             return batch;
+        } finally {
+            _session.getLock().unlock();
         }
     }
 
@@ -159,12 +170,15 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
         }
         if (reply != null) {
             long batch = _batches.remove(reply.getId());
-            synchronized (_session.getLock()) {
+            _session.getLock().lock();
+            try {
                 if (_logger.isDebugEnabled()) {
                     _logger.debug("Dequeuing {}/{} messages until batch {} for {} on {}", queue.size(), _queue.size(), batch, reply, _session);
                 }
                 queue.clear();
                 _queue.exportMessagesToBatch(queue, batch);
+            } finally {
+                _session.getLock().unlock();
             }
         }
     }
@@ -174,8 +188,11 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
     }
 
     protected void importMessages(ServerSessionImpl session) {
-        synchronized (_session.getLock()) {
+        _session.getLock().lock();
+        try {
             _queue.addAll(session.getQueue());
+        } finally {
+            _session.getLock().unlock();
         }
     }
 

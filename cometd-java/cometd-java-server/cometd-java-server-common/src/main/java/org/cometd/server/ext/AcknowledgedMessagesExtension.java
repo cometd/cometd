@@ -16,7 +16,6 @@
 package org.cometd.server.ext;
 
 import java.util.Map;
-
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.BayeuxServer.Extension;
@@ -51,9 +50,12 @@ public class AcknowledgedMessagesExtension implements Extension {
 
                 // Make sure that adding the extension and importing the queue is atomic.
                 ServerSessionImpl session = (ServerSessionImpl)remote;
-                synchronized (session.getLock()) {
+                session.getLock().lock();
+                try {
                     session.addExtension(extension);
                     extension.importMessages(session);
+                } finally {
+                    session.getLock().unlock();
                 }
             }
         }

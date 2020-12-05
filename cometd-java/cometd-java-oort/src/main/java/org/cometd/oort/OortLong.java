@@ -16,7 +16,6 @@
 package org.cometd.oort;
 
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.cometd.bayeux.server.LocalSession;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 

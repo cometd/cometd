@@ -16,7 +16,6 @@
 package org.cometd.annotation.guice;
 
 import javax.inject.Singleton;
-
 import com.google.inject.AbstractModule;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.server.BayeuxServerImpl;

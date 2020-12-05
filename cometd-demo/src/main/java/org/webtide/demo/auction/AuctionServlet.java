@@ -18,7 +18,6 @@ package org.webtide.demo.auction;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
 import org.webtide.demo.auction.dao.CategoryDao;
 
 public class AuctionServlet extends HttpServlet {
