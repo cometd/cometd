@@ -1173,7 +1173,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         /**
          * <p>A back off strategy that always returns the same wait time.</p>
          */
-        public class Constant implements BackOffStrategy {
+        public static class Constant implements BackOffStrategy {
             private final long delay;
             private long backOff;
 
