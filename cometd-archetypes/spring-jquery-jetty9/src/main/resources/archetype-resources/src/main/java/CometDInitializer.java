@@ -8,9 +8,8 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.servlet.ServletContext;
-
-import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.annotation.ServerAnnotationProcessor;
+import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.http.JSONPTransport;
 import org.cometd.server.http.JSONTransport;

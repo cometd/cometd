@@ -16,13 +16,11 @@
 package org.cometd.oort;
 
 import java.util.Map;
-
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.UnavailableException;
 import javax.servlet.http.HttpServlet;
-
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.client.BayeuxClient;
 import org.cometd.common.JSONContext;

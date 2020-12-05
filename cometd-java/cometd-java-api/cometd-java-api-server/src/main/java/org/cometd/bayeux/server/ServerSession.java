@@ -18,7 +18,6 @@ package org.cometd.bayeux.server;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
-
 import org.cometd.bayeux.Bayeux;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;

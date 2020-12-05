@@ -16,7 +16,6 @@
 package org.cometd.bayeux.server;
 
 import java.util.Set;
-
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.Session;
 import org.cometd.bayeux.client.ClientSessionChannel;

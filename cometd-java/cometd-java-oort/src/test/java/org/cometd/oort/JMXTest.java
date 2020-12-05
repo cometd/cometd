@@ -19,11 +19,9 @@ import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import javax.servlet.http.HttpServlet;
-
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometDServlet;

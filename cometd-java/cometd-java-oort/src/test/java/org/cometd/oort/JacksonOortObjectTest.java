@@ -17,7 +17,6 @@ package org.cometd.oort;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import org.cometd.common.JacksonJSONContextClient;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.JacksonJSONContextServer;

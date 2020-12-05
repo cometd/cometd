@@ -30,10 +30,8 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
-
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
-
 import org.cometd.annotation.Service;
 import org.cometd.annotation.server.RemoteCall;
 import org.cometd.bayeux.Message;

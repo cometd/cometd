@@ -6,7 +6,6 @@ package ${package};
 
 import java.util.Map;
 import java.util.HashMap;
-
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
