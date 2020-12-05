@@ -45,6 +45,7 @@ import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -800,19 +801,20 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
      * for example, {@link #getInfo(String)}.</p>
      */
     private class ObjectPart implements Dumpable {
+        private final AutoLock lock = new AutoLock();
         private final Deque<Map<String, Object>> updates = new ArrayDeque<>();
         private boolean active;
         private long versions;
         private Info<T> info;
 
         private Info<T> getInfo() {
-            synchronized (this) {
+            try (AutoLock l = lock.lock()) {
                 return info;
             }
         }
 
         private Info<T> update(Info<T> newInfo) {
-            synchronized (this) {
+            try (AutoLock l = lock.lock()) {
                 Info<T> oldInfo = info;
                 info = newInfo;
                 return oldInfo;
@@ -820,7 +822,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
         }
 
         private void enqueue(Map<String, Object> data) {
-            synchronized (this) {
+            try (AutoLock l = lock.lock()) {
                 boolean local = oort.getURL().equals(data.get(Info.OORT_URL_FIELD));
                 if (local) {
                     long version = ++versions;
@@ -834,7 +836,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
         }
 
         private void process() {
-            synchronized (this) {
+            try (AutoLock l = lock.lock()) {
                 if (active) {
                     return;
                 }
@@ -844,7 +846,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
             while (true) {
                 Map<String, Object> data;
                 long current;
-                synchronized (this) {
+                try (AutoLock l = lock.lock()) {
                     data = updates.poll();
                     if (data == null) {
                         active = false;
@@ -887,7 +889,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
             boolean active;
             int size;
             Info<T> info;
-            synchronized (this) {
+            try (AutoLock l = lock.lock()) {
                 active = this.active;
                 size = this.updates.size();
                 info = this.info;

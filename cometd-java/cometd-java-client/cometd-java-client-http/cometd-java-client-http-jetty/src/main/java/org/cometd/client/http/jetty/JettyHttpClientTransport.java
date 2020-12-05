@@ -47,14 +47,16 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class JettyHttpClientTransport extends AbstractHttpClientTransport {
     private static final Logger LOGGER = LoggerFactory.getLogger(JettyHttpClientTransport.class);
 
-    private final List<Request> _requests = new ArrayList<>();
-    private final HttpClient _httpClient;
+    private final AutoLock lock = new AutoLock();
+    private final List<Request> requests = new ArrayList<>();
+    private final HttpClient httpClient;
 
     public JettyHttpClientTransport(Map<String, Object> options, HttpClient httpClient) {
         this(null, options, httpClient);
@@ -66,11 +68,11 @@ public class JettyHttpClientTransport extends AbstractHttpClientTransport {
 
     public JettyHttpClientTransport(String url, Map<String, Object> options, ScheduledExecutorService scheduler, HttpClient httpClient) {
         super(url, options, scheduler);
-        _httpClient = Objects.requireNonNull(httpClient);
+        this.httpClient = Objects.requireNonNull(httpClient);
     }
 
     protected HttpClient getHttpClient() {
-        return _httpClient;
+        return httpClient;
     }
 
     @Override
@@ -86,10 +88,10 @@ public class JettyHttpClientTransport extends AbstractHttpClientTransport {
     @Override
     public void abort(Throwable failure) {
         List<Request> requests;
-        synchronized (this) {
+        try (AutoLock l = lock.lock()) {
             super.abort(failure);
-            requests = new ArrayList<>(_requests);
-            _requests.clear();
+            requests = new ArrayList<>(this.requests);
+            this.requests.clear();
         }
         for (Request request : requests) {
             request.abort(failure);
@@ -100,7 +102,7 @@ public class JettyHttpClientTransport extends AbstractHttpClientTransport {
     public void send(final TransportListener listener, final List<Message.Mutable> messages) {
         String requestURI = newRequestURI(messages);
 
-        final Request request = _httpClient.newRequest(requestURI).method(HttpMethod.POST);
+        final Request request = httpClient.newRequest(requestURI).method(HttpMethod.POST);
         request.headers(headers -> headers.put(HttpHeader.CONTENT_TYPE, "application/json;charset=UTF-8"));
 
         URI cookieURI = URI.create(getURL());
@@ -154,9 +156,9 @@ public class JettyHttpClientTransport extends AbstractHttpClientTransport {
             }
         });
 
-        synchronized (this) {
+        try (AutoLock l = lock.lock()) {
             if (!isAborted()) {
-                _requests.add(request);
+                requests.add(request);
             }
         }
 
@@ -262,8 +264,8 @@ public class JettyHttpClientTransport extends AbstractHttpClientTransport {
 
         @Override
         public void onComplete(Result result) {
-            synchronized (JettyHttpClientTransport.this) {
-                _requests.remove(result.getRequest());
+            try (AutoLock l = lock.lock()) {
+                requests.remove(result.getRequest());
             }
 
             if (result.isFailed()) {

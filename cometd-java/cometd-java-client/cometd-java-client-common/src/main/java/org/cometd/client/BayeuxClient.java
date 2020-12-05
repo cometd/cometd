@@ -54,6 +54,7 @@ import org.cometd.client.transport.TransportRegistry;
 import org.cometd.common.AbstractClientSession;
 import org.cometd.common.AsyncFoldLeft;
 import org.cometd.common.TransportException;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -103,6 +104,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
     public static final String BAYEUX_VERSION = "1.0";
 
     private final Logger logger = LoggerFactory.getLogger(getClass().getName() + "." + Integer.toHexString(System.identityHashCode(this)));
+    private final AutoLock.WithCondition lock = new AutoLock.WithCondition();
     private final CopyOnWriteArrayList<TransportListener> transportListeners = new CopyOnWriteArrayList<>();
     private final TransportRegistry transportRegistry = new TransportRegistry();
     private final Map<String, Object> options = new ConcurrentHashMap<>();
@@ -399,7 +401,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         waitForStates.add(state);
         waitForStates.addAll(Arrays.asList(states));
 
-        synchronized (sessionState) {
+        try (AutoLock l = lock.lock()) {
             while (waitMs > 0) {
                 // This check is needed to avoid that we return from waitFor() too early,
                 // when the state has been set, but its effects (like notifying listeners)
@@ -547,7 +549,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         // same message is drained twice.
 
         List<Message.Mutable> messages;
-        synchronized (messageQueue) {
+        try (AutoLock l = lock.lock()) {
             messages = new ArrayList<>(messageQueue);
             messageQueue.clear();
         }
@@ -966,7 +968,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
                 }
             }));
         } else {
-            synchronized (messageQueue) {
+            try (AutoLock l = lock.lock()) {
                 messageQueue.add(message);
             }
             if (logger.isDebugEnabled()) {
@@ -1166,9 +1168,9 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         /**
          * <p>A back off strategy that always returns the same wait time.</p>
          */
-        public class Constant implements BackOffStrategy {
+        public static class Constant implements BackOffStrategy {
             private final long delay;
-            private long backOff;
+            private volatile long backOff;
 
             public Constant(long delay) {
                 this.delay = delay;
@@ -1176,23 +1178,17 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
 
             @Override
             public long current() {
-                synchronized (this) {
-                    return backOff;
-                }
+                return backOff;
             }
 
             @Override
             public long next() {
-                synchronized (this) {
-                    return backOff = delay;
-                }
+                return backOff = delay;
             }
 
             @Override
             public void reset() {
-                synchronized (this) {
-                    backOff = 0;
-                }
+                backOff = 0;
             }
         }
 
@@ -1201,6 +1197,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
          * <p>A strategy that increases the wait time linearly up to a maximum.</p>
          */
         public static class Linear implements BackOffStrategy {
+            private final AutoLock lock = new AutoLock();
             private final long increment;
             private final long maximum;
             private long backOff;
@@ -1216,14 +1213,14 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
 
             @Override
             public long current() {
-                synchronized (this) {
+                try (AutoLock l = lock.lock()) {
                     return backOff;
                 }
             }
 
             @Override
             public long next() {
-                synchronized (this) {
+                try (AutoLock l = lock.lock()) {
                     long newBackOff = backOff + increment;
                     if (maximum > 0 && newBackOff > maximum) {
                         newBackOff = maximum;
@@ -1234,7 +1231,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
 
             @Override
             public void reset() {
-                synchronized (this) {
+                try (AutoLock l = lock.lock()) {
                     backOff = 0;
                 }
             }
@@ -1321,43 +1318,43 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         }
 
         private State getState() {
-            synchronized (this) {
+            try (AutoLock l = lock.lock()) {
                 return state;
             }
         }
 
         private ClientTransport getTransport() {
-            synchronized (this) {
+            try (AutoLock l = lock.lock()) {
                 return transport;
             }
         }
 
         private Map<String, Object> getHandshakeFields() {
-            synchronized (this) {
+            try (AutoLock l = lock.lock()) {
                 return handshakeFields;
             }
         }
 
         private ClientSession.MessageListener getHandshakeCallback() {
-            synchronized (this) {
+            try (AutoLock l = lock.lock()) {
                 return handshakeCallback;
             }
         }
 
         private Map<String, Object> getAdvice() {
-            synchronized (this) {
+            try (AutoLock l = lock.lock()) {
                 return advice;
             }
         }
 
         private String getSessionId() {
-            synchronized (this) {
+            try (AutoLock l = lock.lock()) {
                 return sessionId;
             }
         }
 
         private long getUnconnectTime() {
-            synchronized (this) {
+            try (AutoLock l = lock.lock()) {
                 if (unconnectTime == 0) {
                     return 0;
                 }
@@ -1389,7 +1386,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         }
 
         private long getAdviceLong(String field) {
-            synchronized (this) {
+            try (AutoLock l = lock.lock()) {
                 long result = 0;
                 if (advice != null && advice.containsKey(field)) {
                     result = ((Number)advice.get(field)).longValue();
@@ -1399,13 +1396,13 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         }
 
         private long increaseBackOff() {
-            synchronized (this) {
+            try (AutoLock l = lock.lock()) {
                 return getBackOffStrategy().next();
             }
         }
 
         private void resetBackOff() {
-            synchronized (this) {
+            try (AutoLock l = lock.lock()) {
                 getBackOffStrategy().reset();
             }
         }
@@ -1422,7 +1419,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
                     logger.debug("Using initial transport {} from {}", transport.getName(), allowedTransports);
                 }
 
-                synchronized (this) {
+                try (AutoLock l = lock.lock()) {
                     this.transport = transport;
                     this.handshakeFields = handshakeFields;
                     this.handshakeCallback = handshakeCallback;
@@ -1436,7 +1433,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         private void rehandshaking(long backOff) {
             State oldState;
             boolean result;
-            synchronized (this) {
+            try (AutoLock l = lock.lock()) {
                 oldState = state;
                 result = update(State.REHANDSHAKING);
             }
@@ -1450,7 +1447,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
 
         private void handshaken(ClientTransport transport, Message.Mutable handshake, int messages) {
             boolean updated;
-            synchronized (this) {
+            try (AutoLock l = lock.lock()) {
                 updated = update(State.HANDSHAKEN);
                 if (updated) {
                     this.transport = transport;
@@ -1472,7 +1469,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
 
         private void afterHandshaken() {
             boolean connect = false;
-            synchronized (this) {
+            try (AutoLock l = lock.lock()) {
                 if (getState() == State.HANDSHAKEN) {
                     if (handshakeMessages > 0) {
                         --handshakeMessages;
@@ -1493,7 +1490,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
 
         private void connected(Message connect) {
             boolean updated;
-            synchronized (this) {
+            try (AutoLock l = lock.lock()) {
                 updated = update(State.CONNECTED);
                 if (updated) {
                     resetBackOff();
@@ -1516,7 +1513,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         }
 
         private boolean nextConnectExceedsMaxInterval() {
-            synchronized (this) {
+            try (AutoLock l = lock.lock()) {
                 long maxInterval = getMaxInterval();
                 if (maxInterval > 0) {
                     long expiration = getTimeout() + getInterval() + maxInterval;
@@ -1552,7 +1549,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         }
 
         private boolean update(State newState) {
-            synchronized (this) {
+            try (AutoLock l = lock.lock()) {
                 State oldState = state;
                 boolean result = state.isUpdateableTo(newState);
                 if (result) {
@@ -1574,7 +1571,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
 
             BayeuxClient.this.terminate(failure);
 
-            synchronized (this) {
+            try (AutoLock l = lock.lock()) {
                 update(State.DISCONNECTED);
                 reset();
             }
@@ -1582,16 +1579,16 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
 
         private void submit(Runnable action) {
             boolean empty;
-            synchronized (this) {
+            try (AutoLock l = lock.lock()) {
                 empty = actions.isEmpty();
                 actions.offer(action);
             }
             if (empty && process()) {
-                synchronized (this) {
+                try (AutoLock.WithCondition l = lock.lock()) {
                     if (logger.isDebugEnabled()) {
                         logger.debug("Notifying threads in waitFor()");
                     }
-                    notifyAll();
+                    l.signalAll();
                 }
             }
         }
@@ -1600,7 +1597,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
             boolean looping = false;
             while (true) {
                 Runnable action;
-                synchronized (this) {
+                try (AutoLock l = lock.lock()) {
                     // Reentering is a no-operation.
                     if (!looping && active) {
                         return false;
@@ -1626,7 +1623,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
                 for (Message.Mutable message : messages) {
                     if (Channel.META_CONNECT.equals(message.getChannel())) {
                         Message existing;
-                        synchronized (this) {
+                        try (AutoLock l = lock.lock()) {
                             existing = metaConnect;
                             metaConnect = message;
                         }
@@ -1644,7 +1641,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         }
 
         private boolean matchMetaConnect(Message.Mutable connect) {
-            synchronized (this) {
+            try (AutoLock l = lock.lock()) {
                 if (State.DISCONNECTED.implies(state)) {
                     return true;
                 }
@@ -1657,21 +1654,21 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         }
 
         private Message getMetaConnect() {
-            synchronized (this) {
+            try (AutoLock l = lock.lock()) {
                 return metaConnect;
             }
         }
 
         private boolean isIdle() {
-            synchronized (this) {
+            try (AutoLock l = lock.lock()) {
                 return !active;
             }
         }
 
         private boolean await(long time) {
-            synchronized (this) {
+            try (AutoLock.WithCondition l = lock.lock()) {
                 try {
-                    wait(time);
+                    l.await(time, TimeUnit.MILLISECONDS);
                     return false;
                 } catch (InterruptedException x) {
                     return true;
@@ -1680,7 +1677,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         }
 
         private void initUnconnectTime() {
-            synchronized (this) {
+            try (AutoLock l = lock.lock()) {
                 if (unconnectTime == 0) {
                     unconnectTime = System.nanoTime();
                 }
@@ -1696,7 +1693,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
             submit(() -> {
                 State newState = failureInfo.actionToState();
 
-                synchronized (this) {
+                try (AutoLock l = lock.lock()) {
                     ClientTransport newTransport = failureInfo.transport;
                     if (newTransport != null) {
                         transport = newTransport;

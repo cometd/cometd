@@ -50,6 +50,7 @@ import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,6 +79,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
     public static final String SETI_ATTRIBUTE = Seti.class.getName();
     private static final String SETI_ALL_CHANNEL = "/seti/all";
 
+    private final AutoLock lock = new AutoLock();
     private final Map<String, Set<Location>> _uid2Location = new HashMap<>();
     private final List<PresenceListener> _presenceListeners = new CopyOnWriteArrayList<>();
     private final Oort.CometListener _cometListener = new CometListener();
@@ -198,7 +200,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
             return false;
         }
 
-        synchronized (_uid2Location) {
+        try (AutoLock l = lock.lock()) {
             Set<Location> locations = _uid2Location.computeIfAbsent(userId, k -> new HashSet<>());
             boolean result = locations.add(location);
             if (_logger.isDebugEnabled()) {
@@ -242,7 +244,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
      */
     @ManagedOperation(value = "Whether the given userId is associated locally", impact = "INFO")
     public boolean isAssociated(@Name(value = "userId", description = "The userId to test for local association") String userId) {
-        synchronized (_uid2Location) {
+        try (AutoLock l = lock.lock()) {
             Set<Location> locations = _uid2Location.get(userId);
             if (locations == null) {
                 return false;
@@ -264,7 +266,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
      */
     @ManagedOperation(value = "The number of local associations for the given userId", impact = "INFO")
     public int getAssociationCount(@Name(value = "userId", description = "The userId to test for local association count") String userId) {
-        synchronized (_uid2Location) {
+        try (AutoLock l = lock.lock()) {
             Set<Location> locations = _uid2Location.get(userId);
             if (locations == null) {
                 return 0;
@@ -288,7 +290,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
      */
     @ManagedOperation(value = "Whether the given userId is present in the cloud", impact = "INFO")
     public boolean isPresent(@Name(value = "userId", description = "The userId to test for presence in the cloud") String userId) {
-        synchronized (_uid2Location) {
+        try (AutoLock l = lock.lock()) {
             Set<Location> locations = _uid2Location.get(userId);
             return locations != null;
         }
@@ -302,7 +304,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
      */
     @ManagedOperation(value = "The number of local and remote associations for the given userId", impact = "INFO")
     public int getPresenceCount(@Name(value = "userId", description = "The userId to test for presence count") String userId) {
-        synchronized (_uid2Location) {
+        try (AutoLock l = lock.lock()) {
             Set<Location> locations = _uid2Location.get(userId);
             return locations == null ? 0 : locations.size();
         }
@@ -363,7 +365,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
      */
     public Set<ServerSession> disassociate(String userId) {
         Set<LocalLocation> localLocations = new HashSet<>();
-        synchronized (_uid2Location) {
+        try (AutoLock l = lock.lock()) {
             Set<Location> userLocations = _uid2Location.get(userId);
             if (userLocations != null) {
                 for (Location location : userLocations) {
@@ -387,7 +389,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
     }
 
     protected boolean disassociate(String userId, Location location) {
-        synchronized (_uid2Location) {
+        try (AutoLock l = lock.lock()) {
             boolean result = false;
             Set<Location> locations = _uid2Location.get(userId);
             if (locations != null) {
@@ -409,7 +411,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
 
     protected void removeAssociationsAndPresences() {
         Set<String> userIds = new HashSet<>();
-        synchronized (_uid2Location) {
+        try (AutoLock l = lock.lock()) {
             getAssociatedUserIds(userIds);
             _uid2Location.clear();
         }
@@ -433,7 +435,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
 
     private Set<String> removeRemotePresences(String oortURL) {
         Set<String> userIds = new HashSet<>();
-        synchronized (_uid2Location) {
+        try (AutoLock l = lock.lock()) {
             Iterator<Map.Entry<String, Set<Location>>> entries = _uid2Location.entrySet().iterator();
             while (entries.hasNext()) {
                 Map.Entry<String, Set<Location>> entry = entries.next();
@@ -462,7 +464,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
      */
     @ManagedAttribute(value = "The set of userIds known to this Seti", readonly = true)
     public Set<String> getUserIds() {
-        synchronized (_uid2Location) {
+        try (AutoLock l = lock.lock()) {
             return new HashSet<>(_uid2Location.keySet());
         }
     }
@@ -477,7 +479,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
     }
 
     private void getAssociatedUserIds(Set<String> result) {
-        synchronized (_uid2Location) {
+        try (AutoLock l = lock.lock()) {
             for (Map.Entry<String, Set<Location>> entry : _uid2Location.entrySet()) {
                 for (Location location : entry.getValue()) {
                     if (location instanceof LocalLocation) {
@@ -511,7 +513,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
     public void sendMessage(Collection<String> toUserIds, String toChannel, Object data) {
         for (String toUserId : toUserIds) {
             Set<Location> copy = new HashSet<>();
-            synchronized (_uid2Location) {
+            try (AutoLock l = lock.lock()) {
                 Set<Location> locations = _uid2Location.get(toUserId);
                 if (locations == null) {
                     copy.add(new SetiLocation(toUserId, null));
@@ -618,7 +620,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
 
         Set<String> added = new HashSet<>();
         Set<String> removed = new HashSet<>();
-        synchronized (_uid2Location) {
+        try (AutoLock l = lock.lock()) {
             if (replace) {
                 removed.addAll(removeRemotePresences(oortURL));
             }
@@ -705,7 +707,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
         Object data = message.get(SetiMessage.DATA_FIELD);
 
         Set<Location> copy = new HashSet<>();
-        synchronized (_uid2Location) {
+        try (AutoLock l = lock.lock()) {
             Set<Location> locations = _uid2Location.get(userId);
             if (locations != null) {
                 // Consider cometA, cometB and cometC and a user that is associated
@@ -756,7 +758,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
         boolean detailed = ((BayeuxServerImpl)getOort().getBayeuxServer()).isDetailedDump();
         if (detailed) {
             List<Map.Entry<String, ? extends Set<Location>>> locations;
-            synchronized (_uid2Location) {
+            try (AutoLock l = lock.lock()) {
                 locations = new TreeMap<>(_uid2Location).entrySet().stream()
                         .map(entry -> new AbstractMap.SimpleEntry<>(entry.getKey(), new HashSet<>(entry.getValue())))
                         .collect(Collectors.toList());
@@ -764,7 +766,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
             Dumpable.dumpObjects(out, indent, this, new DumpableCollection("locations", locations));
         } else {
             int size;
-            synchronized (_uid2Location) {
+            try (AutoLock l = lock.lock()) {
                 size = _uid2Location.size();
             }
             Dumpable.dumpObjects(out, indent, this, "locations size=" + size);

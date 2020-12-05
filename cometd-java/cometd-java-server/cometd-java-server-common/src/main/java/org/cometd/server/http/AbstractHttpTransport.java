@@ -34,7 +34,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -57,6 +56,7 @@ import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerMessageImpl;
 import org.cometd.server.ServerSessionImpl;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,6 +81,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
     public final static String DUPLICATE_META_CONNECT_HTTP_RESPONSE_CODE_OPTION = "duplicateMetaConnectHttpResponseCode";
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractHttpTransport.class);
 
+    private final AutoLock lock = new AutoLock();
     private final Map<String, Collection<ServerSessionImpl>> _sessions = new HashMap<>();
     private final ConcurrentMap<String, AtomicInteger> _browserMap = new ConcurrentHashMap<>();
     private final Map<String, AtomicInteger> _browserSweep = new ConcurrentHashMap<>();
@@ -223,7 +224,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         if (cookies != null) {
             for (Cookie cookie : cookies) {
                 if (_browserCookieName.equals(cookie.getName())) {
-                    synchronized (_sessions) {
+                    try (AutoLock l = lock.lock()) {
                         return _sessions.get(cookie.getValue());
                     }
                 }
@@ -243,7 +244,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
                 final String browserId = id;
 
                 session.setBrowserId(browserId);
-                synchronized (_sessions) {
+                try (AutoLock l = lock.lock()) {
                     // The list is modified inside sync blocks, but
                     // iterated outside, so it must be concurrent.
                     Collection<ServerSessionImpl> sessions = _sessions.computeIfAbsent(browserId, k -> new CopyOnWriteArrayList<>());
@@ -251,7 +252,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
                 }
 
                 session.addListener((ServerSession.RemovedListener)(s, m, t) -> {
-                    synchronized (_sessions) {
+                    try (AutoLock l = lock.lock()) {
                         Collection<ServerSessionImpl> sessions = _sessions.get(browserId);
                         sessions.remove(session);
                         if (sessions.isEmpty()) {

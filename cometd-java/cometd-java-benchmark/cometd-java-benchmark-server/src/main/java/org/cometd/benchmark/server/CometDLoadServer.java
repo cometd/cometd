@@ -34,7 +34,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -79,6 +78,7 @@ import org.eclipse.jetty.toolchain.perf.HistogramSnapshot;
 import org.eclipse.jetty.toolchain.perf.MeasureConverter;
 import org.eclipse.jetty.toolchain.perf.PlatformMonitor;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
 
 public class CometDLoadServer {
@@ -347,6 +347,7 @@ public class CometDLoadServer {
     }
 
     public static class StatisticsService extends AbstractService {
+        private final AutoLock lock = new AutoLock();
         private final PlatformMonitor monitor = new PlatformMonitor();
         private final CometDLoadServer server;
 
@@ -358,9 +359,10 @@ public class CometDLoadServer {
             addService("/service/statistics/exit", "exit");
         }
 
+        @SuppressWarnings("unused")
         public void startStatistics(ServerSession remote, ServerMessage message) {
             // Multiple nodes must wait that initialization is completed
-            synchronized (this) {
+            try (AutoLock l = lock.lock()) {
                 PlatformMonitor.Start start = monitor.start();
                 if (start != null) {
                     System.err.println();
@@ -382,8 +384,9 @@ public class CometDLoadServer {
             }
         }
 
+        @SuppressWarnings("unused")
         public void stopStatistics(ServerSession remote, ServerMessage message) {
-            synchronized (this) {
+            try (AutoLock l = lock.lock()) {
                 PlatformMonitor.Stop stop = monitor.stop();
                 if (stop != null) {
                     System.err.println(stop);
@@ -428,6 +431,7 @@ public class CometDLoadServer {
             }
         }
 
+        @SuppressWarnings("unused")
         public void exit(ServerSession remote, ServerMessage message) {
             remote.disconnect();
             // Cannot stop the server from a threadPool thread.
@@ -507,9 +511,7 @@ public class CometDLoadServer {
         private void formatStackFrames(StackTraceElement[] stackFrames, StringBuilder builder) {
             for (int i = 0; i < stackFrames.length; ++i) {
                 StackTraceElement stackFrame = stackFrames[i];
-                for (int j = 0; j < i; ++j) {
-                    builder.append(" ");
-                }
+                builder.append(" ".repeat(i));
                 builder.append(stackFrame).append("\n");
             }
         }

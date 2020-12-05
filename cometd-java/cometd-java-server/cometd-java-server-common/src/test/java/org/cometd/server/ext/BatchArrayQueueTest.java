@@ -17,6 +17,7 @@ package org.cometd.server.ext;
 
 import java.util.ArrayDeque;
 import java.util.Queue;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -24,7 +25,7 @@ import org.junit.jupiter.api.Test;
 public class BatchArrayQueueTest {
     @Test
     public void test_Offer_Next_Offer_Export_Clear() {
-        BatchArrayQueue<String> queue = new BatchArrayQueue<>(16, this);
+        BatchArrayQueue<String> queue = new BatchArrayQueue<>(16, new ReentrantLock());
 
         queue.offer("A");
         long batch = queue.getBatch();
@@ -36,17 +37,21 @@ public class BatchArrayQueueTest {
         queue.exportMessagesToBatch(target, batch);
 
         Assertions.assertEquals(1, target.size());
-        Assertions.assertTrue(target.peek().startsWith("A"));
+        String targetItem = target.peek();
+        Assertions.assertNotNull(targetItem);
+        Assertions.assertTrue(targetItem.startsWith("A"));
 
         queue.clearToBatch(batch);
 
         Assertions.assertEquals(1, queue.size());
-        Assertions.assertTrue(queue.peek().startsWith("B"));
+        String queueItem = queue.peek();
+        Assertions.assertNotNull(queueItem);
+        Assertions.assertTrue(queueItem.startsWith("B"));
     }
 
     @Test
     public void test_Offer_Grow_Poll_Offer() {
-        BatchArrayQueue<String> queue = new BatchArrayQueue<>(2, this);
+        BatchArrayQueue<String> queue = new BatchArrayQueue<>(2, new ReentrantLock());
 
         queue.offer("A1");
         queue.offer("A2");
@@ -74,7 +79,7 @@ public class BatchArrayQueueTest {
 
     @Test
     public void test_Offer_Grow_Next_Offer_Grow_Export_Clear() {
-        BatchArrayQueue<String> queue = new BatchArrayQueue<>(2, this);
+        BatchArrayQueue<String> queue = new BatchArrayQueue<>(2, new ReentrantLock());
 
         queue.offer("A1");
         queue.offer("A2");

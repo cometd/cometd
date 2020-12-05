@@ -22,16 +22,17 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.concurrent.locks.Lock;
 
 public class BatchArrayQueue<T> implements Queue<T> {
-    private final Object lock;
+    private final Lock lock;
     private T[] elements;
     private int head;
     private int tail;
     private long[] batches;
     private long batch;
 
-    public BatchArrayQueue(int initial, Object lock) {
+    public BatchArrayQueue(int initial, Lock lock) {
         this.lock = lock;
         @SuppressWarnings("unchecked")
         T[] array = (T[])new Object[initial];
@@ -42,7 +43,8 @@ public class BatchArrayQueue<T> implements Queue<T> {
 
     @Override
     public boolean offer(T t) {
-        synchronized (lock) {
+        lock.lock();
+        try {
             elements[tail] = Objects.requireNonNull(t);
             batches[tail] = batch;
 
@@ -79,6 +81,8 @@ public class BatchArrayQueue<T> implements Queue<T> {
                 head = 0;
                 tail = capacity;
             }
+        } finally {
+            lock.unlock();
         }
         return true;
     }
@@ -91,8 +95,11 @@ public class BatchArrayQueue<T> implements Queue<T> {
 
     @Override
     public T peek() {
-        synchronized (lock) {
+        lock.lock();
+        try {
             return elements[head];
+        } finally {
+            lock.unlock();
         }
     }
 
@@ -107,7 +114,8 @@ public class BatchArrayQueue<T> implements Queue<T> {
 
     @Override
     public T poll() {
-        synchronized (lock) {
+        lock.lock();
+        try {
             if (isEmpty()) {
                 return null;
             }
@@ -123,6 +131,8 @@ public class BatchArrayQueue<T> implements Queue<T> {
             }
 
             return result;
+        } finally {
+            lock.unlock();
         }
     }
 
@@ -142,12 +152,15 @@ public class BatchArrayQueue<T> implements Queue<T> {
 
     @Override
     public boolean addAll(Collection<? extends T> items) {
-        synchronized (lock) {
+        lock.lock();
+        try {
             boolean result = false;
             for (T item : items) {
                 result |= offer(item);
             }
             return result;
+        } finally {
+            lock.unlock();
         }
     }
 
@@ -163,13 +176,16 @@ public class BatchArrayQueue<T> implements Queue<T> {
 
     @Override
     public boolean containsAll(Collection<?> items) {
-        synchronized (lock) {
+        lock.lock();
+        try {
             for (Object item : items) {
                 if (!contains(item)) {
                     return false;
                 }
             }
             return true;
+        } finally {
+            lock.unlock();
         }
     }
 
@@ -179,7 +195,8 @@ public class BatchArrayQueue<T> implements Queue<T> {
             return false;
         }
 
-        synchronized (lock) {
+        lock.lock();
+        try {
             if (isEmpty()) {
                 return false;
             }
@@ -197,13 +214,15 @@ public class BatchArrayQueue<T> implements Queue<T> {
                     return false;
                 }
             }
+        } finally {
+            lock.unlock();
         }
     }
 
     @Override
     public Iterator<T> iterator() {
         final Object[] objects = toArray();
-        return new Iterator<T>() {
+        return new Iterator<>() {
             private int index = 0;
 
             @Override
@@ -226,18 +245,24 @@ public class BatchArrayQueue<T> implements Queue<T> {
 
     @Override
     public boolean isEmpty() {
-        synchronized (lock) {
+        lock.lock();
+        try {
             return head == tail;
+        } finally {
+            lock.unlock();
         }
     }
 
     @Override
     public int size() {
-        synchronized (lock) {
+        lock.lock();
+        try {
             if (head <= tail) {
                 return tail - head;
             }
             return elements.length - head + tail;
+        } finally {
+            lock.unlock();
         }
     }
 
@@ -249,7 +274,8 @@ public class BatchArrayQueue<T> implements Queue<T> {
     @Override
     @SuppressWarnings("unchecked")
     public <E> E[] toArray(E[] a) {
-        synchronized (lock) {
+        lock.lock();
+        try {
             int size = size();
             if (a.length < size) {
                 a = (E[])Array.newInstance(a.getClass().getComponentType(), size);
@@ -262,33 +288,45 @@ public class BatchArrayQueue<T> implements Queue<T> {
                 System.arraycopy(elements, 0, a, l, tail);
             }
             return a;
+        } finally {
+            lock.unlock();
         }
     }
 
     @Override
     public void clear() {
-        synchronized (lock) {
+        lock.lock();
+        try {
             Arrays.fill(elements, null);
             Arrays.fill(batches, 0);
             head = tail = 0;
             batch = 1;
+        } finally {
+            lock.unlock();
         }
     }
 
     public long getBatch() {
-        synchronized (lock) {
+        lock.lock();
+        try {
             return batch;
+        } finally {
+            lock.unlock();
         }
     }
 
     public void nextBatch() {
-        synchronized (lock) {
+        lock.lock();
+        try {
             ++batch;
+        } finally {
+            lock.unlock();
         }
     }
 
     public void clearToBatch(long batch) {
-        synchronized (lock) {
+        lock.lock();
+        try {
             while (true) {
                 if (batches[head] > batch) {
                     break;
@@ -297,11 +335,14 @@ public class BatchArrayQueue<T> implements Queue<T> {
                     break;
                 }
             }
+        } finally {
+            lock.unlock();
         }
     }
 
     public void exportMessagesToBatch(Queue<T> target, long batch) {
-        synchronized (lock) {
+        lock.lock();
+        try {
             int cursor = head;
             while (cursor != tail) {
                 if (batches[cursor] > batch) {
@@ -313,18 +354,23 @@ public class BatchArrayQueue<T> implements Queue<T> {
                     cursor = 0;
                 }
             }
+        } finally {
+            lock.unlock();
         }
     }
 
     // Used only in tests.
     long batchOf(int index) {
-        synchronized (lock) {
+        lock.lock();
+        try {
             int cursor = head + index;
             int capacity = elements.length;
             if (cursor > capacity) {
                 cursor -= capacity;
             }
             return batches[cursor];
+        } finally {
+            lock.unlock();
         }
     }
 }

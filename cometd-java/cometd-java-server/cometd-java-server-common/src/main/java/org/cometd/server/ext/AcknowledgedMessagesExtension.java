@@ -51,9 +51,12 @@ public class AcknowledgedMessagesExtension implements Extension {
 
                 // Make sure that adding the extension and importing the queue is atomic.
                 ServerSessionImpl session = (ServerSessionImpl)remote;
-                synchronized (session.getLock()) {
+                session.getLock().lock();
+                try {
                     session.addExtension(extension);
                     extension.importMessages(session);
+                } finally {
+                    session.getLock().unlock();
                 }
             }
         }

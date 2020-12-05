@@ -17,7 +17,6 @@ package org.cometd.javascript;
 
 import java.io.IOException;
 import java.util.EnumSet;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -31,6 +30,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -104,6 +104,7 @@ public class CometDHandshakeDynamicPropsTest extends AbstractCometDLongPollingTe
     }
 
     public class BayeuxFilter implements Filter {
+        private final AutoLock.WithCondition lock = new AutoLock.WithCondition();
         private boolean handshook;
         private String clientId;
 
@@ -118,10 +119,10 @@ public class CometDHandshakeDynamicPropsTest extends AbstractCometDLongPollingTe
 
         private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
             if (handshook) {
-                synchronized (this) {
+                try (AutoLock.WithCondition l = lock.lock()) {
                     while (clientId == null) {
                         try {
-                            wait();
+                            l.await();
                         } catch (InterruptedException x) {
                             throw new ServletException(x);
                         }
@@ -140,9 +141,9 @@ public class CometDHandshakeDynamicPropsTest extends AbstractCometDLongPollingTe
         }
 
         public void setClientId(String clientId) {
-            synchronized (this) {
+            try (AutoLock.WithCondition l = lock.lock()) {
                 this.clientId = clientId;
-                notifyAll();
+                l.signalAll();
             }
         }
 
