@@ -817,7 +817,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
      */
     protected boolean removed(boolean timedOut) {
         boolean result;
-        synchronized (this) {
+        synchronized (getLock()) {
             result = isHandshook();
             _state = timedOut ? State.EXPIRED : State.DISCONNECTED;
         }
