@@ -16,7 +16,6 @@
 package org.cometd.common;
 
 import java.util.List;
-
 import org.cometd.bayeux.ChannelId;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

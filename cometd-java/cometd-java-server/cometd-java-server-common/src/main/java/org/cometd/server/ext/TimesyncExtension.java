@@ -17,7 +17,6 @@ package org.cometd.server.ext;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import org.cometd.bayeux.server.BayeuxServer.Extension;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;

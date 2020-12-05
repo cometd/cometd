@@ -19,13 +19,11 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.net.ServerSocket;
 import java.util.Set;
-
 import javax.management.MBeanServer;
 import javax.management.ObjectInstance;
 import javax.management.ObjectName;
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
-
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.client.websocket.javax.WebSocketTransport;

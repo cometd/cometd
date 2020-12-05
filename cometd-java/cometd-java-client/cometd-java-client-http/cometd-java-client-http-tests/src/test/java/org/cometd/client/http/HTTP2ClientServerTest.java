@@ -16,7 +16,6 @@
 package org.cometd.client.http;
 
 import java.util.Map;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;

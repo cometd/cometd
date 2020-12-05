@@ -35,7 +35,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
-
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.http.jetty.JettyHttpClientTransport;

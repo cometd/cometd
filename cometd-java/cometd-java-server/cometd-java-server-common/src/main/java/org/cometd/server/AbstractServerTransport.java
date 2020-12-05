@@ -18,7 +18,6 @@ package org.cometd.server;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.text.ParseException;
-
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerTransport;

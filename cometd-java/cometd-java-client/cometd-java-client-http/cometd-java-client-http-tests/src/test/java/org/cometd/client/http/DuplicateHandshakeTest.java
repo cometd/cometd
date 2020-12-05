@@ -17,7 +17,6 @@ package org.cometd.client.http;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.junit.jupiter.api.Assertions;

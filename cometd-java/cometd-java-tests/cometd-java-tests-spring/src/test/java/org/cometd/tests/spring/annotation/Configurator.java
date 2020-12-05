@@ -17,7 +17,6 @@ package org.cometd.tests.spring.annotation;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
-
 import org.cometd.annotation.server.ServerAnnotationProcessor;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.server.BayeuxServerImpl;

@@ -17,10 +17,8 @@ package org.cometd.tests.spring.websocket;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
-
 import okhttp3.OkHttpClient;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerTransport;

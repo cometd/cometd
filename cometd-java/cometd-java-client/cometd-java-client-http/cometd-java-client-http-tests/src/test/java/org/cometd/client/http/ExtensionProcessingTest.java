@@ -23,7 +23,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
-
 import org.cometd.bayeux.BinaryData;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;

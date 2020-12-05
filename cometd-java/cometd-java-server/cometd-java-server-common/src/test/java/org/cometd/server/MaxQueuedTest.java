@@ -17,7 +17,6 @@ package org.cometd.server;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.client.api.ContentResponse;

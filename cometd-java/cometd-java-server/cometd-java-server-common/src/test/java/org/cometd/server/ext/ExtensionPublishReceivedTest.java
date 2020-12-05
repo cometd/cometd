@@ -18,7 +18,6 @@ package org.cometd.server.ext;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;

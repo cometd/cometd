@@ -18,7 +18,6 @@ package org.cometd.tests.spring.oort;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
-
 import org.cometd.annotation.Service;
 import org.cometd.oort.Seti;
 

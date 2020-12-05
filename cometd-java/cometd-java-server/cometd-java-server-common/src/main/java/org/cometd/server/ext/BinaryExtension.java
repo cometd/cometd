@@ -18,7 +18,6 @@ package org.cometd.server.ext;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.cometd.bayeux.BinaryData;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;

@@ -16,7 +16,6 @@
 package org.cometd.server.ext;
 
 import java.util.Map;
-
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.BayeuxServer.Extension;

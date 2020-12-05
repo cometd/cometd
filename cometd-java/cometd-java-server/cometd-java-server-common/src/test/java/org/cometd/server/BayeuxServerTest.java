@@ -17,7 +17,6 @@ package org.cometd.server;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
