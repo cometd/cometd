@@ -16,7 +16,6 @@
 package org.cometd.server;
 
 import java.util.concurrent.TimeUnit;
-
 import org.cometd.bayeux.server.LocalSession;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -138,7 +137,7 @@ public class SweepTest {
         Assertions.assertTrue(normal.handshake(null));
         Assertions.assertTrue(normal.connected());
         normal.cancelExpiration(true);
-        normal.scheduleExpiration(0, maxInterval);
+        normal.scheduleExpiration(0, maxInterval, 0);
 
         ServerSessionImpl custom = bayeuxServer.newServerSession();
         long customMaxInterval = 3 * maxInterval;
@@ -147,7 +146,7 @@ public class SweepTest {
         Assertions.assertTrue(custom.handshake(null));
         Assertions.assertTrue(custom.connected());
         custom.cancelExpiration(true);
-        custom.scheduleExpiration(0, customMaxInterval);
+        custom.scheduleExpiration(0, customMaxInterval, 0);
 
         // Wait one maxInterval, the normal session should be swept.
         Thread.sleep(maxInterval + 2 * sweepPeriod);

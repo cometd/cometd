@@ -60,7 +60,7 @@ public abstract class OortTest {
 
     @RegisterExtension
     final BeforeTestExecutionCallback printMethodName = context ->
-            System.err.printf("Running %s.%s()%n", context.getRequiredTestClass().getSimpleName(), context.getRequiredTestMethod().getName());
+            System.err.printf("Running %s.%s() %s%n", context.getRequiredTestClass().getSimpleName(), context.getRequiredTestMethod().getName(), context.getDisplayName());
     protected final Logger logger = LoggerFactory.getLogger(getClass());
     protected final List<Server> servers = new ArrayList<>();
     protected final List<Oort> oorts = new ArrayList<>();

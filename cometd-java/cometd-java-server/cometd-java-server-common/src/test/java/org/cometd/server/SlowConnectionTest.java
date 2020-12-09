@@ -26,10 +26,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
-
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
@@ -117,7 +115,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest {
             protected void writeMessage(HttpServletResponse response, ServletOutputStream output, ServerSessionImpl session, ServerMessage message) throws IOException {
                 try {
                     if (channelName.equals(message.getChannel())) {
-                        session.scheduleExpiration(0, maxInterval);
+                        session.scheduleExpiration(0, maxInterval, session.getMetaConnectCycle());
                         TimeUnit.MILLISECONDS.sleep(2 * maxInterval);
                     }
                     super.writeMessage(response, output, session, message);

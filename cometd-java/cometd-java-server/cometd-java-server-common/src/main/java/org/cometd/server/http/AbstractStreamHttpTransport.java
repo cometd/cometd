@@ -21,12 +21,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.ServerMessage;
@@ -111,12 +109,12 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
 
     @Override
     protected HttpScheduler suspend(Context context, Promise<Void> promise, ServerMessage.Mutable message, long timeout) {
-        HttpServletRequest request = context.request;
-        context.scheduler = newHttpScheduler(context, promise, message, timeout);
-        request.setAttribute(CONTEXT_ATTRIBUTE, context);
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("Suspended {}", message);
         }
+        HttpServletRequest request = context.request;
+        context.scheduler = newHttpScheduler(context, promise, message, timeout);
+        request.setAttribute(CONTEXT_ATTRIBUTE, context);
         context.session.notifySuspended(message, timeout);
         return context.scheduler;
     }
@@ -170,7 +168,7 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
                             reply.put("x-messages", messages.size());
                         }
                         getBayeux().freeze(reply);
-                        writeMessage(response, output, session, reply);
+                        writeMessage(context, output, reply);
                         needsComma = true;
                         ++replyIndex;
                     }
@@ -182,14 +180,14 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
                         output.write(',');
                     }
                     needsComma = true;
-                    writeMessage(response, output, session, message);
+                    writeMessage(context, output, message);
                 }
             } finally {
                 // Start the interval timeout after writing the messages
                 // since they may take time to be written, even in case
                 // of exceptions to make sure the session can be swept.
                 if (context.scheduleExpiration) {
-                    scheduleExpiration(session);
+                    scheduleExpiration(session, context.metaConnectCycle);
                 }
             }
 
@@ -201,7 +199,7 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
                 }
                 needsComma = true;
                 getBayeux().freeze(reply);
-                writeMessage(response, output, session, reply);
+                writeMessage(context, output, reply);
                 ++replyIndex;
             }
 
@@ -214,6 +212,10 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
             }
             promise.fail(x);
         }
+    }
+
+    protected void writeMessage(Context context, ServletOutputStream output, ServerMessage message) throws IOException {
+        writeMessage(context.response, output, context.session, message);
     }
 
     protected void writeMessage(HttpServletResponse response, ServletOutputStream output, ServerSessionImpl session, ServerMessage message) throws IOException {

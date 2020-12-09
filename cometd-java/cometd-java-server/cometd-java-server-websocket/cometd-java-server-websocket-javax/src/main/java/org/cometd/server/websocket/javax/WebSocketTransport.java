@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpSession;
 import javax.websocket.DeploymentException;
@@ -32,7 +31,6 @@ import javax.websocket.HandshakeResponse;
 import javax.websocket.server.HandshakeRequest;
 import javax.websocket.server.ServerContainer;
 import javax.websocket.server.ServerEndpointConfig;
-
 import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.BayeuxServerImpl;
@@ -107,7 +105,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
         return new EndPoint(bayeuxContext);
     }
 
-    private class WebSocketContext extends AbstractBayeuxContext {
+    private static class WebSocketContext extends AbstractBayeuxContext {
         private WebSocketContext(ServletContext context, HandshakeRequest request, Map<String, Object> userProperties) {
             super(context, request.getRequestURI().toString(), request.getQueryString(), request.getHeaders(),
                     request.getParameterMap(), request.getUserPrincipal(), (HttpSession)request.getHttpSession(),

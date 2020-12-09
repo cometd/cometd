@@ -395,6 +395,9 @@ public class OortObserveCometTest extends OortTest {
         OortComet oortComet21 = oort2.observeComet(oort1.getURL());
         Assertions.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
 
+        // Wait for for comet events and for /meta/connect to be held.
+        sleep(1000);
+
         ServerConnector connector1 = (ServerConnector)server1.getConnectors()[0];
         int port1 = connector1.getLocalPort();
         connector1.stop();

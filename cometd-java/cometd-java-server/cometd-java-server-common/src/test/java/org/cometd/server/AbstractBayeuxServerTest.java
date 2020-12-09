@@ -19,7 +19,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.cometd.server.http.AsyncJSONTransport;
 import org.cometd.server.http.JSONTransport;
 import org.eclipse.jetty.server.Server;
@@ -38,7 +37,7 @@ public abstract class AbstractBayeuxServerTest {
 
     @RegisterExtension
     final BeforeTestExecutionCallback printMethodName = context ->
-            System.err.printf("Running %s.%s()%n", context.getRequiredTestClass().getSimpleName(), context.getRequiredTestMethod().getName());
+            System.err.printf("Running %s.%s() %s%n", context.getRequiredTestClass().getSimpleName(), context.getRequiredTestMethod().getName(), context.getDisplayName());
     protected Server server;
     protected ServerConnector connector;
     protected int port;
