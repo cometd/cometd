@@ -37,7 +37,7 @@ public abstract class AbstractBayeuxServerTest {
 
     @RegisterExtension
     final BeforeTestExecutionCallback printMethodName = context ->
-            System.err.printf("Running %s.%s()%n", context.getRequiredTestClass().getSimpleName(), context.getRequiredTestMethod().getName());
+            System.err.printf("Running %s.%s() %s%n", context.getRequiredTestClass().getSimpleName(), context.getRequiredTestMethod().getName(), context.getDisplayName());
     protected Server server;
     protected ServerConnector connector;
     protected int port;

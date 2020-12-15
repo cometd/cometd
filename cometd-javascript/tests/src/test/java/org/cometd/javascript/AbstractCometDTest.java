@@ -41,7 +41,7 @@ import org.slf4j.LoggerFactory;
 public abstract class AbstractCometDTest {
     @RegisterExtension
     final BeforeTestExecutionCallback printMethodName = context ->
-            System.err.printf("Running %s.%s()%n", context.getRequiredTestClass().getSimpleName(), context.getRequiredTestMethod().getName());
+            System.err.printf("Running %s.%s() %s%n", context.getRequiredTestClass().getSimpleName(), context.getRequiredTestMethod().getName(), context.getDisplayName());
     private final CookieStore cookieStore = new HttpCookieStore() {
         @Override
         public boolean removeAll() {

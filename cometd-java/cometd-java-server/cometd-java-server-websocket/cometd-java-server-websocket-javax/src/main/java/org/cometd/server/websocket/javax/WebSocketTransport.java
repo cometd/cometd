@@ -105,7 +105,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
         return new EndPoint(bayeuxContext);
     }
 
-    private class WebSocketContext extends AbstractBayeuxContext {
+    private static class WebSocketContext extends AbstractBayeuxContext {
         private WebSocketContext(ServletContext context, HandshakeRequest request, Map<String, Object> userProperties) {
             super(context, request.getRequestURI().toString(), request.getQueryString(), request.getHeaders(),
                     request.getParameterMap(), request.getUserPrincipal(), (HttpSession)request.getHttpSession(),

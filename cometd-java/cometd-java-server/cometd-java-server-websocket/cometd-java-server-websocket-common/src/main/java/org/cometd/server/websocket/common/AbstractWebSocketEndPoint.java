@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicMarkableReference;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
@@ -48,6 +50,7 @@ public abstract class AbstractWebSocketEndPoint {
     private final Logger _logger = LoggerFactory.getLogger(getClass());
     private final AutoLock lock = new AutoLock();
     private final Flusher flusher = new Flusher();
+    private final AtomicBoolean terminate = new AtomicBoolean();
     private final AbstractWebSocketTransport _transport;
     private final BayeuxContext _bayeuxContext;
     private ServerSessionImpl _session;
@@ -90,34 +93,43 @@ public abstract class AbstractWebSocketEndPoint {
     }
 
     public void onClose(int code, String reason) {
-        // There is no need to call BayeuxServerImpl.removeServerSession(),
-        // because the connection may have been closed for a reload.
-        ServerSessionImpl session = _session;
-        if (_logger.isDebugEnabled()) {
-            _logger.debug("Closing {}/{} - {}", code, reason, session);
+        if (terminate.compareAndSet(false, true)) {
+            // There is no need to call BayeuxServerImpl.removeServerSession(),
+            // because the connection may have been closed for a reload.
+            ServerSessionImpl session = _session;
+            if (_logger.isDebugEnabled()) {
+                _logger.debug("Closing {}/{} - {}", code, reason, session);
+            }
+            terminate(session);
+            _transport.onClose(code, reason);
         }
+    }
+
+    public void onError(Throwable failure) {
+        if (terminate.compareAndSet(false, true)) {
+            if (failure instanceof SocketTimeoutException || failure instanceof TimeoutException) {
+                if (_logger.isDebugEnabled()) {
+                    _logger.debug("WebSocket timeout", failure);
+                }
+            } else {
+                InetSocketAddress address = _bayeuxContext == null ? null : _bayeuxContext.getRemoteAddress();
+                if (failure instanceof QuietException) {
+                    if (_logger.isDebugEnabled()) {
+                        _logger.debug("WebSocket failure, address: " + address, failure);
+                    }
+                } else {
+                    _logger.info("WebSocket failure, address: " + address, failure);
+                }
+            }
+            terminate(_session);
+        }
+    }
+
+    private void terminate(ServerSessionImpl session) {
         // Detach the current scheduler from the session, so that if a new
         // message is received, it will be processed by the new scheduler.
         if (session != null) {
             session.setScheduler(null);
-        }
-        _transport.onClose(code, reason);
-    }
-
-    public void onError(Throwable failure) {
-        if (failure instanceof SocketTimeoutException || failure instanceof TimeoutException) {
-            if (_logger.isDebugEnabled()) {
-                _logger.debug("WebSocket timeout", failure);
-            }
-        } else {
-            InetSocketAddress address = _bayeuxContext == null ? null : _bayeuxContext.getRemoteAddress();
-            if (failure instanceof QuietException) {
-                if (_logger.isDebugEnabled()) {
-                    _logger.debug("WebSocket failure, address: " + address, failure);
-                }
-            } else {
-                _logger.info("WebSocket failure, address: " + address, failure);
-            }
         }
     }
 
@@ -201,7 +213,7 @@ public abstract class AbstractWebSocketEndPoint {
                 context.scheduleExpiration = true;
                 promise.succeed(true);
             }, promise::fail));
-        }, promise::fail));
+        }, x -> scheduleExpirationAndFail(session, context.metaConnectCycle, promise, x)));
     }
 
     private void processMetaConnect(Context context, ServerMessage.Mutable message, Promise<Boolean> promise) {
@@ -212,7 +224,7 @@ public abstract class AbstractWebSocketEndPoint {
             boolean proceed = true;
             if (session != null) {
                 boolean maySuspend = !session.shouldSchedule();
-                boolean metaConnectDelivery = _transport.isMetaConnectDeliveryOnly() || session.isMetaConnectDeliveryOnly();
+                boolean metaConnectDelivery = isMetaConnectDeliveryOnly(session);
                 if ((maySuspend || !metaConnectDelivery) && reply.isSuccessful()) {
                     long timeout = session.calculateTimeout(_transport.getTimeout());
                     if (timeout > 0 && wasConnected && session.isConnected()) {
@@ -226,7 +238,7 @@ public abstract class AbstractWebSocketEndPoint {
                 }
             }
             promise.succeed(proceed);
-        }, promise::fail));
+        }, x -> scheduleExpirationAndFail(session, context.metaConnectCycle, promise, x)));
     }
 
     private void processMessage(Context context, ServerMessageImpl message, Promise<Boolean> promise) {
@@ -236,13 +248,16 @@ public abstract class AbstractWebSocketEndPoint {
                     if (reply != null) {
                         context.replies.add(reply);
                     }
-                    boolean metaConnectDelivery = _transport.isMetaConnectDeliveryOnly() || session != null && session.isMetaConnectDeliveryOnly();
-                    if (!metaConnectDelivery) {
+                    if (!isMetaConnectDeliveryOnly(session)) {
                         context.sendQueue = true;
                     }
                     // Leave scheduleExpiration unchanged.
                     promise.succeed(true);
                 }, promise::fail)), promise::fail));
+    }
+
+    private boolean isMetaConnectDeliveryOnly(ServerSessionImpl session) {
+        return _transport.isMetaConnectDeliveryOnly() || (session != null && session.isMetaConnectDeliveryOnly());
     }
 
     private AbstractServerTransport.Scheduler suspend(Context context, ServerMessage.Mutable message, long timeout) {
@@ -272,7 +287,12 @@ public abstract class AbstractWebSocketEndPoint {
             context.sendQueue = true;
             context.scheduleExpiration = true;
             promise.succeed(null);
-        }, promise::fail));
+        }, x -> scheduleExpirationAndFail(session, context.metaConnectCycle, promise, x)));
+    }
+
+    private void scheduleExpirationAndFail(ServerSessionImpl session, long metaConnectCycle, Promise<?> promise, Throwable x) {
+        _transport.scheduleExpiration(session, metaConnectCycle);
+        promise.fail(x);
     }
 
     protected void flush(Context context, Promise<Void> promise) {
@@ -304,40 +324,59 @@ public abstract class AbstractWebSocketEndPoint {
     private class WebSocketScheduler implements AbstractServerTransport.Scheduler, Runnable, Promise<Void> {
         private final Context context;
         private final ServerMessage.Mutable message;
-        private Scheduler.Task task;
+        private final AtomicMarkableReference<Scheduler.Task> taskRef;
 
         public WebSocketScheduler(Context context, ServerMessage.Mutable message, long timeout) {
             this.context = context;
             this.message = message;
-            this.task = _transport.getBayeux().schedule(this, timeout);
+            this.taskRef = new AtomicMarkableReference<>(_transport.getBayeux().schedule(this, timeout), true);
+            context.metaConnectCycle = _transport.newMetaConnectCycle();
+        }
+
+        @Override
+        public long getMetaConnectCycle() {
+            return context.metaConnectCycle;
         }
 
         @Override
         public void schedule() {
             ServerSessionImpl session = context.session;
-            boolean metaConnectDelivery = _transport.isMetaConnectDeliveryOnly() || session.isMetaConnectDeliveryOnly();
+            boolean metaConnectDelivery = isMetaConnectDeliveryOnly(session);
+            // When delivering only via /meta/connect, we want to behave similarly to HTTP.
+            // Otherwise, the scheduler is not "disabled" by cancelling the
+            // timeout, and it will continue to deliver messages to the client.
             if (metaConnectDelivery || session.isTerminated()) {
-                if (cancelTimeout()) {
+                if (cancelTimeout(false)) {
+                    if (_logger.isDebugEnabled()) {
+                        _logger.debug("Resuming suspended {} for {}", message, session);
+                    }
                     session.notifyResumed(message, false);
                     resume(context, message, this);
                 }
             } else {
-                Context context = new Context(session);
-                context.sendQueue = true;
-                flush(context, Promise.from(y -> {}, this::fail));
+                // Avoid to flush() if this scheduler has been disabled, so that the
+                // messages remain in the session queue until the next scheduler is set.
+                if (taskRef.isMarked()) {
+                    Context context = new Context(session);
+                    context.sendQueue = true;
+                    flush(context, Promise.from(y -> {}, this::fail));
+                }
             }
         }
 
         @Override
         public void cancel() {
-            if (cancelTimeout()) {
-                _transport.scheduleExpiration(_session);
+            if (cancelTimeout(true)) {
+                if (_logger.isDebugEnabled()) {
+                    _logger.debug("Cancelling suspended {} for {}", message, context.session);
+                }
+                _transport.scheduleExpiration(context.session, context.metaConnectCycle);
             }
         }
 
         @Override
         public void destroy() {
-            if (cancelTimeout()) {
+            if (cancelTimeout(true)) {
                 close(1000, "Destroy");
             }
         }
@@ -345,28 +384,27 @@ public abstract class AbstractWebSocketEndPoint {
         @Override
         public void run() {
             // Executed when the /meta/connect timeout expires.
-            if (cancelTimeout()) {
+            if (cancelTimeout(false)) {
                 if (_logger.isDebugEnabled()) {
-                    _logger.debug("Resumed {}", message);
+                    _logger.debug("Timing out suspended {} for {}", message, context.session);
                 }
                 context.session.notifyResumed(message, true);
                 resume(context, message, this);
             }
         }
 
-        private boolean cancelTimeout() {
-            Scheduler.Task task;
-            try (AutoLock l = lock.lock()) {
-                task = this.task;
-                if (task != null) {
-                    this.task = null;
+        private boolean cancelTimeout(boolean disable) {
+            while (true) {
+                Scheduler.Task task = taskRef.getReference();
+                boolean enabled = taskRef.isMarked();
+                if (taskRef.compareAndSet(task, null, enabled, !disable)) {
+                    if (task == null) {
+                        return false;
+                    }
+                    task.cancel();
+                    return true;
                 }
             }
-            if (task != null) {
-                task.cancel();
-                return true;
-            }
-            return false;
         }
 
         @Override
@@ -377,6 +415,11 @@ public abstract class AbstractWebSocketEndPoint {
         @Override
         public void fail(Throwable failure) {
             close(1011, failure.toString());
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s@%x[cycle=%d]", getClass().getSimpleName(), hashCode(), getMetaConnectCycle());
         }
     }
 
@@ -551,7 +594,7 @@ public abstract class AbstractWebSocketEndPoint {
 
         private void scheduleExpiration() {
             if (_context.scheduleExpiration) {
-                _transport.scheduleExpiration(_context.session);
+                _transport.scheduleExpiration(_context.session, _context.metaConnectCycle);
             }
         }
 
@@ -574,6 +617,7 @@ public abstract class AbstractWebSocketEndPoint {
         private final ServerSessionImpl session;
         private boolean sendQueue;
         private boolean scheduleExpiration;
+        private long metaConnectCycle;
 
         private Context(ServerSessionImpl session) {
             this.session = session;

@@ -32,8 +32,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.AsyncEvent;
 import jakarta.servlet.AsyncListener;
@@ -56,6 +56,7 @@ import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerMessageImpl;
 import org.cometd.server.ServerSessionImpl;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.thread.Scheduler.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -240,8 +241,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
                 if (id == null) {
                     id = setBrowserId(context);
                 }
-                final String browserId = id;
-
+                String browserId = id;
                 session.setBrowserId(browserId);
                 try (AutoLock l = lock.lock()) {
                     // The list is modified inside sync blocks, but
@@ -267,15 +267,14 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
                 context.sendQueue = r != null && r.isSuccessful() && allowMessageDeliveryDuringHandshake(session);
                 context.scheduleExpiration = true;
                 promise.succeed(null);
-            }, promise::fail));
+            }, x -> scheduleExpirationAndFail(session, context.metaConnectCycle, promise, x)));
         }, promise::fail));
     }
 
     private void processMetaConnect(Context context, ServerMessage.Mutable message, boolean canSuspend, Promise<Void> promise) {
         ServerSessionImpl session = context.session;
         if (session != null) {
-            // Cancel the previous scheduler to cancel any prior waiting long poll.
-            // This should also decrement the browser ID.
+            // Cancel the previous scheduler to cancel any prior waiting /meta/connect.
             session.setScheduler(null);
         }
 
@@ -328,7 +327,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
             if (proceed) {
                 promise.succeed(null);
             }
-        }, promise::fail));
+        }, x -> scheduleExpirationAndFail(session, context.metaConnectCycle, promise, x)));
     }
 
     private void processMessage1(Context context, ServerMessageImpl message, Promise<Void> promise) {
@@ -388,7 +387,14 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
             context.sendQueue = true;
             context.scheduleExpiration = true;
             promise.succeed(null);
-        }, promise::fail));
+        }, x -> scheduleExpirationAndFail(session, context.metaConnectCycle, promise, x)));
+    }
+
+    private void scheduleExpirationAndFail(ServerSessionImpl session, long metaConnectCycle, Promise<Void> promise, Throwable x) {
+        // If there was a valid session, but something went wrong while processing
+        // the reply, schedule the expiration so the session will eventually be swept.
+        scheduleExpiration(session, metaConnectCycle);
+        promise.fail(x);
     }
 
     protected void sendError(HttpServletRequest request, HttpServletResponse response, int code, Throwable failure) {
@@ -720,23 +726,25 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         }
     }
 
+    /**
+     * <p>A {@link Scheduler} for HTTP-based transports.</p>
+     */
     public interface HttpScheduler extends Scheduler {
         public ServerMessage.Mutable getMessage();
     }
 
     protected abstract class LongPollScheduler implements Runnable, HttpScheduler, AsyncListener {
+        private final AtomicReference<Task> task = new AtomicReference<>();
         private final Context context;
         private final Promise<Void> promise;
         private final ServerMessage.Mutable message;
-        private final org.eclipse.jetty.util.thread.Scheduler.Task task;
-        private final AtomicBoolean cancel;
 
         protected LongPollScheduler(Context context, Promise<Void> promise, ServerMessage.Mutable message, long timeout) {
             this.context = context;
             this.promise = promise;
             this.message = message;
-            this.task = getBayeux().schedule(this, timeout);
-            this.cancel = new AtomicBoolean();
+            this.task.set(getBayeux().schedule(this, timeout));
+            context.metaConnectCycle = newMetaConnectCycle();
             AsyncContext asyncContext = getAsyncContext(context.request);
             if (asyncContext != null) {
                 asyncContext.addListener(this);
@@ -757,10 +765,15 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         }
 
         @Override
+        public long getMetaConnectCycle() {
+            return context.metaConnectCycle;
+        }
+
+        @Override
         public void schedule() {
             if (cancelTimeout()) {
                 if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("Resuming /meta/connect after schedule");
+                    LOGGER.debug("Resuming suspended {} for {}", message, context.session);
                 }
                 resume(false);
             }
@@ -770,7 +783,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         public void cancel() {
             if (cancelTimeout()) {
                 if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("Cancelling {}", message);
+                    LOGGER.debug("Cancelling suspended {} for {}", message, context.session);
                 }
                 error(new TimeoutException());
             }
@@ -785,17 +798,19 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
             // Cannot rely on the return value of task.cancel()
             // since it may be invoked when the task is in run()
             // where cancellation is not possible (it's too late).
-            boolean cancelled = cancel.compareAndSet(false, true);
+            Task task = this.task.getAndSet(null);
+            if (task == null) {
+                return false;
+            }
             task.cancel();
-            return cancelled;
+            return true;
         }
 
         @Override
         public void run() {
             if (cancelTimeout()) {
-                context.session.setScheduler(null);
                 if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("Resuming /meta/connect after timeout");
+                    LOGGER.debug("Timing out suspended {} for {}", message, context.session);
                 }
                 resume(true);
             }
@@ -830,6 +845,11 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
             decBrowserId(context.session, isHTTP2(request));
             promise.fail(failure);
         }
+
+        @Override
+        public String toString() {
+            return String.format("%s@%x[cycle=%d]", getClass().getSimpleName(), hashCode(), getMetaConnectCycle());
+        }
     }
 
     public static class Context {
@@ -842,6 +862,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         protected boolean sendQueue;
         protected boolean scheduleExpiration;
         protected HttpScheduler scheduler;
+        protected long metaConnectCycle;
 
         protected Context(HttpServletRequest request, HttpServletResponse response) {
             this.request = request;

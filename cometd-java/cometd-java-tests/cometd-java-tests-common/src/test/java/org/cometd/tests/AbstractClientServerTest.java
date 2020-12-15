@@ -62,7 +62,7 @@ public abstract class AbstractClientServerTest {
 
     @RegisterExtension
     final BeforeTestExecutionCallback printMethodName = context ->
-            System.err.printf("Running %s.%s()%n", context.getRequiredTestClass().getSimpleName(), context.getRequiredTestMethod().getName());
+            System.err.printf("Running %s.%s() %s%n", context.getRequiredTestClass().getSimpleName(), context.getRequiredTestMethod().getName(), context.getDisplayName());
     protected final Logger logger = LoggerFactory.getLogger(getClass());
     protected Server server;
     protected ServerConnector connector;

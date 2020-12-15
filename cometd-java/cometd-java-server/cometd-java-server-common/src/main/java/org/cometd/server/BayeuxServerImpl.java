@@ -1020,7 +1020,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
                         _logger.info("Exception reported by extension " + extension, failure);
                         loop.proceed(true);
                     }));
-                } catch (Exception x) {
+                } catch (Throwable x) {
                     _logger.info("Exception thrown by extension " + extension, x);
                     loop.proceed(true);
                 }
