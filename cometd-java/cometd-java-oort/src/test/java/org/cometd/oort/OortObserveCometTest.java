@@ -378,8 +378,10 @@ public class OortObserveCometTest extends OortTest {
     @ParameterizedTest
     @MethodSource("transports")
     public void testNetworkBrokenShorterThanMaxInterval(String serverTransport) throws Exception {
+        long sweepPeriod = 500;
         long maxInterval = 4000;
         Map<String, String> options = new HashMap<>();
+        options.put(BayeuxServerImpl.SWEEP_PERIOD_OPTION, String.valueOf(sweepPeriod));
         options.put(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(maxInterval));
 
         Server server1 = startServer(serverTransport, 0, options);
@@ -392,6 +394,9 @@ public class OortObserveCometTest extends OortTest {
         Assertions.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
         OortComet oortComet21 = oort2.observeComet(oort1.getURL());
         Assertions.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        // Wait for for comet events and for /meta/connect to be held.
+        sleep(1000);
 
         ServerConnector connector1 = (ServerConnector)server1.getConnectors()[0];
         int port1 = connector1.getLocalPort();
@@ -421,7 +426,7 @@ public class OortObserveCometTest extends OortTest {
         Assertions.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Wait until the maxInterval expires.
-        Thread.sleep(maxInterval);
+        Thread.sleep(maxInterval + 2 * sweepPeriod);
 
         // Verify that no comet left event has been emitted.
         Assertions.assertFalse(leftLatch.await(1, TimeUnit.SECONDS));
@@ -749,7 +754,7 @@ public class OortObserveCometTest extends OortTest {
         OortComet cometAB = oortA.deobserveComet(oortB.getURL());
         Assertions.assertSame(oortCometAB, cometAB);
         Assertions.assertTrue(oortCometAB.waitFor(5000, BayeuxClient.State.DISCONNECTED));
-        latch2.await(5, TimeUnit.SECONDS);
+        Assertions.assertTrue(latch2.await(5, TimeUnit.SECONDS));
         Assertions.assertTrue(oortCometBA.waitFor(5000, BayeuxClient.State.DISCONNECTED));
 
         // A is now only connected to C

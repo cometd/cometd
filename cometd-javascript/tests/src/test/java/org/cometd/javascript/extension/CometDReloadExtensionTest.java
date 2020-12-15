@@ -395,7 +395,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTransportsTest {
                 "   if (!wasConnected && _connected) {" +
                 "       cometd.batch(function() {" +
                 "           cometd.subscribe('/foo', function() { latch.countDown(); });" +
-                "           cometd.publish('/foo', {});" +
+                "           cometd.publish('/foo', 'foo_data');" +
                 "       });" +
                 "   }" +
                 "}" +

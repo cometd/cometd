@@ -18,10 +18,8 @@ package org.cometd.server.websocket;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
-
 import okhttp3.OkHttpClient;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.client.BayeuxClient;
@@ -59,7 +57,7 @@ public abstract class ClientServerWebSocketTest {
 
     @RegisterExtension
     final BeforeTestExecutionCallback printMethodName = context ->
-            System.err.printf("Running %s.%s()%n", context.getRequiredTestClass().getSimpleName(), context.getRequiredTestMethod().getName());
+            System.err.printf("Running %s.%s() %s%n", context.getRequiredTestClass().getSimpleName(), context.getRequiredTestMethod().getName(), context.getDisplayName());
     protected final Logger logger = LoggerFactory.getLogger(getClass());
     protected ServerConnector connector;
     protected Server server;

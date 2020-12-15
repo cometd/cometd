@@ -157,7 +157,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
                 LOGGER.debug("Exception while writing messages", x);
             }
             if (context.scheduleExpiration) {
-                scheduleExpiration(context.session);
+                scheduleExpiration(context.session, context.metaConnectCycle);
             }
             promise.fail(x);
         }
@@ -422,7 +422,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
 
         private void startExpiration() {
             if (context.scheduleExpiration) {
-                scheduleExpiration(context.session);
+                scheduleExpiration(context.session, context.metaConnectCycle);
             }
         }
 

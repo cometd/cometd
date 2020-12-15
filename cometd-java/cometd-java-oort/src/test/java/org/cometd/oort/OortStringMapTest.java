@@ -547,7 +547,7 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         ServerConnector connector1 = (ServerConnector)server1.getConnectors()[0];
         int port1 = connector1.getLocalPort();
         connector1.stop();
-        Assertions.assertTrue(leftLatch.await(2 * (timeout + maxInterval), TimeUnit.SECONDS));
+        Assertions.assertTrue(leftLatch.await(2 * (timeout + maxInterval), TimeUnit.MILLISECONDS));
 
         // Give some time before reconnecting.
         Thread.sleep(1000);
@@ -627,7 +627,7 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         ServerConnector connector1 = (ServerConnector)server1.getConnectors()[0];
         int port1 = connector1.getLocalPort();
         connector1.stop();
-        Assertions.assertTrue(leftLatch.await(2 * (timeout + maxInterval), TimeUnit.SECONDS));
+        Assertions.assertTrue(leftLatch.await(2 * (timeout + maxInterval), TimeUnit.MILLISECONDS));
 
         // OortCometBA communication is interrupted, but OortCometAB
         // will allow nodeA to receive messages from nodeB.

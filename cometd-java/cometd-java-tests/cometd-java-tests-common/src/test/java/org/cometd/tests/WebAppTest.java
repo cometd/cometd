@@ -66,7 +66,7 @@ public class WebAppTest {
     @RegisterExtension
     final BeforeTestExecutionCallback printMethodName = context -> {
         testName = context.getRequiredTestMethod().getName();
-        System.err.printf("Running %s.%s()%n", context.getRequiredTestClass().getSimpleName(), testName);
+        System.err.printf("Running %s.%s() %s%n", context.getRequiredTestClass().getSimpleName(), testName, context.getDisplayName());
     };
     private Path baseDir;
     private AutoCloseable server;

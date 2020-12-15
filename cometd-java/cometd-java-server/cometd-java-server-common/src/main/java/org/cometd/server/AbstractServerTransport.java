@@ -18,6 +18,7 @@ package org.cometd.server;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.text.ParseException;
+import java.util.concurrent.atomic.AtomicLong;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerTransport;
@@ -44,6 +45,8 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     public static final String HANDSHAKE_RECONNECT_OPTION = "handshakeReconnect";
     public static final String ALLOW_MESSAGE_DELIVERY_DURING_HANDSHAKE = "allowMessageDeliveryDuringHandshake";
     public static final String MAX_MESSAGE_SIZE_OPTION = "maxMessageSize";
+    // /meta/connect cycles must be shared because a transport may fallback to another.
+    private static final AtomicLong META_CONNECT_CYCLES = new AtomicLong();
 
     private final BayeuxServerImpl _bayeux;
     private long _interval = 0;
@@ -72,6 +75,10 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     protected AbstractServerTransport(BayeuxServerImpl bayeux, String name) {
         super(name, bayeux.getOptions());
         _bayeux = bayeux;
+    }
+
+    public long newMetaConnectCycle() {
+        return META_CONNECT_CYCLES.incrementAndGet();
     }
 
     /**
@@ -256,9 +263,9 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
         return session != null && session.isAllowMessageDeliveryDuringHandshake();
     }
 
-    public void scheduleExpiration(ServerSessionImpl session) {
+    public void scheduleExpiration(ServerSessionImpl session, long metaConnectCycle) {
         if (session != null) {
-            session.scheduleExpiration(getInterval(), getMaxInterval());
+            session.scheduleExpiration(getInterval(), getMaxInterval(), metaConnectCycle);
         }
     }
 
@@ -273,24 +280,63 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     }
 
     /**
-     * Performs transport operations when a /meta/connect message is held.
+     * <p>Performs server-to-client transport operations when a {@code /meta/connect}
+     * message is held and a server-side message is published.</p>
+     * <p>HTTP transports can only perform server-to-client
+     * sends if there is an outstanding {@code /meta/connect},
+     * or if they are processing incoming messages.</p>
+     * <p>WebSocket transports, on the other hand, can perform
+     * server-to-client sends even if there is no outstanding
+     * {@code /meta/connect}.</p>
      */
     public interface Scheduler {
+        /**
+         * @return the cycle number for suspended {@code /meta/connect}s.
+         */
+        public default long getMetaConnectCycle() {
+            return 0;
+        }
+
         /**
          * Invoked when the transport wants to send queued
          * messages, and possibly a /meta/connect reply.
          */
-        void schedule();
+        public default void schedule() {
+        }
 
         /**
          * Invoked when the transport wants to cancel scheduled operations
          * that will trigger when the /meta/connect timeout fires.
          */
-        void cancel();
+        public default void cancel() {
+        }
 
         /**
          * Invoked when the transport wants to abort communication.
          */
-        void destroy();
+        public default void destroy() {
+        }
+
+        /**
+         * <p>A scheduler that does not perform any operation
+         * but remembers the {@code /meta/connect} cycle.</p>
+         */
+        public static class None implements Scheduler {
+            private final long metaConnectCycle;
+
+            public None(long metaConnectCycle) {
+                this.metaConnectCycle = metaConnectCycle;
+            }
+
+            @Override
+            public long getMetaConnectCycle() {
+                return metaConnectCycle;
+            }
+
+            @Override
+            public String toString() {
+                return String.format("%s@%x[cycle=%d]", getClass().getSimpleName(), hashCode(), getMetaConnectCycle());
+            }
+        }
     }
 }

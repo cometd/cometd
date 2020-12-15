@@ -504,8 +504,11 @@ Few classes have also changed name and package to reflect the changes above.
   `org.cometd.java:**cometd-java-api-client**` (for client-side only CometD applications)
 
 | `org.cometd.java:cometd-java-**annotations**`
-| `org.cometd.java:**cometd-java-annotation-server**` (for server-side CometD applications) +
-  `org.cometd.java:**cometd-java-annotation-client**` (for client-side only CometD applications)
+| `org.cometd.java:cometd-java-**annotation-server**` (for server-side CometD applications) +
+  `org.cometd.java:cometd-java-**annotation-client**` (for client-side only CometD applications)
+
+| `org.cometd.java:cometd-java-**server**`
+| `org.cometd.java:cometd-java-**server-common**`
 
 | `org.cometd.java:cometd-java-**websocket-javax-server**`
 | `org.cometd.java:cometd-java-**server-websocket-javax**`

@@ -43,7 +43,6 @@ import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.common.AsyncFoldLeft;
 import org.cometd.common.HashMapMessage;
 import org.cometd.server.AbstractServerTransport.Scheduler;
-import org.cometd.server.http.AbstractHttpTransport;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
@@ -64,7 +63,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
     private final AttributesMap _attributes = new AttributesMap();
     private final Set<ServerChannelImpl> subscriptions = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final LazyTask _lazyTask = new LazyTask();
-    private AbstractServerTransport.Scheduler _scheduler;
+    private AbstractServerTransport.Scheduler _scheduler = new Scheduler.None(0);
     private ServerTransport _transport;
     private ServerTransport _advisedTransport;
     private State _state = State.NEW;
@@ -178,9 +177,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
             lock.unlock();
         }
         if (remove) {
-            if (scheduler != null) {
-                scheduler.destroy();
-            }
+            scheduler.destroy();
             _bayeux.removeServerSession(this, true);
         }
     }
@@ -325,7 +322,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
                     _logger.info("Exception reported by extension " + extension, failure);
                     loop.proceed(result);
                 }));
-            } catch (Exception x) {
+            } catch (Throwable x) {
                 _logger.info("Exception thrown by extension " + extension, x);
                 loop.proceed(result);
             }
@@ -549,34 +546,35 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
             lock.lock();
             try {
                 oldScheduler = _scheduler;
-                if (oldScheduler != null) {
-                    _scheduler = null;
-                }
             } finally {
                 lock.unlock();
             }
-            if (oldScheduler != null) {
-                oldScheduler.cancel();
-            }
+            oldScheduler.cancel();
         } else {
             Scheduler oldScheduler;
             boolean schedule = false;
             lock.lock();
             try {
                 oldScheduler = _scheduler;
-                _scheduler = newScheduler;
-                if (shouldSchedule()) {
-                    schedule = true;
-                    if (newScheduler instanceof AbstractHttpTransport.HttpScheduler) {
-                        _scheduler = null;
+                // Only set the scheduler if it has a greater or equal cycle.
+                if (newScheduler.getMetaConnectCycle() >= oldScheduler.getMetaConnectCycle()) {
+                    _scheduler = newScheduler;
+                    if (shouldSchedule()) {
+                        schedule = true;
+                    } else {
+                        // An existing scheduler may have woken
+                        // up and scheduled session expiration,
+                        // but here we are suspending, so we must
+                        // be sure session expiration is cancelled.
+                        cancelExpiration(true);
                     }
+                } else {
+                    oldScheduler = newScheduler;
                 }
             } finally {
                 lock.unlock();
             }
-            if (oldScheduler != null && oldScheduler != newScheduler) {
-                oldScheduler.cancel();
-            }
+            oldScheduler.cancel();
             if (schedule) {
                 newScheduler.schedule();
             }
@@ -597,28 +595,19 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         lock.lock();
         try {
             _lazyTask.cancel();
-
             scheduler = _scheduler;
-
-            if (scheduler != null) {
-                if (scheduler instanceof AbstractHttpTransport.HttpScheduler) {
-                    _scheduler = null;
-                }
-            }
         } finally {
             lock.unlock();
         }
-        if (scheduler != null) {
+        if (_localSession == null) {
+            // It's a remote session, schedule delivery and return.
             scheduler.schedule();
-            // If there is a scheduler, then it's a remote session
-            // and we should not do local delivery, so we return.
-            return;
-        }
-
-        // Local delivery.
-        if (_localSession != null && hasNonLazyMessages()) {
-            for (ServerMessage msg : takeQueue(Collections.emptyList())) {
-                _localSession.receive(new HashMapMessage(msg), Promise.noop());
+        } else {
+            // Local delivery.
+            if (hasNonLazyMessages()) {
+                for (ServerMessage msg : takeQueue(Collections.emptyList())) {
+                    _localSession.receive(new HashMapMessage(msg), Promise.noop());
+                }
             }
         }
     }
@@ -646,19 +635,15 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
     }
 
     public void destroyScheduler() {
-        Scheduler scheduler;
+        Scheduler oldScheduler;
         lock.lock();
         try {
-            scheduler = _scheduler;
-            if (scheduler != null) {
-                _scheduler = null;
-            }
+            oldScheduler = _scheduler;
+            _scheduler = new Scheduler.None(Long.MAX_VALUE);
         } finally {
             lock.unlock();
         }
-        if (scheduler != null) {
-            scheduler.destroy();
-        }
+        oldScheduler.destroy();
     }
 
     public void cancelExpiration(boolean metaConnect) {
@@ -681,22 +666,40 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
             lock.unlock();
         }
         if (_logger.isDebugEnabled()) {
-            _logger.debug("{} expiration for {}", metaConnect ? "Cancelling" : "Delaying", this);
+            _logger.debug("{} expiration for {}", metaConnect ? "Cancelled" : "Delayed", this);
         }
     }
 
-    public void scheduleExpiration(long defaultInterval, long defaultMaxInterval) {
+    public void scheduleExpiration(long defaultInterval, long defaultMaxInterval, long metaConnectCycle) {
         long interval = calculateInterval(defaultInterval);
         long maxInterval = calculateMaxInterval(defaultMaxInterval);
         long now = System.nanoTime();
+        boolean scheduled = false;
         lock.lock();
         try {
-            _expireTime = now + TimeUnit.MILLISECONDS.toNanos(interval + maxInterval);
+            // When metaConnectCycle == 0, the /meta/connect was not suspended.
+            // Otherwise it was suspended, and some other event such as the
+            // /meta/connect timeout expiration may schedule session expiration
+            // only if there isn't a more recent /meta/connect that was suspended,
+            // which would have cancelled the session expiration.
+            if (metaConnectCycle == 0 || metaConnectCycle == getMetaConnectCycle()) {
+                scheduled = true;
+                _expireTime = now + TimeUnit.MILLISECONDS.toNanos(interval + maxInterval);
+            }
         } finally {
             lock.unlock();
         }
         if (_logger.isDebugEnabled()) {
-            _logger.debug("Scheduled expiration for {}", this);
+            _logger.debug("{} expiration for {}", scheduled ? "Scheduled" : "Skipped", this);
+        }
+    }
+
+    long getMetaConnectCycle() {
+        lock.lock();
+        try {
+            return _scheduler.getMetaConnectCycle();
+        } finally {
+            lock.unlock();
         }
     }
 
@@ -1023,21 +1026,24 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
 
     @Override
     public String toString() {
+        long cycle;
         long last;
         long expire;
         State state;
         long now = System.nanoTime();
         lock.lock();
         try {
+            cycle = getMetaConnectCycle();
             last = now - _messageTime;
             expire = _expireTime == 0 ? 0 : _expireTime - now;
             state = _state;
         } finally {
             lock.unlock();
         }
-        return String.format("%s,%s,last=%d,expire=%d",
+        return String.format("%s,%s,cycle=%d,last=%d,expire=%d",
                 _id,
                 state,
+                cycle,
                 TimeUnit.NANOSECONDS.toMillis(last),
                 TimeUnit.NANOSECONDS.toMillis(expire));
     }
