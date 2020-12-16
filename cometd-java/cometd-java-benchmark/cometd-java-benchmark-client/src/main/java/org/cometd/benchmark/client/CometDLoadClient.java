@@ -41,7 +41,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicStampedReference;
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.HdrHistogram.Histogram;
@@ -352,6 +351,7 @@ public class CometDLoadClient implements MeasureConverter {
 
         webSocketClient = new WebSocketClient(httpClient);
         webSocketClient.setInputBufferSize(8 * 1024);
+        webSocketClient.setMaxTextMessageSize(Integer.MAX_VALUE);
         webSocketClient.addBean(mbeanContainer);
         webSocketClient.start();
         mbeanContainer.beanAdded(null, webSocketClient);

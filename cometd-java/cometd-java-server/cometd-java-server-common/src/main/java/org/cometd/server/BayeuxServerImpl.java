@@ -31,6 +31,7 @@ import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -63,24 +64,28 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.Container;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @ManagedObject("The CometD server")
-public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer, Dumpable {
+public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer, Container.Listener, Dumpable {
     public static final String ALLOWED_TRANSPORTS_OPTION = "allowedTransports";
     public static final String SWEEP_PERIOD_OPTION = "sweepPeriod";
     public static final String TRANSPORTS_OPTION = "transports";
     public static final String VALIDATE_MESSAGE_FIELDS_OPTION = "validateMessageFields";
     public static final String BROADCAST_TO_PUBLISHER_OPTION = "broadcastToPublisher";
     public static final String SCHEDULER_THREADS = "schedulerThreads";
+    public static final String EXECUTOR_MAX_THREADS = "executorMaxThreads";
 
-    private final Logger _logger = LoggerFactory.getLogger(getClass().getName() + "." + Integer.toHexString(System.identityHashCode(this)));
+    private final String _name = getClass().getSimpleName() + "@" + Integer.toHexString(System.identityHashCode(this));
+    private final Logger _logger = LoggerFactory.getLogger(getClass().getPackage().getName() + "." + _name);
     private final SecureRandom _random = new SecureRandom();
     private final List<BayeuxServerListener> _listeners = new CopyOnWriteArrayList<>();
     private final List<Extension> _extensions = new CopyOnWriteArrayList<>();
@@ -90,24 +95,32 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
     private final List<String> _allowedTransports = new ArrayList<>();
     private final Map<String, Object> _options = new TreeMap<>();
     private MarkedReference<Scheduler> _scheduler;
+    private MarkedReference<Executor> _executor;
     private SecurityPolicy _policy = new DefaultSecurityPolicy();
     private JSONContextServer _jsonContext;
     private boolean _validation;
     private boolean _broadcastToPublisher;
     private boolean _detailedDump;
 
+    public String getName() {
+        return _name;
+    }
+
     @Override
     protected void doStart() throws Exception {
-        super.doStart();
-
         initializeMetaChannels();
         initializeJSONContext();
         initializeServerTransports();
 
+        if (_executor == null) {
+            _executor = new MarkedReference<>(newExecutor(), true);
+        }
+        addBean(_executor.getReference());
+
         if (_scheduler == null) {
             _scheduler = new MarkedReference<>(newScheduler(), true);
         }
-        _scheduler.getReference().start();
+        addBean(_scheduler.getReference());
 
         long defaultSweepPeriod = 997;
         long sweepPeriodOption = getOption(SWEEP_PERIOD_OPTION, defaultSweepPeriod);
@@ -128,6 +141,8 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
 
         _validation = getOption(VALIDATE_MESSAGE_FIELDS_OPTION, true);
         _broadcastToPublisher = getOption(BROADCAST_TO_PUBLISHER_OPTION, true);
+
+        super.doStart();
     }
 
     @Override
@@ -148,9 +163,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         _transports.clear();
         _allowedTransports.clear();
         _options.clear();
-        _scheduler.getReference().stop();
         if (_scheduler.isMarked()) {
             _scheduler = null;
+        }
+        if (_executor.isMarked()) {
+            _executor = null;
         }
     }
 
@@ -278,6 +295,34 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         }
     }
 
+    public void setExecutor(Executor executor) {
+        if (isRunning()) {
+            throw new IllegalStateException("Cannot set executor on a running BayeuxServer instance");
+        }
+        _executor = new MarkedReference<>(Objects.requireNonNull(executor), false);
+    }
+
+    public Executor getExecutor() {
+        return _executor == null ? null : _executor.getReference();
+    }
+
+    private Executor newExecutor() {
+        String name = _name + "-Executor";
+        int maxThreads = (int)getOption(EXECUTOR_MAX_THREADS, 128);
+        QueuedThreadPool executor = new QueuedThreadPool(maxThreads, 0);
+        executor.setName(name);
+        executor.setReservedThreads(0);
+        return executor;
+    }
+
+    public void execute(Runnable job) {
+        Executor executor = getExecutor();
+        if (executor == null) {
+            throw new RejectedExecutionException("Cannot execute job, no executor");
+        }
+        executor.execute(job);
+    }
+
     public void setScheduler(Scheduler scheduler) {
         if (isRunning()) {
             throw new IllegalStateException("Cannot set scheduler on a running BayeuxServer instance");
@@ -290,7 +335,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
     }
 
     private Scheduler newScheduler() {
-        String name = "BayeuxServer@" + Integer.toHexString(hashCode()) + "-Scheduler";
+        String name = _name + "-Scheduler";
         int threads = (int)getOption(SCHEDULER_THREADS, 1);
         return new ScheduledExecutorScheduler(name, false, threads);
     }
@@ -305,10 +350,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
      * @return the task promise
      */
     public Scheduler.Task schedule(Runnable task, long delay) {
-        if (_scheduler == null) {
+        Scheduler scheduler = getScheduler();
+        if (scheduler == null) {
             throw new RejectedExecutionException("Cannot schedule task, no scheduler");
         }
-        return _scheduler.getReference().schedule(task, delay, TimeUnit.MILLISECONDS);
+        return scheduler.schedule(task, delay, TimeUnit.MILLISECONDS);
     }
 
     public ChannelId newChannelId(String id) {
@@ -1148,7 +1194,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         return null;
     }
 
-    @ManagedAttribute(value = "The transports allowed by this server", readonly = true)
+    @ManagedAttribute(value = "The transports allowed by this CoemtD server", readonly = true)
     @Override
     public List<String> getAllowedTransports() {
         return Collections.unmodifiableList(_allowedTransports);
@@ -1173,7 +1219,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         }
     }
 
-    @ManagedAttribute(value = "Whether this server broadcast messages to the publisher", readonly = true)
+    @ManagedAttribute(value = "Whether this CometD server broadcast messages to the publisher", readonly = true)
     public boolean isBroadcastToPublisher() {
         return _broadcastToPublisher;
     }
@@ -1223,7 +1269,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         return true;
     }
 
-    @ManagedOperation(value = "Sweeps channels and sessions of this BayeuxServer", impact = "ACTION")
+    @ManagedOperation(value = "Sweeps channels and sessions of this CometD server", impact = "ACTION")
     public void sweep() {
         for (ServerChannelImpl channel : _channels.values()) {
             channel.sweep();
@@ -1241,7 +1287,21 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         }
     }
 
-    @ManagedAttribute("Reports additional details in the dump")
+    @Override
+    public void beanAdded(Container parent, Object child) {
+        if (child instanceof InheritedListener) {
+            addEventListener((Container.Listener)child);
+        }
+    }
+
+    @Override
+    public void beanRemoved(Container parent, Object child) {
+        if (child instanceof InheritedListener) {
+            removeEventListener((Container.Listener)child);
+        }
+    }
+
+    @ManagedAttribute("Reports additional details in the dump() operation")
     public boolean isDetailedDump() {
         return _detailedDump;
     }
