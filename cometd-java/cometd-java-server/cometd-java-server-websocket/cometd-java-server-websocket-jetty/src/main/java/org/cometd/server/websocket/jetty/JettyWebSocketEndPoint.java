@@ -16,7 +16,6 @@
 package org.cometd.server.websocket.jetty;
 
 import java.util.concurrent.ExecutionException;
-
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.ServerSession;
@@ -51,6 +50,7 @@ public class JettyWebSocketEndPoint extends AbstractWebSocketEndPoint implements
             try {
                 Promise.Completable<Void> completable = new Promise.Completable<>();
                 onMessage(data, completable);
+                // Wait, to apply backpressure to the client.
                 completable.get();
             } catch (ExecutionException x) {
                 throw x.getCause();

@@ -31,6 +31,11 @@ public class BayeuxServerImplMBean extends ObjectMBean {
         bayeux = (BayeuxServerImpl)managedObject;
     }
 
+    @Override
+    public String getObjectContextBasis() {
+        return bayeux.getName();
+    }
+
     @ManagedAttribute(value = "The number of ServerSessions", readonly = true)
     public int getSessionCount() {
         return bayeux.getSessions().size();

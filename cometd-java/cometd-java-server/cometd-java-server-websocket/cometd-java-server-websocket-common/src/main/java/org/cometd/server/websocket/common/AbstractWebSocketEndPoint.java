@@ -323,6 +323,7 @@ public abstract class AbstractWebSocketEndPoint {
         private final Context context;
         private final ServerMessage.Mutable message;
         private final AtomicMarkableReference<Scheduler.Task> taskRef;
+        private final AtomicBoolean flushing = new AtomicBoolean();
 
         public WebSocketScheduler(Context context, ServerMessage.Mutable message, long timeout) {
             this.context = context;
@@ -352,14 +353,36 @@ public abstract class AbstractWebSocketEndPoint {
                     resume(context, message, this);
                 }
             } else {
-                // Avoid to flush() if this scheduler has been disabled, so that the
+                // Avoid to send messages if this scheduler has been disabled, so that the
                 // messages remain in the session queue until the next scheduler is set.
                 if (taskRef.isMarked()) {
-                    Context context = new Context(session);
-                    context.sendQueue = true;
-                    flush(context, Promise.from(y -> {}, this::fail));
+                    Context ctx = new Context(session);
+                    ctx.sendQueue = true;
+                    ctx.metaConnectCycle = context.metaConnectCycle;
+                    flush(ctx);
                 }
             }
+        }
+
+        private void flush(Context context) {
+            // This method may be called concurrently, for example when
+            // two clients publish concurrently on the same channel.
+            // We must avoid to dispatch multiple times, to save threads.
+            if (flushing.compareAndSet(false, true)) {
+                executeFlush(context, Promise.from(y -> {
+                    // A thread may have seen flushing=true exactly
+                    // when this thread is executing this promise:
+                    // re-check whether there are messages to send.
+                    flushing.set(false);
+                    if (context.session.hasNonLazyMessages()) {
+                        flush(context);
+                    }
+                }, this::fail));
+            }
+        }
+
+        private void executeFlush(Context context, Promise<Void> promise) {
+            _transport.getBayeux().execute(() -> AbstractWebSocketEndPoint.this.flush(context, promise));
         }
 
         @Override
@@ -407,7 +430,7 @@ public abstract class AbstractWebSocketEndPoint {
 
         @Override
         public void succeed(Void result) {
-            flush(context, Promise.from(y -> {}, this::fail));
+            executeFlush(context, Promise.from(y -> {}, this::fail));
         }
 
         @Override

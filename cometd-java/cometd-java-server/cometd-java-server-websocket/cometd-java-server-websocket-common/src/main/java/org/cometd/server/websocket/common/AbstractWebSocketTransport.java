@@ -17,7 +17,6 @@ package org.cometd.server.websocket.common;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;

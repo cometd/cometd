@@ -17,13 +17,11 @@ package org.cometd.server.websocket.javax;
 
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-
 import javax.websocket.CloseReason;
 import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
 import javax.websocket.MessageHandler;
 import javax.websocket.Session;
-
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.ServerMessage;
@@ -60,7 +58,7 @@ public class WebSocketEndPoint extends Endpoint implements MessageHandler.Whole<
             try {
                 Promise.Completable<Void> completable = new Promise.Completable<>();
                 _delegate.onMessage(data, completable);
-                // Cannot return from this method until the processing is finished.
+                // Wait, to apply backpressure to the client.
                 completable.get();
             } catch (ExecutionException x) {
                 throw x.getCause();
