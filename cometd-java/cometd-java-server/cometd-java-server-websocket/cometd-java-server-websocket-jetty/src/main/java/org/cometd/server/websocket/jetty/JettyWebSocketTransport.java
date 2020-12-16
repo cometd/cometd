@@ -19,9 +19,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
 import javax.servlet.ServletContext;
-
 import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.BayeuxServerImpl;
@@ -122,7 +120,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport {
         return true;
     }
 
-    private class WebSocketContext extends AbstractBayeuxContext {
+    private static class WebSocketContext extends AbstractBayeuxContext {
         private final Map<String, Object> attributes;
 
         private WebSocketContext(ServletContext context, ServletUpgradeRequest request) {
