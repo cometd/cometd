@@ -121,6 +121,11 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
         }
         addBean(_scheduler.getReference());
 
+        _validation = getOption(VALIDATE_MESSAGE_FIELDS_OPTION, true);
+        _broadcastToPublisher = getOption(BROADCAST_TO_PUBLISHER_OPTION, true);
+
+        super.doStart();
+
         long defaultSweepPeriod = 997;
         long sweepPeriodOption = getOption(SWEEP_PERIOD_OPTION, defaultSweepPeriod);
         if (sweepPeriodOption < 0) {
@@ -137,11 +142,6 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
                 }
             }
         }, sweepPeriod);
-
-        _validation = getOption(VALIDATE_MESSAGE_FIELDS_OPTION, true);
-        _broadcastToPublisher = getOption(BROADCAST_TO_PUBLISHER_OPTION, true);
-
-        super.doStart();
     }
 
     @Override
