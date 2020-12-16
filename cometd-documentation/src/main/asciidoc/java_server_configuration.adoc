@@ -77,6 +77,9 @@ Here is the list of configuration init parameters that the `BayeuxServer` implem
 | 997
 | The period, in milliseconds, of the sweeping activity performed by the server.
 
+| schedulerThreads
+| 1
+| The number of scheduler threads that execute scheduled tasks
 |===
 
 [[_java_server_configuration_transports]]

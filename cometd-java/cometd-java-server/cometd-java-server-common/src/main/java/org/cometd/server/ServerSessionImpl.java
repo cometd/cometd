@@ -46,6 +46,7 @@ import org.cometd.server.AbstractServerTransport.Scheduler;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
+import org.eclipse.jetty.util.thread.Scheduler.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1050,7 +1051,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
 
     private class LazyTask implements Runnable {
         private long _execution;
-        private volatile org.eclipse.jetty.util.thread.Scheduler.Task _task;
+        private volatile Task _task;
 
         @Override
         public void run() {
@@ -1060,7 +1061,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         }
 
         public boolean cancel() {
-            org.eclipse.jetty.util.thread.Scheduler.Task task = _task;
+            Task task = _task;
             return task != null && task.cancel();
         }
 
@@ -1079,5 +1080,4 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
     private enum State {
         NEW, HANDSHAKEN, CONNECTED, DISCONNECTED, EXPIRED
     }
-
 }
