@@ -64,7 +64,6 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
-import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
@@ -75,7 +74,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @ManagedObject("The CometD server")
-public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer, Container.Listener, Dumpable {
+public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer, Dumpable {
     public static final String ALLOWED_TRANSPORTS_OPTION = "allowedTransports";
     public static final String SWEEP_PERIOD_OPTION = "sweepPeriod";
     public static final String TRANSPORTS_OPTION = "transports";
@@ -1284,20 +1283,6 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
         long now = System.nanoTime();
         for (ServerSessionImpl session : _sessions.values()) {
             session.sweep(now);
-        }
-    }
-
-    @Override
-    public void beanAdded(Container parent, Object child) {
-        if (child instanceof InheritedListener) {
-            addEventListener((Container.Listener)child);
-        }
-    }
-
-    @Override
-    public void beanRemoved(Container parent, Object child) {
-        if (child instanceof InheritedListener) {
-            removeEventListener((Container.Listener)child);
         }
     }
 
