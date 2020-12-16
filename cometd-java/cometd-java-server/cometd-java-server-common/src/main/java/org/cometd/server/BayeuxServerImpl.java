@@ -31,6 +31,7 @@ import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletRequest;
@@ -77,6 +78,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
     public static final String TRANSPORTS_OPTION = "transports";
     public static final String VALIDATE_MESSAGE_FIELDS_OPTION = "validateMessageFields";
     public static final String BROADCAST_TO_PUBLISHER_OPTION = "broadcastToPublisher";
+    public static final String SCHEDULER_THREADS = "schedulerThreads";
 
     private final Logger _logger = LoggerFactory.getLogger(getClass().getName() + "." + Integer.toHexString(System.identityHashCode(this)));
     private final SecureRandom _random = new SecureRandom();
@@ -87,7 +89,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
     private final Map<String, ServerTransport> _transports = new LinkedHashMap<>(); // Order is important
     private final List<String> _allowedTransports = new ArrayList<>();
     private final Map<String, Object> _options = new TreeMap<>();
-    private final Scheduler _scheduler = new ScheduledExecutorScheduler("BayeuxServer@" + Integer.toHexString(hashCode()) + "-Scheduler", false);
+    private MarkedReference<Scheduler> _scheduler;
     private SecurityPolicy _policy = new DefaultSecurityPolicy();
     private JSONContextServer _jsonContext;
     private boolean _validation;
@@ -102,7 +104,10 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         initializeJSONContext();
         initializeServerTransports();
 
-        _scheduler.start();
+        if (_scheduler == null) {
+            _scheduler = new MarkedReference<>(newScheduler(), true);
+        }
+        _scheduler.getReference().start();
 
         long defaultSweepPeriod = 997;
         long sweepPeriodOption = getOption(SWEEP_PERIOD_OPTION, defaultSweepPeriod);
@@ -143,7 +148,10 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         _transports.clear();
         _allowedTransports.clear();
         _options.clear();
-        _scheduler.stop();
+        _scheduler.getReference().stop();
+        if (_scheduler.isMarked()) {
+            _scheduler = null;
+        }
     }
 
     protected void initializeMetaChannels() {
@@ -270,6 +278,23 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         }
     }
 
+    public void setScheduler(Scheduler scheduler) {
+        if (isRunning()) {
+            throw new IllegalStateException("Cannot set scheduler on a running BayeuxServer instance");
+        }
+        _scheduler = new MarkedReference<>(Objects.requireNonNull(scheduler), false);
+    }
+
+    public Scheduler getScheduler() {
+        return _scheduler == null ? null : _scheduler.getReference();
+    }
+
+    private Scheduler newScheduler() {
+        String name = "BayeuxServer@" + Integer.toHexString(hashCode()) + "-Scheduler";
+        int threads = (int)getOption(SCHEDULER_THREADS, 1);
+        return new ScheduledExecutorScheduler(name, false, threads);
+    }
+
     /**
      * <p>Entry point to schedule tasks in CometD.</p>
      * <p>Subclasses may override and run the task in a {@link java.util.concurrent.Executor},
@@ -280,7 +305,10 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
      * @return the task promise
      */
     public Scheduler.Task schedule(Runnable task, long delay) {
-        return _scheduler.schedule(task, delay, TimeUnit.MILLISECONDS);
+        if (_scheduler == null) {
+            throw new RejectedExecutionException("Cannot schedule task, no scheduler");
+        }
+        return _scheduler.getReference().schedule(task, delay, TimeUnit.MILLISECONDS);
     }
 
     public ChannelId newChannelId(String id) {
