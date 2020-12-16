@@ -1148,7 +1148,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         return null;
     }
 
-    @ManagedAttribute(value = "The transports allowed by this server", readonly = true)
+    @ManagedAttribute(value = "The transports allowed by this CoemtD server", readonly = true)
     @Override
     public List<String> getAllowedTransports() {
         return Collections.unmodifiableList(_allowedTransports);
@@ -1173,7 +1173,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         }
     }
 
-    @ManagedAttribute(value = "Whether this server broadcast messages to the publisher", readonly = true)
+    @ManagedAttribute(value = "Whether this CometD server broadcast messages to the publisher", readonly = true)
     public boolean isBroadcastToPublisher() {
         return _broadcastToPublisher;
     }
@@ -1223,7 +1223,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         return true;
     }
 
-    @ManagedOperation(value = "Sweeps channels and sessions of this BayeuxServer", impact = "ACTION")
+    @ManagedOperation(value = "Sweeps channels and sessions of this CometD server", impact = "ACTION")
     public void sweep() {
         for (ServerChannelImpl channel : _channels.values()) {
             channel.sweep();
@@ -1241,7 +1241,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer,
         }
     }
 
-    @ManagedAttribute("Reports additional details in the dump")
+    @ManagedAttribute("Reports additional details in the dump() operation")
     public boolean isDetailedDump() {
         return _detailedDump;
     }
