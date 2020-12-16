@@ -351,6 +351,7 @@ public class CometDLoadClient implements MeasureConverter {
 
         webSocketClient = new WebSocketClient(httpClient);
         webSocketClient.setInputBufferSize(8 * 1024);
+        webSocketClient.setMaxTextMessageSize(Integer.MAX_VALUE);
         webSocketClient.addBean(mbeanContainer);
         webSocketClient.start();
         mbeanContainer.beanAdded(null, webSocketClient);

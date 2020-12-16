@@ -58,7 +58,7 @@ public class WebSocketEndPoint extends Endpoint implements MessageHandler.Whole<
             try {
                 Promise.Completable<Void> completable = new Promise.Completable<>();
                 _delegate.onMessage(data, completable);
-                // Cannot return from this method until the processing is finished.
+                // Wait, to apply backpressure to the client.
                 completable.get();
             } catch (ExecutionException x) {
                 throw x.getCause();

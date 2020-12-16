@@ -79,7 +79,12 @@ Here is the list of configuration init parameters that the `BayeuxServer` implem
 
 | schedulerThreads
 | 1
-| The number of scheduler threads that execute scheduled tasks
+| The number of scheduler threads that execute scheduled tasks.
+
+| executorMaxThreads
+| 128
+| The max number of executor threads that execute jobs.
+  The scheduler is used by transports such as WebSocket that don't have threading support from the Servlet Container.
 |===
 
 [[_java_server_configuration_transports]]
