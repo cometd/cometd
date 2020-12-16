@@ -73,12 +73,11 @@ public class JMXTest {
         server.start();
 
         String domain = BayeuxServerImpl.class.getPackage().getName();
-        Set<ObjectName> mbeanNames = mbeanServer.queryNames(ObjectName.getInstance(domain + ":*"), null);
+        Set<ObjectName> mbeanNames = mbeanServer.queryNames(ObjectName.getInstance(domain + ":*,type=bayeuxserverimpl"), null);
         Assertions.assertEquals(1, mbeanNames.size());
         ObjectName objectName = mbeanNames.iterator().next();
-        @SuppressWarnings("unchecked")
-        Set<String> channels = (Set<String>)mbeanServer.getAttribute(objectName, "channels");
-        Assertions.assertTrue(channels.size() > 0);
+        int channels = (Integer)mbeanServer.getAttribute(objectName, "channelCount");
+        Assertions.assertTrue(channels > 0);
 
         domain = Oort.class.getPackage().getName();
         mbeanNames = mbeanServer.queryNames(ObjectName.getInstance(domain + ":*,type=oort"), null);
@@ -99,6 +98,10 @@ public class JMXTest {
         Assertions.assertEquals("oort", oortObjectName.getKeyProperty("type"));
 
         server.stop();
+
+        domain = BayeuxServerImpl.class.getPackage().getName();
+        mbeanNames = mbeanServer.queryNames(ObjectName.getInstance(domain + ":*"), null);
+        Assertions.assertEquals(0, mbeanNames.size());
     }
 
     @Test
@@ -111,8 +114,8 @@ public class JMXTest {
 
         WebSocketServerContainerInitializer.configure(context, null);
 
-        String value = BayeuxServerImpl.ATTRIBUTE + "," + Oort.OORT_ATTRIBUTE + "," + Seti.SETI_ATTRIBUTE;
-        context.setInitParameter(ServletContextHandler.MANAGED_ATTRIBUTES, value);
+        // Do not use ServletContextHandler.MANAGED_ATTRIBUTES, so
+        // the test can simulate a deployment on a non-Jetty Container.
 
         // CometD servlet
         String cometdServletPath = "/cometd";
@@ -131,14 +134,16 @@ public class JMXTest {
 
         MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
         String domain = BayeuxServerImpl.class.getPackage().getName();
-        Set<ObjectName> mbeanNames = mbeanServer.queryNames(ObjectName.getInstance(domain + ":*"), null);
+        Set<ObjectName> mbeanNames = mbeanServer.queryNames(ObjectName.getInstance(domain + ":*,type=bayeuxserverimpl"), null);
         Assertions.assertEquals(1, mbeanNames.size());
         ObjectName objectName = mbeanNames.iterator().next();
-        @SuppressWarnings("unchecked")
-        Set<String> channels = (Set<String>)mbeanServer.getAttribute(objectName, "channels");
-        Assertions.assertTrue(channels.size() > 0);
+        int channels = (Integer)mbeanServer.getAttribute(objectName, "channelCount");
+        Assertions.assertTrue(channels > 0);
 
         server.stop();
+
+        mbeanNames = mbeanServer.queryNames(ObjectName.getInstance(domain + ":*"), null);
+        Assertions.assertEquals(0, mbeanNames.size());
     }
 
     public static class CometDJMXExporter extends HttpServlet {
