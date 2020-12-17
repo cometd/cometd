@@ -175,10 +175,10 @@ public abstract class JettyJSONContext<M extends Message.Mutable> {
         }
     }
 
-    private static class AsyncJSONParser implements JSONContext.AsyncParser {
+    protected static class AsyncJSONParser implements JSONContext.AsyncParser {
         private final AsyncJSON asyncJSON;
 
-        private AsyncJSONParser(AsyncJSON asyncJSON) {
+        public AsyncJSONParser(AsyncJSON asyncJSON) {
             this.asyncJSON = asyncJSON;
         }
 
@@ -235,7 +235,7 @@ public abstract class JettyJSONContext<M extends Message.Mutable> {
             return new AsyncJSON(this) {
                 @Override
                 protected Map<String, Object> newObject(Context context) {
-                    if (context.depth() == 1) {
+                    if (context.depth() <= 1) {
                         return newRoot();
                     }
                     return super.newObject(context);

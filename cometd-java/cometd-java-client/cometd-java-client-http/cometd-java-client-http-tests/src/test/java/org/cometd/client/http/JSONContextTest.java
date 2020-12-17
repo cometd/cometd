@@ -35,12 +35,19 @@ import org.cometd.common.JSONContext;
 import org.cometd.common.JacksonJSONContextClient;
 import org.cometd.common.JettyJSONContextClient;
 import org.cometd.server.AbstractServerTransport;
+import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.JSONContextServer;
 import org.cometd.server.JacksonJSONContextServer;
 import org.cometd.server.JettyJSONContextServer;
 import org.cometd.server.ServerMessageImpl;
+import org.cometd.server.http.AsyncJSONTransport;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.util.StringContentProvider;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -55,7 +62,7 @@ public class JSONContextTest extends ClientServerTest {
 
     @ParameterizedTest(name = "{index}: JSON Context Server: {0} JSON Context Client: {1}")
     @MethodSource("jsonContexts")
-    public void testAsyncParser(Class<JSONContextServer>jsonContextServerClass, Class<JSONContext.Client> jsonContextClientClass) throws Exception {
+    public void testAsyncParser(Class<JSONContextServer> jsonContextServerClass, Class<JSONContext.Client> jsonContextClientClass) throws Exception {
         JSONContext.Client jsonContextClient = jsonContextClientClass.getConstructor().newInstance();
         JSONContext.AsyncParser clientParser = jsonContextClient.newAsyncParser();
         Assumptions.assumeTrue(clientParser != null);
@@ -88,9 +95,40 @@ public class JSONContextTest extends ClientServerTest {
         Assertions.assertTrue(serverMessage instanceof ServerMessageImpl);
     }
 
+    @Test
+    public void testHandshakeMessageNoArray() throws Exception {
+        Map<String, String> serverOptions = new HashMap<>();
+        serverOptions.put(BayeuxServerImpl.TRANSPORTS_OPTION, AsyncJSONTransport.class.getName());
+        // Only Jetty supports the lenient parsing tested here.
+        serverOptions.put(AbstractServerTransport.JSON_CONTEXT_OPTION, JettyJSONContextServer.class.getName());
+        start(serverOptions);
+
+        // Do no wrap the handshake into an array.
+        String handshake = "{" +
+                "\"channel\": \"/meta/handshake\"," +
+                "\"id\": \"1\"," +
+                "\"supportedConnectionTypes\": [\"long-polling\"]," +
+                "\"advice\": {\"timeout\": 0, \"reconnect\": \"retry\"}," +
+                "\"ext\": {\"ack\": true}" +
+                "}";
+
+        ContentResponse response = httpClient.newRequest(cometdURL)
+                .method(HttpMethod.POST)
+                .content(new StringContentProvider(handshake))
+                .send();
+
+        Assertions.assertEquals(HttpStatus.OK_200, response.getStatus());
+        String json = response.getContentAsString();
+        JSONContext.Client jsonContextClient = new JettyJSONContextClient();
+        JSONContext.AsyncParser asyncParser = jsonContextClient.newAsyncParser();
+        asyncParser.parse(StandardCharsets.UTF_8.encode(json));
+        List<Message.Mutable> messages = asyncParser.complete();
+        Assertions.assertEquals(1, messages.size());
+    }
+
     @ParameterizedTest(name = "{index}: JSON Context Server: {0} JSON Context Client: {1}")
     @MethodSource("jsonContexts")
-    public void testHandshakeSubscribePublishUnsubscribeDisconnect(Class<JSONContextServer>jsonContextServerClass, Class<JSONContext.Client> jsonContextClientClass) throws Exception {
+    public void testHandshakeSubscribePublishUnsubscribeDisconnect(Class<JSONContextServer> jsonContextServerClass, Class<JSONContext.Client> jsonContextClientClass) throws Exception {
         Map<String, String> serverOptions = new HashMap<>();
         serverOptions.put(AbstractServerTransport.JSON_CONTEXT_OPTION, jsonContextServerClass.getName());
         start(serverOptions);

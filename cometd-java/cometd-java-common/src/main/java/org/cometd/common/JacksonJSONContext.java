@@ -187,8 +187,7 @@ public abstract class JacksonJSONContext<M extends Message.Mutable, I extends M>
                 M[] result = objectMapper.readValue(tokenBuffer.asParser(), objectMapper.constructType(rootArrayClass()));
                 return (R)Arrays.asList(result);
             } catch (IOException x) {
-                // TODO: perhaps this should be IllegalArgumentException, as we can only fail if the input is malformed.
-                throw new IllegalStateException(x);
+                throw new IllegalArgumentException(x);
             }
         }
     }
