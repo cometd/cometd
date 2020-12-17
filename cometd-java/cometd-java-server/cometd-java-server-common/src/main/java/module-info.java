@@ -28,4 +28,6 @@ module org.cometd.server {
 
     // Only required when using JMX.
     requires static org.eclipse.jetty.jmx;
+    // Only required when using Jetty's JSON.
+    requires static org.eclipse.jetty.util.ajax;
 }

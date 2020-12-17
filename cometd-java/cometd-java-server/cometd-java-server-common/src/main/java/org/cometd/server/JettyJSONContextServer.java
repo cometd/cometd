@@ -15,8 +15,12 @@
  */
 package org.cometd.server;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.common.JettyJSONContext;
+import org.eclipse.jetty.util.ajax.AsyncJSON;
 
 public class JettyJSONContextServer extends JettyJSONContext<ServerMessage.Mutable> implements JSONContextServer {
     @Override
@@ -27,6 +31,28 @@ public class JettyJSONContextServer extends JettyJSONContext<ServerMessage.Mutab
     @Override
     protected ServerMessage.Mutable[] newRootArray(int size) {
         return new ServerMessage.Mutable[size];
+    }
+
+    @Override
+    public AsyncParser newAsyncParser() {
+        AsyncJSON asyncJSON = getAsyncJSONFactory().newAsyncJSON();
+        return new AsyncJSONParser(asyncJSON) {
+            @SuppressWarnings("unchecked")
+            @Override
+            public <R> R complete() {
+                R object = super.complete();
+                if (object == null) {
+                    return null;
+                }
+                if (object instanceof List) {
+                    return object;
+                }
+                if (object.getClass().isArray()) {
+                    return (R)Arrays.asList((ServerMessage.Mutable[])object);
+                }
+                return (R)Collections.singletonList((ServerMessage.Mutable)object);
+            }
+        };
     }
 
     @Override
