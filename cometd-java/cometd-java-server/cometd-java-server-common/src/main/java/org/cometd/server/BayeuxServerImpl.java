@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -135,11 +136,7 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
         schedule(new Runnable() {
             @Override
             public void run() {
-                try {
-                    sweep();
-                } finally {
-                    schedule(this, sweepPeriod);
-                }
+                asyncSweep().whenComplete((r, x) -> schedule(this, sweepPeriod));
             }
         }, sweepPeriod);
     }
@@ -1270,16 +1267,32 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
 
     @ManagedOperation(value = "Sweeps channels and sessions of this CometD server", impact = "ACTION")
     public void sweep() {
-        for (ServerChannelImpl channel : _channels.values()) {
-            channel.sweep();
-        }
+        sweepChannels();
+        sweepTransports();
+        sweepSessions();
+    }
 
+    private CompletableFuture<Void> asyncSweep() {
+        Executor executor = getExecutor();
+        CompletableFuture<Void> sweepChannels = CompletableFuture.runAsync(this::sweepChannels, executor);
+        CompletableFuture<Void> sweepTransports = CompletableFuture.runAsync(this::sweepTransports, executor);
+        CompletableFuture<Void> sweepSessions = CompletableFuture.runAsync(this::sweepSessions, executor);
+        return CompletableFuture.allOf(sweepChannels, sweepTransports, sweepSessions);
+    }
+
+    private void sweepChannels() {
+        _channels.values().forEach(ServerChannelImpl::sweep);
+    }
+
+    private void sweepTransports() {
         for (ServerTransport transport : _transports.values()) {
             if (transport instanceof AbstractServerTransport) {
                 ((AbstractServerTransport)transport).sweep();
             }
         }
+    }
 
+    private void sweepSessions() {
         long now = System.nanoTime();
         for (ServerSessionImpl session : _sessions.values()) {
             session.sweep(now);
