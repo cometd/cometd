@@ -21,12 +21,9 @@ import java.io.Reader;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.cometd.bayeux.Message;
-import org.cometd.bayeux.server.ServerMessage;
 import org.eclipse.jetty.util.ajax.AsyncJSON;
 import org.eclipse.jetty.util.ajax.JSON;
 
@@ -188,10 +185,10 @@ public abstract class JettyJSONContext<M extends Message.Mutable> {
         }
     }
 
-    private static class AsyncJSONParser implements JSONContext.AsyncParser {
+    protected static class AsyncJSONParser implements JSONContext.AsyncParser {
         private final AsyncJSON asyncJSON;
 
-        private AsyncJSONParser(AsyncJSON asyncJSON) {
+        public AsyncJSONParser(AsyncJSON asyncJSON) {
             this.asyncJSON = asyncJSON;
         }
 
@@ -200,23 +197,9 @@ public abstract class JettyJSONContext<M extends Message.Mutable> {
             asyncJSON.parse(buffer);
         }
 
-        @SuppressWarnings("unchecked")
         @Override
         public <R> R complete() {
-            return (R)adapt(asyncJSON.complete());
-        }
-
-        private Object adapt(Object object) {
-            if (object == null) {
-                return null;
-            }
-            if (object instanceof List) {
-                return object;
-            }
-            if (object.getClass().isArray()) {
-                return Arrays.asList((ServerMessage.Mutable[])object);
-            }
-            return Collections.singletonList((ServerMessage.Mutable)object);
+            return asyncJSON.complete();
         }
     }
 
