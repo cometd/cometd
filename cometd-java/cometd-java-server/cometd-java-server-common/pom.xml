@@ -12,6 +12,22 @@
   <artifactId>cometd-java-server-common</artifactId>
   <name>CometD :: Java :: Server :: Common</name>
 
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <argLine>
+            @{argLine}
+            <!-- Jetty's JSON is an optional dependency, so it
+            must be explicitly added to the module graph. -->
+            --add-modules org.eclipse.jetty.util.ajax
+          </argLine>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
