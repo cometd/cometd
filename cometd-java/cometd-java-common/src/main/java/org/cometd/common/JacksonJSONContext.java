@@ -22,7 +22,6 @@ import java.nio.ByteBuffer;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.List;
-
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.async.ByteArrayFeeder;
@@ -197,8 +196,7 @@ public abstract class JacksonJSONContext<M extends Message.Mutable, I extends M>
                 M[] result = objectMapper.readValue(tokenBuffer.asParser(), objectMapper.constructType(rootArrayClass()));
                 return (R)Arrays.asList(result);
             } catch (IOException x) {
-                // TODO: perhaps this should be IllegalArgumentException, as we can only fail if the input is malformed.
-                throw new IllegalStateException(x);
+                throw new IllegalArgumentException(x);
             }
         }
     }
