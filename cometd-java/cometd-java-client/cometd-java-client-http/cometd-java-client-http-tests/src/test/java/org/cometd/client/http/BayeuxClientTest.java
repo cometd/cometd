@@ -449,7 +449,7 @@ public class BayeuxClientTest extends ClientServerTest {
         client.handshake();
         Assertions.assertTrue(client.waitFor(5000, State.CONNECTED));
 
-        // Wait for connect
+        // Wait for the /meta/connect to be held.
         Thread.sleep(1000);
 
         client.abort();
@@ -459,31 +459,21 @@ public class BayeuxClientTest extends ClientServerTest {
 
     @Test
     public void testAbortThenRestart() throws Exception {
-        AtomicReference<CountDownLatch> connectLatch = new AtomicReference<>(new CountDownLatch(2));
         BayeuxClient client = new BayeuxClient(cometdURL, new JettyHttpClientTransport(null, httpClient));
-        client.addTransportListener(new TransportListener() {
-            @Override
-            public void onSending(List<? extends Message> messages) {
-                // Need to be sure that the second connect is sent otherwise
-                // the abort and rehandshake may happen before the second
-                // connect and the test will fail.
-                if (messages.size() == 1 && Channel.META_CONNECT.equals(messages.get(0).getChannel())) {
-                    connectLatch.get().countDown();
-                }
-            }
-        });
         client.handshake();
 
-        // Wait for connect
-        Assertions.assertTrue(connectLatch.get().await(5, TimeUnit.SECONDS));
+        // Wait for the /meta/connect to be held.
+        Thread.sleep(1000);
 
         client.abort();
         Assertions.assertFalse(client.isConnected());
 
         // Restart
-        connectLatch.set(new CountDownLatch(2));
         client.handshake();
-        Assertions.assertTrue(connectLatch.get().await(5, TimeUnit.SECONDS));
+
+        // Wait for the /meta/connect to be held.
+        Thread.sleep(1000);
+
         Assertions.assertTrue(client.isConnected());
 
         disconnectBayeuxClient(client);
