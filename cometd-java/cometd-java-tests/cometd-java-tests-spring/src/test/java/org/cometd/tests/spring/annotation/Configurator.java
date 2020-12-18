@@ -79,7 +79,8 @@ public class Configurator implements DestructionAwareBeanPostProcessor {
     @Bean(initMethod = "start", destroyMethod = "stop")
     public BayeuxServer bayeuxServer() {
         BayeuxServerImpl bayeuxServer = new BayeuxServerImpl();
-        // Don't initialize the WebSocket transports.
+        // Don't initialize the WebSocket transports, since for
+        // this test we don't have the required ServletContext.
         bayeuxServer.setOption("transports", AsyncJSONTransport.class.getName());
         return bayeuxServer;
     }
