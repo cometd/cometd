@@ -30,7 +30,6 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -38,6 +37,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -90,7 +90,6 @@ public class CometDLoadClient implements MeasureConverter {
         return histogram;
     });
 
-    private final Random random = new Random();
     private final PlatformMonitor monitor = new PlatformMonitor();
     private final AtomicLong ids = new AtomicLong();
     private final List<LoadBayeuxClient> bayeuxClients = Collections.synchronizedList(new ArrayList<>());
@@ -683,9 +682,7 @@ public class CometDLoadClient implements MeasureConverter {
     }
 
     private int nextRandom(int limit) {
-        synchronized (this) {
-            return random.nextInt(limit);
-        }
+        return ThreadLocalRandom.current().nextInt(limit);
     }
 
     private void updateLatencies(long startTime, long sendTime, long arrivalTime, long endTime) {
