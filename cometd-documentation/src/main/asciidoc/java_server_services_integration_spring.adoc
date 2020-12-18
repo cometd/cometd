@@ -183,10 +183,12 @@ include::{doc_code}/server/ServerServiceIntegrationSpringDocs.java[tags=configur
 
 Summary:
 
-* This `@Configuration` Spring component is the factory for the BayeuxServer object via the`bayeuxServer()` method (annotated with Spring's `@Bean`).
-* Creating CometD's `ServerAnnotationProcessor` requires the `BayeuxServer` object, and therefore it `@Injects` it into a setter method.
-* The lifecycle callback `init()` creates CometD's `ServerAnnotationProcessor`, which is then used during Spring's bean post processing phases.
-* Finally, the `BayeuxServer` object is exported into the `ServletContext` for the CometD servlet to use.
+* This `@Configuration` Spring component is the factory for the BayeuxServer object via the `bayeuxServer()` method (annotated with Spring's `@Bean`).
+This is where you configure the `BayeuxServer` with the options you would normally set in `web.xml`.
+* In the Spring lifecycle callback `init()` you call `bayeuxServer()` to create the `BayeuxServer` instance.
+** You must create the `BayeuxServer` instance _after_ the `setServletContext(ServletContext)` method has been called by Spring, because `BayeuxServer` needs the `ServletContext`.
+** You must export the `BayeuxServer` as a `ServletContext` attribute, so that `CometDServlet` can discover and use the `BayeuxServer` instance created here; otherwise, the `CometDServlet` will create _another_ `BayeuxServer` instance.
+* Also in `init()` you create CometD's `ServerAnnotationProcessor`, which is then used during Spring's bean post processing phases.
 
 [[_java_server_services_integration_spring_boot]]
 ===== Spring Boot Configuration

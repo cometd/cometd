@@ -19,7 +19,6 @@ import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletRegistration;
-
 import org.cometd.annotation.Listener;
 import org.cometd.annotation.Service;
 import org.cometd.annotation.Session;
@@ -73,7 +72,7 @@ public class ServerServiceIntegrationSpringDocs {
     // tag::configurer[]
     @Configuration
     public class Configurer implements DestructionAwareBeanPostProcessor, ServletContextAware {
-        private BayeuxServer bayeuxServer;
+        private ServletContext servletContext;
         private ServerAnnotationProcessor processor;
 
         @Bean(initMethod = "start", destroyMethod = "stop")
@@ -81,16 +80,22 @@ public class ServerServiceIntegrationSpringDocs {
             BayeuxServerImpl bayeuxServer = new BayeuxServerImpl();
             // Configure BayeuxServer here.
             bayeuxServer.setOption(AbstractServerTransport.TIMEOUT_OPTION, 15000);
-            return bayeuxServer;
-        }
 
-        @Inject
-        private void setBayeuxServer(BayeuxServer bayeuxServer) {
-            this.bayeuxServer = bayeuxServer;
+            // The following lines are required by WebSocket transports.
+            bayeuxServer.setOption("ws.cometdURLMapping", "/cometd/*");
+            bayeuxServer.setOption(ServletContext.class.getName(), servletContext);
+
+            // Export this instance to the ServletContext so
+            // that CometDServlet can discover it and use it.
+            servletContext.setAttribute(BayeuxServer.ATTRIBUTE, bayeuxServer);
+            return bayeuxServer;
         }
 
         @PostConstruct
         private void init() {
+            // Creation of BayeuxServer must happen *after*
+            // Spring calls setServletContext(ServletContext).
+            BayeuxServer bayeuxServer = bayeuxServer();
             this.processor = new ServerAnnotationProcessor(bayeuxServer);
         }
 
@@ -120,7 +125,7 @@ public class ServerServiceIntegrationSpringDocs {
 
         @Override
         public void setServletContext(ServletContext servletContext) {
-            servletContext.setAttribute(BayeuxServer.ATTRIBUTE, bayeuxServer);
+            this.servletContext = servletContext;
         }
     }
     // end::configurer[]
