@@ -895,13 +895,23 @@ public class CometDLoadClient implements MeasureConverter {
         }
     }
 
-    private class LoadBayeuxClient extends BayeuxClient implements TransportListener {
+    private class LoadBayeuxClient extends BayeuxClient {
         private final List<Integer> subscriptions = new ArrayList<>();
         private final CountDownLatch initLatch = new CountDownLatch(1);
 
         private LoadBayeuxClient(String url, ScheduledExecutorService scheduler, ClientTransport transport) {
             super(url, scheduler, transport);
-            addTransportListener(this);
+            addTransportListener(new TransportListener() {
+                @Override
+                public void onSending(List<? extends Message> messages) {
+                    recordSentMessages(messages);
+                }
+
+                @Override
+                public void onMessages(List<Message.Mutable> messages) {
+                    recordReceivedMessages(messages);
+                }
+            });
         }
 
         public void setupRoom(int room) {
@@ -957,8 +967,7 @@ public class CometDLoadClient implements MeasureConverter {
             latch.await();
         }
 
-        @Override
-        public void onSending(List<? extends Message> messages) {
+        private void recordSentMessages(List<? extends Message> messages) {
             long now = System.nanoTime();
             for (Message message : messages) {
                 Map<String, Object> data = message.getDataAsMap();
@@ -973,8 +982,7 @@ public class CometDLoadClient implements MeasureConverter {
             }
         }
 
-        @Override
-        public void onMessages(List<Message.Mutable> messages) {
+        private void recordReceivedMessages(List<Message.Mutable> messages) {
             long now = System.nanoTime();
             boolean response = false;
             for (Message message : messages) {
