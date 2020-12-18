@@ -362,7 +362,7 @@ public class CometDLoadClient implements MeasureConverter {
         LifeCycle.start(webSocketClient);
         mbeanContainer.beanAdded(null, webSocketClient);
 
-        webSocketContainer = new ClientContainer(webSocketClient);
+        webSocketContainer = new ClientContainer(httpClient);
         webSocketContainer.addBean(mbeanContainer);
         webSocketContainer.addBean(connectionStatistics);
         LifeCycle.start(webSocketContainer);
@@ -764,14 +764,7 @@ public class CometDLoadClient implements MeasureConverter {
 
         System.err.printf("Slowest Message ID = %s time = %d ms%n", maxTime.getReference(), maxTime.getStamp());
 
-        System.err.printf("Thread Pool - Tasks = %d | Concurrent Threads max = %d | Queue Size max = %d | Queue Latency avg/max = %d/%d ms | Task Latency avg/max = %d/%d ms%n",
-                threadPool.getTasks(),
-                threadPool.getMaxActiveThreads(),
-                threadPool.getMaxQueueSize(),
-                TimeUnit.NANOSECONDS.toMillis(threadPool.getAverageQueueLatency()),
-                TimeUnit.NANOSECONDS.toMillis(threadPool.getMaxQueueLatency()),
-                TimeUnit.NANOSECONDS.toMillis(threadPool.getAverageTaskLatency()),
-                TimeUnit.NANOSECONDS.toMillis(threadPool.getMaxTaskLatency()));
+        Config.printThreadPool("Thread Pool", threadPool);
 
         return histogram;
     }

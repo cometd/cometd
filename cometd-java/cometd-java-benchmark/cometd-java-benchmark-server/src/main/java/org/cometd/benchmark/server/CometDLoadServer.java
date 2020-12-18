@@ -34,12 +34,10 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.Recorder;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -83,6 +81,7 @@ import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainer
 
 public class CometDLoadServer {
     private final MonitoringQueuedThreadPool jettyThreadPool = new MonitoringQueuedThreadPool(0);
+    private final MonitoringQueuedThreadPool cometdThreadPool = new MonitoringQueuedThreadPool(0);
     private final BayeuxServerImpl bayeuxServer = new BayeuxServerImpl();
     private final Server server = new Server(jettyThreadPool);
     private final MessageLatencyExtension messageLatencyExtension = new MessageLatencyExtension();
@@ -171,8 +170,10 @@ public class CometDLoadServer {
             }
             maxThreads = Integer.parseInt(value);
         }
-
-        bayeuxServer.addExtension(new AcknowledgedMessagesExtension());
+        jettyThreadPool.setMaxThreads(maxThreads);
+        cometdThreadPool.setMaxThreads(maxThreads);
+        // The BayeuxServer executor uses PEC mode only.
+        cometdThreadPool.setReservedThreads(0);
 
         String availableTransports = "jsrws,jettyws,http,asynchttp";
         String transports = this.transports;
@@ -252,8 +253,6 @@ public class CometDLoadServer {
             }
             longRequests = Boolean.parseBoolean(value);
         }
-
-        jettyThreadPool.setMaxThreads(maxThreads);
 
         // Setup JMX
         MBeanContainer mbeanContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
@@ -339,11 +338,14 @@ public class CometDLoadServer {
         bayeuxServer.setOption("ws.cometdURLMapping", cometdURLMapping);
         bayeuxServer.setOption(ServletContext.class.getName(), context.getServletContext());
 
+        bayeuxServer.addExtension(new AcknowledgedMessagesExtension());
+        bayeuxServer.addExtension(messageLatencyExtension);
+
+        bayeuxServer.setExecutor(cometdThreadPool);
+
         server.start();
 
         new StatisticsService(this);
-
-        bayeuxServer.addExtension(messageLatencyExtension);
     }
 
     public static class StatisticsService extends AbstractService {
@@ -366,9 +368,8 @@ public class CometDLoadServer {
                     System.err.println();
                     System.err.println(start);
 
-                    if (server.jettyThreadPool != null) {
-                        server.jettyThreadPool.reset();
-                    }
+                    server.jettyThreadPool.reset();
+                    server.cometdThreadPool.reset();
 
                     if (server.statisticsHandler != null) {
                         server.statisticsHandler.statsReset();
@@ -411,17 +412,9 @@ public class CometDLoadServer {
 
                     server.messageLatencyExtension.print();
 
-                    if (server.jettyThreadPool != null) {
-                        System.err.println("========================================");
-                        System.err.printf("Jetty Thread Pool - Tasks = %d | Concurrent Threads max = %d | Queue Size max = %d | Queue Latency avg/max = %d/%d ms | Task Latency avg/max = %d/%d ms%n",
-                                server.jettyThreadPool.getTasks(),
-                                server.jettyThreadPool.getMaxActiveThreads(),
-                                server.jettyThreadPool.getMaxQueueSize(),
-                                TimeUnit.NANOSECONDS.toMillis(server.jettyThreadPool.getAverageQueueLatency()),
-                                TimeUnit.NANOSECONDS.toMillis(server.jettyThreadPool.getMaxQueueLatency()),
-                                TimeUnit.NANOSECONDS.toMillis(server.jettyThreadPool.getAverageTaskLatency()),
-                                TimeUnit.NANOSECONDS.toMillis(server.jettyThreadPool.getMaxTaskLatency()));
-                    }
+                    System.err.println("========================================");
+                    Config.printThreadPool("Jetty Thread Pool", server.jettyThreadPool);
+                    Config.printThreadPool("CometD Thread Pool", server.cometdThreadPool);
 
                     System.err.println();
                 }

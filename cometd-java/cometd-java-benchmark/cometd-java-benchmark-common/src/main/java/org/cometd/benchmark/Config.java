@@ -15,6 +15,8 @@
  */
 package org.cometd.benchmark;
 
+import java.util.concurrent.TimeUnit;
+
 public class Config {
     public static final String CONTEXT_PATH = "/cometd";
     public static final String SERVLET_PATH = "/cometd";
@@ -25,5 +27,24 @@ public class Config {
     public static final long MAX_NETWORK_DELAY = 5000;
 
     private Config() {
+    }
+
+    public static void printThreadPool(String name, MonitoringQueuedThreadPool threadPool) {
+        System.err.printf("%s:%n" +
+                        "    threads:                %d%n" +
+                        "    tasks:                  %d%n" +
+                        "    max concurrent threads: %d%n" +
+                        "    max queue size:         %d%n" +
+                        "    queue latency avg/max:  %d/%d ms%n" +
+                        "    task time avg/max:      %d/%d ms%n",
+                name,
+                threadPool.getThreads(),
+                threadPool.getTasks(),
+                threadPool.getMaxActiveThreads(),
+                threadPool.getMaxQueueSize(),
+                TimeUnit.NANOSECONDS.toMillis(threadPool.getAverageQueueLatency()),
+                TimeUnit.NANOSECONDS.toMillis(threadPool.getMaxQueueLatency()),
+                TimeUnit.NANOSECONDS.toMillis(threadPool.getAverageTaskLatency()),
+                TimeUnit.NANOSECONDS.toMillis(threadPool.getMaxTaskLatency()));
     }
 }
