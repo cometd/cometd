@@ -18,7 +18,6 @@ package org.cometd.benchmark;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
@@ -40,9 +39,19 @@ public class MonitoringQueuedThreadPool extends QueuedThreadPool {
     }
 
     @Override
-    public void execute(final Runnable job) {
-        final long begin = System.nanoTime();
-        super.execute(new Runnable() {
+    public void execute(Runnable job) {
+        long begin = System.nanoTime();
+        super.execute(newJob(job, begin));
+    }
+
+    @Override
+    public boolean tryExecute(Runnable job) {
+        long begin = System.nanoTime();
+        return super.tryExecute(newJob(job, begin));
+    }
+
+    private Runnable newJob(Runnable job, long begin) {
+        return new Runnable() {
             @Override
             public void run() {
                 long queueLatency = System.nanoTime() - begin;
@@ -62,10 +71,10 @@ public class MonitoringQueuedThreadPool extends QueuedThreadPool {
             }
 
             @Override
-            public String toString () {
+            public String toString() {
                 return job.toString();
             }
-        });
+        };
     }
 
     public void reset() {
