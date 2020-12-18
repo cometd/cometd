@@ -23,11 +23,13 @@ import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -39,8 +41,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicStampedReference;
-import jakarta.websocket.ContainerProvider;
-import jakarta.websocket.WebSocketContainer;
+import java.util.concurrent.atomic.LongAdder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.HdrHistogram.Histogram;
@@ -68,14 +69,17 @@ import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.toolchain.perf.HistogramSnapshot;
 import org.eclipse.jetty.toolchain.perf.MeasureConverter;
 import org.eclipse.jetty.toolchain.perf.PlatformMonitor;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.SocketAddressResolver;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.jakarta.client.JakartaWebSocketClientContainer;
 
 public class CometDLoadClient implements MeasureConverter {
     private static final String START_FIELD = "start";
@@ -86,6 +90,7 @@ public class CometDLoadClient implements MeasureConverter {
         allHistograms.add(histogram);
         return histogram;
     });
+
     private final PlatformMonitor monitor = new PlatformMonitor();
     private final AtomicLong ids = new AtomicLong();
     private final List<LoadBayeuxClient> bayeuxClients = new BlockingArrayQueue<>();
@@ -103,9 +108,10 @@ public class CometDLoadClient implements MeasureConverter {
     private final Map<String, AtomicStampedReference<List<Long>>> arrivalTimes = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(8);
     private final MonitoringQueuedThreadPool threadPool = new MonitoringQueuedThreadPool(0);
+    private final DynamicConnectionStatistics connectionStatistics = new DynamicConnectionStatistics();
     private HttpClient httpClient;
     private WebSocketClient webSocketClient;
-    private WebSocketContainer webSocketContainer;
+    private JakartaWebSocketClientContainer webSocketContainer;
     private LatencyListener latencyListener;
     private HandshakeListener handshakeListener;
     private DisconnectListener disconnectListener;
@@ -341,24 +347,27 @@ public class CometDLoadClient implements MeasureConverter {
             httpClientTransport = new HttpClientTransportOverHTTP2(http2Client);
         }
         httpClient = new HttpClient(httpClientTransport);
-        httpClient.addBean(mbeanContainer);
         httpClient.setMaxConnectionsPerDestination(60000);
         httpClient.setMaxRequestsQueuedPerDestination(10000);
         httpClient.setIdleTimeout(Config.META_CONNECT_TIMEOUT + 2 * Config.MAX_NETWORK_DELAY);
         httpClient.setSocketAddressResolver(new SocketAddressResolver.Sync());
-        httpClient.start();
+        httpClient.addBean(mbeanContainer);
+        httpClient.addBean(connectionStatistics);
+        LifeCycle.start(httpClient);
         mbeanContainer.beanAdded(null, httpClient);
 
         webSocketClient = new WebSocketClient(httpClient);
         webSocketClient.setInputBufferSize(8 * 1024);
         webSocketClient.setMaxTextMessageSize(Integer.MAX_VALUE);
         webSocketClient.addBean(mbeanContainer);
-        webSocketClient.start();
+        webSocketClient.addBean(connectionStatistics);
+        LifeCycle.start(webSocketClient);
         mbeanContainer.beanAdded(null, webSocketClient);
 
-        webSocketContainer = ContainerProvider.getWebSocketContainer();
-        // Make sure the container is stopped when the HttpClient is stopped
-        httpClient.addBean(webSocketContainer, true);
+        webSocketContainer = new JakartaWebSocketClientContainer(httpClient);
+        webSocketContainer.addBean(mbeanContainer);
+        webSocketContainer.addBean(connectionStatistics);
+        LifeCycle.start(webSocketContainer);
         mbeanContainer.beanAdded(null, webSocketContainer);
 
         latencyListener = new LatencyListener();
@@ -477,36 +486,20 @@ public class CometDLoadClient implements MeasureConverter {
             long begin = System.nanoTime();
             long expected = runBatches(channel, batches, batchSize, TimeUnit.MICROSECONDS.toNanos(batchPause), chat, randomize);
             long end = System.nanoTime();
+            long sendElapsed = end - begin;
 
             PlatformMonitor.Stop stop = monitor.stop();
             System.err.println(stop);
 
-            long sendElapsed = end - begin;
-            long sendTime = TimeUnit.NANOSECONDS.toMillis(sendElapsed);
-            long sendRate = 0;
-            if (sendElapsed > 0) {
-                sendRate = batches * batchSize * 1000L * 1000 * 1000 / sendElapsed;
-                System.err.printf("Outgoing: Elapsed = %d ms | Rate = %d messages/s - %d requests/s - ~%.3f Mib/s%n",
-                        sendTime,
-                        sendRate,
-                        batches * 1000L * 1000 * 1000 / sendElapsed,
-                        batches * batchSize * messageSize * 8F * 1000 * 1000 * 1000 / sendElapsed / 1024 / 1024
-                );
-            }
-
             waitForMessages(expected);
-            long messages = this.messages.get();
 
+            long messages = this.messages.get();
             long receiveElapsed = this.end.get() - this.start.get();
-            long receiveRate = 0;
-            if (receiveElapsed > 0) {
-                receiveRate = messages * 1000 * 1000 * 1000 / receiveElapsed;
-            }
 
             // Send a message to the server to signal the end of the test.
             statsClient.end();
 
-            Histogram histogram = printResults(messages, expected, receiveElapsed, messageSize);
+            Histogram histogram = printResults(messages, expected, sendElapsed, receiveElapsed);
             if (!interactive) {
                 Map<String, Object> run = new LinkedHashMap<>();
                 Map<String, Object> config = new LinkedHashMap<>();
@@ -531,9 +524,9 @@ public class CometDLoadClient implements MeasureConverter {
                 results.put("jitTime", new Measure(stop.jitTime, "ms"));
                 results.put("messages", messages);
                 results.put("sendTime", new Measure(TimeUnit.NANOSECONDS.toMillis(sendElapsed), "ms"));
-                results.put("sendRate", new Measure(sendRate, "messages/s"));
+                results.put("sendRate", new Measure(messages * 1000L * 1000 * 1000 / sendElapsed, "messages/s"));
                 results.put("receiveTime", new Measure(TimeUnit.NANOSECONDS.toMillis(receiveElapsed), "ms"));
-                results.put("receiveRate", new Measure(receiveRate, "messages/s"));
+                results.put("receiveRate", new Measure(messages * 1000L * 1000 * 1000 / receiveElapsed, "messages/s"));
                 Map<String, Object> latency = new LinkedHashMap<>();
                 results.put("latency", latency);
                 latency.put("min", new Measure(convert(histogram.getMinValue()), "\u00B5s"));
@@ -559,20 +552,15 @@ public class CometDLoadClient implements MeasureConverter {
                 gc.put("oldGarbage", new Measure(stop.mebiBytes(stop.tenuredBytes), "MiB"));
                 saveResults(run, file);
             }
-
-            reset();
         }
 
         statsClient.exit();
 
-        webSocketClient.stop();
-
-        httpClient.stop();
-
-        threadPool.stop();
+        LifeCycle.stop(webSocketContainer);
+        LifeCycle.stop(webSocketClient);
+        LifeCycle.stop(httpClient);
 
         scheduler.shutdown();
-        scheduler.awaitTermination(1000, TimeUnit.MILLISECONDS);
     }
 
     private long runBatches(String channel, int batchCount, int batchSize, long batchPauseNanos, String chat, boolean randomize) {
@@ -736,16 +724,30 @@ public class CometDLoadClient implements MeasureConverter {
         }
     }
 
-    private Histogram printResults(long messageCount, long expectedCount, long elapsedNanos, int messageSize) {
+    private Histogram printResults(long messageCount, long expectedCount, long sendElapsed, long receiveElapsed) {
         System.err.printf("Messages - Success/Expected = %d/%d%n", messageCount, expectedCount);
 
-        if (elapsedNanos > 0) {
-            System.err.printf("Incoming - Elapsed = %d ms | Rate = %d messages/s - %d responses/s(%.2f%%) - ~%.3f Mib/s%n",
-                    TimeUnit.NANOSECONDS.toMillis(elapsedNanos),
-                    messageCount * 1000L * 1000 * 1000 / elapsedNanos,
-                    responses.get() * 1000L * 1000 * 1000 / elapsedNanos,
+        DynamicConnectionStatistics.Data data = connectionStatistics.collect();
+
+        if (sendElapsed > 0) {
+            long batchRate = batches * 1000L * 1000 * 1000 / sendElapsed;
+            float uploadRate = data.sentBytes * 1000F * 1000 * 1000 / sendElapsed / 1024 / 1024;
+            System.err.printf("Outgoing: Elapsed = %d ms | Rate = %d messages/s - %d batches/s - %.3f MiB/s%n",
+                    TimeUnit.NANOSECONDS.toMillis(sendElapsed),
+                    batchSize * batchRate,
+                    batchRate,
+                    uploadRate
+            );
+        }
+
+        if (receiveElapsed > 0) {
+            float downloadRate = data.receivedBytes * 1000F * 1000 * 1000 / receiveElapsed / 1024 / 1024;
+            System.err.printf("Incoming - Elapsed = %d ms | Rate = %d messages/s - %d batches/s(%.2f%%) - %.3f MiB/s%n",
+                    TimeUnit.NANOSECONDS.toMillis(receiveElapsed),
+                    messageCount * 1000L * 1000 * 1000 / receiveElapsed,
+                    responses.get() * 1000L * 1000 * 1000 / receiveElapsed,
                     100F * responses.get() / messageCount,
-                    messageCount * messageSize * 8F * 1000 * 1000 * 1000 / elapsedNanos / 1024 / 1024
+                    downloadRate
             );
         }
 
@@ -762,14 +764,7 @@ public class CometDLoadClient implements MeasureConverter {
 
         System.err.printf("Slowest Message ID = %s time = %d ms%n", maxTime.getReference(), maxTime.getStamp());
 
-        System.err.printf("Thread Pool - Tasks = %d | Concurrent Threads max = %d | Queue Size max = %d | Queue Latency avg/max = %d/%d ms | Task Latency avg/max = %d/%d ms%n",
-                threadPool.getTasks(),
-                threadPool.getMaxActiveThreads(),
-                threadPool.getMaxQueueSize(),
-                TimeUnit.NANOSECONDS.toMillis(threadPool.getAverageQueueLatency()),
-                TimeUnit.NANOSECONDS.toMillis(threadPool.getMaxQueueLatency()),
-                TimeUnit.NANOSECONDS.toMillis(threadPool.getAverageTaskLatency()),
-                TimeUnit.NANOSECONDS.toMillis(threadPool.getMaxTaskLatency()));
+        Config.printThreadPool("Thread Pool", threadPool);
 
         return histogram;
     }
@@ -804,6 +799,7 @@ public class CometDLoadClient implements MeasureConverter {
         maxTime.set(null, 0);
         sendTimes.clear();
         arrivalTimes.clear();
+        connectionStatistics.reset();
     }
 
     private class HandshakeListener implements ClientSessionChannel.MessageListener {
@@ -893,13 +889,23 @@ public class CometDLoadClient implements MeasureConverter {
         }
     }
 
-    private class LoadBayeuxClient extends BayeuxClient implements TransportListener {
+    private class LoadBayeuxClient extends BayeuxClient {
         private final List<Integer> subscriptions = new ArrayList<>();
         private final CountDownLatch initLatch = new CountDownLatch(1);
 
         private LoadBayeuxClient(String url, ScheduledExecutorService scheduler, ClientTransport transport) {
             super(url, scheduler, transport);
-            addTransportListener(this);
+            addTransportListener(new TransportListener() {
+                @Override
+                public void onSending(List<? extends Message> messages) {
+                    recordSentMessages(messages);
+                }
+
+                @Override
+                public void onMessages(List<Message.Mutable> messages) {
+                    recordReceivedMessages(messages);
+                }
+            });
         }
 
         public void setupRoom(int room) {
@@ -955,8 +961,7 @@ public class CometDLoadClient implements MeasureConverter {
             latch.await();
         }
 
-        @Override
-        public void onSending(List<? extends Message> messages) {
+        private void recordSentMessages(List<? extends Message> messages) {
             long now = System.nanoTime();
             for (Message message : messages) {
                 Map<String, Object> data = message.getDataAsMap();
@@ -970,8 +975,7 @@ public class CometDLoadClient implements MeasureConverter {
             }
         }
 
-        @Override
-        public void onMessages(List<Message.Mutable> messages) {
+        private void recordReceivedMessages(List<Message.Mutable> messages) {
             long now = System.nanoTime();
             boolean response = false;
             for (Message message : messages) {
@@ -1019,6 +1023,55 @@ public class CometDLoadClient implements MeasureConverter {
             super(2);
             put("value", value);
             put("unit", unit);
+        }
+    }
+
+    private static class DynamicConnectionStatistics implements Connection.Listener {
+        private final Set<Connection> _connections = Collections.newSetFromMap(new ConcurrentHashMap<>());
+        private final LongAdder _rcvdBytes = new LongAdder();
+        private final LongAdder _sentBytes = new LongAdder();
+        private Data _lastData = new Data(0, 0);
+
+        @Override
+        public void onOpened(Connection connection) {
+            _connections.add(connection);
+        }
+
+        @Override
+        public void onClosed(Connection connection) {
+            _connections.remove(connection);
+            collect(connection);
+        }
+
+        public void reset() {
+            _lastData = new Data(_rcvdBytes.sumThenReset(), _sentBytes.sumThenReset());
+        }
+
+        public Data collect() {
+            _connections.forEach(this::collect);
+            return new Data(_rcvdBytes.longValue() - _lastData.receivedBytes,
+                    _sentBytes.longValue() - _lastData.sentBytes);
+        }
+
+        private void collect(Connection connection) {
+            long bytesIn = connection.getBytesIn();
+            if (bytesIn > 0) {
+                _rcvdBytes.add(bytesIn);
+            }
+            long bytesOut = connection.getBytesOut();
+            if (bytesOut > 0) {
+                _sentBytes.add(bytesOut);
+            }
+        }
+
+        public static class Data {
+            public final long receivedBytes;
+            public final long sentBytes;
+
+            private Data(long receivedBytes, long sentBytes) {
+                this.receivedBytes = receivedBytes;
+                this.sentBytes = sentBytes;
+            }
         }
     }
 }
