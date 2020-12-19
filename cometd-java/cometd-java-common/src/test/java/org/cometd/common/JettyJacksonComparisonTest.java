@@ -15,7 +15,6 @@
  */
 package org.cometd.common;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +28,7 @@ import org.slf4j.LoggerFactory;
 
 public class JettyJacksonComparisonTest {
     public static List<JSONProvider> jsonProviders() {
-        return Arrays.asList(new JacksonJSONProvider(), new JettyJSONProvider());
+        return List.of(new JacksonJSONProvider(), new JettyJSONProvider());
     }
 
     public interface JSONProvider {

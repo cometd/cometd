@@ -20,7 +20,6 @@ import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -616,7 +615,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
 
         @Override
         public List<String> getParameterValues(String name) {
-            return Arrays.asList(_request.getParameterValues(name));
+            return List.of(_request.getParameterValues(name));
         }
 
         @Override

@@ -398,7 +398,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
     public boolean waitFor(long waitMs, State state, State... states) {
         List<State> waitForStates = new ArrayList<>();
         waitForStates.add(state);
-        waitForStates.addAll(Arrays.asList(states));
+        waitForStates.addAll(List.of(states));
 
         try (AutoLock l = lock.lock()) {
             while (waitMs > 0) {

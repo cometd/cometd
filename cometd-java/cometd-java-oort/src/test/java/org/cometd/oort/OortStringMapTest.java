@@ -45,7 +45,7 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         startOortObjects(oortMap1, oortMap2);
 
         CountDownLatch setLatch = new CountDownLatch(2);
-        OortObject.Listener<ConcurrentMap<String, String>> objectListener = new OortObject.Listener<ConcurrentMap<String, String>>() {
+        OortObject.Listener<ConcurrentMap<String, String>> objectListener = new OortObject.Listener<>() {
             @Override
             public void onUpdated(OortObject.Info<ConcurrentMap<String, String>> oldInfo, OortObject.Info<ConcurrentMap<String, String>> newInfo) {
                 setLatch.countDown();
@@ -62,7 +62,7 @@ public class OortStringMapTest extends AbstractOortObjectTest {
 
         String value2 = "value2";
         final CountDownLatch putLatch = new CountDownLatch(1);
-        oortMap2.addEntryListener(new OortMap.EntryListener<String, String>() {
+        oortMap2.addEntryListener(new OortMap.EntryListener<>() {
             @Override
             public void onPut(OortObject.Info<ConcurrentMap<String, String>> info, OortMap.Entry<String, String> entry) {
                 Assertions.assertEquals(key, entry.getKey());
@@ -91,7 +91,7 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         startOortObjects(oortMap1, oortMap2);
 
         final CountDownLatch setLatch = new CountDownLatch(2);
-        OortObject.Listener<ConcurrentMap<String, String>> objectListener = new OortObject.Listener<ConcurrentMap<String, String>>() {
+        OortObject.Listener<ConcurrentMap<String, String>> objectListener = new OortObject.Listener<>() {
             @Override
             public void onUpdated(OortObject.Info<ConcurrentMap<String, String>> oldInfo, OortObject.Info<ConcurrentMap<String, String>> newInfo) {
                 setLatch.countDown();
@@ -107,7 +107,7 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         Assertions.assertTrue(setLatch.await(5, TimeUnit.SECONDS));
 
         final CountDownLatch removeLatch = new CountDownLatch(1);
-        oortMap2.addEntryListener(new OortMap.EntryListener<String, String>() {
+        oortMap2.addEntryListener(new OortMap.EntryListener<>() {
             @Override
             public void onRemoved(OortObject.Info<ConcurrentMap<String, String>> info, OortMap.Entry<String, String> entry) {
                 Assertions.assertEquals(key, entry.getKey());
@@ -135,7 +135,7 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         startOortObjects(oortMap1, oortMap2);
 
         final CountDownLatch setLatch1 = new CountDownLatch(2);
-        OortObject.Listener<ConcurrentMap<String, String>> objectListener = new OortObject.Listener<ConcurrentMap<String, String>>() {
+        OortObject.Listener<ConcurrentMap<String, String>> objectListener = new OortObject.Listener<>() {
             @Override
             public void onUpdated(OortObject.Info<ConcurrentMap<String, String>> oldInfo, OortObject.Info<ConcurrentMap<String, String>> newInfo) {
                 setLatch1.countDown();
@@ -165,7 +165,7 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         final AtomicReference<CountDownLatch> setLatch2 = new AtomicReference<>(new CountDownLatch(6));
         oortMap1.addListener(new OortMap.DeltaListener<>(oortMap1));
         oortMap2.addListener(new OortMap.DeltaListener<>(oortMap2));
-        OortMap.EntryListener<String, String> entryListener = new OortMap.EntryListener<String, String>() {
+        OortMap.EntryListener<String, String> entryListener = new OortMap.EntryListener<>() {
             @Override
             public void onPut(OortObject.Info<ConcurrentMap<String, String>> info, OortMap.Entry<String, String> entry) {
                 puts.add(entry);
@@ -208,7 +208,7 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         startOortObjects(oortMap1, oortMap2);
 
         final CountDownLatch putLatch = new CountDownLatch(4);
-        OortMap.EntryListener<String, String> putListener = new OortMap.EntryListener<String, String>() {
+        OortMap.EntryListener<String, String> putListener = new OortMap.EntryListener<>() {
             @Override
             public void onPut(OortObject.Info<ConcurrentMap<String, String>> info, OortMap.Entry<String, String> entry) {
                 putLatch.countDown();
@@ -265,7 +265,7 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         final CountDownLatch latch2 = new CountDownLatch(threads * iterations);
 
         oortMap2.addListener(new OortMap.DeltaListener<>(oortMap2));
-        oortMap2.addEntryListener(new OortMap.EntryListener<String, String>() {
+        oortMap2.addEntryListener(new OortMap.EntryListener<>() {
             @Override
             public void onPut(OortObject.Info<ConcurrentMap<String, String>> info, OortMap.Entry<String, String> entry) {
                 latch2.countDown();
@@ -316,7 +316,7 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         Assertions.assertNull(oortMap2.getInfo(oort1.getURL()));
 
         final CountDownLatch objectLatch = new CountDownLatch(1);
-        oortMap2.addListener(new OortObject.Listener<ConcurrentMap<String, String>>() {
+        oortMap2.addListener(new OortObject.Listener<>() {
             @Override
             public void onUpdated(OortObject.Info<ConcurrentMap<String, String>> oldInfo, OortObject.Info<ConcurrentMap<String, String>> newInfo) {
                 objectLatch.countDown();
@@ -336,7 +336,7 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         Assertions.assertEquals(map1, map2);
 
         final AtomicReference<CountDownLatch> putLatch = new AtomicReference<>(new CountDownLatch(1));
-        oortMap2.addEntryListener(new OortMap.EntryListener<String, String>() {
+        oortMap2.addEntryListener(new OortMap.EntryListener<>() {
             @Override
             public void onPut(OortObject.Info<ConcurrentMap<String, String>> info, OortMap.Entry<String, String> entry) {
                 putLatch.get().countDown();
@@ -375,7 +375,7 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         String name = "lost_entry";
         OortObject.Factory<ConcurrentMap<String, String>> factory = OortObjectFactories.forConcurrentMap();
         final OortStringMap<String> oortMap1 = new OortStringMap<>(oort1, name, factory);
-        OortStringMap<String> oortMap2 = new OortStringMap<String>(oort2, name, factory) {
+        OortStringMap<String> oortMap2 = new OortStringMap<>(oort2, name, factory) {
             private int peerMessages;
 
             @Override
@@ -412,7 +412,7 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         final String key2 = "key2";
         final CountDownLatch latch = new CountDownLatch(2);
         oortMap2.addListener(new OortMap.DeltaListener<>(oortMap2));
-        oortMap2.addEntryListener(new OortMap.EntryListener<String, String>() {
+        oortMap2.addEntryListener(new OortMap.EntryListener<>() {
             @Override
             public void onPut(OortObject.Info<ConcurrentMap<String, String>> info, OortMap.Entry<String, String> entry) {
                 if (entry.getKey().equals(key2)) {
@@ -474,7 +474,7 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         Assertions.assertEquals(0, size2);
 
         final CountDownLatch syncLatch = new CountDownLatch(1);
-        oortMap2.addListener(new OortObject.Listener<ConcurrentMap<String, String>>() {
+        oortMap2.addListener(new OortObject.Listener<>() {
             @Override
             public void onUpdated(OortObject.Info<ConcurrentMap<String, String>> oldInfo, OortObject.Info<ConcurrentMap<String, String>> newInfo) {
                 if (newInfo.getOortURL().equals(oort1.getURL())) {
@@ -522,7 +522,7 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         startOortObjects(oortMap1, oortMap2);
 
         final CountDownLatch putLatch = new CountDownLatch(4);
-        OortMap.EntryListener<String, String> putListener = new OortMap.EntryListener<String, String>() {
+        OortMap.EntryListener<String, String> putListener = new OortMap.EntryListener<>() {
             @Override
             public void onPut(OortObject.Info<ConcurrentMap<String, String>> info, OortMap.Entry<String, String> entry) {
                 putLatch.countDown();
@@ -537,7 +537,7 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         // Stop only one of the connectors, so that the communication is half-disconnected.
         final CountDownLatch leftLatch = new CountDownLatch(2);
         oortMap1.getOort().addCometListener(new CometLeftListener(leftLatch));
-        oortMap1.addListener(new OortObject.Listener<ConcurrentMap<String, String>>() {
+        oortMap1.addListener(new OortObject.Listener<>() {
             @Override
             public void onRemoved(OortObject.Info<ConcurrentMap<String, String>> info) {
                 leftLatch.countDown();
@@ -554,7 +554,7 @@ public class OortStringMapTest extends AbstractOortObjectTest {
 
         final CountDownLatch joinLatch = new CountDownLatch(2);
         oortMap1.getOort().addCometListener(new CometJoinedListener(joinLatch));
-        oortMap1.addListener(new OortObject.Listener<ConcurrentMap<String, String>>() {
+        oortMap1.addListener(new OortObject.Listener<>() {
             @Override
             public void onUpdated(OortObject.Info<ConcurrentMap<String, String>> oldInfo, OortObject.Info<ConcurrentMap<String, String>> newInfo) {
                 if (oldInfo == null) {
@@ -584,7 +584,7 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         final String key2B = "key2B";
         final AtomicReference<ConcurrentMap<String, String>> mergeRef = new AtomicReference<>();
         final CountDownLatch mergeLatch = new CountDownLatch(1);
-        final OortStringMap<String> oortMap1 = new OortStringMap<String>(oort1, name, factory) {
+        final OortStringMap<String> oortMap1 = new OortStringMap<>(oort1, name, factory) {
             @Override
             protected void onObject(Map<String, Object> data) {
                 @SuppressWarnings("unchecked")
@@ -602,7 +602,7 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         startOortObjects(oortMap1, oortMap2);
 
         final CountDownLatch putLatch = new CountDownLatch(4);
-        OortMap.EntryListener<String, String> putListener = new OortMap.EntryListener<String, String>() {
+        OortMap.EntryListener<String, String> putListener = new OortMap.EntryListener<>() {
             @Override
             public void onPut(OortObject.Info<ConcurrentMap<String, String>> info, OortMap.Entry<String, String> entry) {
                 putLatch.countDown();
@@ -617,7 +617,7 @@ public class OortStringMapTest extends AbstractOortObjectTest {
         // Stop only one of the connectors, so that the communication is half-disconnected.
         final CountDownLatch leftLatch = new CountDownLatch(2);
         oortMap1.getOort().addCometListener(new CometLeftListener(leftLatch));
-        oortMap1.addListener(new OortObject.Listener<ConcurrentMap<String, String>>() {
+        oortMap1.addListener(new OortObject.Listener<>() {
             @Override
             public void onRemoved(OortObject.Info<ConcurrentMap<String, String>> info) {
                 leftLatch.countDown();
@@ -644,7 +644,7 @@ public class OortStringMapTest extends AbstractOortObjectTest {
 
         final CountDownLatch joinLatch = new CountDownLatch(2);
         oortMap1.getOort().addCometListener(new CometJoinedListener(joinLatch));
-        oortMap1.addListener(new OortObject.Listener<ConcurrentMap<String, String>>() {
+        oortMap1.addListener(new OortObject.Listener<>() {
             @Override
             public void onUpdated(OortObject.Info<ConcurrentMap<String, String>> oldInfo, OortObject.Info<ConcurrentMap<String, String>> newInfo) {
                 if (oldInfo == null) {

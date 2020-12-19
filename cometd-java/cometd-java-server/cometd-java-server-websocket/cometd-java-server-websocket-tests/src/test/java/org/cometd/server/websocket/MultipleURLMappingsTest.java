@@ -15,14 +15,11 @@
  */
 package org.cometd.server.websocket;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
-
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.server.CometDServlet;
@@ -43,7 +40,7 @@ public class MultipleURLMappingsTest {
     private static final String JETTY_WS_TRANSPORT = "org.cometd.server.websocket.jetty.JettyWebSocketTransport";
 
     public static List<String> wsTransports() {
-        return Arrays.asList(JSR_WS_TRANSPORT, JETTY_WS_TRANSPORT);
+        return List.of(JSR_WS_TRANSPORT, JETTY_WS_TRANSPORT);
     }
 
     private Server server;

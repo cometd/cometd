@@ -16,7 +16,6 @@
 package org.cometd.oort;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -1271,9 +1270,9 @@ public class SetiTest extends OortTest {
 
         // Network is down, so nodes are out of sync.
         Set<String> userIds1 = seti1.getUserIds();
-        Assertions.assertEquals(new HashSet<>(Arrays.asList("user2", "user3")), userIds1, seti1.dump());
+        Assertions.assertEquals(new HashSet<>(List.of("user2", "user3")), userIds1, seti1.dump());
         Set<String> userIds2 = seti2.getUserIds();
-        Assertions.assertEquals(new HashSet<>(Arrays.asList("user1", "user2")), userIds2, seti2.dump());
+        Assertions.assertEquals(new HashSet<>(List.of("user1", "user2")), userIds2, seti2.dump());
 
         final CountDownLatch presenceLatch2 = new CountDownLatch(2);
         seti2.addPresenceListener(new Seti.PresenceListener() {
@@ -1299,9 +1298,9 @@ public class SetiTest extends OortTest {
         Assertions.assertTrue(presenceLatch2.await(3 * timeout, TimeUnit.MILLISECONDS));
 
         userIds1 = seti1.getUserIds();
-        Assertions.assertEquals(new HashSet<>(Arrays.asList("user2", "user3")), userIds1, seti1.dump());
+        Assertions.assertEquals(new HashSet<>(List.of("user2", "user3")), userIds1, seti1.dump());
         userIds2 = seti2.getUserIds();
-        Assertions.assertEquals(new HashSet<>(Arrays.asList("user2", "user3")), userIds2, seti2.dump());
+        Assertions.assertEquals(new HashSet<>(List.of("user2", "user3")), userIds2, seti2.dump());
     }
 
     @ParameterizedTest
@@ -1453,9 +1452,9 @@ public class SetiTest extends OortTest {
 
         // Network is down, so nodes are out of sync.
         Set<String> userIds1 = seti1.getUserIds();
-        Assertions.assertEquals(new HashSet<>(Arrays.asList("user2", "user3")), userIds1, seti1.dump());
+        Assertions.assertEquals(new HashSet<>(List.of("user2", "user3")), userIds1, seti1.dump());
         Set<String> userIds2 = seti2.getUserIds();
-        Assertions.assertEquals(new HashSet<>(Arrays.asList("user1", "user2")), userIds2, seti2.dump());
+        Assertions.assertEquals(new HashSet<>(List.of("user1", "user2")), userIds2, seti2.dump());
 
         // Restore half network.
         networkDown12.set(false);
@@ -1525,9 +1524,9 @@ public class SetiTest extends OortTest {
         Assertions.assertEquals(1, presenceRemovedCount2.get());
 
         userIds1 = seti1.getUserIds();
-        Assertions.assertEquals(new HashSet<>(Arrays.asList("user2", "user3")), userIds1, seti1.dump());
+        Assertions.assertEquals(new HashSet<>(List.of("user2", "user3")), userIds1, seti1.dump());
         userIds2 = seti2.getUserIds();
-        Assertions.assertEquals(new HashSet<>(Arrays.asList("user2", "user3")), userIds2, seti2.dump());
+        Assertions.assertEquals(new HashSet<>(List.of("user2", "user3")), userIds2, seti2.dump());
     }
 
     public static class SetiService extends AbstractService {

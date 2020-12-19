@@ -18,11 +18,9 @@ package org.cometd.documentation.client;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.cometd.bayeux.BinaryData;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
@@ -112,7 +110,7 @@ public class ClientSendDocs {
         BayeuxClient bayeuxClient = new BayeuxClient("http://localhost:8080/cometd", transport);
         // tag::remoteCall[]
         // The data to send to the server.
-        List<String> newItems = Arrays.asList("item1", "item2");
+        List<String> newItems = List.of("item1", "item2");
 
         // Call the server.
         bayeuxClient.remoteCall("/items/save", newItems, message -> {

@@ -22,7 +22,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.channels.UnresolvedAddressException;
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -156,7 +155,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
         Map<String, List<String>> result = new LinkedHashMap<>();
         headers.forEach(field -> {
             String name = field.getName();
-            result.put(name, Arrays.asList(field.getValues()));
+            result.put(name, List.of(field.getValues()));
         });
         return result;
     }

@@ -17,11 +17,9 @@ package org.cometd.examples;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
@@ -173,7 +171,7 @@ public class ConsoleChatClient {
         public void onMessage(ClientSessionChannel channel, Message message) {
             Object data = message.getData();
             Object[] members = data instanceof List ? ((List)data).toArray() : (Object[])data;
-            System.err.printf("Members: %s%n", Arrays.asList(members));
+            System.err.printf("Members: %s%n", List.of(members));
         }
     }
 }

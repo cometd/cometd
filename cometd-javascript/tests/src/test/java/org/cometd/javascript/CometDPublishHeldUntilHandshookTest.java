@@ -15,9 +15,7 @@
  */
 package org.cometd.javascript;
 
-import java.util.Arrays;
 import java.util.List;
-
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -60,8 +58,8 @@ public class CometDPublishHeldUntilHandshookTest extends AbstractCometDTransport
 
         String[] channels = javaScript.evaluate(null, "Java.to(savedChannels, 'java.lang.String[]')");
         Assertions.assertNotNull(channels);
-        List<String> expectedChannels = Arrays.asList("/meta/handshake", "/bar", "/meta/subscribe", "/foo", "/meta/connect");
-        Assertions.assertEquals(expectedChannels, Arrays.asList(channels));
+        List<String> expectedChannels = List.of("/meta/handshake", "/bar", "/meta/subscribe", "/foo", "/meta/connect");
+        Assertions.assertEquals(expectedChannels, List.of(channels));
 
         disconnect();
     }

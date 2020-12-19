@@ -17,7 +17,6 @@ package org.cometd.server.websocket.javax;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -77,7 +76,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
         container.setDefaultMaxSessionIdleTimeout(idleTimeout);
 
         String protocol = getProtocol();
-        List<String> protocols = protocol == null ? null : Collections.singletonList(protocol);
+        List<String> protocols = protocol == null ? null : List.of(protocol);
 
         Configurator configurator = new Configurator(context);
 
@@ -121,7 +120,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
         @SuppressWarnings("unchecked")
         List<Locale> locales = (List<Locale>)userProperties.get("javax.websocket.upgrade.locales");
         if (locales == null || locales.isEmpty()) {
-            return Collections.singletonList(Locale.getDefault());
+            return List.of(Locale.getDefault());
         }
         return locales;
     }

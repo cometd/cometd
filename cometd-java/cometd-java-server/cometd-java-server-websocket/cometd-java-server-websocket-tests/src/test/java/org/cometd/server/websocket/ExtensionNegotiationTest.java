@@ -15,17 +15,14 @@
  */
 package org.cometd.server.websocket;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.websocket.HandshakeResponse;
 import javax.websocket.WebSocketContainer;
 import javax.websocket.server.HandshakeRequest;
-
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -53,7 +50,7 @@ public class ExtensionNegotiationTest extends ClientServerWebSocketTest {
             @Override
             protected void onHandshakeRequest(Map<String, List<String>> headers) {
                 super.onHandshakeRequest(headers);
-                headers.put(HandshakeRequest.SEC_WEBSOCKET_EXTENSIONS, Arrays.asList("identity", "fragment"));
+                headers.put(HandshakeRequest.SEC_WEBSOCKET_EXTENSIONS, List.of("identity", "fragment"));
             }
 
             @Override

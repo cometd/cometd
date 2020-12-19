@@ -20,22 +20,18 @@ import java.net.HttpCookie;
 import java.net.Socket;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.websocket.HandshakeResponse;
 import javax.websocket.server.HandshakeRequest;
-
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -143,8 +139,8 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
     public void testMultipleCookiesSentToServer(String wsType) throws Exception {
         prepareAndStart(wsType, null);
 
-        List<String> cookieNames = Arrays.asList("a", "BAYEUX_BROWSER", "b");
-        List<String> cookieValues = Arrays.asList("1", "761e1pplr7yo3wmsri1x5y0gnnby", "2");
+        List<String> cookieNames = List.of("a", "BAYEUX_BROWSER", "b");
+        List<String> cookieValues = List.of("1", "761e1pplr7yo3wmsri1x5y0gnnby", "2");
         StringBuilder cookies = new StringBuilder();
         for (int i = 0; i < cookieNames.size(); ++i) {
             cookies.append(cookieNames.get(i)).append("=").append(cookieValues.get(i)).append("; ");
@@ -385,7 +381,7 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
 
         @Override
         protected void modifyHandshake(HandshakeRequest request, HandshakeResponse response) {
-            response.getHeaders().put("Set-Cookie", Collections.singletonList(COOKIE_NAME + "=" + COOKIE_VALUE));
+            response.getHeaders().put("Set-Cookie", List.of(COOKIE_NAME + "=" + COOKIE_VALUE));
         }
     }
 

@@ -16,7 +16,6 @@
 package org.cometd.server;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -79,7 +78,7 @@ public class BayeuxContextTest extends AbstractBayeuxClientServerTest {
             @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
                 Assertions.assertEquals(value1, message.getBayeuxContext().getHeader(name));
-                Assertions.assertEquals(Arrays.asList(value1, value2), message.getBayeuxContext().getHeaderValues(name));
+                Assertions.assertEquals(List.of(value1, value2), message.getBayeuxContext().getHeaderValues(name));
                 latch.countDown();
             }
         });

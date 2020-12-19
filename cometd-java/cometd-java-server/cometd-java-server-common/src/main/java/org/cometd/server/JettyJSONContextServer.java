@@ -15,8 +15,6 @@
  */
 package org.cometd.server;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.common.JettyJSONContext;
@@ -48,9 +46,9 @@ public class JettyJSONContextServer extends JettyJSONContext<ServerMessage.Mutab
                     return object;
                 }
                 if (object.getClass().isArray()) {
-                    return (R)Arrays.asList((ServerMessage.Mutable[])object);
+                    return (R)List.of((ServerMessage.Mutable[])object);
                 }
-                return (R)Collections.singletonList((ServerMessage.Mutable)object);
+                return (R)List.of((ServerMessage.Mutable)object);
             }
         };
     }

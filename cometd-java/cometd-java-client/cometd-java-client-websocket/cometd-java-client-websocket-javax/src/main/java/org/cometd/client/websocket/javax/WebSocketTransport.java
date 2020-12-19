@@ -23,7 +23,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.channels.UnresolvedAddressException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -94,7 +93,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
             ClientEndpointConfig.Configurator configurator = new Configurator();
             String protocol = getProtocol();
             ClientEndpointConfig config = ClientEndpointConfig.Builder.create()
-                    .preferredSubprotocols(protocol == null ? null : Collections.singletonList(protocol))
+                    .preferredSubprotocols(protocol == null ? null : List.of(protocol))
                     .configurator(configurator).build();
             Delegate delegate = connect(_webSocketContainer, config, uri);
             _webSocketConnected = true;

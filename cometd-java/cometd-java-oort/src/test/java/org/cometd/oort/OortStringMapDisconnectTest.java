@@ -102,7 +102,7 @@ public class OortStringMapDisconnectTest extends OortTest {
         CountDownLatch putLatch = new CountDownLatch(totalEvents);
         CountDownLatch removedLatch = new CountDownLatch(totalEvents);
         for (OortStringMap<String> oortStringMap : oortStringMaps) {
-            OortMap.EntryListener<String, String> listener = new OortMap.EntryListener<String, String>() {
+            OortMap.EntryListener<String, String> listener = new OortMap.EntryListener<>() {
                 @Override
                 public void onPut(OortObject.Info<ConcurrentMap<String, String>> info, OortMap.Entry<String, String> entry) {
                     putLatch.countDown();
@@ -211,7 +211,7 @@ public class OortStringMapDisconnectTest extends OortTest {
         for (Oort oort : oorts) {
             OortStringMap<String> users = new OortStringMap<>(oort, name, factory);
             oortStringMaps.add(users);
-            users.addListener(new OortObject.Listener<ConcurrentMap<String, String>>() {
+            users.addListener(new OortObject.Listener<>() {
                 @Override
                 public void onUpdated(OortObject.Info<ConcurrentMap<String, String>> oldInfo, OortObject.Info<ConcurrentMap<String, String>> newInfo) {
                     if (oldInfo == null) {
@@ -227,7 +227,7 @@ public class OortStringMapDisconnectTest extends OortTest {
         // Verify that the OortStringMaps are setup correctly.
         final String setupKey = "setup";
         final CountDownLatch setupLatch = new CountDownLatch(2 * nodes);
-        OortMap.EntryListener<String, String> setupListener = new OortMap.EntryListener<String, String>() {
+        OortMap.EntryListener<String, String> setupListener = new OortMap.EntryListener<>() {
             @Override
             public void onPut(OortObject.Info<ConcurrentMap<String, String>> info, OortMap.Entry<String, String> entry) {
                 if (entry.getKey().equals(setupKey)) {

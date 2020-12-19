@@ -19,7 +19,6 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -247,7 +246,7 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
 
                     WebSocketExchange exchange = deregisterMessage(message);
                     if (exchange != null) {
-                        exchange.listener.onMessages(new ArrayList<>(Collections.singletonList(message)));
+                        exchange.listener.onMessages(new ArrayList<>(List.of(message)));
                     } else {
                         // If the exchange is missing, then the message has expired, and we do not notify
                         if (LOGGER.isDebugEnabled()) {
@@ -259,7 +258,7 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
                         disconnect("Disconnect");
                     }
                 } else {
-                    _listener.onMessages(new ArrayList<>(Collections.singletonList(message)));
+                    _listener.onMessages(new ArrayList<>(List.of(message)));
                 }
             }
         }
@@ -339,7 +338,7 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
         }
 
         private void onTimeout(TransportListener listener, Message message, long delay, AtomicReference<ScheduledFuture<?>> timeoutTaskRef) {
-            listener.onTimeout(Collections.singletonList(message), Promise.from(result -> {
+            listener.onTimeout(List.of(message), Promise.from(result -> {
                 if (result > 0) {
                     ScheduledFuture<?> newTask = getScheduler().schedule(() -> onTimeout(listener, message, delay + result, timeoutTaskRef), result, TimeUnit.MILLISECONDS);
                     ScheduledFuture<?> oldTask = timeoutTaskRef.getAndSet(newTask);

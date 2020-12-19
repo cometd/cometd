@@ -15,7 +15,6 @@
  */
 package org.cometd.server;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +31,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 public abstract class AbstractBayeuxServerTest {
     public static List<String> transports() {
-        return Arrays.asList(JSONTransport.class.getName(), AsyncJSONTransport.class.getName());
+        return List.of(JSONTransport.class.getName(), AsyncJSONTransport.class.getName());
     }
 
     @RegisterExtension

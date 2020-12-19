@@ -18,7 +18,6 @@ package org.cometd.server.http;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 import javax.servlet.AsyncContext;
@@ -53,7 +52,7 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
         // that the timeout fires in case of slow reads.
         asyncContext.setTimeout(0);
 
-        Promise<Void> promise = new Promise<Void>() {
+        Promise<Void> promise = new Promise<>() {
             @Override
             public void succeed(Void result) {
                 asyncContext.complete();
@@ -94,7 +93,7 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
                     LOGGER.debug("Parsed {} messages", messages == null ? -1 : messages.length);
                 }
                 if (messages != null) {
-                    processMessages(context, Arrays.asList(messages), promise);
+                    processMessages(context, List.of(messages), promise);
                 } else {
                     promise.succeed(null);
                 }
@@ -141,7 +140,7 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
             }
             ServerMessage.Mutable[] parsed = parseMessages(batch);
             if (parsed != null) {
-                messages.addAll(Arrays.asList(parsed));
+                messages.addAll(List.of(parsed));
             }
         }
         return messages.toArray(new ServerMessage.Mutable[0]);

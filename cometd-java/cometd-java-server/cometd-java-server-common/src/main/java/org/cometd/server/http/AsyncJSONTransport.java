@@ -18,7 +18,6 @@ package org.cometd.server.http;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.text.ParseException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 import javax.servlet.AsyncContext;
@@ -108,7 +107,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("Parsed {} messages", messages == null ? -1 : messages.length);
                 }
-                process(messages == null ? null : Arrays.asList(messages), context, promise);
+                process(messages == null ? null : List.of(messages), context, promise);
             } catch (ParseException x) {
                 handleJSONParseException(context.request, context.response, json, x);
                 promise.succeed(null);

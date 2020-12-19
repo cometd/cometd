@@ -19,7 +19,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,11 +26,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
-
 import org.cometd.annotation.AnnotationProcessor;
 import org.cometd.annotation.Listener;
 import org.cometd.annotation.Service;
@@ -193,7 +190,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor {
             return false;
         }
 
-        List<Object> injectables = new ArrayList<>(Arrays.asList(this.injectables));
+        List<Object> injectables = new ArrayList<>(List.of(this.injectables));
         injectables.add(0, bayeuxServer);
         boolean result = processInjectables(bean, injectables);
         LocalSession session = findOrCreateLocalSession(bean, serviceAnnotation.value());

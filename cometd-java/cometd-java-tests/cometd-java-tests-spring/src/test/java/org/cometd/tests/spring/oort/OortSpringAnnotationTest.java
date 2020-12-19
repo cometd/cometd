@@ -15,7 +15,6 @@
  */
 package org.cometd.tests.spring.oort;
 
-import java.util.Arrays;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.SecurityPolicy;
 import org.cometd.oort.Oort;
@@ -48,7 +47,7 @@ public class OortSpringAnnotationTest {
         String beanName = Character.toLowerCase(serviceClass.charAt(0)) + serviceClass.substring(1);
 
         String[] beanNames = applicationContext.getBeanDefinitionNames();
-        Assertions.assertTrue(Arrays.asList(beanNames).contains(beanName));
+        Assertions.assertTrue(List.of(beanNames).contains(beanName));
 
         OortService service = (OortService)applicationContext.getBean(beanName);
         Assertions.assertNotNull(service);

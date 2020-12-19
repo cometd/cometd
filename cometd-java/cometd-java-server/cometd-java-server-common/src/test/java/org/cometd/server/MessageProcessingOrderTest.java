@@ -16,11 +16,9 @@
 package org.cometd.server;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSession;
@@ -81,7 +79,7 @@ public class MessageProcessingOrderTest {
 
         session0.getChannel(channelName).publish("data");
 
-        List<String> expected = Arrays.asList(
+        List<String> expected = List.of(
                 "0.cln.ext.snd",
                 "srv.ext.rcv",
                 "0.srv.ssn.ext.rcv",
@@ -132,7 +130,7 @@ public class MessageProcessingOrderTest {
 
         client.getChannel(channelName).publish("data");
 
-        List<String> expected = Arrays.asList(
+        List<String> expected = List.of(
                 "0.cln.ext.snd",
                 "srv.ext.rcv",
                 "0.srv.ssn.ext.rcv",
@@ -192,7 +190,7 @@ public class MessageProcessingOrderTest {
 
         session0.getChannel(serviceChannel).publish("data", new ClientCallback(events, "0.pub"));
 
-        List<String> expected = Arrays.asList(
+        List<String> expected = List.of(
                 "1.sub.cln.cbk",
                 "0.cln.ext.snd",
                 "srv.ext.rcv",
