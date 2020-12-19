@@ -15,6 +15,7 @@
  */
 package org.cometd.tests.spring.annotation;
 
+import java.util.List;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.support.ClassPathXmlApplicationContext;

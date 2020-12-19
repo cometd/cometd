@@ -15,6 +15,7 @@
  */
 package org.cometd.tests.spring.oort;
 
+import java.util.List;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.SecurityPolicy;
 import org.cometd.oort.Oort;
