@@ -15,7 +15,6 @@
  */
 package org.cometd.server.websocket;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import jakarta.websocket.ContainerProvider;
@@ -52,7 +51,7 @@ public abstract class ClientServerWebSocketTest {
     protected static final String WEBSOCKET_OKHTTP = "OKHTTP";
 
     public static List<String> wsTypes() {
-        return Arrays.asList(WEBSOCKET_JSR356, WEBSOCKET_JETTY, WEBSOCKET_OKHTTP);
+        return List.of(WEBSOCKET_JSR356, WEBSOCKET_JETTY, WEBSOCKET_OKHTTP);
     }
 
     @RegisterExtension

@@ -20,7 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Base64;
-import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -71,7 +71,7 @@ public class HandshakeWithAuthenticationTest extends ClientServerTest {
         mapping.setPathSpec(cometdServletPath + "/*");
         mapping.setConstraint(constraint);
 
-        security.setConstraintMappings(Collections.singletonList(mapping));
+        security.setConstraintMappings(List.of(mapping));
         security.setAuthenticator(new BasicAuthenticator());
         security.setLoginService(loginService);
 

@@ -15,7 +15,6 @@
  */
 package org.cometd.server.filter;
 
-import java.util.Arrays;
 import java.util.List;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerChannel;
@@ -36,7 +35,7 @@ public class DataFilterMessageListener implements ServerChannel.MessageListener 
     }
 
     public DataFilterMessageListener(BayeuxServer bayeux, DataFilter... filters) {
-        _filters = Arrays.asList(filters);
+        _filters = List.of(filters);
     }
 
     @Override

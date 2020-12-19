@@ -15,7 +15,6 @@
  */
 package org.cometd.server.websocket;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -41,7 +40,7 @@ public class MultipleURLMappingsTest {
     private static final String JETTY_WS_TRANSPORT = "org.cometd.server.websocket.jetty.JettyWebSocketTransport";
 
     public static List<String> wsTransports() {
-        return Arrays.asList(JSR_WS_TRANSPORT, JETTY_WS_TRANSPORT);
+        return List.of(JSR_WS_TRANSPORT, JETTY_WS_TRANSPORT);
     }
 
     private Server server;

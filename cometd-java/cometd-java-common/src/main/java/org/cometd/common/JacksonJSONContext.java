@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.io.Reader;
 import java.nio.ByteBuffer;
 import java.text.ParseException;
-import java.util.Arrays;
 import java.util.List;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
@@ -185,7 +184,7 @@ public abstract class JacksonJSONContext<M extends Message.Mutable, I extends M>
                 feeder.endOfInput();
                 jsonParser.nextToken();
                 M[] result = objectMapper.readValue(tokenBuffer.asParser(), objectMapper.constructType(rootArrayClass()));
-                return (R)Arrays.asList(result);
+                return (R)List.of(result);
             } catch (IOException x) {
                 throw new IllegalArgumentException(x);
             }

@@ -15,7 +15,6 @@
  */
 package org.cometd.server.websocket;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,7 +50,7 @@ public class ExtensionNegotiationTest extends ClientServerWebSocketTest {
             @Override
             protected void onHandshakeRequest(Map<String, List<String>> headers) {
                 super.onHandshakeRequest(headers);
-                headers.put(HandshakeRequest.SEC_WEBSOCKET_EXTENSIONS, Arrays.asList("identity", "fragment"));
+                headers.put(HandshakeRequest.SEC_WEBSOCKET_EXTENSIONS, List.of("identity", "fragment"));
             }
 
             @Override

@@ -51,7 +51,7 @@ public class OortObjectTest extends AbstractOortObjectTest {
         String key1 = "key1";
         String value1 = "value1";
         CountDownLatch objectLatch1 = new CountDownLatch(1);
-        oortObject1.addListener(new OortObject.Listener<Map<String, Object>>() {
+        oortObject1.addListener(new OortObject.Listener<>() {
             @Override
             public void onUpdated(OortObject.Info<Map<String, Object>> oldInfo, OortObject.Info<Map<String, Object>> newInfo) {
                 Assertions.assertTrue(newInfo.isLocal());
@@ -65,7 +65,7 @@ public class OortObjectTest extends AbstractOortObjectTest {
 
         // The other OortObject listens to receive the object
         CountDownLatch objectLatch2 = new CountDownLatch(1);
-        oortObject2.addListener(new OortObject.Listener<Map<String, Object>>() {
+        oortObject2.addListener(new OortObject.Listener<>() {
             @Override
             public void onUpdated(OortObject.Info<Map<String, Object>> oldInfo, OortObject.Info<Map<String, Object>> newInfo) {
                 Assertions.assertFalse(newInfo.isLocal());
@@ -147,7 +147,7 @@ public class OortObjectTest extends AbstractOortObjectTest {
         String value3 = "value3";
         object3.put(key3, value3);
         CountDownLatch objectsLatch = new CountDownLatch(3);
-        OortObject.Listener<Map<String, Object>> objectListener = new OortObject.Listener<Map<String, Object>>() {
+        OortObject.Listener<Map<String, Object>> objectListener = new OortObject.Listener<>() {
             @Override
             public void onUpdated(OortObject.Info<Map<String, Object>> oldInfo, OortObject.Info<Map<String, Object>> newInfo) {
                 objectsLatch.countDown();
@@ -258,7 +258,7 @@ public class OortObjectTest extends AbstractOortObjectTest {
         startOortObjects(oortObject1, oortObject2);
 
         CountDownLatch latch1 = new CountDownLatch(2);
-        OortObject.Listener<Long> objectListener1 = new OortObject.Listener<Long>() {
+        OortObject.Listener<Long> objectListener1 = new OortObject.Listener<>() {
             @Override
             public void onUpdated(OortObject.Info<Long> oldInfo, OortObject.Info<Long> newInfo) {
                 latch1.countDown();
@@ -271,7 +271,7 @@ public class OortObjectTest extends AbstractOortObjectTest {
         Assertions.assertTrue(latch1.await(5, TimeUnit.SECONDS));
 
         CountDownLatch latch2 = new CountDownLatch(2);
-        OortObject.Listener<Long> objectListener2 = new OortObject.Listener<Long>() {
+        OortObject.Listener<Long> objectListener2 = new OortObject.Listener<>() {
             @Override
             public void onUpdated(OortObject.Info<Long> oldInfo, OortObject.Info<Long> newInfo) {
                 latch2.countDown();
@@ -299,7 +299,7 @@ public class OortObjectTest extends AbstractOortObjectTest {
         startOortObjects(oortObject1, oortObject2);
 
         CountDownLatch latch1 = new CountDownLatch(2);
-        OortObject.Listener<Long> objectListener1 = new OortObject.Listener<Long>() {
+        OortObject.Listener<Long> objectListener1 = new OortObject.Listener<>() {
             @Override
             public void onUpdated(OortObject.Info<Long> oldInfo, OortObject.Info<Long> newInfo) {
                 latch1.countDown();
@@ -364,7 +364,7 @@ public class OortObjectTest extends AbstractOortObjectTest {
         startOortObjects(oortObject1, oortObject2);
 
         final BlockingQueue<String> values = new LinkedBlockingQueue<>();
-        oortObject2.addListener(new OortObject.Listener<String>() {
+        oortObject2.addListener(new OortObject.Listener<>() {
             @Override
             public void onUpdated(OortObject.Info<String> oldInfo, OortObject.Info<String> newInfo) {
                 String value = newInfo.getObject();
@@ -436,7 +436,7 @@ public class OortObjectTest extends AbstractOortObjectTest {
 
         final ReentrantLock lock = new ReentrantLock();
         final CountDownLatch updatedLatch = new CountDownLatch(1);
-        oortObject1.addListener(new OortObject.Listener<String>() {
+        oortObject1.addListener(new OortObject.Listener<>() {
             @Override
             public void onUpdated(OortObject.Info<String> oldInfo, OortObject.Info<String> newInfo) {
                 lock.lock();
@@ -512,7 +512,7 @@ public class OortObjectTest extends AbstractOortObjectTest {
         CountDownLatch joinedLatch = new CountDownLatch(1);
         final CountDownLatch updateLatch2 = new CountDownLatch(1);
         oort1.addCometListener(new CometJoinedListener(joinedLatch));
-        oortObject2.addListener(new OortObject.Listener<String>() {
+        oortObject2.addListener(new OortObject.Listener<>() {
             @Override
             public void onUpdated(OortObject.Info<String> oldInfo, OortObject.Info<String> newInfo) {
                 updateLatch2.countDown();
@@ -548,7 +548,7 @@ public class OortObjectTest extends AbstractOortObjectTest {
         oortObject1.setAndShare("data3", result3);
         result3.get(5, TimeUnit.SECONDS);
         final CountDownLatch updateLatch1 = new CountDownLatch(1);
-        oortObject1.addListener(new OortObject.Listener<String>() {
+        oortObject1.addListener(new OortObject.Listener<>() {
             @Override
             public void onUpdated(OortObject.Info<String> oldInfo, OortObject.Info<String> newInfo) {
                 updateLatch1.countDown();

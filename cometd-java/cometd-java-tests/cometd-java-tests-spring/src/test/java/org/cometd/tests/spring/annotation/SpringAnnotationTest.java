@@ -15,7 +15,7 @@
  */
 package org.cometd.tests.spring.annotation;
 
-import java.util.Arrays;
+import java.util.List;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
@@ -31,7 +31,7 @@ public class SpringAnnotationTest {
         String beanName = Character.toLowerCase(serviceClass.charAt(0)) + serviceClass.substring(1);
 
         String[] beanNames = applicationContext.getBeanDefinitionNames();
-        Assertions.assertTrue(Arrays.asList(beanNames).contains(beanName));
+        Assertions.assertTrue(List.of(beanNames).contains(beanName));
 
         SpringBayeuxService service = (SpringBayeuxService)applicationContext.getBean(beanName);
         Assertions.assertNotNull(service);

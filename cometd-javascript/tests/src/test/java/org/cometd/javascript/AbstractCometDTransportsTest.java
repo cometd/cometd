@@ -15,7 +15,6 @@
  */
 package org.cometd.javascript;
 
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -23,6 +22,6 @@ import java.util.List;
  */
 public abstract class AbstractCometDTransportsTest extends AbstractCometDTest {
     public static List<String> transports() {
-        return Arrays.asList("long-polling", "websocket");
+        return List.of("long-polling", "websocket");
     }
 }

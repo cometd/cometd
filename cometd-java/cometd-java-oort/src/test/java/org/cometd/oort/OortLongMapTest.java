@@ -39,7 +39,7 @@ public class OortLongMapTest extends AbstractOortObjectTest {
         long key1 = 13L;
         String value1 = "value1";
         final CountDownLatch objectLatch1 = new CountDownLatch(1);
-        oortMap1.addListener(new OortObject.Listener<ConcurrentMap<Long, Object>>() {
+        oortMap1.addListener(new OortObject.Listener<>() {
             @Override
             public void onUpdated(OortObject.Info<ConcurrentMap<Long, Object>> oldInfo, OortObject.Info<ConcurrentMap<Long, Object>> newInfo) {
                 Assertions.assertTrue(newInfo.isLocal());
@@ -53,7 +53,7 @@ public class OortLongMapTest extends AbstractOortObjectTest {
 
         // The other OortObject listens to receive the object
         final CountDownLatch objectLatch2 = new CountDownLatch(1);
-        oortMap2.addListener(new OortObject.Listener<ConcurrentMap<Long, Object>>() {
+        oortMap2.addListener(new OortObject.Listener<>() {
             @Override
             public void onUpdated(OortObject.Info<ConcurrentMap<Long, Object>> oldInfo, OortObject.Info<ConcurrentMap<Long, Object>> newInfo) {
                 Assertions.assertFalse(newInfo.isLocal());
@@ -101,7 +101,7 @@ public class OortLongMapTest extends AbstractOortObjectTest {
         Map<String, Boolean> node1Value = new ConcurrentHashMap<>();
 
         final CountDownLatch putLatch1 = new CountDownLatch(2);
-        OortMap.EntryListener<Long, Map<String, Boolean>> listener1 = new OortMap.EntryListener<Long, Map<String, Boolean>>() {
+        OortMap.EntryListener<Long, Map<String, Boolean>> listener1 = new OortMap.EntryListener<>() {
             @Override
             public void onPut(OortObject.Info<ConcurrentMap<Long, Map<String, Boolean>>> info, OortMap.Entry<Long, Map<String, Boolean>> entry) {
                 putLatch1.countDown();
@@ -131,7 +131,7 @@ public class OortLongMapTest extends AbstractOortObjectTest {
         node1Value.put("2", true);
 
         final CountDownLatch putLatch2 = new CountDownLatch(2);
-        OortMap.EntryListener<Long, Map<String, Boolean>> listener2 = new OortMap.EntryListener<Long, Map<String, Boolean>>() {
+        OortMap.EntryListener<Long, Map<String, Boolean>> listener2 = new OortMap.EntryListener<>() {
             @Override
             public void onPut(OortObject.Info<ConcurrentMap<Long, Map<String, Boolean>>> info, OortMap.Entry<Long, Map<String, Boolean>> entry) {
                 putLatch2.countDown();

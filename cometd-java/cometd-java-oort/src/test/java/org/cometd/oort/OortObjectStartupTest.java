@@ -86,7 +86,7 @@ public class OortObjectStartupTest extends OortTest {
         for (int i = 0; i < oorts.size(); i++) {
             Oort oort = oorts.get(i);
             OortObject<String> oortObject = new OortObject<>(oort, name, OortObjectFactories.forString(i + "_default"));
-            oortObject.addListener(new OortObject.Listener<String>() {
+            oortObject.addListener(new OortObject.Listener<>() {
                 @Override
                 public void onUpdated(OortObject.Info<String> oldInfo, OortObject.Info<String> newInfo) {
                     if (oldInfo == null) {

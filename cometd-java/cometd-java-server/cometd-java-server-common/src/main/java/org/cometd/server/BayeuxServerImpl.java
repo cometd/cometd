@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.security.SecureRandom;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -1163,7 +1162,7 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
     }
 
     public void setTransports(ServerTransport... transports) {
-        setTransports(Arrays.asList(transports));
+        setTransports(List.of(transports));
     }
 
     public void setTransports(List<ServerTransport> transports) {
@@ -1197,7 +1196,7 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
     }
 
     public void setAllowedTransports(String... allowed) {
-        setAllowedTransports(Arrays.asList(allowed));
+        setAllowedTransports(List.of(allowed));
     }
 
     public void setAllowedTransports(List<String> allowed) {
@@ -1529,7 +1528,7 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
 
     private static List<String> toChannelList(Object channels) {
         if (channels instanceof String) {
-            return Collections.singletonList((String)channels);
+            return List.of((String)channels);
         }
 
         if (channels instanceof Object[]) {

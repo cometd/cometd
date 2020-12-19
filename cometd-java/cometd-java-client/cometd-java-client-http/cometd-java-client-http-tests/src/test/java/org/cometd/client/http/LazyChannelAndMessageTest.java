@@ -37,7 +37,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
     @Test
     public void testLazyChannelWithGlobalTimeout() throws Exception {
         long globalLazyTimeout = 1000;
-        start(new HashMap<String, String>() {{
+        start(new HashMap<>() {{
             put(AbstractServerTransport.MAX_LAZY_TIMEOUT_OPTION, String.valueOf(globalLazyTimeout));
         }});
 
@@ -85,7 +85,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
     public void testLazyChannelWithChannelTimeout() throws Exception {
         long channelLazyTimeout = 1000;
         long globalLazyTimeout = channelLazyTimeout * 4;
-        start(new HashMap<String, String>() {{
+        start(new HashMap<>() {{
             put(AbstractServerTransport.MAX_LAZY_TIMEOUT_OPTION, String.valueOf(globalLazyTimeout));
         }});
 
@@ -134,7 +134,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
     public void testLazyChannelsWithDifferentChannelTimeouts() throws Exception {
         long channelLazyTimeout = 1000;
         long globalLazyTimeout = channelLazyTimeout * 4;
-        start(new HashMap<String, String>() {{
+        start(new HashMap<>() {{
             put(AbstractServerTransport.MAX_LAZY_TIMEOUT_OPTION, String.valueOf(globalLazyTimeout));
         }});
 
@@ -197,7 +197,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         // it should not do any logic related to lazyness, which belongs to the server.
 
         long globalLazyTimeout = 1000;
-        start(new HashMap<String, String>() {{
+        start(new HashMap<>() {{
             put(AbstractServerTransport.MAX_LAZY_TIMEOUT_OPTION, String.valueOf(globalLazyTimeout));
         }});
 
@@ -254,7 +254,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
     @Test
     public void testServerSessionDeliverLazyMessageOnLazyChannelDeliversLazily() throws Exception {
         long globalLazyTimeout = 1000;
-        start(new HashMap<String, String>() {{
+        start(new HashMap<>() {{
             put(AbstractServerTransport.MAX_LAZY_TIMEOUT_OPTION, String.valueOf(globalLazyTimeout));
         }});
 
@@ -317,7 +317,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
     @Test
     public void testQueueFullOfLazyMessagesIsNotDelivered() throws Exception {
         long globalLazyTimeout = 1000;
-        start(new HashMap<String, String>() {{
+        start(new HashMap<>() {{
             put(AbstractServerTransport.MAX_LAZY_TIMEOUT_OPTION, String.valueOf(globalLazyTimeout));
         }});
 
@@ -369,7 +369,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
     @Test
     public void testLazynessIsNotInheritedFromParentChannel() throws Exception {
         long globalLazyTimeout = 1000;
-        start(new HashMap<String, String>() {{
+        start(new HashMap<>() {{
             put(AbstractServerTransport.MAX_LAZY_TIMEOUT_OPTION, String.valueOf(globalLazyTimeout));
         }});
 
@@ -400,7 +400,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
     @Test
     public void testLazynessIsInheritedFromWildChannel() throws Exception {
         long globalLazyTimeout = 1000;
-        start(new HashMap<String, String>() {{
+        start(new HashMap<>() {{
             put(AbstractServerTransport.MAX_LAZY_TIMEOUT_OPTION, String.valueOf(globalLazyTimeout));
         }});
 

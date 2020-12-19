@@ -15,7 +15,6 @@
  */
 package org.cometd.common;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -46,7 +45,7 @@ public class AsyncFoldLeftTest {
     public void testSyncLoop() throws Exception {
         String expected = "123";
         // Split into single characters.
-        List<String> elements = Arrays.asList(expected.split(""));
+        List<String> elements = List.of(expected.split(""));
         Promise.Completable<String> promise = new Promise.Completable<>();
         AsyncFoldLeft.run(elements, "", (result, element, loop) -> loop.proceed(result + element), promise);
         String result = promise.get();
@@ -69,7 +68,7 @@ public class AsyncFoldLeftTest {
 
     @Test
     public void testSyncLeave() throws Exception {
-        Collection<String> elements = Arrays.asList("1", "2", "3");
+        Collection<String> elements = List.of("1", "2", "3");
         Promise.Completable<String> promise = new Promise.Completable<>();
         AsyncFoldLeft.run(elements, "", (result, element, loop) -> {
             if (result.length() > 0) {
@@ -84,7 +83,7 @@ public class AsyncFoldLeftTest {
 
     @Test
     public void testAsyncLeave() throws Exception {
-        List<String> elements = Arrays.asList("1", "2", "3");
+        List<String> elements = List.of("1", "2", "3");
         Promise.Completable<String> promise = new Promise.Completable<>();
         AsyncFoldLeft.run(elements, "", (result, element, loop) -> {
             if (result.length() > 0) {
@@ -103,7 +102,7 @@ public class AsyncFoldLeftTest {
     @Test
     public void testSyncFail() throws Exception {
         Throwable failure = new Throwable();
-        List<String> elements = Arrays.asList("1", "2", "3");
+        List<String> elements = List.of("1", "2", "3");
         Promise.Completable<String> promise = new Promise.Completable<>();
         AsyncFoldLeft.run(elements, "", (result, element, loop) -> {
             if (result.length() > 0) {
@@ -123,7 +122,7 @@ public class AsyncFoldLeftTest {
     @Test
     public void testAsyncFail() throws Exception {
         Throwable failure = new Throwable();
-        List<String> elements = Arrays.asList("1", "2", "3");
+        List<String> elements = List.of("1", "2", "3");
         Promise.Completable<String> promise = new Promise.Completable<>();
         AsyncFoldLeft.run(elements, "", (result, element, loop) -> {
             if (result.length() > 0) {

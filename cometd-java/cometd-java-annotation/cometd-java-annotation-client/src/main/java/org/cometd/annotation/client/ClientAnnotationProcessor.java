@@ -18,7 +18,6 @@ package org.cometd.annotation.client;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -195,7 +194,7 @@ public class ClientAnnotationProcessor extends AnnotationProcessor {
             return false;
         }
 
-        boolean result = processInjectables(bean, Arrays.asList(injectables));
+        boolean result = processInjectables(bean, List.of(injectables));
         result |= processSession(bean, clientSession);
         return result;
     }

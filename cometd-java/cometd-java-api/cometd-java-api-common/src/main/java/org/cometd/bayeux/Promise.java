@@ -30,7 +30,7 @@ public interface Promise<C> {
      * <p>Shared instance whose methods are implemented empty,</p>
      * <p>use {@link #noop()} to ease type inference.</p>
      */
-    static final Promise<?> NOOP = new Promise<Object>() {
+    static final Promise<?> NOOP = new Promise<>() {
         @Override
         public void succeed(Object result) {
         }
@@ -97,7 +97,7 @@ public interface Promise<C> {
      * @return a Promise from the given consumers
      */
     static <T> Promise<T> from(Consumer<T> succeed, Consumer<Throwable> fail) {
-        return new Promise<T>() {
+        return new Promise<>() {
             @Override
             public void succeed(T result) {
                 succeed.accept(result);
@@ -119,7 +119,7 @@ public interface Promise<C> {
      * @return a Promise that invokes the BiConsumer function
      */
     static <T> Promise<T> complete(BiConsumer<T, Throwable> fn) {
-        return new Promise<T>() {
+        return new Promise<>() {
             @Override
             public void succeed(T result) {
                 fn.accept(result, null);

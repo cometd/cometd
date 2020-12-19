@@ -19,7 +19,6 @@ import java.net.HttpCookie;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -229,7 +228,7 @@ public class JettyHttpClientTransport extends AbstractHttpClientTransport {
                     // HttpClient instance is shared by multiple BayeuxClient instances.
                     // Instead, we store the cookies in the BayeuxClient instance.
                     Map<String, List<String>> cookies = new HashMap<>(1);
-                    cookies.put(field.getName(), Collections.singletonList(field.getValue()));
+                    cookies.put(field.getName(), List.of(field.getValue()));
                     storeCookies(cookieURI, cookies);
                     return false;
                 }

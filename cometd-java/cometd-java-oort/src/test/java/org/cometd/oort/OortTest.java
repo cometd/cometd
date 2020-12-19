@@ -19,7 +19,6 @@ import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
@@ -55,7 +54,7 @@ import org.slf4j.LoggerFactory;
 
 public abstract class OortTest {
     public static List<String> transports() {
-        return Arrays.asList(WebSocketTransport.class.getName(), JettyWebSocketTransport.class.getName());
+        return List.of(WebSocketTransport.class.getName(), JettyWebSocketTransport.class.getName());
     }
 
     @RegisterExtension

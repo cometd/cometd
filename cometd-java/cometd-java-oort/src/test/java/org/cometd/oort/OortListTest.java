@@ -40,7 +40,7 @@ public class OortListTest extends AbstractOortObjectTest {
 
         long element = 1;
         CountDownLatch addLatch = new CountDownLatch(1);
-        oortList2.addElementListener(new OortList.ElementListener<Long>() {
+        oortList2.addElementListener(new OortList.ElementListener<>() {
             @Override
             public void onAdded(OortObject.Info<List<Long>> info, List<Long> elements) {
                 Assertions.assertEquals(1, elements.size());
@@ -67,7 +67,7 @@ public class OortListTest extends AbstractOortObjectTest {
         startOortObjects(oortList1, oortList2);
 
         CountDownLatch setLatch = new CountDownLatch(2);
-        OortObject.Listener<List<Long>> listener = new OortObject.Listener<List<Long>>() {
+        OortObject.Listener<List<Long>> listener = new OortObject.Listener<>() {
             @Override
             public void onUpdated(OortObject.Info<List<Long>> oldInfo, OortObject.Info<List<Long>> newInfo) {
                 setLatch.countDown();
@@ -82,7 +82,7 @@ public class OortListTest extends AbstractOortObjectTest {
         Assertions.assertTrue(setLatch.await(5, TimeUnit.SECONDS));
 
         CountDownLatch removeLatch = new CountDownLatch(1);
-        oortList2.addElementListener(new OortList.ElementListener<Long>() {
+        oortList2.addElementListener(new OortList.ElementListener<>() {
             @Override
             public void onRemoved(OortObject.Info<List<Long>> info, List<Long> elements) {
                 Assertions.assertEquals(1, elements.size());
@@ -109,7 +109,7 @@ public class OortListTest extends AbstractOortObjectTest {
         startOortObjects(oortList1, oortList2);
 
         CountDownLatch setLatch1 = new CountDownLatch(2);
-        OortObject.Listener<List<String>> listener = new OortObject.Listener<List<String>>() {
+        OortObject.Listener<List<String>> listener = new OortObject.Listener<>() {
             @Override
             public void onUpdated(OortObject.Info<List<String>> oldInfo, OortObject.Info<List<String>> newInfo) {
                 setLatch1.countDown();
@@ -137,7 +137,7 @@ public class OortListTest extends AbstractOortObjectTest {
         AtomicReference<CountDownLatch> setLatch2 = new AtomicReference<>(new CountDownLatch(4));
         oortList1.addListener(new OortList.DeltaListener<>(oortList1));
         oortList2.addListener(new OortList.DeltaListener<>(oortList2));
-        OortList.ElementListener<String> elementListener = new OortList.ElementListener<String>() {
+        OortList.ElementListener<String> elementListener = new OortList.ElementListener<>() {
             @Override
             public void onAdded(OortObject.Info<List<String>> info, List<String> elements) {
                 adds.addAll(elements);
@@ -180,7 +180,7 @@ public class OortListTest extends AbstractOortObjectTest {
         startOortObjects(oortList1, oortList2);
 
         CountDownLatch setLatch = new CountDownLatch(2);
-        OortObject.Listener<List<String>> listener = new OortObject.Listener<List<String>>() {
+        OortObject.Listener<List<String>> listener = new OortObject.Listener<>() {
             @Override
             public void onUpdated(OortObject.Info<List<String>> oldInfo, OortObject.Info<List<String>> newInfo) {
                 setLatch.countDown();
@@ -192,7 +192,7 @@ public class OortListTest extends AbstractOortObjectTest {
         Assertions.assertTrue(setLatch.await(5, TimeUnit.SECONDS));
 
         CountDownLatch addLatch = new CountDownLatch(4);
-        OortList.ElementListener<String> addedListener = new OortList.ElementListener<String>() {
+        OortList.ElementListener<String> addedListener = new OortList.ElementListener<>() {
             @Override
             public void onAdded(OortObject.Info<List<String>> info, List<String> elements) {
                 addLatch.countDown();
@@ -240,7 +240,7 @@ public class OortListTest extends AbstractOortObjectTest {
         final CountDownLatch latch2 = new CountDownLatch(threads * iterations);
 
         oortList2.addListener(new OortList.DeltaListener<>(oortList2));
-        oortList2.addElementListener(new OortList.ElementListener<String>() {
+        oortList2.addElementListener(new OortList.ElementListener<>() {
             @Override
             public void onAdded(OortObject.Info<List<String>> info, List<String> elements) {
                 for (int i = 0; i < elements.size(); ++i) {

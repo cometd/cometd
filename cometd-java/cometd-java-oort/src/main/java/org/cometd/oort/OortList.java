@@ -16,7 +16,6 @@
 package org.cometd.oort;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.EventListener;
 import java.util.List;
@@ -158,7 +157,7 @@ public class OortList<E> extends OortContainer<List<E>> {
         // Retrieve elements.
         Object object = data.get(Info.OBJECT_FIELD);
         if (object instanceof Object[]) {
-            object = Arrays.asList((Object[])object);
+            object = List.of((Object[])object);
         }
         @SuppressWarnings("unchecked")
         List<E> elements = (List<E>)object;

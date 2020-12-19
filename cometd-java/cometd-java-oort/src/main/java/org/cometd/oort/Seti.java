@@ -499,7 +499,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
      * @see #sendMessage(Collection, String, Object)
      */
     public void sendMessage(String toUserId, String toChannel, Object data) {
-        sendMessage(Collections.singleton(toUserId), toChannel, data);
+        sendMessage(Set.of(toUserId), toChannel, data);
     }
 
     /**
@@ -917,7 +917,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
         private static final String REPLACE_FIELD = "replace";
 
         private SetiPresence(boolean present, String userId) {
-            this(present, Collections.singleton(userId), false);
+            this(present, Set.of(userId), false);
         }
 
         private SetiPresence(Set<String> userIds) {
