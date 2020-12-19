@@ -71,6 +71,4 @@ git commit -m "Release ${VERSION}."
 git tag -am "Release ${VERSION}." ${VERSION}
 git push --follow-tags
 
-if yes_no "Publish to NPM ? (Y/n)" y; then
-  npm publish --tag beta
-fi
+# Do not publish 6.0.x to NPM.
