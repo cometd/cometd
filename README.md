@@ -1,24 +1,32 @@
 ![GitHub CI](https://github.com/cometd/cometd/workflows/GitHub%20CI/badge.svg)
 
-## The CometD Project ##
+## The CometD Project
 
 Welcome to the [CometD](https://cometd.org) Project, a scalable comet (server push) implementation for the web.
 
 
-## License ##
+### CometD Versions
+
+`7.0.x` &#8658; Java 11 - Jetty 11.0.x - `jakarta.servlet.*`  
+`6.0.x` &#8658; Java 11 - Jetty 10.0.x - `javax.servlet.*`  
+`5.0.x` &#8658; Java 8 - Jetty 9.4.x - `javax.servlet.*`
+
+
+### CometD License
 
 The CometD source code is released under the Apache 2.0 License.
 
 
-### Directory Layout ###
+### Project Directory Layout
 
-    cometd-archetypes - The Maven archetypes for quick application development
-    cometd-demo       - Demo of the Java server and of the Dojo/jQuery clients
-    cometd-java       - The Java server and java client libraries
-    cometd-javascript - The JavaScript (Dojo/jQuery) client libraries
+    cometd-archetypes    - The Maven archetypes for quick application development
+    cometd-demo          - Demo of the Java server and of the Dojo/jQuery clients
+    cometd-documentation - The CometD documentation
+    cometd-java          - The Java server and java client libraries
+    cometd-javascript    - The JavaScript (Dojo/jQuery) client libraries
 
 
-### Running the CometD Demo ###
+### Running the CometD Demo
 
 If you have [downloaded](https://download.cometd.org) the release bundle, then the CometD is already built for you.
 To run the demonstration with Maven, unzip the release bundle and execute:
@@ -37,12 +45,12 @@ with commands like:
     <command to run my server>
 
 
-### Reporting Issues ###
+### Reporting Issues
 
 Issues, bugs and requests for enhancements should be filed at https://bugs.cometd.org
 
 
-### Building CometD ###
+### Building CometD
 
 If you have cloned the source release, follow the instructions at
 https://docs.cometd.org/current/reference/#_build, or just do:
@@ -50,16 +58,20 @@ https://docs.cometd.org/current/reference/#_build, or just do:
     $ mvn install
 
 
-### Load Testing CometD ###
+### CometD Benchmark
 
-To run load testing, open two windows. In the server window run:
+The [CometD Benchmark](https://docs.cometd.org/current/reference/#_benchmarking) can be run interactively or in batch mode.
+
+To run the server interactively, open a terminal window and type:
 
     $ cd cometd-java/cometd-java-benchmark/cometd-java-benchmark-server/
     $ mvn exec:exec
 
-In the client window (potentially on another machine), run
+Then follow the instructions printed in the terminal.
+
+To run the client interactively, open another terminal window (potentially on another machine), and type:
 
     $ cd cometd-java/cometd-java-benchmark/cometd-java-benchmark-client/
     $ mvn exec:exec
 
-Then follow instructions on the console to generate load.
+Then follow instructions printed on the terminal to generate the load.
