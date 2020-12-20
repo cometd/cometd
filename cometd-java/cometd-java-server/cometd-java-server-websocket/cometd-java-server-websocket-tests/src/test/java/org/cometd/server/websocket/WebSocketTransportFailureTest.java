@@ -23,7 +23,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
@@ -54,7 +53,6 @@ import org.junit.jupiter.api.Test;
 public class WebSocketTransportFailureTest {
     private Server server;
     private ServerConnector connector;
-    private ServletContextHandler context;
     private HttpClient httpClient;
     private WebSocketClient client;
     private BayeuxServerImpl bayeux;
@@ -80,7 +78,7 @@ public class WebSocketTransportFailureTest {
         connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        context = new ServletContextHandler(server, "/");
+        ServletContextHandler context = new ServletContextHandler(server, "/");
         JavaxWebSocketServletContainerInitializer.configure(context, null);
 
         String cometdURLMapping = "/cometd/*";
@@ -121,7 +119,7 @@ public class WebSocketTransportFailureTest {
 
         BlockingQueue<Message> messages = new LinkedBlockingQueue<>();
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/cometd");
-        Session session = client.connect(new WebSocketEndPoint(messages), uri).get(5, TimeUnit.SECONDS);
+        Session wsSession = client.connect(new WebSocketEndPoint(messages), uri).get(5, TimeUnit.SECONDS);
 
         String handshake = "[{" +
                 "\"id\":\"1\"," +
@@ -130,28 +128,13 @@ public class WebSocketTransportFailureTest {
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"websocket\"]" +
                 "}]";
-        session.getRemote().sendString(handshake);
+        wsSession.getRemote().sendString(handshake);
 
         Message message = messages.poll(5, TimeUnit.SECONDS);
         Assertions.assertNotNull(message);
         Assertions.assertEquals(Channel.META_HANDSHAKE, message.getChannel());
         Assertions.assertTrue(message.isSuccessful());
         String clientId = message.getClientId();
-
-        CountDownLatch removeLatch = new CountDownLatch(1);
-        bayeux.getChannel(Channel.META_CONNECT).addListener(new ServerChannel.MessageListener() {
-            @Override
-            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
-                from.addListener((ServerSession.RemovedListener)(s, m, t) -> removeLatch.countDown());
-                // Disconnect the client abruptly.
-                disconnect(session);
-                // Add messages for the client; the first message is written to
-                // buffers, but the second message throws while trying to write it.
-                from.deliver(null, "/foo", "bar1", Promise.noop());
-                from.deliver(null, "/foo", "bar2", Promise.noop());
-                return true;
-            }
-        });
 
         String connect = "[{" +
                 "\"id\":\"2\"," +
@@ -160,12 +143,22 @@ public class WebSocketTransportFailureTest {
                 "\"clientId\":\"" + clientId + "\"," +
                 "\"advice\": {\"timeout\":0}" +
                 "}]";
-        session.getRemote().sendString(connect);
+        wsSession.getRemote().sendString(connect);
+
+        ServerSession session = bayeux.getSession(clientId);
+
+        CountDownLatch removeLatch = new CountDownLatch(1);
+        session.addListener((ServerSession.RemovedListener)(s, m, t) -> removeLatch.countDown());
+        // Disconnect the client abruptly.
+        disconnect(wsSession);
+        // Add messages for the client; the first message is written to
+        // buffers, but the second message throws while trying to write it.
+        session.deliver(null, "/foo", "bar1", Promise.noop());
+        session.deliver(null, "/foo", "bar2", Promise.noop());
 
         // The session should expire on the server.
         Assertions.assertTrue(removeLatch.await(3 * maxInterval, TimeUnit.MILLISECONDS));
-        ServerSession serverSession = bayeux.getSession(clientId);
-        Assertions.assertNull(serverSession);
+        Assertions.assertNull(bayeux.getSession(clientId));
     }
 
     @Test
