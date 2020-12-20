@@ -17,7 +17,7 @@ package org.cometd.javascript;
 
 import java.io.IOException;
 import java.util.EnumSet;
-
+import java.util.concurrent.atomic.AtomicInteger;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
@@ -27,7 +27,6 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.jupiter.api.Assertions;
@@ -81,7 +80,7 @@ public class CometDLongPollingPublishFailureTest extends AbstractCometDLongPolli
     }
 
     public static class PublishThrowingFilter implements Filter {
-        private int messages;
+        private final AtomicInteger messages = new AtomicInteger();
 
         @Override
         public void init(FilterConfig filterConfig) {
@@ -95,11 +94,10 @@ public class CometDLongPollingPublishFailureTest extends AbstractCometDLongPolli
         private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
             String uri = request.getRequestURI();
             if (!uri.endsWith("/handshake") && !uri.endsWith("/connect")) {
-                ++messages;
-            }
-            // The second non-handshake and non-connect message will be the publish, throw
-            if (messages == 2) {
-                throw new IOException();
+                // First subscribe message, then publish message, throw.
+                if (messages.incrementAndGet() == 2) {
+                    throw new IOException();
+                }
             }
             chain.doFilter(request, response);
         }
