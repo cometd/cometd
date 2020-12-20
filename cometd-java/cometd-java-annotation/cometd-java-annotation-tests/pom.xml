@@ -12,6 +12,20 @@
   <artifactId>cometd-java-annotation-tests</artifactId>
   <name>CometD :: Java :: Annotation :: Tests</name>
 
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <excludes>
+            <!-- Guice still uses javax.inject -->
+            <exclude>org.cometd.annotation.guice.GuiceAnnotationTest</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
   <dependencies>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
