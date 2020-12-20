@@ -16,8 +16,8 @@
 module org.cometd.annotation.server {
     exports org.cometd.annotation.server;
 
-    requires java.annotation;
-    requires javax.inject;
+    requires jakarta.annotation;
+    requires jakarta.inject;
     requires transitive org.cometd.annotation;
     requires transitive org.cometd.server;
     requires org.slf4j;

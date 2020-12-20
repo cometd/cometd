@@ -14,8 +14,8 @@
 
   <dependencies>
     <dependency>
-      <groupId>com.jwebmp</groupId>
-      <artifactId>javax.inject</artifactId>
+      <groupId>jakarta.inject</groupId>
+      <artifactId>jakarta.inject-api</artifactId>
     </dependency>
     <dependency>
       <groupId>jakarta.annotation</groupId>

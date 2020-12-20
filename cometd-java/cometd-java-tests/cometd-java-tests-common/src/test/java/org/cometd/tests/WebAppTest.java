@@ -121,8 +121,8 @@ public class WebAppTest {
         copyWebAppDependency(org.eclipse.jetty.websocket.core.client.WebSocketCoreClient.class, webINF);
         copyWebAppDependency(org.eclipse.jetty.websocket.core.Configuration.class, webINF);
         // Other dependencies in a CometD web application.
-        copyWebAppDependency(javax.inject.Inject.class, webINF);
-        copyWebAppDependency(javax.annotation.PostConstruct.class, webINF);
+        copyWebAppDependency(jakarta.inject.Inject.class, webINF);
+        copyWebAppDependency(jakarta.annotation.PostConstruct.class, webINF);
         // Web application classes.
         Path testClasses = baseDir.resolve("target/test-classes/");
         String serviceClass = WebAppService.class.getName().replace('.', '/') + ".class";

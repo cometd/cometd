@@ -25,9 +25,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import javax.inject.Inject;
-
+import jakarta.inject.Inject;
 import org.cometd.annotation.Listener;
 import org.cometd.annotation.Param;
 import org.cometd.annotation.Service;
@@ -126,7 +124,7 @@ public class ServerServiceDocs {
     // tag::annotatedService[]
     @org.cometd.annotation.Service("echoService")
     public class AnnotatedEchoService {
-        @javax.inject.Inject
+        @jakarta.inject.Inject
         private BayeuxServer bayeux;
     }
     // end::annotatedService[]

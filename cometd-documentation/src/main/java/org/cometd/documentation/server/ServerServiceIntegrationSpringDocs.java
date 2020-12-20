@@ -15,8 +15,8 @@
  */
 package org.cometd.documentation.server;
 
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
+import jakarta.annotation.PostConstruct;
+import jakarta.inject.Inject;
 import org.cometd.annotation.Listener;
 import org.cometd.annotation.Service;
 import org.cometd.annotation.Session;
@@ -29,8 +29,8 @@ import org.cometd.bayeux.server.ServerSession;
 public class ServerServiceIntegrationSpringDocs {
     @SuppressWarnings("InnerClassMayBeStatic")
     // tag::service[]
-    @javax.inject.Named // Tells Spring that this is a bean
-    @javax.inject.Singleton // Tells Spring that this is a singleton
+    @jakarta.inject.Named // Tells Spring that this is a bean
+    @jakarta.inject.Singleton // Tells Spring that this is a singleton
     @Service("echoService")
     public class EchoService {
         @Inject

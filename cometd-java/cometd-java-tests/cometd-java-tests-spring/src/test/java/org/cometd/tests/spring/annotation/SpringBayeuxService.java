@@ -15,11 +15,11 @@
  */
 package org.cometd.tests.spring.annotation;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.inject.Singleton;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
+import jakarta.inject.Singleton;
 import org.cometd.annotation.Service;
 import org.cometd.annotation.Session;
 import org.cometd.annotation.Subscription;

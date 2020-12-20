@@ -16,8 +16,8 @@
 module org.cometd.annotation.client {
     exports org.cometd.annotation.client;
 
-    requires java.annotation;
-    requires javax.inject;
+    requires jakarta.annotation;
+    requires jakarta.inject;
     requires transitive org.cometd.annotation;
     requires transitive org.cometd.api.client;
     requires org.slf4j;

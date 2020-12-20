@@ -4,9 +4,9 @@
 
 package ${package};
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.inject.Inject;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import jakarta.inject.Inject;
 import jakarta.servlet.ServletContext;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.annotation.ServerAnnotationProcessor;
