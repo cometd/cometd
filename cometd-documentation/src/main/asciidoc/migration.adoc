@@ -5,21 +5,21 @@
 [[_migration]]
 == Migration Guides
 
-=== Migrating from CometD 2 to CometD 3
+=== Migrating from CometD 2.x to CometD 3.0.x
 
-==== Required JDK Version Changes
+==== Required Java Version Changes
 
 [cols="1,1", options="header"]
 |===
-| CometD 2 | CometD 3
-| JDK 5    | JDK 7
+| CometD 2.x | CometD 3.0.x
+| Java 5 | Java 7
 |===
 
 ==== Servlet Specification Changes
 
-[cols="1,1", options="header"]
+[cols="1a,1a", options="header"]
 |===
-| CometD 2 | CometD 3
+| CometD 2.x | CometD 3.0.x
 | Servlet 2.5 | Servlet 3.0 (recommended Servlet 3.1 with JSR 356's `javax.websocket` support)
 |===
 
@@ -27,11 +27,11 @@
 
 Package names did not change.
 
-[cols="1,1", options="header"]
+[cols="1a,1a", options="header"]
 |===
-| CometD 2 | CometD 3
-| CometdServlet | CometDServlet
-| AnnotationCometdServlet | AnnotationCometDServlet
+| CometD 2.x | CometD 3.0.x
+| `CometdServlet` | `Comet**D**Servlet`
+| `AnnotationCometdServlet` | `AnnotationComet**D**Servlet`
 |===
 
 NOTE: Pay attention to the capital `D' of Comet**D**
@@ -40,10 +40,10 @@ NOTE: Pay attention to the capital `D' of Comet**D**
 
 Only the WebSocket artifacts have changed.
 
-[cols="1,1", options="header"]
+[cols="1a,1a", options="header"]
 |===
-| CometD 2
-| CometD 3
+| CometD 2.x
+| CometD 3.0.x
 
 | `org.cometd.java:cometd-websocket-jetty`
 | `org.cometd.java:cometd-java-websocket-javax-server` (JSR 356 WebSocket Server)
@@ -56,11 +56,10 @@ Only the WebSocket artifacts have changed.
 
 [cols="1a,1a", options="header"]
 |===
-| CometD 2
-| CometD 3
+| CometD 2.x
+| CometD 3.0.x
 
 |
-====
 [source,xml]
 ----
 <web-app xmlns="http://java.sun.com/xml/ns/javaee"
@@ -75,10 +74,8 @@ Only the WebSocket artifacts have changed.
     ...
 </web-app>
 ----
-====
 
 |
-====
 [source,xml]
 ----
 <web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
@@ -94,7 +91,6 @@ Only the WebSocket artifacts have changed.
     </servlet>
 </web-app>
 ----
-====
 <1> `schemaLocation` attribute changed from `2.5` to `3.0` (or to `3.1`)
 <2> `version` attribute changed from `2.5` to `3.0` (or to `3.1`)
 <3> `load-on-startup` element now required
@@ -103,53 +99,44 @@ Only the WebSocket artifacts have changed.
 
 [NOTE]
 ====
-The `load-on-startup` element is now required in order to use the `websocket` transport,
-unless Spring is used to configure the `BayeuxServer` object (see
+The `load-on-startup` element is now required in order to use the `websocket` transport, unless Spring is used to configure the `BayeuxServer` object (see
 xref:_java_server_services_integration_spring_xml_based_spring_configuration[this section]).
-If `load-on-startup` is not specified, the first request will lazily start the CometD Servlet,
-which will start the `BayeuxServer` object, which will configure the `websocket` transport, but
-at this point it is too late for the `websocket` transport to handle the request, which will be
-handled by the next transport (typically the `long-polling` transport).
+
+If `load-on-startup` is not specified, the first request will lazily start the CometD Servlet, which will start the `BayeuxServer` object, which will configure the `websocket` transport, but at this point it is too late for the `websocket` transport to handle the request, which will be handled by the next transport (typically the `long-polling` transport).
 ====
 
 ==== CometD Servlet Parameters Changes
 
-[cols="1,1,10", options="header"]
+[cols="1a,1a,10a", options="header"]
 |===
-| CometD 2
-| CometD 3
+| CometD 2.x
+| CometD 3.0.x
 | Notes
 
 | `logLevel`
 |
-| The parameter has been removed in CometD 3. +
-  In CometD 3 logging levels are controlled by the logging framework
-  implementation (for example, Log4J2).
+| The parameter has been removed in CometD 3.0.x. +
+  In CometD 3.0.x logging levels are controlled by the logging framework implementation (for example, Log4J2).
 
 | `transports`
 | `transports`
 | The parameter changed its meaning. +
-  In CometD 2 it is a comma separated list of class names of _additional_
-  server transports. In CometD 3 it is a comma separated list of the server
+  In CometD 2.x it is a comma separated list of class names of _additional_ server transports. In CometD 3.0.x it is a comma separated list of the server
   transports. +
-  For example, in CometD 3
-  `transports="org.cometd.server.websocket.jetty.JettyWebSocketTransport"`
-  defines just one server transport: a `websocket` server transport based on
-  Jetty WebSocket APIs.
+  For example, in CometD 3.0.x `transports="org.cometd.server.websocket.jetty.JettyWebSocketTransport"` defines just one server transport: a `websocket` server transport based on Jetty WebSocket APIs.
 
 |
 | `ws.cometdURLMapping`
 | A new, *mandatory*, parameter for WebSocket server transports. +
-  It's a comma separated list of the `url-pattern` strings defined by the
-  `servlet-mapping` of the CometD Servlet, for example `+/cometd/*+`.
+  It's a comma separated list of the `url-pattern` strings defined by the `servlet-mapping` of the CometD Servlet, for example `+/cometd/*+`.
 |===
 
 ==== Method Signature Changes
 
 [cols="1a,1a", options="header"]
 |===
-| CometD 2
-| CometD 3
+| CometD 2.x
+| CometD 3.0.x
 
 | `BayeuxServer`::
     `createIfAbsent(String, ConfigurableServerChannel.Initializer...)`
@@ -201,8 +188,8 @@ handled by the next transport (typically the `long-polling` transport).
 
 [cols="1a,1a", options="header"]
 |===
-| CometD 2
-| CometD 3
+| CometD 2.x
+| CometD 3.0.x
 
 | `class MyService extends AbstractService`::
     `myMethod(ServerSession, [String], Object, [String])`
@@ -211,58 +198,38 @@ handled by the next transport (typically the `long-polling` transport).
 |===
 
 [[_migration_30_to_31]]
-=== Migrating from CometD 3.0 to CometD 3.1
+=== Migrating from CometD 3.0.x to CometD 3.1.x
 
-Migration from CometD 3.0.x to CometD 3.1.x should be very easy, and most of the
-times just matter of updating the CometD version with no further changes to the
-application or the configuration.
+Migration from CometD 3.0.x to CometD 3.1.x should be very easy, and most of the times just matter of updating the CometD version with no further changes to the application or the configuration.
 
 Below you can find the detailed list of the changes introduced in CometD 3.1.x.
 
 ==== API Behavior Changes
 
-The handshake operation will now throw an exception if executed multiple times
-without explicitly disconnecting in-between.
+The handshake operation will now throw an exception if executed multiple times without explicitly disconnecting in-between.
 
-Handshaking should be performed only once, and applications should enforce this
-by using once events such as `DOMContentLoaded`, or by guarding the handshake
-with a `boolean` field.
-For further information, see
-xref:_javascript_handshake[the JavaScript handshake section] or the
-xref:_java_client_handshake[the Java client handshake section].
+Handshaking should be performed only once, and applications should enforce this by using once events such as `DOMContentLoaded`, or by guarding the handshake with a `boolean` field.
+For further information, see xref:_javascript_handshake[the JavaScript handshake section] or the xref:_java_client_handshake[the Java client handshake section].
 
 ==== Binary Data
 
-CometD now allows to send/receive messages with binary data, see
-xref:_concepts_binary_data[the binary data section].
+CometD now allows to send/receive messages with binary data, see xref:_concepts_binary_data[the binary data section].
 
 ==== Message Processing Order Changes
 
-The processing of incoming messages has slightly changed, affecting only writers
-of custom extensions (implementations of `BayeuxServer.Extension` or
-`ServerSession.Extension`).
+The processing of incoming messages has slightly changed, affecting only writers of custom extensions (implementations of `BayeuxServer.Extension` or `ServerSession.Extension`).
 
-Previous behavior was to invoke `BayeuxServer.Extension.send(...)` and
-`ServerSession.Extension.send(...)` for both broadcast and service messages
-_before_ invoking the `ServerChannel.MessageListener` listeners.
+Previous behavior was to invoke `BayeuxServer.Extension.send(...)` and `ServerSession.Extension.send(...)` for both broadcast and service messages _before_ invoking the `ServerChannel.MessageListener` listeners.
 
-CometD 3.1.x behavior is to invoke `BayeuxServer.Extension.send(...)` and
-`ServerSession.Extension.send(...)` only for broadcast messages _after_
-invoking the `ServerChannel.MessageListener` listeners.
+CometD 3.1.x behavior is to invoke `BayeuxServer.Extension.send(...)` and `ServerSession.Extension.send(...)` only for broadcast messages _after_ invoking the `ServerChannel.MessageListener` listeners.
 
 ==== HTTP/2 Support
 
-CometD applications are typically independent of the transport used to send or
-receive messages.
+CometD applications are typically independent of the transport used to send or receive messages.
 
-However, if the transport is HTTP/2, CometD can be configured to take advantage
-of the HTTP/2 transport by removing the limit on the number of outstanding long
-polls, see the `http2MaxSessionsPerBrowser` parameter below.
+However, if the transport is HTTP/2, CometD can be configured to take advantage of the HTTP/2 transport by removing the limit on the number of outstanding long polls, see the `http2MaxSessionsPerBrowser` parameter below.
 
-Where before a CometD applications opened in multiple browser tabs only had one
-tab performing the long poll (and all the other tabs performing a normal poll),
-now with HTTP/2 it is possible to remove this limitation and have all the tabs
-performing the long poll.
+Where before a CometD applications opened in multiple browser tabs only had one tab performing the long poll (and all the other tabs performing a normal poll), now with HTTP/2 it is possible to remove this limitation and have all the tabs performing the long poll.
 
 ==== CometD Servlet Parameters Changes
 
@@ -295,20 +262,14 @@ performing the long poll.
 * `boolean BayeuxServer.removeSession(ServerSession session)`
 * `void ClientSession.remoteCall(String target, Object data, MessageListener callback)`
 
-=== JavaScript Implementation Changes
+==== JavaScript Implementation Changes
 
-The JavaScript implementation now supports two more bindings, for
-https://angularjs.org/[Angular 1] (Angular 2 not supported yet)
-and for _vanilla_ JavaScript (i.e. plain JavaScript without frameworks or
-other libraries).
+The JavaScript implementation now supports two more bindings, for https://angularjs.org/[Angular 1] (Angular 2 not supported yet) and for _vanilla_ JavaScript (i.e. plain JavaScript without frameworks or other libraries).
 
-The JavaScript implementation is now available via https://www.npmjs.com/[NPM]
-and https://bower.io/[Bower], and compatible with both CommonJS modules and
-AMD modules.
+The JavaScript implementation is now available via https://www.npmjs.com/[NPM] and https://bower.io/[Bower], and compatible with both CommonJS modules and AMD modules.
 
 The location of the JavaScript files has changed when explicitly referenced.
-For applications built with Maven using the overlay WARs, the JavaScript files
-location has changed:
+For applications built with Maven using the overlay WARs, the JavaScript files location has changed:
 
 [cols="1a,1a", options="header"]
 |===
@@ -346,70 +307,53 @@ Applications should be changed accordingly:
 | CometD 3.1.x
 
 |
-====
-[source,html]
-[subs=+quotes]
+[source,html,subs=+quotes]
 .index.html
 ----
 <!-- CometD 3.0.x with WAR overlays. -->
 <script type="text/javascript" src="**org/**cometd.js"></script>
 ----
-====
 |
-====
-[source,html]
-[subs=+quotes]
+[source,html,subs=+quotes]
 .index.html
 ----
 <!-- CometD 3.1.x with WAR overlays. -->
 <script type="text/javascript" src="**js/cometd/**cometd.js"></script>
 ----
-====
 
 |
-====
-[source,javascript]
-[subs=+quotes]
+[source,javascript,subs=+quotes]
 .application.js
 ----
 /// CometD 3.0.x with AMD.
 require({
-        baseUrl: 'js/jquery',
-        paths: {
-            jquery: 'jquery-2.2.4',
-            *org: '../org'*
-        }
-    },
-    ['jquery','jquery.cometd'],
-    function($, cometd) {
-        ...
-    });
+  baseUrl: 'js/jquery',
+  paths: {
+    jquery: 'jquery-2.2.4',
+    *org: '../org'*
+  }
+}, ['jquery','jquery.cometd'], function($, cometd) {
+  ...
+});
 ----
-====
 |
-====
-[source,javascript]
-[subs=+quotes]
+[source,javascript,subs=+quotes]
 .application.js
 ----
 /// CometD 3.1.x with AMD.
 require({
-        baseUrl: "js/jquery",
-        paths: {
-            jquery: "jquery-3.5.1",
-            *cometd: "../cometd"*
-        }
-    },
-    ['jquery','jquery.cometd'],
-    function($, cometd) {
-        ...
-    });
+  baseUrl: "js/jquery",
+  paths: {
+    jquery: "jquery-3.5.1",
+    *cometd: "../cometd"*
+  }
+}, ['jquery','jquery.cometd'], function($, cometd) {
+  ...
+});
 ----
-====
 |===
 
-The xref:_extensions_reload[reload extension] has been rewritten to use the
-`SessionStorage` rather than using short-lived cookies.
+The xref:_extensions_reload[reload extension] has been rewritten to use the `SessionStorage` rather than using short-lived cookies.
 
 Two new APIs are available to simplify sending messages with binary data:
 
@@ -418,48 +362,43 @@ Two new APIs are available to simplify sending messages with binary data:
 
 ==== Jetty WebSocket Server Transport Requirements
 
-Server side applications that want to make use of the Jetty WebSocket server
-transport are now required to use Jetty versions:
+Server side applications that want to make use of the Jetty WebSocket server transport are now required to use Jetty versions:
 
-* `9.2.20.v20161216` or later in the 9.2.x series (requires JDK 7)
-* `9.3.15.v20161220` or later in the 9.3.x series (requires JDK 8)
-* `9.4.0.v20161208` or later in the 9.4.x series (requires JDK 8)
+* `9.2.20.v20161216` or later in the 9.2.x series (requires Java 7)
+* `9.3.15.v20161220` or later in the 9.3.x series (requires Java 8)
+* `9.4.0.v20161208` or later in the 9.4.x series (requires Java 8)
 
-Application that use the default JSR 356 transport or that do not use WebSocket
-can work with any Jetty version.
+Application that use the default JSR 356 transport or that do not use WebSocket can work with any Jetty version.
 
 [[_migration_31_to_40]]
-=== Migrating from CometD 3.1 to CometD 4.0
+=== Migrating from CometD 3.1.x to CometD 4.0.x
 
-==== Required JDK Version Changes
+==== Required Java Version Changes
 
 [cols="1,1", options="header"]
 |===
-| CometD 3.1 | CometD 4.0
-| JDK 7      | JDK 8
+| CometD 3.1.x | CometD 4.0.x
+| Java 7 | Java 8
 |===
 
 ==== Jetty Dependency Changes
 
 [cols="1,1", options="header"]
 |===
-| CometD 3.1  | CometD 4.0
+| CometD 3.1.x  | CometD 4.0.x
 | Jetty 9.2.x | Jetty 9.4.x
 |===
 
 ==== Breaking API Changes
 
-In CometD 3.1.x `BayeuxContext` was stored to and retrieved from a `ThreadLocal`
-because the threading model was synchronous and therefore it allowed `ThreadLocal`
-to be used to provide access to `BayeuxContext` from `BayeuxServer`.
+In CometD 3.1.x `BayeuxContext` was stored to and retrieved from a `ThreadLocal` because the threading model was synchronous and therefore it allowed `ThreadLocal` to be used to provide access to `BayeuxContext` from `BayeuxServer`.
 
-In CometD 4.0.x and later the APIs allow for an asynchronous threading model and
-therefore `ThreadLocal` cannot be used anymore.
+In CometD 4.0.x and later the APIs allow for an asynchronous threading model and therefore `ThreadLocal` cannot be used anymore.
 For this reason, access to `BayeuxContext` has been moved to `ServerMessage`.
 
 [cols="1,1", options="header"]
 |===
-| CometD 3.1 | CometD 4.0
+| CometD 3.1.x | CometD 4.0.x
 | BayeuxServer.getContext() | ServerMessage.getBayeuxContext()
 | BayeuxServer.getCurrentTransport() | ServerMessage.getServerTransport(), ServerSession.getServerTransport()
 | ServerTransport.getContext() | ServerMessage.getBayeuxContext()
@@ -467,12 +406,11 @@ For this reason, access to `BayeuxContext` has been moved to `ServerMessage`.
 
 ==== Deprecated API Removed
 
-In `OortMap` and `OortList`, a number of deprecated (since 3.0.x) blocking APIs
-have been removed. Use the non-blocking variant of the same APIs.
+In `OortMap` and `OortList`, a number of deprecated (since 3.0.x) blocking APIs have been removed. Use the non-blocking variant of the same APIs.
 
 [cols="1,1", options="header"]
 |===
-| CometD 3.1 | CometD 4.0
+| CometD 3.1.x | CometD 4.0.x
 | OortMap.putAndShare(K key, V value) | OortMap.putAndShare(K key, V value, Result<V> callback)
 | OortMap.putIfAbsentAndShare(K key, V value) | OortMap.putIfAbsentAndShare(K key, V value, Result<V> callback)
 | OortMap.removeAndShare(K key) | OortMap.removeAndShare(K key, Result<V> callback)
@@ -481,16 +419,12 @@ have been removed. Use the non-blocking variant of the same APIs.
 |===
 
 [[_migration_40_to_50]]
-=== Migrating from CometD 4.0 to CometD 5.0
+=== Migrating from CometD 4.0.x to CometD 5.0.x
 
-Migrating from CometD 4.0.x to CometD 5.0.x requires changes in the coordinates
-of the Maven artifact dependencies.
+Migrating from CometD 4.0.x to CometD 5.0.x requires changes in the coordinates of the Maven artifact dependencies.
 
-This was necessary to remove the presence of _split packages_ (i.e. two
-different jars containing classes under the same packages), so that future
-versions of CometD will be able to use JPMS modules.
-Furthermore, it was necessary to remove the hard dependency on the Jetty HTTP
-client (therefore allowing different HTTP client implementations).
+This was necessary to remove the presence of _split packages_ (i.e. two different jars containing classes under the same packages), so that future versions of CometD will be able to use JPMS modules.
+Furthermore, it was necessary to remove the hard dependency on the Jetty HTTP client (therefore allowing different HTTP client implementations).
 
 Few classes have also changed name and package to reflect the changes above.
 
@@ -498,7 +432,7 @@ Few classes have also changed name and package to reflect the changes above.
 
 [cols="1a,1a", options="header"]
 |===
-| CometD 4.0 | CometD 5.0
+| CometD 4.0.x | CometD 5.0.x
 | `org.cometd.java:**bayeux-api**`
 | `org.cometd.java:**cometd-java-api-server**` (for server-side CometD applications) +
   `org.cometd.java:**cometd-java-api-client**` (for client-side only CometD applications)
@@ -536,7 +470,7 @@ Few classes have also changed name and package to reflect the changes above.
 
 [cols="1a,1a", options="header"]
 |===
-| CometD 4.0 | CometD 5.0
+| CometD 4.0.x | CometD 5.0.x
 | `org.cometd.annotation.AnnotationCometDServlet`
 | `org.cometd.annotation.**server**.AnnotationCometDServlet`
 
@@ -553,8 +487,8 @@ Few classes have also changed name and package to reflect the changes above.
 | `org.cometd.annotation.**client**.ClientAnnotationProcessor`
 
 | `org.cometd.client.**transport.LongPollingTransport**`
-| `org.cometd.client.**http.jetty.JettyHttpClientTransport**` (replaces class in CometD 4.0) +
-  `org.cometd.client.http.okhttp.OkHttpClientTransport` (new class in CometD 5.0)
+| `org.cometd.client.**http.jetty.JettyHttpClientTransport**` (replaces class in CometD 4.0.x) +
+  `org.cometd.client.http.okhttp.OkHttpClientTransport` (new class in CometD 5.0.x)
 
 | `org.cometd.**common.JSONContext.Server**`
 | `org.cometd.**server.JSONContextServer**`
@@ -589,7 +523,7 @@ API method name changes and parameter list changes.
 
 [cols="1a,1a", options="header"]
 |===
-| CometD 4.0 | CometD 5.0
+| CometD 4.0.x | CometD 5.0.x
 | `ServerSession.Extension.outgoing(ServerSession, ServerMessage.Mutable, Promise<ServerMessage.Mutable>)`
 | `ServerSession.Extension.outgoing(**ServerSession,** ServerSession, ServerMessage.Mutable, Promise<ServerMessage.Mutable>)`
 
@@ -602,16 +536,15 @@ API method name changes and parameter list changes.
 
 ==== Deprecated API Removed
 
-A number of deprecated APIs (since 4.0) have been removed.
+A number of deprecated APIs (since 4.0.x) have been removed.
 
 [cols="1a,1a", options="header"]
 |===
-| CometD 4.0 | CometD 5.0
+| CometD 4.0.x | CometD 5.0.x
 
 | `Message.getJSON()`
 | No replacement. +
-  Use an implementation of `JSONContext.Client.generate(message)` on the client,
-  or an implementation of `JSONContextServer.generate(message)` on the server.
+  Use an implementation of `JSONContext.Client.generate(message)` on the client, or an implementation of `JSONContextServer.generate(message)` on the server.
 
 | `ClientSession.handshake(Map<String, Object>, **ClientSessionChannel**.MessageListener)`
 | `ClientSession.handshake(Map<String, Object>, **ClientSession**.MessageListener)`
@@ -686,6 +619,82 @@ A number of deprecated APIs (since 4.0) have been removed.
 
 | `Seti.PresenceListener.Adapter`
 | `Seti.PresenceListener`
+|===
+
+[[_migration_50_to_60]]
+=== Migrating from CometD 5.0.x to CometD 6.0.x
+
+Migrating from CometD 5.0.x to CometD 6.0.x should be fairly easy, requiring mostly to take care of few APIs changes.
+
+NOTE: CometD 6.0.x is fully JPMS modularized with proper `module-info.class` descriptors.
+
+==== Required Java Version Changes
+
+[cols="1,1", options="header"]
+|===
+| CometD 5.0.x | CometD 6.0.x
+| Java 8 | Java 11
+|===
+
+==== Jetty Dependency Changes
+
+[cols="1,1", options="header"]
+|===
+| CometD 5.0.x  | CometD 6.0.x
+| Jetty 9.4.x | Jetty 10.0.x
+|===
+
+==== Deprecated API Removed
+
+A number of deprecated APIs (since 5.0.x) have been removed.
+
+[cols="1a,1a", options="header"]
+|===
+| Removed in CometD 5.0.x | Replacement in CometD 6.0.x
+
+| `ServerSession.AddListener`
+| `ServerSession.Add**ed**Listener`
+
+| `ServerSession.RemoveListener`
+| `ServerSession.Remove**d**Listener`
+
+| `ServerSession.MaxQueueListener`
+| `ServerSession.MaxQueue**d**Listener`
+
+| `BayeuxServer.SessionListener.sessionRemoved(ServerSession session, boolean timeout)`
+| `BayeuxServer.SessionListener.sessionRemoved(ServerSession session, **ServerMessage message**, boolean timeout)`
+|===
+
+==== `web.xml` Changes
+
+[cols="1a,1a", options="header"]
+|===
+| CometD 5.0.x
+| CometD 6.0.x
+
+|
+[source,xml]
+----
+<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd" <1>
+         version="3.1"> <2>
+  ...
+</web-app>
+----
+
+|
+[source,xml]
+----
+<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd" <1>
+         version="4.0"> <2>
+  ...
+</web-app>
+----
+<1> `schemaLocation` attribute changed from `3.1` to `4.0`
+<2> `version` attribute changed from `3.1` to `4.0`
 |===
 
 :numbered:
