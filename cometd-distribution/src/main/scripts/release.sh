@@ -71,8 +71,10 @@ git commit -m "Release ${VERSION}."
 git tag -am "Release ${VERSION}." ${VERSION}
 git push --follow-tags
 
+LATEST="$(npm view cometd@latest version)"
 if yes_no "Publish to NPM ? (Y/n)" y; then
   npm publish
+  npm dist-tag add cometd@${LATEST} latest
 fi
 
 echo "Updating cometd-dojo repository"
