@@ -697,4 +697,45 @@ A number of deprecated APIs (since 5.0.x) have been removed.
 <2> `version` attribute changed from `3.1` to `4.0`
 |===
 
+[[_migration_60_to_70]]
+=== Migrating from CometD 6.0.x to CometD 7.0.x
+
+Migrating from CometD 6.0.x to CometD 7.0.x should be a drop-in change, from the CometD point of view.
+
+[IMPORTANT]
+====
+Migration from CometD 6.0.x to CometD 7.0.x implies migrating from Jetty 10.0.x and `+javax.*+` APIs to Jetty 11.0.x and `+jakarta.*+` APIs, so you may need to migrate the parts of your applications that depend on these APIs.
+====
+
+==== `web.xml` Changes
+
+[cols="1a,1a", options="header"]
+|===
+| CometD 6.0.x
+| CometD 7.0.x
+
+|
+[source,xml]
+----
+<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd" <1>
+         version="4.0"> <2>
+  ...
+</web-app>
+----
+
+|
+[source,xml]
+----
+<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee" <1>
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_5_0.xsd" <2>
+         version="5.0"> <3>
+----
+<1> `xmlns` attribute changed URI
+<2> `schemaLocation` attribute changed URI
+<3> `version` attribute changed from `4.0` to `5.0`
+|===
+
 :numbered:
