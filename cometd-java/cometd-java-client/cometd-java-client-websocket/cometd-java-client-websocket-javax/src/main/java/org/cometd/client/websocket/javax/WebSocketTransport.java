@@ -255,6 +255,13 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
     public static class Factory extends ContainerLifeCycle implements ClientTransport.Factory {
         private final WebSocketContainer container = ContainerProvider.getWebSocketContainer();
 
+        public Factory() {
+            // The WebSocketContainer comes from the Servlet Container,
+            // so its lifecycle cannot be managed by this class due to
+            // classloader differences; we just add it for dump() purposes.
+            addBean(container, false);
+        }
+
         @Override
         public ClientTransport newClientTransport(String url, Map<String, Object> options) {
             ScheduledExecutorService scheduler = (ScheduledExecutorService)options.get(ClientTransport.SCHEDULER_OPTION);
