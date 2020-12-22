@@ -31,7 +31,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.CloseReason;
 import javax.websocket.ContainerProvider;
@@ -42,7 +41,6 @@ import javax.websocket.HandshakeResponse;
 import javax.websocket.MessageHandler;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
-
 import org.cometd.bayeux.Message.Mutable;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.TransportListener;
@@ -257,6 +255,13 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
 
     public static class Factory extends ContainerLifeCycle implements ClientTransport.Factory {
         private final WebSocketContainer container = ContainerProvider.getWebSocketContainer();
+
+        public Factory() {
+            // The WebSocketContainer comes from the Servlet Container,
+            // so its lifecycle cannot be managed by this class due to
+            // classloader differences; we just add it for dump() purposes.
+            addBean(container, false);
+        }
 
         @Override
         public ClientTransport newClientTransport(String url, Map<String, Object> options) {
