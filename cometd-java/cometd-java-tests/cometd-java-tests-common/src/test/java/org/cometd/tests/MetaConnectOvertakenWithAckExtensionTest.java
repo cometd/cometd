@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2020 the original author or authors.
+ * Copyright (c) 2008-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSession;
+import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
@@ -35,8 +36,6 @@ import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.cometd.bayeux.client.ClientSessionChannel.MessageListener;
 
 public class MetaConnectOvertakenWithAckExtensionTest extends AbstractClientServerTest {
     @ParameterizedTest
@@ -84,7 +83,7 @@ public class MetaConnectOvertakenWithAckExtensionTest extends AbstractClientServ
 
         CountDownLatch messageLatch1 = new CountDownLatch(1);
         CountDownLatch messageLatch2 = new CountDownLatch(1);
-        MessageListener messageCallback = (channel, message) -> {
+        ClientSessionChannel.MessageListener messageCallback = (channel, message) -> {
             if (messageLatch1.getCount() == 0) {
                 messageLatch2.countDown();
             } else {
@@ -117,7 +116,7 @@ public class MetaConnectOvertakenWithAckExtensionTest extends AbstractClientServ
 
         // Setup to hold the 3rd /meta/connect on the client, so the 4th is delayed.
         CountDownLatch metaConnectLatch = new CountDownLatch(1);
-        client.getChannel(Channel.META_CONNECT).addListener((MessageListener)(channel, message) -> {
+        client.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
             try {
                 metaConnectLatch.await(5, TimeUnit.SECONDS);
             } catch (Exception ignored) {

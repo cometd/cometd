@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2020 the original author or authors.
+ * Copyright (c) 2008-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,10 +26,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.WebSocketContainer;
-
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
@@ -58,6 +56,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.cometd.bayeux.server.ConfigurableServerChannel.Initializer.Persistent;
 
 import static org.cometd.bayeux.server.ConfigurableServerChannel.Initializer.Persistent;
 

@@ -305,7 +305,7 @@
           <failIfMissing>true</failIfMissing>
           <strictCheck>true</strictCheck>
           <properties>
-            <copyright-range>${project.inceptionYear}-2020</copyright-range>
+            <copyright-range>${project.inceptionYear}-2021</copyright-range>
           </properties>
           <mapping>
             <java>SLASHSTAR_STYLE</java>
