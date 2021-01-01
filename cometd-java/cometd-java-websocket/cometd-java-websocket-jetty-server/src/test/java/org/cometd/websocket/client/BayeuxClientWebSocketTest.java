@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2020 the original author or authors.
+ * Copyright (c) 2008-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,6 @@
  */
 package org.cometd.websocket.client;
 
-import static org.cometd.bayeux.server.ConfigurableServerChannel.Initializer.Persistent;
-
 import java.io.IOException;
 import java.net.ConnectException;
 import java.util.Arrays;
@@ -27,10 +25,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.WebSocketContainer;
-
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSession;
@@ -56,6 +52,8 @@ import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.cometd.bayeux.server.ConfigurableServerChannel.Initializer.Persistent;
 
 public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
     public BayeuxClientWebSocketTest(String implementation) {

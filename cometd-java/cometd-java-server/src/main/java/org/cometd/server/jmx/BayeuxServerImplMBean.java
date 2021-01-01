@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2020 the original author or authors.
+ * Copyright (c) 2008-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ package org.cometd.server.jmx;
 
 import java.util.Set;
 import java.util.TreeSet;
-
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.server.BayeuxServerImpl;
 import org.eclipse.jetty.jmx.ObjectMBean;
