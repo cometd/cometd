@@ -31,26 +31,26 @@ Issue the following command from a directory that does _not_ contain a `pom.xml`
 
 ----
 $ cd /tmp
-$ mvn archetype:generate -Dfilter=org.cometd.archetypes:jetty9
+$ mvn archetype:generate -Dfilter=org.cometd.archetypes:jetty10
 ----
 ----
 Choose archetype:
-1: remote -> org.cometd.archetypes:cometd-archetype-dojo-jetty9 (-)
-2: remote -> org.cometd.archetypes:cometd-archetype-jquery-jetty9 (-)
-3: remote -> org.cometd.archetypes:cometd-archetype-spring-dojo-jetty9 (-)
-4: remote -> org.cometd.archetypes:cometd-archetype-spring-jquery-jetty9 (-)
+1: remote -> org.cometd.archetypes:cometd-archetype-dojo-jetty10 (-)
+2: remote -> org.cometd.archetypes:cometd-archetype-jquery-jetty10 (-)
+3: remote -> org.cometd.archetypes:cometd-archetype-spring-dojo-jetty10 (-)
+4: remote -> org.cometd.archetypes:cometd-archetype-spring-jquery-jetty10 (-)
 Choose a number:
 ----
 
-As you can see, there are four archetypes available that build a skeleton application using the Dojo or jQuery JavaScript toolkits, both with the choice of using Jetty 9 and/or Spring.
-Choose Dojo with Jetty 9, which is archetype number `1`.
+As you can see, there are four archetypes available that build a skeleton application using the Dojo or jQuery JavaScript toolkits, both with the choice of using Jetty 10 and/or Spring.
+Choose Dojo with Jetty 10, which is archetype number `1`.
 
-Next, you have to choose the version of the archetype you want to use, typically the last version of the 5.0.x series:
+Next, you have to choose the version of the archetype you want to use, typically the last version of the 6.0.x series:
 
 ----
-Choose org.cometd.archetypes:cometd-archetype-dojo-jetty9 version:
+Choose org.cometd.archetypes:cometd-archetype-dojo-jetty10 version:
 ...
-52: 5.0.0
+57: 6.0.0
 ...
 ----
 
@@ -58,20 +58,20 @@ The archetype generation requires that you define several properties and generat
 
 ----
 Define value for property 'groupId': : org.cometd.primer
-Define value for property 'artifactId': : dojo-jetty9-primer
+Define value for property 'artifactId': : dojo-jetty10-primer
 Define value for property 'version':  1.0-SNAPSHOT: :
 Define value for property 'package':  org.cometd.primer: :
-[INFO] Using property: cometdVersion = 5.0.0
-[INFO] Using property: jettyVersion = 9.4.28.v20200408
-[INFO] Using property: slf4jVersion = 1.7.30
+[INFO] Using property: cometdVersion = 6.0.0
+[INFO] Using property: jettyVersion = 10.0.0
+[INFO] Using property: slf4jVersion = 2.0.0-alpha1
 Confirm properties configuration:
 groupId: org.cometd.primer
-artifactId: dojo-jetty9-primer
+artifactId: dojo-jetty10-primer
 version: 1.0-SNAPSHOT
 package: org.cometd.primer
-cometdVersion: 5.0.0
-jettyVersion: 9.4.28.v20200408
-slf4jVersion: 1.7.30
+cometdVersion: 6.0.0
+jettyVersion: 10.0.0
+slf4jVersion: 2.0.0-alpha1
 Y: :
 ...
 [INFO] BUILD SUCCESS
@@ -86,7 +86,7 @@ the application skeleton, since it can be easily changed afterwards.
 Then:
 
 ----
-$ cd dojo-jetty9-primer/
+$ cd dojo-jetty10-primer/
 ----
 
 The skeleton project now exists as follows:
@@ -117,7 +117,7 @@ $ mvn clean install
 $ mvn jetty:run
 ----
 
-Now point your browser at `+http://localhost:8080/dojo-jetty9-primer+`, and you should see this message:
+Now point your browser at `+http://localhost:8080/dojo-jetty10-primer+`, and you should see this message:
 
 ----
 CometD Connection Succeeded
@@ -138,7 +138,7 @@ If you want to use a Jetty version different from CometD's default Jetty version
 
     <properties>
         ...
-        <jetty-version>9.4.35.v20201120</jetty-version>
+        <jetty-version>10.0.1</jetty-version>
         ....
     </properties>
 
@@ -261,7 +261,7 @@ The archetypes provide:
 ====
 [source,javascript,indent=0]
 ----
-include::../../../../cometd-archetypes/dojo-jetty9/src/main/resources/archetype-resources/src/main/webapp/application.js[]
+include::../../../../cometd-archetypes/dojo-jetty10/src/main/resources/archetype-resources/src/main/webapp/application.js[]
 ----
 ====
 

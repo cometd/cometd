@@ -7,9 +7,9 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>cometd-archetype-jquery-jetty9</artifactId>
+  <artifactId>cometd-archetype-jquery-jetty10</artifactId>
   <packaging>maven-archetype</packaging>
-  <name>CometD :: Archetypes :: jQuery and Jetty9</name>
+  <name>CometD :: Archetypes :: jQuery and Jetty10</name>
 
   <build>
     <resources>
