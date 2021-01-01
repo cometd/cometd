@@ -1,3 +1,9 @@
+#set($symbol_pound='#')
+#set($symbol_dollar='$')
+#set($symbol_escape='\')
+
+package ${package};
+
 import java.util.HashMap;
 import java.util.Map;
 import org.cometd.bayeux.server.BayeuxServer;
