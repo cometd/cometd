@@ -14,10 +14,11 @@
   <description>${project.version} - CometD archetype for creating a server-side event-driven web application</description>
 
   <modules>
-    <module>dojo-jetty10</module>
-    <module>jquery-jetty10</module>
-    <module>spring-dojo-jetty10</module>
-    <module>spring-jquery-jetty10</module>
+    <module>dojo-jetty11</module>
+    <module>jquery-jetty11</module>
+    <!-- Disabled until Spring updates to JakartaEE -->
+    <!--<module>spring-dojo-jetty11</module>-->
+    <!--<module>spring-jquery-jetty11</module>-->
   </modules>
 
   <build>

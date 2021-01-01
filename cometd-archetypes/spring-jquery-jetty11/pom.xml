@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <parent>
     <groupId>org.cometd.archetypes</groupId>
     <artifactId>cometd-archetypes</artifactId>
@@ -7,9 +7,9 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>cometd-archetype-dojo-jetty10</artifactId>
+  <artifactId>cometd-archetype-spring-jquery-jetty11</artifactId>
   <packaging>maven-archetype</packaging>
-  <name>CometD :: Archetypes :: Dojo and Jetty10</name>
+  <name>CometD :: Archetypes :: Spring, jQuery and Jetty11</name>
 
   <build>
     <resources>

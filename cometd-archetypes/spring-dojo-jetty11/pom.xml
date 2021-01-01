@@ -7,9 +7,9 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>cometd-archetype-spring-dojo-jetty10</artifactId>
+  <artifactId>cometd-archetype-spring-dojo-jetty11</artifactId>
   <packaging>maven-archetype</packaging>
-  <name>CometD :: Archetypes :: Spring, Dojo and Jetty10</name>
+  <name>CometD :: Archetypes :: Spring, Dojo and Jetty11</name>
 
   <build>
     <resources>
