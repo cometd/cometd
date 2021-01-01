@@ -1,19 +1,15 @@
-#set($symbol_pound='#')
-#set($symbol_dollar='$')
-#set($symbol_escape='\')
-
 package ${package};
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.servlet.ServletContext;
-import org.cometd.annotation.ServerAnnotationProcessor;
+import org.cometd.annotation.server.ServerAnnotationProcessor;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.http.JSONPTransport;
 import org.cometd.server.http.JSONTransport;
-import org.cometd.websocket.server.WebSocketTransport;
+import org.cometd.server.websocket.javax.WebSocketTransport;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.DestructionAwareBeanPostProcessor;
 import org.springframework.context.annotation.Bean;
