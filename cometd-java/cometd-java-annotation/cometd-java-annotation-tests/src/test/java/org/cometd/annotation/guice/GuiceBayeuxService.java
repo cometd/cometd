@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2020 the original author or authors.
+ * Copyright (c) 2008-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package org.cometd.annotation.guice;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
-
 import org.cometd.annotation.Service;
 import org.cometd.annotation.Session;
 import org.cometd.annotation.Subscription;

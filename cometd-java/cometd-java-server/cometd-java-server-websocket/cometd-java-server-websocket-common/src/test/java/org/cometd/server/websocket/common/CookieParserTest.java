@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2020 the original author or authors.
+ * Copyright (c) 2008-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package org.cometd.server.websocket.common;
 import java.net.HttpCookie;
 import java.text.ParseException;
 import java.util.List;
-
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
