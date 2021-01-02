@@ -17,7 +17,7 @@ package org.cometd.documentation;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import org.cometd.annotation.Listener;
 import org.cometd.annotation.Service;
 import org.cometd.annotation.Session;
