@@ -12,16 +12,13 @@ Building the CometD project has 2 minimum requirements:
 * https://java.oracle.com[JDK 8] or greater, to compile the Java code
 * https://maven.apache.org[Maven 3] or greater, the build tool
 
-Make sure that the `mvn` executable is in your path, and that your `JAVA_HOME`
-environment variable points to the directory where Java is installed.
+Make sure that the `mvn` executable is in your path, and that your `JAVA_HOME` environment variable points to the directory where Java is installed.
 
 === Obtaining the source code
 
-You can obtain the source code from either the distribution tarball or by
-checking out the source from the GitHub repository.
+You can obtain the source code from either the distribution tarball or by checking out the source from the GitHub repository.
 
-If you want to use the distribution tarball, download it from
-https://download.cometd.org/[here], then unpack it with the following commands:
+If you want to use the distribution tarball, download it from https://download.cometd.org/[here], then unpack it with the following commands:
 
 ----
 $ tar zxvf cometd-<version>-distribution.tar.gz
@@ -59,6 +56,6 @@ $ cd cometd-demo
 $ mvn jetty:run
 ----
 
-Then point your browser at http://localhost:8080 and you should see the CometD Demo page.
+Then point your browser at `+http://localhost:8080+` and you should see the CometD Demo page.
 
 :numbered:
