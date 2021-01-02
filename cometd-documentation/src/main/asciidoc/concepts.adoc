@@ -2,180 +2,118 @@
 [[_concepts]]
 == Concepts and Architecture
 
-The CometD project implements various https://en.wikipedia.org/wiki/Comet_%28programming%29[Comet techniques]
-to provide a scalable web messaging system, one that can run over HTTP or over
-other emerging web protocols such as https://en.wikipedia.org/wiki/WebSocket[WebSocket].
+The CometD project implements various https://en.wikipedia.org/wiki/Comet_%28programming%29[Comet techniques] to provide a scalable web messaging system, one that can run over HTTP or over other web protocols such as https://en.wikipedia.org/wiki/WebSocket[WebSocket].
 
 [[_concepts_definitions]]
 === Definitions
 
-The _client_ is the entity that initiates a connection, and the _server_ is
-the entity that accepts the connection.
-The connection established is persistent – that is, it remains open until
-either side decides to close it.
+The _client_ is the entity that initiates a connection, and the _server_ is the entity that accepts the connection.
+The connection established is persistent – that is, it remains open until either side decides to close it.
 
-Typical clients are browsers (after all, this is a web environment), but might
-also be other applications such as Java applications, browser plugin applications,
-or scripts in any scripting language.
+Typical clients are browsers (after all, this is a web environment), but might also be other applications such as Java applications, browser plugin applications, or scripts in any scripting language.
 
-Depending on the Comet technique employed, a client might open more than one
-physical connection to the server, but you can assume there exists only one
-logical _conduit_ between one client and the server.
+Depending on the Comet technique employed, a client might open more than one physical connection to the server, but you can assume there exists only one logical _conduit_ between one client and the server.
 
-The CometD project uses the Bayeux protocol (see also xref:_bayeux[the Bayeux protocol section])
-to exchange information between the client and the server.
+The CometD project uses the Bayeux protocol (see also xref:_bayeux[the Bayeux protocol section]) to exchange information between the client and the server.
 The unit of information exchanged is a Bayeux _message_ formatted in https://json.org[JSON].
-A message contains several _fields_, some of which are mandated by the Bayeux protocol,
-and others may be added by applications.
-A field is a key/value pair; saying that a message has a _foo_ field means
-that the message has a field whose key is the string _foo_.
+A message contains several _fields_, some of which are mandated by the Bayeux protocol, and others may be added by applications.
+A field is a key/value pair; saying that a message has a _foo_ field means that the message has a field whose key is the string _foo_.
 
 All messages the client and server exchange have a _channel_ field.
 The channel field provides the characterization of messages in classes.
-The channel is a central concept in CometD: publishers publish messages to channels,
-and subscribers subscribe to channels to receive messages.
+The channel is a central concept in CometD: publishers publish messages to channels, and subscribers subscribe to channels to receive messages.
 This is strongly reflected in the CometD APIs.
 
 [[_concepts_channels]]
 ==== Channel Definitions
 
-A channel is a string that looks like a URL path such as `/foo/bar`,
-`/meta/connect` or `/service/chat`.
+A channel is a string that looks like a URL path such as `/foo/bar`, `/meta/connect` or `/service/chat`.
 
-The Bayeux specification defines three types of channels: _meta channels_,
-_service channels_ and _broadcast channels_.
+The Bayeux specification defines three types of channels: _meta channels_, _service channels_ and _broadcast channels_.
 
-A channel that starts with `/meta/` is a meta channel, a channel that starts with
-`/service/` is a service channel, and all other channels are broadcast channels.
+A channel that starts with `/meta/` is a meta channel, a channel that starts with `/service/` is a service channel, and all other channels are broadcast channels.
 
-A message whose channel field is a meta channel is referred to as a meta message,
-and similarly there are service messages and broadcast messages.
+A message whose channel field is a meta channel is referred to as a meta message, and similarly there are service messages and broadcast messages.
 
-The application creates service channels and broadcast channels; an application
-can create as many as it needs, and can do so at any time.
+The application creates service channels and broadcast channels; an application can create as many as it needs, and can do so at any time.
 
 [[_concepts_channels_meta]]
 ===== Meta Channels
 
-The CometD implementation creates meta channels; applications _cannot_ create new
-meta channels.
-Meta channels provide to applications information about the Bayeux protocol (see
-xref:_concepts_bayeux_protocol[this section]); for example, whether handshakes have
-been successful or not, or whether the connection with the server is broken or
-has been re-established.
+The CometD implementation creates meta channels; applications _cannot_ create new meta channels.
+Meta channels provide to applications information about the Bayeux protocol (see xref:_concepts_bayeux_protocol[this section]); for example, whether handshakes have been successful or not, or whether the connection with the server is broken or has been re-established.
 
 [[_concepts_channels_service]]
 ===== Service Channels
 
-Applications create service channels, which are used in the case of request/response
-style of communication between client and server (as opposed to the publish/subscribe
-style of communication of broadcast channels, see below).
+Applications create service channels, which are used in the case of request/response style of communication between client and server (as opposed to the publish/subscribe style of communication of broadcast channels, see below).
 
 [[_concepts_channels_broadcast]]
 ===== Broadcast Channels
 
-Applications also create broadcast channels, which have the semantic of a messaging
-topic and are used in the case of the publish/subscribe style of communication,
-where one sender wants to broadcast information to multiple recipients.
+Applications also create broadcast channels, which have the semantic of a messaging topic and are used in the case of the publish/subscribe style of communication, where one sender wants to broadcast information to multiple recipients.
 
 [[_concepts_channels_wild]]
 ===== Use of Wildcards in Channels
 
-You can use wildcards to match multiple channels: channel `+/foo/*+` matches `/foo/bar`
-but not `/foo/bar/baz`.
+You can use wildcards to match multiple channels: channel `+/foo/*+` matches `/foo/bar` but not `/foo/bar/baz`.
 The latter is matched by `+/foo/**+`.
-You can use wildcards for any type of channel: `+/meta/*+` matches all meta channels,
-and `+/service/**+` matches `/service/bar` as well as `/service/bar/baz`.
+You can use wildcards for any type of channel: `+/meta/*+` matches all meta channels, and `+/service/**+` matches `/service/bar` as well as `/service/bar/baz`.
 Channel `+/**+` matches all channels.
 
-You can specify the wildcards only as the last segment of the channel, so these are
-invalid channels: `+/**/foo+` or `+/foo/*/bar+`.
+You can specify the wildcards only as the last segment of the channel, so these are invalid channels: `+/**/foo+` or `+/foo/*/bar+`.
 
 [[_concepts_channels_parameters]]
 ===== Use of Parameters in Channels
 
 You can use segment parameters in channels: `/foo/{id}`.
-Channels with segment parameters are also called _template_ channels, because they
-define a template that a real channel may match, with the result of binding
-the template channel parameters to actual values.
-Template channels are used in annotated services, see their usage in
-xref:_java_server_services_annotated_server_side_listener[annotated listeners]
-and xref:_java_server_services_annotated_server_side_subscription[annotated subscribers].
-For example, when `/news/{category}` is bound to the channel `/news/sport`, then
-the parameter `category` will be bound to the string `"sport"`.
+Channels with segment parameters are also called _template_ channels, because they define a template that a real channel may match, with the result of binding the template channel parameters to actual values.
+Template channels are used in annotated services, see their usage in xref:_java_server_services_annotated_server_side_listener[annotated listeners] and xref:_java_server_services_annotated_server_side_subscription[annotated subscribers].
+For example, when `/news/{category}` is bound to the channel `/news/sport`, then the parameter `category` will be bound to the string `"sport"`.
 
-Template channels bound only if their number of segment is the same as the channel
-is it bounded to. For example, for `/news/{category}` then `/news` does not bind
-(too few segments), `/news/sport/athletics` does not bind (too many segments),
-`/other/channel` does not bind (non parameter segments are different), while
-`/news/football` binds the parameter `category` to the string `"football"`.
+Template channels bound only if their number of segment is the same as the channel is it bounded to.
+For example, for `/news/{category}` then `/news` does not bind(too few segments), `/news/sport/athletics` does not bind (too many segments), `/other/channel` does not bind (non parameter segments are different), while `/news/football` binds the parameter `category` to the string `"football"`.
 
-A template channel cannot be also a wildcard channel, so these are invalid channels:
-`+/foo/{id}/*+` or `+/foo/{var}/**+`.
+A template channel cannot be also a wildcard channel, so these are invalid channels: `+/foo/{id}/*+` or `+/foo/{var}/**+`.
 
 [[_concepts_high_level]]
 === The High Level View
 
-CometD implements a web messaging system, in particular a web messaging system based
-on the https://en.wikipedia.org/wiki/Publish/subscribe[publish/subscribe] paradigm.
+CometD implements a web messaging system, in particular a web messaging system based on the https://en.wikipedia.org/wiki/Publish/subscribe[publish/subscribe] paradigm.
 
-In a publish/subscribe messaging system publishers send messages, which are characterized
-in classes.
-Subscribers express their interest in one or more classes of messages, and receive
-only messages that match the interest they have subscribed to.
-Senders, in general, have no idea which or how many recipients receive the messages
-they publish.
+In a publish/subscribe messaging system publishers send messages, which are characterized in classes.
+Subscribers express their interest in one or more classes of messages, and receive only messages that match the interest they have subscribed to.
+Senders, in general, have no idea which or how many recipients receive the messages they publish.
 
 CometD implements the _hub-spoke_ topology.
-In the default configuration, this means that there is one central server (the hub)
-and all clients connect to that server via conduit links (the spokes).
+In the default configuration, this means that there is one central server (the hub) and all clients connect to that server via conduit links (the spokes).
 
 image::hub_spoke.png[]
 
-In CometD, the server receives messages from publishers and, if the message's
-channel is a broadcast channel, re-routes the messages to interested subscribers.
-The CometD server treats meta messages and service messages in a special way; it
-does not re-route them to any subscriber (by default it is forbidden to subscribe
-to meta channels, and it is a no-operation to subscribe to service channels).
+In CometD, the server receives messages from publishers and, if the message's channel is a broadcast channel, re-routes the messages to interested subscribers.
+The CometD server treats meta messages and service messages in a special way; it does not re-route them to any subscriber (by default it is forbidden to subscribe to meta channels, and it is a no-operation to subscribe to service channels).
 
-For example, imagine that `clientAB` subscribes to channels `/A` and `/B`, and
-`clientB` subscribes to channel `/B`.
+For example, imagine that `clientAB` subscribes to channels `/A` and `/B`, and `clientB` subscribes to channel `/B`.
 If a publisher publishes a message on channel `/A`, only `clientAB` receives it.
-On the other hand, if a publisher publishes a message on channel `/B`, both
-`clientAB` and `clientB` receive the message.
-Furthermore, if a publisher publishes a message on channel `/C`, neither
-`clientAB` nor `clientB` receives the message, which ends its journey on the server.
-Re-routing broadcast messages is the default behavior of the server, and it
-does not need any application code to perform the re-routing.
+On the other hand, if a publisher publishes a message on channel `/B`, both `clientAB` and `clientB` receive the message.
+Furthermore, if a publisher publishes a message on channel `/C`, neither `clientAB` nor `clientB` receives the message, which ends its journey on the server.
+Re-routing broadcast messages is the default behavior of the server, and it does not need any application code to perform the re-routing.
 
-Looking from a high level then, you see messages flowing back and forth among
-clients and server through the conduits.
-A single broadcast message might arrive at the server and be re-routed to all
-clients; you can imagine that when it arrives on the server, the message is
-copied and that a copy is sent to each client (although, for efficiency reasons,
-this is not exactly what happens). If the sender also subscribes to the channel
-it published the message to, it receives a copy of the message back.
+Looking from a high level then, you see messages flowing back and forth among clients and server through the conduits.
+A single broadcast message might arrive at the server and be re-routed to all clients; you can imagine that when it arrives on the server, the message is copied and that a copy is sent to each client (although, for efficiency reasons, this is not exactly what happens). If the sender also subscribes to the channel it published the message to, it receives a copy of the message back.
 
 [[_concepts_low_level]]
 === The Lower Level View
 
 The following sections take a deeper look at how the CometD implementation works.
 
-It should be clear by now that CometD, at its heart, is a client/server system
-that communicates via a protocol, the Bayeux protocol.
+It should be clear by now that CometD, at its heart, is a client/server system that communicates via a protocol, the Bayeux protocol.
 
-In the CometD implementation, the https://c2.com/cgi/wiki?HalfObjectPlusProtocol[half-object plus protocol]
-pattern captures the client/server communication: when a half-object on the
-client establishes a communication conduit with the server, its correspondent
-half-object is created on the server, and the two can – logically – communicate.
-CometD uses a variation of this pattern because there is the need to abstract the
-transport that carries messages to and from the server.
-The transport can be based on the HTTP protocol, but in recent CometD versions
-also on the WebSocket protocol (and you can plug in more transports).
+In the CometD implementation, the https://c2.com/cgi/wiki?HalfObjectPlusProtocol[half-object plus protocol] pattern captures the client/server communication: when a half-object on the client establishes a communication conduit with the server, its correspondent half-object is created on the server, and the two can – logically – communicate.
+CometD uses a variation of this pattern because there is the need to abstract the transport that carries messages to and from the server.
+The transport can be based on the HTTP protocol, but in recent CometD versions also on the WebSocket protocol (and you can plug in more transports).
 
-In broad terms, the _client_ is composed of the client half-object and the client
-transport, while the _server_ is a more complex entity that groups server
-half-objects and server transports.
+In broad terms, the _client_ is composed of the client half-object and the client transport, while the _server_ is a more complex entity that groups server half-objects and server transports.
 
 [[_concepts_sessions]]
 ==== Sessions
@@ -188,49 +126,28 @@ image::hopp.png[]
 There are three types of sessions:
 
 * _Client sessions_ – the client half-object on the remote client side.
-  Client sessions are represented by the `org.cometd.CometD` object in JavaScript,
-  and by the `ClientSession` class (but more frequently
-  by its subclass `org.cometd.bayeux.client.BayeuxClient`) in Java.
-  The client creates a client session to establish a Bayeux communication with the
-  server, and this allows the client to publish and receive messages.
+  Client sessions are represented by the `org.cometd.CometD` object in JavaScript, and by the `ClientSession` class (but more frequently by its subclass `org.cometd.bayeux.client.BayeuxClient`) in Java.
+  The client creates a client session to establish a Bayeux communication with the server, and this allows the client to publish and receive messages.
 * _Server sessions_ – the server half-object on the server side.
-  Server sessions are on the server, and are represented by the
-  `org.cometd.bayeux.server.ServerSession` class; they are the counterpart of client
-  sessions.
-  When a client creates a client session, it is not initially associated with a
-  correspondent server session.
-  Only when a client session establishes the Bayeux communication with the server
-  does the server create its correspondent server session, as well as the link
-  between the two half-objects.
+  Server sessions are on the server, and are represented by the `org.cometd.bayeux.server.ServerSession` class; they are the counterpart of client sessions.
+  When a client creates a client session, it is not initially associated with a correspondent server session.
+  Only when a client session establishes the Bayeux communication with the server does the server create its correspondent server session, as well as the link between the two half-objects.
   Each server session has a message queue.
-  Messages publish to a channel and must be delivered to remote client sessions that
-  subscribe to the channel.
-  They are first queued into the server session's message queue, and then delivered
-  to the correspondent client session.
-* _Local sessions_ – the client half-object on the server side, represented by class
-  `org.cometd.bayeux.server.LocalSession`.
+  Messages publish to a channel and must be delivered to remote client sessions that subscribe to the channel.
+  They are first queued into the server session's message queue, and then delivered to the correspondent client session.
+* _Local sessions_ – the client half-object on the server side, represented by class `org.cometd.bayeux.server.LocalSession`.
   Local sessions can be thought of as clients living in the server.
   They do not represent a remote client, but instead a server-side client.
-  Local sessions can subscribe to channels and publish messages like a client session
-  can, but they live on the server.
-  The server only knows about server sessions, and the only way to create a server
-  session is to create its correspondent client session first, and then make it
-  establish the Bayeux communication with the server.
+  Local sessions can subscribe to channels and publish messages like a client session can, but they live on the server.
+  The server only knows about server sessions, and the only way to create a server session is to create its correspondent client session first, and then make it establish the Bayeux communication with the server.
   For this reason, on the server side, there is the additional concept of local session.
-  A local session is a client session that happens to live on the server, and hence
-  is local to the server. +
+  A local session is a client session that happens to live on the server, and hence is local to the server. +
   For example, imagine that a remote client publishes a message every time it changes its state.
   Other remote clients can just subscribe to the channel and receive those state update messages.
-  But what if, upon receiving a remote client state update, you want to perform some
-  activity on the server? Then you need the equivalent of a remote client, but living
-  on the server, and that's what local sessions are. +
+  But what if, upon receiving a remote client state update, you want to perform some activity on the server? Then you need the equivalent of a remote client, but living on the server, and that's what local sessions are. +
   Server-side services are associated with a local session.
-  Upon creation of the server-side service, the local session handshakes and creates
-  the correspondent server session half-object, so that the server can treat client
-  sessions and local sessions in the same way (because it sees them both as server
-  sessions). The server delivers messages sent to a channel to all server sessions
-  that subscribe to that channel, no matter if they are remote client sessions or
-  local sessions. +
+  Upon creation of the server-side service, the local session handshakes and creates the correspondent server session half-object, so that the server can treat client sessions and local sessions in the same way (because it sees them both as server sessions).
+  The server delivers messages sent to a channel to all server sessions that subscribe to that channel, no matter if they are remote client sessions or local sessions. +
   For further information on services, see also xref:_java_server_services[the services section].
 
 [[_concepts_server]]
@@ -241,43 +158,28 @@ The `BayeuxServer` object acts as a:
 
 * Repository for server sessions, see also xref:_concepts_sessions[the concepts sessions section].
 * Repository for _server transports_ – represented by the `org.cometd.bayeux.server.ServerTransport` class.
-  A server transport is a server-side component that handles the details of the communication
-  with the client.
-  There are HTTP server transports as well as a WebSocket server transport, and you can plug
-  in other types as well.
-  Server transports abstract the communication details so that applications can work knowing
-  only Bayeux messages, no matter how they arrive on the server.
+  A server transport is a server-side component that handles the details of the communication with the client.
+  There are HTTP server transports as well as a WebSocket server transport, and you can plug in other types as well.
+  Server transports abstract the communication details so that applications can work knowing only Bayeux messages, no matter how they arrive on the server.
 * Repository for _server channels_ – represented by the `org.cometd.bayeux.server.ServerChannel` class.
   A server channel is the server-side representation of a channel; it can receive and publish Bayeux messages.
 * Repository for _extensions_ – represented by the `org.cometd.bayeux.server.BayeuxServer.Extension` class.
-  Extensions allow applications to interact with the Bayeux protocol by modifying
-  or even deleting or replaying incoming and/or outgoing Bayeux messages. +
+  Extensions allow applications to interact with the Bayeux protocol by modifying or even deleting or replaying incoming and/or outgoing Bayeux messages. +
   For further information about extensions, see also xref:_extensions[the extensions section].
-* Central authorization authority, via an instance of the _security policy_ –
-  represented by the `org.cometd.bayeux.server.SecurityPolicy` class.
-  CometD interrogates the security policy to authorize any sensible operation
-  the server performs, such as handshakes, channel creation, channel subscription
-  and channel publishing.
+* Central authorization authority, via an instance of the _security policy_ -- represented by the `org.cometd.bayeux.server.SecurityPolicy` class.
+  CometD interrogates the security policy to authorize any sensible operation the server performs, such as handshakes, channel creation, channel subscription and channel publishing.
   Applications can provide their own security policy to implement their own authorization logic. +
-  For further information about the security policy, see
-  xref:_java_server_authorization[the authorization section].
-* _Authorizers_ – represented by the `org.cometd.bayeux.server.Authorizer`
-  class allow you to apply more fine-grained authorization policies. +
+  For further information about the security policy, see xref:_java_server_authorization[the authorization section].
+* _Authorizers_ – represented by the `org.cometd.bayeux.server.Authorizer` class allow you to apply more fine-grained authorization policies. +
   For further information on authorizers, see also xref:_java_server_authorizers[the authorizers section].
-* Message processor, by coordinating the work of server transports, extensions
-  and security policy, and by implementing a message flow algorithm (see
-  xref:_concepts_message_processing[the message processing section]) that
-  allows applications to interact with messages and channels to implement
-  their application logic.
+* Message processor, by coordinating the work of server transports, extensions and security policy, and by implementing a message flow algorithm (see xref:_concepts_message_processing[the message processing section]) that allows applications to interact with messages and channels to implement their application logic.
 
 [[_concepts_listeners]]
 ==== Listeners
 
 Applications use _listeners_ to interact with sessions, channels and the server.
-The Java and JavaScript APIs allow applications to register different kinds of
-listeners that receive notifications of the correspondent events.
-You can usefully think of extensions, security policies and authorizers as special
-types of listeners.
+The Java and JavaScript APIs allow applications to register different kinds of listeners that receive notifications of the correspondent events.
+You can usefully think of extensions, security policies and authorizers as special types of listeners.
 The following sections treat them as such.
 
 [[_concepts_listeners_client]]
@@ -285,531 +187,249 @@ The following sections treat them as such.
 
 Examples of client session listeners include the following:
 
-* You can add extensions to a client session to interact with the incoming and
-  outgoing messages that arrive and that the session sends, via
-  `ClientSession.addExtension(ClientSession.Extension)`.
-* A client session is a repository for channels; you can add message listeners
-  to a channel to notify you when a message arrives on that particular channel,
-  via `ClientSession.getChannel(String).addListener(ClientSessionChannel.MessageListener)`.
+* You can add extensions to a client session to interact with the incoming and outgoing messages that arrive and that the session sends, via `ClientSession.addExtension(ClientSession.Extension)`.
+* A client session is a repository for channels; you can add message listeners to a channel to notify you when a message arrives on that particular channel, via `ClientSession.getChannel(String).addListener(ClientSessionChannel.MessageListener)`.
 
 [[_concepts_listeners_server]]
 ===== Servers and Listeners
 
 On the server, the model is similar but much richer.
 
-* You can add extensions to a `BayeuxServer` instance for all messages that
-  flow through the server via `BayeuxServer.addExtension(BayeuxServer.Extension)`.
-* `BayeuxServer` allows you to add listeners that it notifies when channels
-  are created or destroyed via `BayeuxServer.addListener(BayeuxServer.ChannelListener)`,
-  and when server sessions are created or destroyed via
-  `BayeuxServer.addListener(BayeuxServer.SessionListener)`.
-* `ServerChannel` allows you to add authorizers via `ServerChannel.addAuthorizer(Authorizer)`,
-  and listeners that get notified when a message arrives on the channel via
-  `ServerChannel.addListener(ServerChannel.MessageListener)`, or when a client
-  subscribes or unsubscribes to the channel via `ServerChannel.addListener(ServerChannel.SubscriptionListener)`.
-* `ServerSession` allows you to add extensions for messages that flow through
-  the server session via `ServerSession.addExtension(ServerSession.Extension)`.
-* `ServerSession` allows you to add listeners that get notified when the session
-  is removed (for example because the client disconnects, or because the client
-  disappears and therefore the server expires the correspondent server session)
-  via `ServerSession.addListener(ServerSession.RemovedListener)`.
-* `ServerSession` allows you add listeners that can interact with the server
-  session's message queue for example to detect when a message is added to the
-  queue, via `ServerSession.addListener(ServerSession.QueueListener)`, or when
-  the queue is exceed a maximum number of messages, via
-  `ServerSession.addListener(ServerSession.MaxQueueListener)`, or when the queue
-  is ready to be sent via `ServerSession.addListener(ServerSession.DeQueueListener)`.
-* `ServerSession` allows you add listeners that get notified when a message is
-  received by the server session (no matter on which channel) via
-  `ServerSession.addListener(ServerSession.MessageListener)`.
+* You can add extensions to a `BayeuxServer` instance for all messages that flow through the server via `BayeuxServer.addExtension(BayeuxServer.Extension)`.
+* `BayeuxServer` allows you to add listeners that it notifies when channels are created or destroyed via `BayeuxServer.addListener(BayeuxServer.ChannelListener)`, and when server sessions are created or destroyed via `BayeuxServer.addListener(BayeuxServer.SessionListener)`.
+* `ServerChannel` allows you to add authorizers via `ServerChannel.addAuthorizer(Authorizer)`, and listeners that get notified when a message arrives on the channel via `ServerChannel.addListener(ServerChannel.MessageListener)`, or when a client subscribes or unsubscribes to the channel via `ServerChannel.addListener(ServerChannel.SubscriptionListener)`.
+* `ServerSession` allows you to add extensions for messages that flow through the server session via `ServerSession.addExtension(ServerSession.Extension)`.
+* `ServerSession` allows you to add listeners that get notified when the session is removed (for example because the client disconnects, or because the client disappears and therefore the server expires the correspondent server session) via `ServerSession.addListener(ServerSession.RemovedListener)`.
+* `ServerSession` allows you add listeners that can interact with the server session's message queue for example to detect when a message is added to the queue, via `ServerSession.addListener(ServerSession.QueueListener)`, or when the queue is exceed a maximum number of messages, via `ServerSession.addListener(ServerSession.MaxQueueListener)`, or when the queue is ready to be sent via `ServerSession.addListener(ServerSession.DeQueueListener)`.
+* `ServerSession` allows you add listeners that get notified when a message is received by the server session (no matter on which channel) via `ServerSession.addListener(ServerSession.MessageListener)`.
 
 [[_concepts_message_processing]]
 ==== Message Processing
 
 This section describes message processing on both the client and the server.
-Use the following image to understand the detailed components view that make
-up the client and the server.
+Use the following image to understand the detailed components view that make up the client and the server.
 
 image::hopp2.png[]
 
 When a client sends messages, it uses the client-side channel to publish them.
-The client retrieves the client channel from the client session via
-`ClientSession.getChannel(String)`.
-Messages first pass through the extensions, which process messages one by one;
-if one extension denies processing of a message, it is deleted and it is not
-sent to the server.
+The client retrieves the client channel from the client session via `ClientSession.getChannel(String)`.
+Messages first pass through the extensions, which process messages one by one; if one extension denies processing of a message, it is deleted and it is not sent to the server.
 At the end of extension processing, the messages pass to the client transport.
 
-The client transport converts the messages to JSON (for the Java client, this
-is done by a `JSONContext.Client` instance, see also xref:_java_json_api[the JSON section]),
-establishes the conduit with the server transport and then sends the JSON string
-over the conduit, as the payload of a transport-specific envelope (for example,
-an HTTP request or a WebSocket message).
+The client transport converts the messages to JSON (for the Java client, this is done by a `JSONContext.Client` instance, see also xref:_java_json_api[the JSON section]), establishes the conduit with the server transport and then sends the JSON string over the conduit, as the payload of a transport-specific envelope (for example, an HTTP request, or a WebSocket message).
 
 The envelope travels to the server, where the server transport receives it.
-The server transport converts the messages from the JSON format back to message
-objects (through a `JSONContext.Server` instance, see also xref:_java_json_api[the JSON section]),
-then passes them to the `BayeuxServer` instance for processing.
+The server transport converts the messages from the JSON format back to message objects (through a `JSONContext.Server` instance, see also xref:_java_json_api[the JSON section]), then passes them to the `BayeuxServer` instance for processing.
 
 The `BayeuxServer` processes each message in the following steps:
 
-. It invokes `BayeuxServer` extensions (method `incoming()`); if one
-  extension denies processing, a reply is sent to the client indicating that the
-  message has been deleted, and no further processing is performed for the message.
-. It invokes `ServerSession` extensions (method `incoming()`, only if
-  a `ServerSession` for that client exists); if one extension denies processing,
-  a reply is sent to the client indicating that the message has been deleted,
-  and no further processing is performed for the message.
-. It invokes authorization checks for both the security policy and the authorizers;
-  if the authorization is denied, a reply is sent to the client indicating the
-  failure, and no further processing is performed for the message.
-. It invokes server channel listeners; the application adds server channel listeners
-  on the server, and offers the last chance to modify the message before it is
-  eventually sent to all subscribers (if it is a broadcast message). All subscribers
-  see any modification a server channel listener makes to the message, just as
-  if the publisher has sent the message already modified.
-  After the server channel listeners processing, the message is _frozen_ and no
-  further modifications should be made to the message.
-  Applications should not worry about this freezing step, because the API clarifies
-  whether the message is modifiable or not: the API has as a parameter a modifiable
-  message interface or an unmodifiable one to represent the message object.
-  This step is the last processing step for an incoming non-broadcast message, and
-  it therefore ends its journey on the server.
-. If the message is a broadcast message, the message passes through
-  `BayeuxServer` extensions (method `outgoing()`), then for each server
-  session that subscribed to the channel, the message passes through `ServerSession`
-  extensions (method `outgoing()`).
-. If the message is a broadcast message, for each server session that subscribed
-  to the channel, the message passes through `ServerSession` listeners, that have
-  last chance to discard the message for that session; then the server session queue
-  listeners (`QueueMaxedListener` and `QueueListener`) are invoked and finally the
-  message is added to the server session queue for delivery.
-. If the message is a lazy message (see also xref:_java_server_lazy_messages[the lazy messages section]),
-  it is sent on first occasion, otherwise the message is delivered immediately.
-  If the server session onto which the message is queued corresponds to a remote
-  client session, it is assigned a thread to deliver the messages in its queue
-  through the server transport.
-  The server transport drains the server session message queue, converts the
-  messages to JSON and sends them on the conduit as the payloads of transport-specific
-  envelopes (for example, an HTTP response or a WebSocket message). Otherwise,
-  the server session onto which the message is queued corresponds to a local session,
-  and the messages in its queue are delivered directly to the local session.
-. For both broadcast and non-broadcast messages, a reply message is created, passes
-  through `BayeuxServer` extensions and `ServerSession` extensions (method `outgoing()`).
-  It then passes to the server transport, which converts it to JSON
-  through a `JSONContext.Server` instance (see also xref:_java_json_api[the JSON section]),
-  and sends it on the conduit as the payload of a transport-specific envelope (for
-  example, an HTTP response or a WebSocket message).
+. It invokes `BayeuxServer` extensions (method `incoming()`); if one extension denies processing, a reply is sent to the client indicating that the message has been deleted, and no further processing is performed for the message.
+. It invokes `ServerSession` extensions (method `incoming()`, only if a `ServerSession` for that client exists); if one extension denies processing, a reply is sent to the client indicating that the message has been deleted, and no further processing is performed for the message.
+. It invokes authorization checks for both the security policy and the authorizers; if the authorization is denied, a reply is sent to the client indicating the failure, and no further processing is performed for the message.
+. It invokes server channel listeners; the application adds server channel listeners on the server, and offers the last chance to modify the message before it is eventually sent to all subscribers (if it is a broadcast message). All subscribers see any modification a server channel listener makes to the message, just as if the publisher has sent the message already modified. +
+  After the server channel listeners processing, the message is _frozen_ and no further modifications should be made to the message. +
+  Applications should not worry about this freezing step, because the API clarifies whether the message is modifiable or not: the API has as a parameter a modifiable message interface or an unmodifiable one to represent the message object. +
+  This step is the last processing step for an incoming non-broadcast message, and it therefore ends its journey on the server.
+. If the message is a broadcast message, the message passes through `BayeuxServer` extensions (method `outgoing()`), then for each server session that subscribed to the channel, the message passes through `ServerSession` extensions (method `outgoing()`).
+. If the message is a broadcast message, for each server session that subscribed to the channel, the message passes through `ServerSession` listeners, that have last chance to discard the message for that session; then the server session queue listeners (`QueueMaxedListener` and `QueueListener`) are invoked and finally the message is added to the server session queue for delivery.
+. If the message is a lazy message (see also xref:_java_server_lazy_messages[the lazy messages section]), it is sent on first occasion, otherwise the message is delivered immediately. +
+  If the server session onto which the message is queued corresponds to a remote client session, it is assigned a thread to deliver the messages in its queue through the server transport. +
+  The server transport drains the server session message queue, converts the messages to JSON and sends them on the conduit as the payloads of transport-specific envelopes (for example, an HTTP response or a WebSocket message). +
+  Otherwise, the server session onto which the message is queued corresponds to a local session, and the messages in its queue are delivered directly to the local session.
+. For both broadcast and non-broadcast messages, a reply message is created, passes through `BayeuxServer` extensions and `ServerSession` extensions (method `outgoing()`). +
+  It then passes to the server transport, which converts it to JSON through a `JSONContext.Server` instance (see also xref:_java_json_api[the JSON section]), and sends it on the conduit as the payload of a transport-specific envelope (for example, an HTTP response or a WebSocket message).
 . The envelope travels back to the client, where the client transport receives it.
-  The client transport converts the messages from the JSON format back to message
-  objects, for the Java client via a `JSONContext.Client` instance (see also xref:_java_json_api[the JSON section]).
-. Each message then passes through the `ClientSession` extensions (method `incoming()`),
-  and channel listeners and subscribers are notified of the message.
+  The client transport converts the messages from the JSON format back to message objects, for the Java client via a `JSONContext.Client` instance (see also xref:_java_json_api[the JSON section]).
+. Each message then passes through the `ClientSession` extensions (method `incoming()`), and channel listeners and subscribers are notified of the message.
 
 The round trip from client to server back to client is now complete.
 
 [[_concepts_threading]]
 ==== Threading
 
-When Bayeux messages are received by the server, a thread is allocated
-(by the Servlet Container, not by CometD) to process
-the messages, and server-side CometD listeners are invoked in this thread.
-The CometD implementation does not spawn new threads to call server-side
-listeners; in this way the threading model is kept simple and very similar to
-the Servlet threading model.
-Because this is the thread that runs the CometD code, let's call it the
-_CometD thread_.
+When Bayeux messages are received by the server, a thread is allocated (by the Servlet Container, not by CometD) to process the messages, and server-side CometD listeners are invoked in this thread.
+The CometD implementation does not spawn new threads to call server-side listeners; in this way the threading model is kept simple and very similar to the Servlet threading model.
+Because this is the thread that runs the CometD code, let's call it the _CometD thread_.
 
-The CometD implementation also relies on a scheduler to perform periodic or
-delayed tasks.
-The execution of these tasks may invoke server-side CometD listeners, notably
-implementations of `BayeuxServer.SessionListener#sessionRemoved()` and
-`ServerSession.RemovedListener#removed()`.
+The CometD implementation also relies on a scheduler to perform periodic or delayed tasks.
+The execution of these tasks may invoke server-side CometD listeners, notably implementations of `BayeuxServer.SessionListener#sessionRemoved()` and `ServerSession.RemovedListener#removed()`.
 
-This simple threading model implies that if a server-side CometD listener takes a long
-time to process the message and to return control to the implementation, then
-the implementation cannot process the next messages that may arrive, most often
-halting the whole server processing and causing client disconnections.
+This simple threading model implies that if a server-side CometD listener takes a long time to process the message and to return control to the implementation, then the implementation cannot process the next messages that may arrive, most often halting the whole server processing and causing client disconnections.
 
-This is due to the fact that a Bayeux client uses a limited number of connections
-to interact with the server.
-If a message sent to one connection takes a long time to be processed on the
-server, the client may send additional messages on that connection, but those
-will not be processed until the previous message processing ends.
+This is due to the fact that a Bayeux client uses a limited number of connections to interact with the server.
+If a message sent to one connection takes a long time to be processed on the server, the client may send additional messages on that connection, but those will not be processed until the previous message processing ends.
 
-It is therefore very important that if the application knows that a message may
-trigger a time consuming task (for example a database query), it does so in a
-separate thread, with a timeout to avoid to wait too long.
+It is therefore very important that if the application knows that a message may trigger a time consuming task (for example a database query), it does so in a separate thread, with a timeout to avoid to wait too long.
 
-Similarly, if the application must contact an external service to provide
-an answer to the CometD implementation, it must arrange things in a way that
-either the external service is invoked in a separate thread, or invoking the
-external service is itself non-blocking and based on callbacks (or another
-similar mechanism).
-See the xref:_concepts_application_authentication[asynchronous authentication examples]
-below.
+Similarly, if the application must contact an external service to provide an answer to the CometD implementation, it must arrange things in a way that either the external service is invoked in a separate thread, or invoking the external service is itself non-blocking and based on callbacks (or another similar mechanism).
+See the xref:_concepts_application_authentication[asynchronous authentication examples] below.
 
-Services (see also xref:_java_server_services[the java server services section]) are an
-easy way to setup server-side listeners but share the same threading model with
-normal server-side listeners: if they need to perform time consuming tasks, they
-need to do so in a separate thread, for example:
+Services (see also xref:_java_server_services[the java server services section]) are an easy way to setup server-side listeners but share the same threading model with normal server-side listeners: if they need to perform time consuming tasks, they need to do so in a separate thread, for example:
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-@Service
-public class MyService {
-    @Inject
-    private BayeuxServer bayeuxServer;
-    @Session
-    private LocalSession localSession;
-
-    @Listener("/service/query")
-    public void processQuery(final ServerSession remoteSession, final ServerMessage message) {
-        new Thread(() -> {
-            Map<String, Object> data = performTimeConsumingTask(message);
-
-            // Send data to client once the time consuming task is finished
-            remoteSession.deliver(localSession, message.getChannel(), responseData, Promise.noop());
-        }).start();
-    }
-}
+include::{doc_code}/ConceptsDocs.java[tags=threading]
 ----
-====
 
 [[_concepts_application]]
 ==== Application Interaction
 
-Now that you know that applications interact with CometD through listeners, and
-how both the client and the server process messages, you need to know what an
-application should do to interact with messages to perform its business logic.
+Now that you know that applications interact with CometD through listeners, and how both the client and the server process messages, you need to know what an application should do to interact with messages to perform its business logic.
 
 [[_concepts_application_authentication]]
 ===== Server-side Authentication
 
-For an application to interact with authentication, it must register a custom
-instance of a `SecurityPolicy` and override method `SecurityPolicy.canHandshake(...)`.
-The `SecurityPolicy` can customize the handshake reply (for example, to give
-details about an authentication failure) by retrieving the handshake reply from
-the handshake request:
+For an application to interact with authentication, it must register a custom instance of a `SecurityPolicy` and override method `SecurityPolicy.canHandshake(...)`.
+The `SecurityPolicy` can customize the handshake reply (for example, to give details about an authentication failure) by retrieving the handshake reply from the handshake request:
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-public class MySecurityPolicy extends DefaultSecurityPolicy {
-    public void canHandshake(BayeuxServer server, ServerSession session, ServerMessage message, Promise<Boolean> promise) {
-        boolean authenticated = authenticate(session, message);
-
-        if (!authenticated) {
-            ServerMessage.Mutable reply = message.getAssociated();
-            // Here you can customize the reply
-        }
-
-        promise.succeed(authenticated);
-    }
-}
+include::{doc_code}/ConceptsDocs.java[tags=policy]
 ----
-====
 
 If the authentication process takes a long time, it can be moved to a different
 thread to avoid blocking the CometD thread, here using
 `CompletableFuture.supplyAsync(...)`:
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-public class MySecurityPolicy extends DefaultSecurityPolicy {
-    public void canHandshake(BayeuxServer server, ServerSession session, ServerMessage message, Promise<Boolean> promise) {
-        CompletableFuture.supplyAsync(() -> authenticate(session, message))
-                .whenComplete(promise.complete());
-    }
-}
+include::{doc_code}/ConceptsDocs.java[tags=asyncPolicy]
 ----
-====
 
 The authentication process may be non-blocking and therefore there is no
 need for additional threads, here using Jetty's `HttpClient`:
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-public class MySecurityPolicy extends DefaultSecurityPolicy {
-    private final HttpClient httpClient;
-
-    public MySecurityPolicy(HttpClient httpClient) {
-        this.httpClient = httpClient;
-    }
-
-    @Override
-    public void canHandshake(BayeuxServer server, ServerSession session, ServerMessage message, Promise<Boolean> promise) {
-        httpClient.newRequest("https://authHost")
-                .param("user", message.get("user"))
-                .send(result -> {
-                    if (result.isSucceeded()) {
-                        if (result.getResponse().getStatus() == 200) {
-                            promise.succeed(true);
-                        } else {
-                            ServerMessage.Mutable reply = message.getAssociated();
-                            // Here you can customize the handshake reply to
-                            // specify why the authentication was unsuccessful.
-
-                            promise.succeed(false);
-                        }
-                    } else {
-                        promise.fail(result.getFailure());
-                    }
-                });
-    }
-}
+include::{doc_code}/ConceptsDocs.java[tags=httpPolicy]
 ----
-====
 
 [[_concepts_application_unicast_messages]]
 ===== Interacting with Meta and Service Messages
 
 Meta messages and service messages end their journey on the server.
-An application can only interact with these kinds of messages via server channel
-listeners, and therefore must use such listeners to perform its business logic.
+An application can only interact with these kinds of messages via server channel listeners, and therefore must use such listeners to perform its business logic.
 
 You can add server channel listeners in the following ways:
 
-* Directly via the API at initialization time (see
-  xref:_java_server_services_integration[the services integration section]).
-* Indirectly by using inherited services (see
-  xref:_java_server_services_inherited[the inherited services section]).
-  You accomplish this by calling `AbstractService.addService(...)`
-  or via annotated services (see
-  xref:_java_server_services_annotated[the annotated services section]) using
-  `@Listener` annotations.
+* Directly via the API at initialization time (see xref:_java_server_services_integration[the services integration section]).
+* Indirectly by using inherited services (see xref:_java_server_services_inherited[the inherited services section]). +
+  You accomplish this by calling `AbstractService.addService(...)` or via annotated services (see xref:_java_server_services_annotated[the annotated services section]) using `@Listener` annotations.
 
 [IMPORTANT]
 ====
-Applications that need to perform time consuming tasks in server-side listeners
-should do so in a separate thread to avoid blocking the processing of other
-incoming messages (see also xref:_concepts_threading[the threading section]).
+Applications that need to perform time consuming tasks in server-side listeners should do so in a separate thread to avoid blocking the processing of other incoming messages (see also xref:_concepts_threading[the threading section]).
 ====
 
 [[_concepts_application_broadcast_messages]]
 ===== Interacting with Broadcast Messages
 
-Broadcast messages arrive to the server and are delivered to all `ServerSessions`
-that subscribe to the message's channel.
-Applications can interact with broadcast messages via server channel listeners
-(in the same way as with non-broadcast messages, see above), or by using a
-`LocalSession` that subscribes to the message's channel.
-You can use this latter solution directly via the API at initialization time (see
-xref:_java_server_services_integration[the services integration section]), or
-indirectly via annotated services (see
-xref:_java_server_services_inherited[the inherited services section]) using
-`@Subscription` annotations.
+Broadcast messages arrive to the server and are delivered to all `ServerSessions` that subscribe to the message's channel.
+Applications can interact with broadcast messages via server channel listeners (in the same way as with non-broadcast messages, see above), or by using a `LocalSession` that subscribes to the message's channel.
+You can use this latter solution directly via the API at initialization time (see xref:_java_server_services_integration[the services integration section]), or indirectly via annotated services (see xref:_java_server_services_inherited[the inherited services section]) using `@Subscription` annotations.
 
 [IMPORTANT]
 ====
-Applications that need to perform time consuming tasks in server-side listeners
-should do so in a separate thread to avoid blocking the processing of other
-incoming messages (see also xref:_concepts_threading[the threading section]).
+Applications that need to perform time consuming tasks in server-side listeners should do so in a separate thread to avoid blocking the processing of other incoming messages (see also xref:_concepts_threading[the threading section]).
 ====
 
 [[_concepts_application_peer_communication]]
 ===== Communicating with a Specific Remote Client
 
-Applications that want to deliver messages to a specific client can do so by
-looking up its correspondent server session and delivering the message using
-`ServerSession.deliver(...)`.
+Applications that want to deliver messages to a specific client can do so by looking up its correspondent server session and delivering the message using `ServerSession.deliver(...)`.
 
-For example, remote client `client1` wants to send a message to another remote
-client `client2`. Both clients are already connected and therefore have already
-performed the handshake with the server.
-Their handshake contained additional information regarding their `userId`, so
-that `client1` declared to be "Bob" and `client2` declared to be "Alice".
-The application could have used a `SecurityPolicy` or a
-`BayeuxServer.SessionListener` to perform a mapping between the `userId`
-and the server session's id, like explained in
-xref:_java_server_authentication[the authentication section].
+For example, remote client `client1` wants to send a message to another remote client `client2`. Both clients are already connected and therefore have already performed the handshake with the server.
+Their handshake contained additional information regarding their `userId`, so that `client1` declared to be "Bob" and `client2` declared to be "Alice".
+The application could have used a `SecurityPolicy` or a `BayeuxServer.SessionListener` to perform a mapping between the `userId` and the server session's id, like explained in xref:_java_server_authentication[the authentication section].
 
 Now Bob wants to send a private message only to Alice.
 
-The `client1` can use a service channel for private messages (such as
-`/service/private`), so that messages are not broadcast, and the application is
-set up so that a server channel listener routes messages arriving to
-`/service/private` to the other remote client.
+The `client1` can use a service channel for private messages (such as `/service/private`), so that messages are not broadcast, and the application is set up so that a server channel listener routes messages arriving to `/service/private` to the other remote client.
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-@Service
-public class PrivateMessageService {
-    @Session
-    private ServerSession session;
-
-    @Listener("/service/private")
-    public void handlePrivateMessage(ServerSession sender, ServerMessage message) {
-        // Retrieve the userId from the message
-        String userId = message.get("targetUserId");
-
-        // Use the mapping established during handshake to
-        // retrieve the ServerSession for a given userId
-        ServerSession recipient = findServerSessionFromUserId(userId);
-
-        // Deliver the message to the other peer
-        recipient.deliver(session, message.getChannel(), message.getData(), Promise.noop());
-    }
-}
+include::{doc_code}/ConceptsDocs.java[tags=privateMessage]
 ----
-====
 
 [[_concepts_application_broadcast_communication]]
 ===== Server-side Message Broadcasting
 
-Applications might need to broadcast messages on a particular channel in
-response to an external event.
-Since `BayeuxServer` is the repository for server channels, the external
-event handler just needs a reference to `BayeuxServer` to broadcast messages:
+Applications might need to broadcast messages on a particular channel in response to an external event.
+Since `BayeuxServer` is the repository for server channels, the external event handler just needs a reference to `BayeuxServer` to broadcast messages:
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-public class ExternalEventBroadcaster {
-    private final BayeuxServer bayeuxServer;
-
-    public ExternalEventBroadcaster(BayeuxServer bayeuxServer) {
-        this.bayeuxServer = bayeuxServer;
-
-        // Create a local session that will act as the "sender"
-        this.session = bayeuxServer.newLocalSession("external");
-        this.session.handshake();
-    }
-
-    public void onExternalEvent(ExternalEvent event) {
-        // Retrieve the channel to broadcast to, for example
-        // based on the "type" property of the external event
-        ServerChannel channel = this.bayeuxServer.getChannel("/events/" + event.getType());
-        if (channel != null) {
-            // Create the data to broadcast by converting the external event
-            Map<String, Object> data = convertExternalEvent(event);
-
-            // Broadcast the data
-            channel.publish(this.session, data, Promise.noop());
-        }
-    }
-}
+include::{doc_code}/ConceptsDocs.java[tags=broadcaster]
 ----
-====
 
 [[_concepts_bayeux_protocol]]
 ==== Bayeux Protocol
 
 A client communicates with the server by exchanging Bayeux messages.
 
-The Bayeux protocol requires that the first message a new client sends be a
-_handshake_ message (a message sent on `/meta/handshake` channel). On the
-server, if the processing of the incoming handshake message is successful,
-`BayeuxServer` creates the server-side half-object instance (`ServerSession`)
-that represents the client that initiated the handshake.
-When the processing of the handshake completes, the server sends back a
-handshake reply to the client.
+The Bayeux protocol requires that the first message a new client sends be a _handshake_ message (a message sent on `/meta/handshake` channel).
+On the server, if the processing of the incoming handshake message is successful,`BayeuxServer` creates the server-side half-object instance (`ServerSession`) that represents the client that initiated the handshake.
+When the processing of the handshake completes, the server sends back a handshake reply to the client.
 
-The client processes the handshake reply, and if it is successful, starts –
-under the covers – a heartbeat mechanism with the server, by exchanging _connect_
-messages (a message sent on a `/meta/connect` channel). The details of this
-heartbeat mechanism depend on the client transport used, but can be seen as
-the client sending a connect message and expecting a reply after some time
-(when using HTTP transports, the heartbeat mechanism is also known as _long-polling_).
-The heartbeat mechanism allows a client to detect if the server is gone (the
-client does not receive the connect message reply from the server), and allows
-the server to detect if the client is gone (the server does not receive the
-connect message request from the client).
+The client processes the handshake reply, and if it is successful, starts -- under the covers -- a heartbeat mechanism with the server, by exchanging _connect_ messages (a message sent on a `/meta/connect` channel).
+The details of this heartbeat mechanism depend on the client transport used, but can be seen as the client sending a connect message and expecting a reply after some time (when using HTTP transports, the heartbeat mechanism is also known as _long-polling_).
+The heartbeat mechanism allows a client to detect if the server is gone (the client does not receive the connect message reply from the server), and allows the server to detect if the client is gone (the server does not receive the connect message request from the client).
 
-Connect messages continue to flow between client and server until either side
-decides to disconnect by sending a _disconnect_ message (a message sent on the
-`/meta/disconnect` channel).
+Connect messages continue to flow between client and server until either side decides to disconnect by sending a _disconnect_ message (a message sent on the `/meta/disconnect` channel).
 
-While connected to the server, a client can subscribe to channels by sending a
-_subscribe_ message (a message sent on a `/meta/subscribe` channel). Likewise,
-a client can unsubscribe from a channel by sending an _unsubscribe_ message
-(a message sent on a `/meta/unsubscribe` channel). A client can publish messages
-containing application-specific data at any time while it is connected, and to
-any broadcast channel (even if it is not subscribed to that channel).
+While connected to the server, a client can subscribe to channels by sending a _subscribe_ message (a message sent on a `/meta/subscribe` channel).
+Likewise, a client can unsubscribe from a channel by sending an _unsubscribe_ message (a message sent on a `/meta/unsubscribe` channel).
+A client can publish messages containing application-specific data at any time while it is connected, and to any broadcast channel (even if it is not subscribed to that channel).
 
 [[_concepts_binary_data]]
 ==== Binary Data
 
-The xref:_bayeux[Bayeux protocol] message format is the JSON format, because the
-Bayeux protocol was designed when JavaScript did not have binary data types.
+The xref:_bayeux[Bayeux protocol] message format is the JSON format, because the Bayeux protocol was designed when JavaScript did not have binary data types.
 
-Recent versions of JavaScript have
-https://developer.mozilla.org/en-US/docs/Web/JavaScript/Typed_arrays[typed arrays]
-that can be used to represent raw binary data such as files or images.
-A typical example of a JavaScript typed array is `Uint8Array` that represents
-an array of unsigned, 8-bit, integers.
-In turn, typed arrays are based on the lower level `ArrayBuffer` and `DataView`
-types.
+Recent versions of JavaScript have https://developer.mozilla.org/en-US/docs/Web/JavaScript/Typed_arrays[typed arrays] that can be used to represent raw binary data such as files or images.
+A typical example of a JavaScript typed array is `Uint8Array` that represents an array of unsigned, 8-bit, integers.
+In turn, typed arrays are based on the lower level `ArrayBuffer` and `DataView` types.
 
-The JavaScript Web APIs have been enriched to use `ArrayBuffer` or higher level
-typed arrays such as `Uint8Array`. In this way, applications can now read the
-content of a file via JavaScript APIs such as `FileReader.readAsArrayBuffer()`
-or use `XMLHttpRequest` to send and receive data as `ArrayBuffer`.
+The JavaScript Web APIs have been enriched to use `ArrayBuffer` or higher level typed arrays such as `Uint8Array`. In this way, applications can now read the content of a file via JavaScript APIs such as `FileReader.readAsArrayBuffer()` or use `XMLHttpRequest` to send and receive data as `ArrayBuffer`.
 
 Java, of course, always had binary types in the form of `byte[]` and `ByteBuffer`.
 
-Since Bayeux messages can only carry data in textual representation,
-the CometD libraries support upload and download of binary data by converting
-the binary data represented by JavaScript's `ArrayBuffer` or Java's `byte[]`
-into a textual format using the https://rfc.zeromq.org/spec:32/Z85/[Z85]
-encoding/decoding and by using a specific format for the `data` field of a message.
+Since Bayeux messages can only carry data in textual representation, the CometD libraries support upload and download of binary data by converting the binary data represented by JavaScript's `ArrayBuffer` or Java's `byte[]` into a textual format using the https://rfc.zeromq.org/spec:32/Z85/[Z85] encoding/decoding and by using a specific format for the `data` field of a message.
 
-The encoding/decoding to/from the binary representation is performed by
-CometD extensions on both the client and the server, see
-xref:_extensions_binary[the binary extension section].
+The encoding/decoding to/from the binary representation is performed by CometD extensions on both the client and the server, see xref:_extensions_binary[the binary extension section].
 
-When transporting binary data, the format of the `data` field of a message is
-a specific one, represented by the `org.cometd.bayeux.BinaryData` class in Java
-and by an equivalent structure in JavaScript, that is an object with the following
-fields:
+When transporting binary data, the format of the `data` field of a message is a specific one, represented by the `org.cometd.bayeux.BinaryData` class in Java and by an equivalent structure in JavaScript, that is an object with the following fields:
 
 * The `data` field, carrying the binary representation of the data.
-* The `last` field, that tells whether the `data` field is the last chunk
-  of binary data.
-* An optional `meta` field, carrying related additional metadata such as a file
-  name, an image name, the MIME type of the binary representation (for example,
-  `image/png`), etc.
+* The `last` field, that tells whether the `data` field is the last chunk of binary data.
+* An optional `meta` field, carrying related additional metadata such as a file name, an image name, the MIME type of the binary representation (for example, `image/png`), etc.
 
-A complete binary message therefore looks like this, in JSON format, _after_
-the Z85 encoding:
+A complete binary message therefore looks like this, in JSON format, _after_ the Z85 encoding:
 
-====
-[source,json]
+[source,json,subs=verbatim]
 ----
 {
-    "id": "123456",
-    "channel": "/binary",
-    "clientId": "Un1q31d3nt1f13r",
-    "data": {
-        "data": "HelloWorld", /* Z85 encoded binary data */
-        "last": true,
-        "meta": {
-            "content-type": "image/png"
-        }
-    },
-    "ext": {
-        "binary": {
-        }
+  "id": "123456",
+  "channel": "/binary",
+  "clientId": "Un1q31d3nt1f13r",
+  "data": {
+    "data": "HelloWorld", <1>
+    "last": true,
+    "meta": {
+      "content-type": "image/png"
     }
+  },
+  "ext": {
+    "binary": {
+    }
+  }
 }
 ----
-====
+<1> Z85 encoded string for bytes `[0x86, 0x4F, 0xD2, 0x6F, 0xB5, 0x59, 0xF7, 0x5B]`
 
-Applications do not need to worry about the specific message format above
-because CometD offers APIs that simplify the creation of messages
-with binary data, for example see xref:_javascript_publish_binary[how to publish
-binary data from JavaScript], xref:_java_client_send_binary[how to publish
-binary data from Java] and
-xref:_java_server_services_annotated_server_side_binary[the binary services section].
-The CometD implementation takes care of producing the right message
-format under the covers.
+Applications do not need to worry about the specific message format above because CometD offers APIs that simplify the creation of messages with binary data, for example see xref:_javascript_publish_binary[how to publish binary data from JavaScript], xref:_java_client_send_binary[how to publish binary data from Java] and xref:_java_server_services_annotated_server_side_binary[the binary services section].
+The CometD implementation takes care of producing the right message format under the covers.
 
-JavaScript applications can use `ArrayBuffer`, `DataView` or any typed array
-object as the binary representation.
+JavaScript applications can use `ArrayBuffer`, `DataView` or any typed array object as the binary representation.
 
-Java applications (either client or server) must use the `org.cometd.bayeux.BinaryData`
-object as the binary representation.
+Java applications (either client or server) must use the `org.cometd.bayeux.BinaryData` object as the binary representation.

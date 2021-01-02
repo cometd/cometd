@@ -2,209 +2,128 @@
 [[_extensions_acknowledge]]
 === Message Acknowledgment Extension
 
-By default, CometD does not enforce a strict order on server-to-client message
-delivery, nor it provides the guarantee that messages sent by the server are
-received by the clients.
+By default, CometD does not enforce a strict order on server-to-client message delivery, nor it provides the guarantee that messages sent by the server are received by the clients.
 
-The _message acknowledgment_ extension provides message ordering and message
-reliability to the Bayeux protocol for messages sent from server to client.
+The _message acknowledgment_ extension provides message ordering and message reliability to the Bayeux protocol for messages sent from server to client.
 This extension requires both a client-side extension and a server-side extension.
 The server-side extension is available in Java.
-If you are interested only in message ordering (and not reliability), see also
-xref:_extensions_acknowledge_ordering[the ordering section].
+If you are interested only in message ordering (and not reliability), see also xref:_extensions_acknowledge_ordering[the ordering section].
 
 ==== Enabling the Server-side Message Acknowledgment Extension
 
-To enable support for acknowledged messages, you must add the extension to the
-`org.cometd.bayeux.server.BayeuxServer` instance during initialization:
+To enable support for acknowledged messages, you must add the extension to the `org.cometd.bayeux.server.BayeuxServer` instance during initialization:
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-bayeuxServer.addExtension(new org.cometd.server.ext.AcknowledgedMessagesExtension());
+include::{doc_code}/ExtensionsDocs.java[tags=ack]
 ----
-====
 
-The `AcknowledgedMessageExtension` is a per-server extension that monitors
-handshakes from new remote clients, looking for those that also support the
-acknowledged message extension, and then adds the `AcknowledgedMessagesClientExtension`
-to the `ServerSession` correspondent to the remote client, during the handshake processing.
+The `AcknowledgedMessagesExtension` is a per-server extension that monitors handshakes from new remote clients, looking for those that also support the acknowledged message extension, and then adds the `AcknowledgedMessagesSessionExtension` to the `ServerSession` correspondent to the remote client, during the handshake processing.
 
-Once added to a `ServerSession`, the `AcknowledgedMessagesClientExtension`
-guarantees ordered delivery of messages, and resend of unacknowledged
-messages, from server to client.
-The extension also maintains a list of unacknowledged messages and
-intercepts the traffic on the `/meta/connect` channel to insert and check
-acknowledge IDs.
+Once added to a `ServerSession`, the `AcknowledgedMessagesSessionExtension` guarantees ordered delivery of messages, and resend of unacknowledged messages, from server to client.
+The extension also maintains a list of unacknowledged messages and intercepts the traffic on the `/meta/connect` channel to insert and check acknowledge IDs.
 
 ==== Enabling the Client-side Message Acknowledgment Extension
 
-The `dojox/cometd/ack.js` provides the client-side extension binding for Dojo,
-and it is sufficient to use Dojo's `require()` mechanism:
+The `dojox/cometd/ack.js` provides the client-side extension binding for Dojo, and it is sufficient to use Dojo's `require()` mechanism:
 
-====
 [source,javascript]
 ----
 require(["dojox/cometd", "dojox/cometd/ack"], function(cometd) {
     ...
 });
 ----
-====
 
 The example above is valid also when using the `require()` syntax with jQuery.
 
 The file `jquery.cometd-ack.js` provides the client-side extension binding for jQuery.
-When you are not using the `require()` syntax, you must include the
-implementation file and the jQuery extension binding
-in the HTML page via the `<script>` tag:
+When you are not using the `require()` syntax, you must include the implementation file and the jQuery extension binding in the HTML page via the `<script>` tag:
 
-====
-[source,javascript]
+[source,html]
 ----
 <script type="text/javascript" src="AckExtension.js"></script>
 <script type="text/javascript" src="jquery.cometd-ack.js"></script>
 ----
-====
 
-In both Dojo and jQuery extension bindings, the extension is registered on
-the default `cometd` object under the name "ack".
+In both Dojo and jQuery extension bindings, the extension is registered on the default `cometd` object under the name "ack".
 
-Furthermore, you can programmatically disable/enable the extension before
-initialization by setting the `ackEnabled` boolean field on the `cometd` object:
+Furthermore, you can programmatically disable/enable the extension before initialization by setting the `ackEnabled` boolean field on the `cometd` object:
 
-====
 [source,javascript]
 ----
 // Disables the ack extension during handshake
 cometd.ackEnabled = false;
 cometd.init(cometdURL);
 ----
-====
 
 [[_extensions_acknowledge_details]]
 ==== Acknowledge Extension Details
 
-To enable message acknowledgement, both client and server must indicate that
-they support message acknowledgement.
+To enable message acknowledgement, both client and server must indicate that they support message acknowledgement.
 This is negotiated during handshake.
-On handshake, the client sends `{"ext":{"ack": "true"}}` to indicate that it
-supports message acknowledgement.
-If the server also supports message acknowledgement, it likewise replies with
-`{"ext":{"ack": "true"}}`.
+On handshake, the client sends `{"ext":{"ack": true}}` to indicate that it supports message acknowledgement.
+If the server also supports message acknowledgement, it likewise replies with `{"ext":{"ack": true}}`.
 
-The extension does not insert ack IDs in every message, as this would impose
-a significant burden on the server for messages sent to multiple clients
-(which would need to be reserialized to JSON for each client). Instead the
-ack ID is inserted in the `ext` field of the `/meta/connect` messages that
-are associated with message delivery.
-Each `/meta/connect` request contains the ack ID of the last received ack
-response: `"ext":{"ack": 42}`.
-Similarly, each `/meta/connect` response contains an ext ack ID that uniquely
-identifies the batch of responses sent.
+The extension does not insert ack IDs in every message, as this would impose a significant burden on the server for messages sent to multiple clients (which would need to be reserialized to JSON for each client).
+Instead the ack ID is inserted in the `ext` field of the `/meta/connect` messages that are associated with message delivery.
+Each `/meta/connect` request contains the ack ID of the last received ack response: `"ext":{"ack": 42}`.
+Similarly, each `/meta/connect` response contains an ext ack ID that uniquely identifies the batch of responses sent.
 
-If a `/meta/connect` message is received with an ack ID lower that any
-unacknowledged messages held by the extension, then these messages are
-requeued prior to any more recently queued messages and the `/meta/connect`
-response sent with a new ack ID.
+If a `/meta/connect` message is received with an ack ID lower that any unacknowledged messages held by the extension, then these messages are re-queued prior to any more recently queued messages and the `/meta/connect` response sent with a new ack ID.
 
-It is important to note that message acknowledgement is guaranteed from
-server to client only, and not from client to server.
-This means that the ack extension guarantees that messages sent by the
-server to the clients will be resent in case of temporary network failures
-that produce loss of messages.
-It does not guarantee however, that messages sent by the client will reach
-the server.
+It is important to note that message acknowledgement is guaranteed from server to client only, and not from client to server.
+This means that the ack extension guarantees that messages sent by the server to the clients will be resent in case of temporary network failures that produce loss of messages.
+It does not guarantee however, that messages sent by the client will reach the server.
 
 [[_extensions_acknowledge_ordering]]
 ==== Message Ordering
 
 Message ordering is not enforced by default by CometD.
-A CometD server has two ways to deliver the messages present in the
-`ServerSession` queue to its correspondent remote client:
+A CometD server has two ways to deliver the messages present in the `ServerSession` queue to its correspondent remote client:
 
 * through `/meta/connect` responses
 * through direct responses
 
-Delivery through a `/meta/connect` response means that the server will
-deliver the messages present in the `ServerSession` queue along with a
-`/meta/connect` response, so that the messages delivered to the remote
-client are: `[{/meta/connect response message}, {queued message 1}, {queued message 2}, ...]`.
+Delivery through a `/meta/connect` response means that the server will deliver the messages present in the `ServerSession` queue along with a `/meta/connect` response, so that the messages delivered to the remote client are: `[{/meta/connect response message}, {queued message 1}, {queued message 2}, ...]`.
 
 Direct delivery depends on the transport.
 
-For polling transports it means that the server will deliver the messages
-present in the `ServerSession` queue along with some other response message
-that is being processed in that moment.
-For example, let's assume that `clientA` is already subscribed to channel
-`/foo`, and that it wants to subscribe also to channel `/bar`.
-Then `clientA` sends a subscription request for channel `/bar` to the server,
-and just before processing the subscription request for channel`/bar`, the
-server receives a message on channel `/foo`, that therefore needs to be
-delivered to `clientA` (for example, `clientB` published a message to channel
-`/foo`, or an external system produced a message on channel `/foo`). The message
-on channel `/foo` gets queued on `clientA`'s `ServerSession`.
-However, the server notices that it has to reply to subscription request for
-`/bar`, so it includes the message on channel `/foo` in that response, thus
-avoiding to wake up the `/meta/connect`, so that the messages delivered to the
-remote client are: `[{subscription response message for /bar}, {queued message on /foo}]`.
+For polling transports it means that the server will deliver the messages present in the `ServerSession` queue along with some other response message that is being processed in that moment.
+For example, let's assume that `clientA` is already subscribed to channel `/foo`, and that it wants to subscribe also to channel `/bar`.
+Then `clientA` sends a subscription request for channel `/bar` to the server, and just before processing the subscription request for channel`/bar`, the server receives a message on channel `/foo`, that therefore needs to be delivered to `clientA` (for example, `clientB` published a message to channel `/foo`, or an external system produced a message on channel `/foo`).
+The message on channel `/foo` gets queued on `clientA`'s `ServerSession`.
+However, the server notices that it has to reply to subscription request for `/bar`, so it includes the message on channel `/foo` in that response, thus avoiding to wake up the `/meta/connect`, so that the messages delivered to the remote client are: `[{subscription response message for /bar}, {queued message on /foo}]`.
 
-For non-polling transports such as `websocket` the server will just deliver
-the messages present in the `ServerSession` queue without waking up the
-`/meta/connect`, because non-polling transports have a way to send
-server-to-client messages without the need to have a pending response onto
-which the `ServerSession`'s queued messages are piggybacked.
+For non-polling transports such as `websocket` the server will just deliver the messages present in the `ServerSession` queue without waking up the `/meta/connect`, because non-polling transports have a way to send server-to-client messages without the need to have a pending response onto which the `ServerSession`'s queued messages are piggybacked.
 
-These two ways of delivering messages compete each other to deliver messages
-with the smallest latency.
-Therefore it is possible that a server receives from an external system two
-messages to be delivered for the same client, say `message1` first and then
-`message2`; `message1` is queued and immediately dequeued by a direct delivery,
-while `message2` is queued and then dequeued by a `/meta/connect` delivery.
-The client may see `message2` arriving before `message1`, for example because
-the thread scheduling on the server favored `message2`'s processing or because
-the TCP communication for `message1` was somehow slowed down (not to mention
-that browsers could as well be source of uncertainty).
+These two ways of delivering messages compete each other to deliver messages with the smallest latency.
+Therefore it is possible that a server receives from an external system two messages to be delivered for the same client, say `message1` first and then `message2`; `message1` is queued and immediately dequeued by a direct delivery, while `message2` is queued and then dequeued by a `/meta/connect` delivery.
+The client may see `message2` arriving before `message1`, for example because the thread scheduling on the server favored `message2`'s processing or because the TCP communication for `message1` was somehow slowed down (not to mention that browsers could as well be source of uncertainty).
 
-To enable just server-to-client message ordering (but not reliability), you
-need to configure the server with the `metaConnectDeliverOnly` parameter, as
-explained in xref:_java_server_configuration[the java server configuration section].
+To enable just server-to-client message ordering (but not reliability), you need to configure the server with the `metaConnectDeliverOnly` parameter, as explained in xref:_java_server_configuration[the java server configuration section].
 
-When server-to-client message ordering is enabled, all messages will be
-delivered through `meta/connect` responses.
-In the example above, `message1` will be delivered to the client, and
-`message2` will wait on the server until another `meta/connect` is issued by
-the client (which happens immediately after `message1` has been received by
-the client). When the server receives the second `meta/connect` request, it
-will respond to it immediately and deliver `message2` to the client.
+When server-to-client message ordering is enabled, all messages will be delivered through `meta/connect` responses.
+In the example above, `message1` will be delivered to the client, and `message2` will wait on the server until another `meta/connect` is issued by the client (which happens immediately after `message1` has been received by the client).
+When the server receives the second `meta/connect` request, it will respond to it immediately and deliver `message2` to the client.
 
-It is clear that server-to-client message ordering comes at the small price
-of slightly increased latencies (`message2` has to wait the next `meta/connect`
-before being delivered), and slightly more activity for the server (since
-`meta/connect` will be resumed more frequently than normal).
+It is clear that server-to-client message ordering comes at the small price of slightly increased latencies (`message2` has to wait the next `meta/connect` before being delivered), and slightly more activity for the server (since `meta/connect` will be resumed more frequently than normal).
 
 ==== Demo
 
-There is an example of acknowledged messages in the Dojo chat demo that comes
-bundled with the CometD distribution, and instruction on how to run the CometD
-demos in xref:_installation_demos[the installation demos section].
+There is an example of acknowledged messages in the Dojo chat demo that comes bundled with the CometD distribution, and instruction on how to run the CometD demos in xref:_installation_demos[the installation demos section].
 
 To run the acknowledgement demo, follow these steps:
 
 . Start CometD
 +
-====
 [source]
 ----
 $ cd cometd-demo
 $ mvn jetty:run
 ----
-====
-. Point your browser to http://localhost:8080/dojo-examples/chat/ and make
+. Point your browser to `+http://localhost:8080/dojo-examples/chat/+` and make
   sure to check _Enable reliable messaging_
-. Use two different browser instances to begin a chat session, then briefly
-  disconnect one browser from the network
-. While one browser is disconnected, type some chat in the other browser,
-  which is received when the disconnected browser reconnects to the network.
+. Use two different browser instances to begin a chat session, then briefly disconnect one browser from the network
+. While one browser is disconnected, type some chat in the other browser, which is received when the disconnected browser reconnects to the network.
 
-Notice that if the disconnected browser is disconnected in excess of `maxInterval`
-(default 10s), the client times out and the unacknowledged queue is discarded.
+Notice that if the disconnected browser is disconnected in excess of `maxInterval` (default 10 seconds), the client times out and the unacknowledged queue is discarded.

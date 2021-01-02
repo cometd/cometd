@@ -3,107 +3,70 @@
 == Extensions
 
 The CometD implementation includes the ability to add/remove _extensions_.
-An extension is a function that the CometD implementation calls; it allows
-you to modify a message just after receiving it but before the rest of the
-xref:_concepts_message_processing[message processing] (an _incoming_ extension),
-or just before sending it (an _outgoing_ extension).
+An extension is a function that the CometD implementation calls; it allows you to modify a message just after receiving it but before the rest of the xref:_concepts_message_processing[message processing] (an _incoming_ extension), or just before sending it (an _outgoing_ extension).
 
-An extension normally adds fields to the message being sent or received in
-the xref:_bayeux_ext[`ext` object] that the Bayeux protocol specification defines.
+An extension normally adds fields to the message being sent or received in the xref:_bayeux_ext[`ext` object] that the Bayeux protocol specification defines.
 
-An extension is not a way to add business fields to a message, but rather a
-way to process all messages, including the meta messages the Bayeux protocol
-uses, and to extend the Bayeux protocol itself.
-An extension should address concerns that are orthogonal to the business, but
-that provide value to the application.
-Typical examples of such concerns is to guarantee message ordering, to guarantee
-message delivery, to make sure that if the user navigates to another CometD page
-or reloads the same CometD page in the browser, the same CometD session is used
-without having to go through a disconnect/handshake cycle, to add to every
-message metadata fields such as the timestamp, to detect whether the client and
-the server have a time offset (for example when only one of them is synchronized
-with https://en.wikipedia.org/wiki/Network_Time_Protocol[NTP]), etc.
+An extension is not a way to add business fields to a message, but rather a way to process all messages, including the meta messages the Bayeux protocol uses, and to extend the Bayeux protocol itself.
+An extension should address concerns that are orthogonal to the business, but that provide value to the application.
+Typical examples of such concerns is to guarantee message ordering, to guarantee message delivery, to make sure that if the user navigates to another CometD page or reloads the same CometD page in the browser, the same CometD session is used without having to go through a disconnect/handshake cycle, to add to every message metadata fields such as the timestamp, to detect whether the client and the server have a time offset (for example when only one of them is synchronized with https://en.wikipedia.org/wiki/Network_Time_Protocol[NTP]), etc.
 
-If you do not have such concerns or requirements, you should not use the
-extensions, as they add a minimal overhead without bringing value.
-On the other hand, if you have such orthogonal concerns for your business
-(for example, to cryptographically sign every message), extensions are the
-right way to do it.
+If you do not have such concerns or requirements, you should not use the extensions, as they add a minimal overhead without bringing value.
+On the other hand, if you have such orthogonal concerns for your business (for example, to cryptographically sign every message), extensions are the right way to do it.
 
-You should look at the available extensions, understand the features they provide,
-and figure out whether they are needed for your use cases or not.
-If you truly have an orthogonal concern and the extension is not available out
-of the box, you can write your own, following the indications that follow.
+You should look at the available extensions, understand the features they provide, and figure out whether they are needed for your use cases or not.
+If you truly have an orthogonal concern and the extension is not available out of the box, you can write your own, following the indications that follow.
 
-Normally you set up extensions on both the client and the server, since fields
-the client adds usually need a special processing by the server, or viceversa;
-it is possible that an extension is only client-side or only server-side, but
-most of the time both client and server need them.
-When an extension does not behave as expected, it's often because the extension
-is missing on one of the two sides.
+Normally you set up extensions on both the client and the server, since fields the client adds usually need a special processing by the server, or viceversa; it is possible that an extension is only client-side or only server-side, but most of the time both client and server need them.
+When an extension does not behave as expected, it's often because the extension is missing on one of the two sides.
 
-An extension has two set of functions that are invoked: the _incoming_ functions
-(for messages that are being received) and the _outgoing_ functions
-(for messages that are being sent).
+An extension has two set of functions that are invoked: the _incoming_ functions (for messages that are being received) and the _outgoing_ functions (for messages that are being sent).
 The incoming functions are invoked in extension registration order.
 The outgoing functions are invoked in extension registration reverse order.
-On the server, `BayeuxServer` extensions are always invoked before `ServerSession`
-extensions.
+On the server, `BayeuxServer` extensions are always invoked before `ServerSession` extensions.
 
 For example, given this code:
 
-====
 [source,java]
 ----
 BayeuxServer bayeuxServer = ...;
 bayeuxServer.addExtension(new ExtensionA());
 bayeuxServer.addExtension(new ExtensionB());
 ----
-====
 
 then for incoming messages the call order is:
 
-====
 [source,java]
 ----
 ExtensionA.incoming(...);
 ExtensionB.incoming(...);
 ----
-====
 
 while for outgoing messages the call order is:
 
-====
 [source,java]
 ----
 ExtensionB.outgoing(...);
 ExtensionA.outgoing(...);
 ----
-====
 
-The next sections describe the JavaScript CometD Extensions; they follow the
-same pattern the portable JavaScript CometD implementation uses: a portable
-implementation of the extension with _bindings_ for the specific JavaScript
-toolkit, currently Dojo and jQuery.
+The next sections describe the JavaScript CometD Extensions; they follow the same pattern the portable JavaScript CometD implementation uses: a portable implementation of the extension with _bindings_ for the specific JavaScript toolkit, currently Dojo and jQuery.
 
 [[_extensions_writing]]
 === Writing the Extension
 
 An extension is a JavaScript object with four optional functions:
 
-* `outgoing(message)` – called just before a message is sent
-* `incoming(message)` – called just after a message is received
-* `registered(name, cometd)` – called when the extension is registered
-* `unregistered()` – called when the extension is unregistered
+* `outgoing(message)` -- called just before a message is sent
+* `incoming(message)` -- called just after a message is received
+* `registered(name, cometd)` -- called when the extension is registered
+* `unregistered()` -- called when the extension is unregistered
 
 These functions are optional; you can use only one, or maybe two, three, or all of them.
 If they are present, CometD invokes them at the proper time.
 
-Writing an extension that logs and counts the long polls is quite easy:
-you need a reference to the `cometd` object that has the logging functions,
-and you need only the outgoing extension function:
+Writing an extension that logs and counts the long polls is quite easy: you need a reference to the `cometd` object that has the logging functions, and you need only the outgoing extension function:
 
-====
 [source,javascript]
 ----
 var LoggerExt = function() {
@@ -116,46 +79,41 @@ var LoggerExt = function() {
     };
 
     this.outgoing = function(message) {
-        if (message.channel == '/meta/connect') {
+        if (message.channel === '/meta/connect') {
             // Log the long poll
             _cometd._info('bayeux connect');
 
             // Count the long polls
-            if (!message.ext) message.ext = {};
-            if (!message.ext.logger) message.ext.logger = {};
-            if (!message.ext.logger.counter) message.ext.logger.counter = 0;
+            if (!message.ext) {
+                message.ext = {};
+            }
+            if (!message.ext.logger) {
+                message.ext.logger = {};
+            }
+            if (!message.ext.logger.counter) {
+                message.ext.logger.counter = 0;
+            }
             message.ext.logger.counter = ++_counter;
         }
     };
 };
 ----
-====
 
-Notice that meta messages are also passed to the extension functions; you
-normally have to filter the messages that the extension function receives
-by looking at the channel or at some other message value.
+Notice that meta messages are also passed to the extension functions; you normally have to filter the messages that the extension function receives by looking at the channel or at some other message value.
 
-Notice also that you can modify the message by adding fields, normally in
-the `ext` field.
+Notice also that you can modify the message by adding fields, normally in the `ext` field.
 
 [NOTE]
 ====
-Be careful not to overwrite the `ext` field, which other extensions
-might have set: check whether it's present first.
-It is also a good practice to group extension fields so that there is no
-clash with other extensions (in the example above, the only field – counter –
-is _grouped_ in the `message.ext.logger` object).
+Be careful not to overwrite the `ext` field, which other extensions might have set: check whether it's present first.
+
+It is also a good practice to group extension fields so that there is no clash with other extensions (in the example above, the field `counter` is _grouped_ in the `message.ext.logger` object).
 ====
 
-The `outgoing()` and `incoming()` functions can avoid  returning something, or
-returning the message itself (or another message object). This means that the
-extension has processed the message and therefore other extensions, if present,
-can process it, or the implementation can process the message (either by
-sending it to the server – for outgoing extensions – or by notifying listeners –
-for incoming extensions).
+The `outgoing()` and `incoming()` functions can avoid  returning something, or returning the message itself (or another message object).
+This means that the extension has processed the message and therefore other extensions, if present, can process it, or the implementation can process the message (either by sending it to the server -- for outgoing extensions -- or by notifying listeners -- for incoming extensions).
 
-If the extension function returns `null`, the processing should stop: other
-extensions do not process the message, and CometD does not further process it.
+If the extension function returns `null`, the processing should stop: other extensions do not process the message, and CometD does not further process it.
 CometD does not send the message to the server, nor notify listeners.
 
 [[_extensions_registering]]
@@ -163,44 +121,34 @@ CometD does not send the message to the server, nor notify listeners.
 
 The JavaScript CometD API defines three functions to manage extensions:
 
-* `registerExtension(name, extension)` – registers an extension with the given name
-* `unregisterExtension(name)` – unregisters the extension previously registered with the given name
-* `getExtension(name)` – obtains a reference to the extension previously registered with the given name
+* `registerExtension(name, extension)` -- registers an extension with the given name
+* `unregisterExtension(name)` -- unregisters the extension previously registered with the given name
+* `getExtension(name)` -- obtains a reference to the extension previously registered with the given name
 
 Following the example above, you can register the extension like this:
 
-====
 [source,javascript]
 ----
 cometd.registerExtension('loggerExt', new LoggerExt());
 ----
-====
 
-From now on, the meta connect messages are modified to carry the counter
-from the example extension above.
+From now on, the meta connect messages are modified to carry the counter from the example extension above.
 
 Unregistering the extension is similar:
 
-====
 [source,javascript]
 ----
 cometd.unregisterExtension('loggerExt');
 ----
-====
 
 It is not possible to register two extensions under the same name.
 
 [[_extensions_exceptions]]
 === Extension Exception Handling
 
-While it is normally good practice to catch exceptions within extension functions,
-sometimes this is tedious to code, or there is no control about the quality of the
-extension (for example, it's a third party extension). The JavaScript CometD API
-provides a way to define the global extension exception handler that is invoked
-every time an extension throws an exception (for example, calling a function on an
-undefined object):
+While it is normally good practice to catch exceptions within extension functions, sometimes this is tedious to code, or there is no control about the quality of the extension (for example, it's a third party extension).
+The JavaScript CometD API provides a way to define the global extension exception handler that is invoked every time an extension throws an exception (for example, calling a function on an undefined object):
 
-====
 [source,javascript]
 ----
 cometd.onExtensionException = function(exception, extensionName, outgoing, message) {
@@ -216,18 +164,13 @@ cometd.onExtensionException = function(exception, extensionName, outgoing, messa
     }
 }
 ----
-====
 
-Be _very_ careful to use the CometD object to publish messages within the extension
-exception handler, or you might end up in an infinite loop (the extensions process
-the publish message, which might fail and call again the extension exception handler).
-If the extension exception handler itself throws an exception, this exception is
-logged at level "info" and the CometD implementation does not break.
+Be _very_ careful to use the CometD object to publish messages within the extension exception handler, or you might end up in an infinite loop (the extensions process the publish message, which might fail and call again the extension exception handler).
+If the extension exception handler itself throws an exception, this exception is logged at level "info" and the CometD implementation does not break.
 
 [NOTE]
 ====
-To learn about a similar mechanism for listeners and subscribers, see also
-xref:_javascript_configure[the JavaScript library configuration section].
+To learn about a similar mechanism for listeners and subscribers, see also xref:_javascript_configure[the JavaScript library configuration section].
 ====
 
 The next sections explain in detail the use of the extensions CometD provides.
