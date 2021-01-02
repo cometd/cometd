@@ -2,116 +2,61 @@
 [[_extensions_activity]]
 === Activity Extension
 
-The activity extension monitors the activity of server sessions to disconnect
-them after a configurable period of inactivity.
-This is a server-side only extension implemented by class
-`org.cometd.server.ext.ActivityExtension`.
+The activity extension monitors the activity of server sessions to disconnect them after a configurable period of inactivity.
+This is a server-side only extension implemented by class `org.cometd.server.ext.ActivityExtension`.
 
-This extension is useful because the Bayeux Protocol (see also
-xref:_bayeux[the Bayeux protocol section]) uses a heart-beat mechanism (over the
-`/meta/connect` channel) that prevents servers to declare resources such as
-connections or transport sessions (for example, Servlet's `HttpSession`) as
-idle, and therefore prevents servers to close or destroy resources when they
-are idle for a long time.
+This extension is useful because the Bayeux Protocol (see also xref:_bayeux[the Bayeux protocol section]) uses a heart-beat mechanism (over the `/meta/connect` channel) that prevents servers to declare resources such as connections or transport sessions (for example, Servlet's `HttpSession`) as idle, and therefore prevents servers to close or destroy resources when they are idle for a long time.
 
-A specific example is the following: when the `long-polling` CometD transport
-is used, the heart-beat mechanism consist of a HTTP POST request to the server.
-Even if the CometD client is completely idle (for example, the user went to lunch),
-the heart-beat mechanism continues to send POSTs at a regular interval to the server.
-If the server's `web.xml` is configured with a `<session-timeout>` element,
-that destroys the `HttpSession` after 30 minutes of inactivity, then the `HttpSession`
-will never be destroyed because the heart-beat mechanism looks like a legitimate
-HTTP request to the server, and it never stops.
+A specific example is the following: when the `long-polling` CometD transport is used, the heart-beat mechanism consist of a HTTP POST request to the server.
+Even if the CometD client is completely idle (for example, the user went to lunch), the heart-beat mechanism continues to send POSTs at a regular interval to the server.
+If the server's `web.xml` is configured with a `<session-timeout>` element, that destroys the `HttpSession` after 30 minutes of inactivity, then the `HttpSession` will never be destroyed because the heart-beat mechanism looks like a legitimate HTTP request to the server, and it never stops.
 The server cannot know that those POSTs are just heart-beats.
 
 The `ActivityExtension` solves this problem.
 
 The `ActivityExtension` defines two types of inactivity:
 
-* client-only inactivity, where the client sends periodic heart-beat messages
-  but no other messages, while the server may send normal messages to clients
-* client-server inactivity, where the client and the server sends only periodic
-  heart-beat messages and no other messages.
+* client-only inactivity, where the client sends periodic heart-beat messages but no other messages, while the server may send normal messages to clients
+* client-server inactivity, where the client and the server sends only periodic heart-beat messages and no other messages.
 
 ==== Enabling the Extension
 
-To enable the `ActivityExtension`, you must add the extension to the `BayeuxServer`
-during initialization, specifying the type of activity you want to monitor, and the
-max inactivity period in milliseconds:
+To enable the `ActivityExtension`, you must add the extension to the `BayeuxServer` during initialization, specifying the type of activity you want to monitor, and the max inactivity period in milliseconds:
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-bayeuxServer.addExtension(new ActivityExtension(ActivityExtension.Activity.CLIENT, 15 * 60 * 1000L));
+include::{doc_code}/ExtensionsDocs.java[tags=activityClient]
 ----
-====
 
-The example above configures the `ActivityExtension` to monitor client-only activity,
-and disconnects inactive clients after 15 minutes (or 15 * 60 * 1000 ms) of inactivity.
+The example above configures the `ActivityExtension` to monitor client-only activity, and disconnects inactive clients after 15 minutes (or 15 * 60 * 1000 ms) of inactivity.
 
 Similarly, to monitor client-server activity:
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-bayeuxServer.addExtension(new ActivityExtension(ActivityExtension.Activity.CLIENT_SERVER, 15 * 60 * 1000L));
+include::{doc_code}/ExtensionsDocs.java[tags=activityClientServer]
 ----
-====
 
-The example above configures the `ActivityExtension` to monitor client-server
-activity, and disconnects inactive clients after 15 minutes of inactivity.
+The example above configures the `ActivityExtension` to monitor client-server activity, and disconnects inactive clients after 15 minutes of inactivity.
 
 ==== Enabling the Extension Only for a Specific ServerSession
 
-The `org.cometd.server.ext.ActivityExtension` can be installed if you want to monitor
-the inactivity of all clients in the same way.
+The `org.cometd.server.ext.ActivityExtension` can be installed if you want to monitor the inactivity of all clients in the same way.
 
-It is possible to monitor the inactivity of particular clients by not installing the
-`ActivityExtension` on the `BayeuxServer`, and by installing a
-`org.cometd.server.ext.ActivityExtension.SessionExtension` on the specific server
-session for which you want to monitor inactivity, for example:
+It is possible to monitor the inactivity of particular clients by not installing the `ActivityExtension` on the `BayeuxServer`, and by installing `org.cometd.server.ext.ActivityExtension.SessionExtension` on the specific `ServerSession` for which you want to monitor inactivity, for example:
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-public class MyPolicy extends DefaultSecurityPolicy {
-    @Override
-    public void canHandshake(BayeuxServer server, ServerSession session, ServerMessage message, Promise<Boolean> promise
-    ) {
-        if (!isAdminUser(session, message)) {
-            session.addExtension(new ActivityExtension.SessionExtension(ActivityExtension.Activity.CLIENT, 10 * 60 * 1000L));
-        }
-        return true;
-    }
-}
+include::{doc_code}/ExtensionsDocs.java[tags=activityPolicy]
 ----
-====
 
-In the example above, a custom `SecurityPolicy` (see also
-xref:_java_server_authorization[the server authorization section]) checks whether
-the handshake is that of an administrator user, and installs the activity
-extension only for non-administrators, with an inactivity timeout of 10 minutes.
+In the example above, a custom `SecurityPolicy` (see also xref:_java_server_authorization[the server authorization section]) checks whether the handshake is that of an administrator user, and installs the activity extension only for non-administrators, with an inactivity timeout of 10 minutes.
 
-Alternatively, you can write a `BayeuxServer` extension that installs the
-`ActivityExtension.SessionExtension` selectively:
+Alternatively, you can write a `BayeuxServer` extension that installs the `ActivityExtension.SessionExtension` selectively:
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-public class MyExtension extends BayeuxServer.Extension.Adapter {
-    @Override
-    public boolean sendMeta(ServerSession session, ServerMessage.Mutable message) {
-        if (Channel.META_HANDSHAKE.equals(message.getChannel()) && message.isSuccessful()) {
-            if (!isAdminUser(session, message)) {
-                session.addExtension(new ActivityExtension.SessionExtension(ActivityExtension.Activity.CLIENT, 10 * 60 * 1000L));
-            }
-        }
-        return true;
-    }
-}
+include::{doc_code}/ExtensionsDocs.java[tags=activityExtension]
 ----
-====
 
-In the example above, a custom `BayeuxServer` extension checks whether the
-handshake has been successful, and installs the activity extension only
-for non-administrators, with an inactivity timeout of 10 minutes.
+In the example above, a custom `BayeuxServer` extension checks whether the handshake has been successful, and installs the activity extension only for non-administrators, with an inactivity timeout of 10 minutes.

@@ -2,54 +2,40 @@
 [[_extensions_timestamp]]
 === Timestamp Extension
 
-The timestamp extension adds a `timestamp` to the message object for every
-message the client and/or server sends.
-It is a non-standard extension because it does not add the additional fields
-to the `ext` field, but to the message object itself.
+The timestamp extension adds a `timestamp` to the message object for every message the client and/or server sends.
+It is a non-standard extension because it does not add the additional fields to the `ext` field, but to the message object itself.
 This extension requires both a client-side extension and a server-side extension.
 The server-side extension is available in Java.
 
-==== Enabling the Server-side Extension
+==== Enabling the Server-Side Extension
 
-To enable support for time-stamped messages, you must add the extension to
-the `org.cometd.bayeux.server.BayeuxServer` instance during initialization:
+To enable support for time-stamped messages, you must add the extension to the `org.cometd.bayeux.server.BayeuxServer` instance during initialization:
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-bayeuxServer.addExtension(new org.cometd.server.ext.TimestampExtension());
+include::{doc_code}/ExtensionsDocs.java[tags=timestamp]
 ----
-====
 
-==== Enabling the Client-side Extension
+==== Enabling the Client-Side Extension
 
-The `dojox/cometd/timestamp.js` provides the client-side extension binding for
-Dojo, and it is sufficient to use Dojo's `dojo.require` mechanism:
+The `dojox/cometd/timestamp.js` provides the client-side extension binding for Dojo, and it is sufficient to use Dojo's `dojo.require` mechanism:
 
-====
 [source,javascript]
 ----
 require(["dojox/cometd", "dojox/cometd/timestamp"], function(cometd) {
     ...
 });
 ----
-====
 
 The example above is valid also when using the `require()` syntax with jQuery.
 
-The file `jquery.cometd-timestamp.js` provides the client-side extension
-binding for jQuery.
-When you are not using the `require()` syntax, you must include the
-implementation file and the jQuery extension binding
-in the HTML page via the `<script>` tag:
+The file `jquery.cometd-timestamp.js` provides the client-side extension binding for jQuery.
+When you are not using the `require()` syntax, you must include the implementation file and the jQuery extension binding in the HTML page via the `<script>` tag:
 
-====
-[source,javascript]
+[source,html]
 ----
 <script type="text/javascript" src="TimeStampExtension.js"></script>
 <script type="text/javascript" src="jquery.cometd-timestamp.js"></script>
 ----
-====
 
-In both Dojo and jQuery extension bindings, the extension is registered on
-the default `cometd` object under the name "timestamp".
+In both Dojo and jQuery extension bindings, the extension is registered on the default `cometd` object under the name "timestamp".
