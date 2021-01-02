@@ -2,62 +2,46 @@
 [[_extensions_binary]]
 === Binary Extension
 
-The binary extension allows applications to send and receive messages containing
-binary data, and therefore to upload and download binary data such as files or images.
+The binary extension allows applications to send and receive messages containing binary data, and therefore to upload and download binary data such as files or images.
 This extension requires both a client-side extension and a server-side extension.
 The server-side extension is available in Java.
 
 ==== Enabling the Server-side Extension
 
-To enable support for binary data in messages, you must add the extension to
-the `org.cometd.bayeux.server.BayeuxServer` instance during initialization:
+To enable support for binary data in messages, you must add the extension to the `org.cometd.bayeux.server.BayeuxServer` instance during initialization:
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-bayeuxServer.addExtension(new org.cometd.server.ext.BinaryExtension());
+include::{doc_code}/ExtensionsDocs.java[tags=binaryServer]
 ----
-====
 
 ==== Enabling the Client-side Extension
 
-The `dojox/cometd/binary.js` provides the client-side extension binding for
-Dojo, and it is sufficient to use Dojo's `dojo.require` mechanism:
+The `dojox/cometd/binary.js` provides the client-side extension binding for Dojo, and it is sufficient to use Dojo's `dojo.require` mechanism:
 
-====
 [source,javascript]
 ----
 require(["dojox/cometd", "dojox/cometd/binary"], function(cometd) {
     ...
 });
 ----
-====
 
 The example above is valid also when using the `require()` syntax with jQuery.
 
-The file `jquery.cometd-binary.js` provides the client-side extension
-binding for jQuery.
-When you are not using the `require()` syntax, you must include the
-implementation file and the jQuery extension binding
-in the HTML page via the `<script>` tag:
+The file `jquery.cometd-binary.js` provides the client-side extension binding for jQuery.
+When you are not using the `require()` syntax, you must include the implementation file and the jQuery extension binding in the HTML page via the `<script>` tag:
 
-====
-[source,javascript]
+[source,html]
 ----
 <script type="text/javascript" src="BinaryExtension.js"></script>
-<script type="text/javascript" src="jquery.cometd-timestamp.js"></script>
+<script type="text/javascript" src="jquery.cometd-binary.js"></script>
 ----
-====
 
-In both Dojo and jQuery extension bindings, the extension is registered on
-the default `cometd` object under the name "binary".
+In both Dojo and jQuery extension bindings, the extension is registered on the default `cometd` object under the name "binary".
 
 For Java clients, you must add the extension to the `BayeuxClient` instance:
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-BayeuxClient bayeuxClient = ...;
 bayeuxClient.addExtension(new org.cometd.client.ext.BinaryExtension());
 ----
-====

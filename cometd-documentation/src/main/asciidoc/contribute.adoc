@@ -3,69 +3,52 @@
 == Contributing to CometD
 
 You can contribute to the CometD projects in several ways.
-The CometD project values your contribution, of _any_ kind, and participating
-in mailing lists, submitting bugs or documentation enhancements is equally
-important as contributing code.
+The CometD project values your contribution, of _any_ kind, and participating in mailing lists, submitting bugs or documentation enhancements is equally important as contributing code.
 
 [[_contribute_mailing_lists]]
 === Contributing via Mailing Lists
 
-The simplest way to contribute to the CometD project is to subscribe to the
-CometD mailing lists. There are two mailing lists:
+The simplest way to contribute to the CometD project is to subscribe to the CometD mailing lists. There are two mailing lists:
 
 * *cometd-users@googlegroups.com*, to be used for discussions about how to use CometD.
   This is a low traffic mailing list.
-  To subscribe to this list, go to the https://groups.google.com/group/cometd-users/[mailing list home page]
-  and follow the instructions to apply for membership.
+  To subscribe to this list, go to the https://groups.google.com/group/cometd-users/[mailing list home page] and follow the instructions to apply for membership.
 * *cometd-dev@googlegroups.com*, to be used for discussions about the CometD implementation.
   This is a low traffic mailing list.
-  To subscribe to this list, go to the https://groups.google.com/group/cometd-dev/[mailing list home page]
-  and follow the instructions to apply for membership.
-  New members can join immediately the mailing list and receive messages,
-  but their first post will be subject to moderation.
+  To subscribe to this list, go to the https://groups.google.com/group/cometd-dev/[mailing list home page] and follow the instructions to apply for membership.
+  New members can join immediately the mailing list and receive messages, but their first post will be subject to moderation.
 
-If you post for the first time, please allow some hour to moderators to review
-the message and approve your post.
+If you post for the first time, please allow some hour to moderators to review the message and approve your post.
 This is done to reduce spam to the minimum possible.
 
 [[_contribute_issue_reporting]]
 === Contributing by Reporting Issues
 
-The CometD project uses https://github.com/cometd/cometd/issues[GitHub Issues] to track
-issues about the CometD project, from bugs to feature requests, to documentation tasks, etc.
+The CometD project uses https://github.com/cometd/cometd/issues[GitHub Issues] to track issues about the CometD project, from bugs to feature requests, to documentation tasks, etc.
 Virtually every activity is tracked in this issue tracker.
 
 The address https://bugs.cometd.org is an alias for the CometD GitHub Issue Tracker.
 
 In order to submit an issue, you must have a valid GitHub login.
-If you do not have a GitHub login already, you can create one by
-visiting https://github.com/join[this link].
+If you do not have a GitHub login already, you can create one by visiting https://github.com/join[this link].
 
 [[_contribute_code]]
 === Contributing Code Fixes, Enhancements and Documentation
 
 The CometD project code is hosted at https://github.com/cometd[GitHub CometD Organization].
 The repository for the CometD libraries is https://github.com/cometd/cometd.
-You can build the CometD project yourself by following the instruction in
-xref:_build[the build section].
+You can build the CometD project yourself by following the instruction in xref:_build[the build section].
 
-In order to contribute code or documentation, you need to comply with the following two
-requirements:
+In order to contribute code or documentation, you need to comply with the following two requirements:
 
-* You must certify the https://developercertificate.org/[Developer Certificate of Origin]
-and sign-off your `git` commits using `git commit --signoff`.
-By signing off your `git` commits, you agree that you can certify
-what stated by the Developer Certificate of Origin.
-* You must license your contributed code under the
-https://www.apache.org/licenses/LICENSE-2.0[CometD project license], i.e. the Apache
-License version 2.0.
+* You must certify the https://developercertificate.org/[Developer Certificate of Origin] and sign-off your `git` commits using `git commit --signoff`. +
+By signing off your `git` commits, you agree that you can certify what stated by the Developer Certificate of Origin.
+* You must license your contributed code under the https://www.apache.org/licenses/LICENSE-2.0[CometD project license], i.e. the Apache License version 2.0.
 
-Complying with these two requirements is enough for the CometD project to accept your
-contribution.
+Complying with these two requirements is enough for the CometD project to accept your contribution.
 
 The Developer Certificate of Origin (from https://developercertificate.org/):
 
-====
 [source,text]
 ----
 By making a contribution to this project, I certify that:
@@ -92,19 +75,15 @@ By making a contribution to this project, I certify that:
     maintained indefinitely and may be redistributed consistent with
     this project or the open source license(s) involved.
 ----
-====
 
 To contribute code or documentation, follow these steps:
 
 * Create an issue at https://bugs.cometd.org.
 * Commit your changes:
 ** If you have multiple commits, consider squashing them into one commit only.
-** Make sure that the email in the `Author` field of the commits
-corresponds to your GitHub email.
+** Make sure that the email in the `Author` field of the commits corresponds to your GitHub email.
 ** Signoff your commits using `git commit --signoff`.
-** The commit message should reference the issue number with the
-format `#<issue_number>`, so that GitHub can properly link the
-commit with the issue.
+** The commit message should reference the issue number with the format `#<issue_number>`, so that GitHub can properly link the commit with the issue.
 * Issue a https://help.github.com/articles/using-pull-requests[GitHub pull request].
 
 For example:
@@ -120,7 +99,4 @@ Date:   Sun Jan 01 00:00:00 1970 +0000
     Signed-off-by: John Doe <john.doe@nowhere.com>
 ----
 
-If your contribution contains new Java or JavaScript files, they must have the
-copyright/license header that is present in other Java or JavaScript files
-(otherwise the build will fail).
-
+If your contribution contains new Java or JavaScript files, they must have the copyright/license header that is present in other Java or JavaScript files (otherwise the build will fail).

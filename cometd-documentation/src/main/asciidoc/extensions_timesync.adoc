@@ -2,74 +2,55 @@
 [[_extensions_timesync]]
 === Timesync Extension
 
-The timesync extension uses the messages exchanged between a client and a
-server to calculate the offset between the client's clock and the server's clock.
-This is independent from xref:_extensions_timestamp[the timestamp extension section],
-which uses the local clock for all timestamps.
+The timesync extension uses the messages exchanged between a client and a server to calculate the offset between the client's clock and the server's clock.
+This is independent from xref:_extensions_timestamp[the timestamp extension section], which uses the local clock for all timestamps.
 This extension requires both a client-side extension and a server-side extension.
 The server-side extension is available in Java.
 
 ==== Enabling the Server-side Extension
 
-To enable support for time synchronization, you must add the extension to the
-`org.cometd.bayeux.server.BayeuxServer` instance during initialization:
+To enable support for time synchronization, you must add the extension to the `org.cometd.bayeux.server.BayeuxServer` instance during initialization:
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-bayeuxServer.addExtension(new org.cometd.server.ext.TimesyncExtension());
+include::{doc_code}/ExtensionsDocs.java[tags=timesync]
 ----
-====
 
 ==== Enabling the Client-side Extension
 
-The `dojox/cometd/timesync.js` provides the client-side extension binding for
-Dojo, and it is sufficient to use Dojo's `dojo.require` mechanism:
+The `dojox/cometd/timesync.js` provides the client-side extension binding for Dojo, and it is sufficient to use Dojo's `dojo.require` mechanism:
 
-====
 [source,javascript]
 ----
 require(["dojox/cometd", "dojox/cometd/timesync"], function(cometd) {
     ...
 });
 ----
-====
 
 The example above is valid also when using the `require()` syntax with jQuery.
 
-The file `jquery.cometd-timesync.js` provides the client-side extension binding
-for jQuery.
-When you are not using the `require()` syntax, you must include the
-implementation file and the jQuery extension binding
-in the HTML page via the `<script>` tag:
+The file `jquery.cometd-timesync.js` provides the client-side extension binding for jQuery.
+When you are not using the `require()` syntax, you must include the implementation file and the jQuery extension binding in the HTML page via the `<script>` tag:
 
-====
-[source,javascript]
+[source,html]
 ----
 <script type="text/javascript" src="TimeSyncExtension.js"></script>
 <script type="text/javascript" src="jquery.cometd-timesync.js"></script>
 ----
-====
 
-In both Dojo and jQuery extension bindings, the extension is registered on
-the default `cometd` object under the name "timesync".
+In both Dojo and jQuery extension bindings, the extension is registered on the default `cometd` object under the name "timesync".
 
 ==== Understanding Timesync Extension Details
 
-The timesync extension allows the client and server to exchange time information
-on every handshake and connect message so that the client can calculate an
-approximate offset from its own clock epoch to that of the server.
+The timesync extension allows the client and server to exchange time information on every handshake and connect message so that the client can calculate an approximate offset from its own clock epoch to that of the server.
 The algorithm used is very similar to the https://en.wikipedia.org/wiki/Network_Time_Protocol[NTP algorithm].
 
-With each handshake or connect, the extension sends timestamps within the
-ext field, for example:
+With each handshake or connect, the extension sends timestamps within the ext field, for example:
 
-====
 [source,javascript]
 ----
 {ext:{timesync:{tc:12345567890,l:23,o:4567},...},...}
 ----
-====
 
 where:
 
@@ -77,19 +58,15 @@ where:
 * _l_ is the network lag that the client has calculated
 * _o_ is the clock offset that the client has calculated
 
-You can calculate the accuracy of the offset and lag with `tc-now-l-o`, which
-should be zero if the calculated offset and lag are perfectly accurate.
-A Bayeux server that supports timesync should respond only if the measured
-accuracy value is greater than accuracy target.
+You can calculate the accuracy of the offset and lag with `tc-now-l-o`, which should be zero if the calculated offset and lag are perfectly accurate.
+A Bayeux server that supports timesync should respond only if the measured accuracy value is greater than accuracy target.
 
 The response is an `ext` field, for example:
 
-====
 [source,javascript]
 ----
 {ext:{timesync:{tc:12345567890,ts:1234567900,p:123,a:3},...},...}
 ----
-====
 
 where:
 
@@ -98,20 +75,15 @@ where:
 * _p_ is the poll duration in ms – ie the time the server took before sending the response
 * _a_ is the measured accuracy of the calculated offset and lag sent by the client
 
-On receipt of the response, the client is able to use current time to determine
-the total trip time, from which it subtracts _p_ to determine an approximate two
-way network traversal time.
+On receipt of the response, the client is able to use current time to determine the total trip time, from which it subtracts _p_ to determine an approximate two way network traversal time.
 Thus:
 
 * lag = (now-tc-p)/2
 * offset = ts-tc-lag
 
-To smooth over any transient fluctuations, the extension keeps a sliding average
-of the offsets received.
-By default this is over ten messages, but you can change this value by passing a
-configuration object during the creation of the extension:
+To smooth over any transient fluctuations, the extension keeps a sliding average of the offsets received.
+By default this is over ten messages, but you can change this value by passing a configuration object during the creation of the extension:
 
-====
 [source,javascript]
 ----
 // Unregister the default timesync extension
@@ -120,12 +92,10 @@ cometd.unregisterExtension('timesync');
 // Re-register with different configuration
 cometd.registerExtension('timesync', new org.cometd.TimeSyncExtension({ maxSamples: 20 }));
 ----
-====
 
-The client-side timesync extension also exposes several functions to deal with
-the result of the time synchronization:
+The client-side timesync extension also exposes several functions to deal with the result of the time synchronization:
 
-* `getNetworkLag()` – to obtain the calculated network latency between client and server
-* `getTimeOffset()` – to obtain the offset between the client's clock and the server's clock in ms
-* `getServerTime()` – to obtain the server's time
-* `setTimeout()` – to schedule a function to be executed at a certain server time
+* `getNetworkLag()` -- to obtain the calculated network latency between client and server
+* `getTimeOffset()` -- to obtain the offset between the client's clock and the server's clock in ms
+* `getServerTime()` -- to obtain the server's time
+* `setTimeout()` -- to schedule a function to be executed at a certain server time

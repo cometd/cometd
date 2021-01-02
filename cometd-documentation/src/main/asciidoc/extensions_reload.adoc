@@ -2,40 +2,31 @@
 [[_extensions_reload]]
 === Reload Extension
 
-The reload extension allows CometD to load or reload a page without having
-to re-handshake in the new (or reloaded) page, thereby resuming the existing
-CometD connection.
+The reload extension allows CometD to load or reload a page without having to re-handshake in the new (or reloaded) page, thereby resuming the existing CometD connection.
 This extension requires only the client-side extension.
 
 ==== Enabling the Client-side Extension
 
-The `dojox/cometd/reload.js` provides the client side extension binding for
-Dojo, and it is sufficient to use Dojo's `dojo.require` mechanism:
+The `dojox/cometd/reload.js` provides the client side extension binding for Dojo, and it is sufficient to use Dojo's `dojo.require` mechanism:
 
-====
 [source,javascript]
 ----
 require(["dojox/cometd", "dojox/cometd/reload"], function(cometd) {
     ...
 });
 ----
-====
 
 The example above is valid also when using the `require()` syntax with jQuery.
 
-The file `jquery.cometd-reload.js` provides the client-side extension
-binding for jQuery:
+The file `jquery.cometd-reload.js` provides the client-side extension binding for jQuery:
 
-====
-[source,javascript]
+[source,html]
 ----
 <script type="text/javascript" src="ReloadExtension.js"></script>
 <script type="text/javascript" src="jquery.cometd-reload.js"></script>
 ----
-====
 
-In both Dojo and jQuery extension bindings, the extension is registered
-on the default `cometd` object under the name "reload".
+In both Dojo and jQuery extension bindings, the extension is registered on the default `cometd` object under the name "reload".
 
 [[_extensions_reload_configuration]]
 ==== Configuring the Reload Extension
@@ -53,15 +44,13 @@ The reload extension accepts the following configuration parameters:
 | The name of the key the reload extension uses to save the connection state details
 |===
 
-The JavaScript `cometd` object is normally already configured with the
-default reload extension configuration.
+The JavaScript `cometd` object is normally already configured with the default reload extension configuration.
 
-The reload extension object may be reconfigured, although there should not be,
-in general, the need to do so. To reconfigure the reload extension:
+The reload extension object may be reconfigured, although there should not be, in general, the need to do so.
+To reconfigure the reload extension:
 
 * Reconfigure the extension at startup:
 +
-====
 [source,javascript]
 ----
 var cometd = dojox.cometd; // Use $.cometd if using jquery
@@ -69,10 +58,8 @@ cometd.getExtension('reload').configure({
     name: 'com.acme.Company.reload'
 });
 ----
-====
 * Reconfigure the extension when the `cometd.reload()` function is invoked:
 +
-====
 [source,javascript]
 ----
 var cometd = dojox.cometd; // Use $.cometd if using jquery
@@ -81,117 +68,75 @@ cometd.reload({
     name: 'com.acme.Company.reload'
 });
 ----
-====
 
 ==== Understanding Reload Extension Details
 
-The reload extension is useful to allow users to reload CometD pages, or to
-navigate to other CometD pages, without going through a disconnect and handshake
-cycle, thus resuming an existing CometD session on the reloaded or on the new page.
+The reload extension is useful to allow users to reload CometD pages, or to navigate to other CometD pages, without going through a disconnect and handshake cycle, thus resuming an existing CometD session on the reloaded or on the new page.
 
-When reloading or navigating away from a page, browsers will destroy the
-JavaScript context associated to that page, and interrupt the connection
-to the server too.
-On the reloaded or on the new page, the JavaScript context is recreated
-anew by the browser, but the CometD JavaScript library has lost all the
-CometD session details that were established in the previous page.
-In absence of the reload extension, application need to go through another
-handshake step to recreate the CometD session details needed.
+When reloading or navigating away from a page, browsers will destroy the JavaScript context associated to that page, and interrupt the connection to the server too.
+On the reloaded or on the new page, the JavaScript context is recreated anew by the browser, but the CometD JavaScript library has lost all the CometD session details that were established in the previous page.
+In absence of the reload extension, application need to go through another handshake step to recreate the CometD session details needed.
 
-The reload extension gives the ability to resume the CometD session in the
-new page, by re-establishing the previously successful CometD session.
-This is useful especially when the server builds a stateful context for the
-CometD session that is not to be lost just because the user refreshed the page,
-or navigated to another part of the same CometD web application.
-A typical example of this stateful context is when the server needs to
-guarantee message delivery (see also
-xref:_extensions_acknowledge[the acknowledge extension section]). In this case,
-the server has a list of messages that have not been acknowledged by the client,
-and if the client reloads the page, without the reload extension this list of
-messages will be lost, causing the client to potentially loose important messages.
-With the reload extension, instead, the CometD session is resumed and it will
-appear to the server as if it was never interrupted, thus allowing the server
-to deliver to the client the unacknowledged messages.
+The reload extension gives the ability to resume the CometD session in the new page, by re-establishing the previously successful CometD session.
+This is useful especially when the server builds a stateful context for the CometD session that is not to be lost just because the user refreshed the page, or navigated to another part of the same CometD web application.
+A typical example of this stateful context is when the server needs to guarantee message delivery (see also xref:_extensions_acknowledge[the acknowledge extension section]).
+In this case, the server has a list of messages that have not been acknowledged by the client, and if the client reloads the page, without the reload extension this list of messages will be lost, causing the client to potentially lose important messages.
+With the reload extension, instead, the CometD session is resumed and it will appear to the server as if it was never interrupted, thus allowing the server to deliver to the client the unacknowledged messages.
 
-The reload extension works in this way: on page load, the application configures
-the CometD object, registers channel listeners and finally calls `cometd.handshake()`.
-This handshake normally contacts the server and establishes a new CometD session,
-and the reload extension tracks this successful handshake.
-On page reload, or when the page is navigated to another CometD page, the
-application code must call `cometd.reload()` (for example, on the page
-_unload_ event handler, see note below). When `cometd.reload()` is called, the
-reload extension saves the CometD session state details in the
-https://developer.mozilla.org/en-US/docs/Web/API/Window/sessionStorage[`SessionStorage`]
-under the name specified by the xref:_extensions_reload_configuration[configuration].
+The reload extension works in this way: on page load, the application configures the CometD object, registers channel listeners and finally calls `cometd.handshake()`.
+This handshake normally contacts the server and establishes a new CometD session, and the reload extension tracks this successful handshake.
+On page reload, or when the page is navigated to another CometD page, the application code must call `cometd.reload()` (for example, on the page _unload_ event handler, see note below). When `cometd.reload()` is called, the reload extension saves the CometD session state details in the https://developer.mozilla.org/en-US/docs/Web/API/Window/sessionStorage[`SessionStorage`] under the name specified by the xref:_extensions_reload_configuration[configuration].
 
-When the new page loads up, it will execute the same code executed on the first
-page load, namely the code that configured CometD, that registered channel
-listeners, and that finally called `cometd.handshake()`.
-The reload extension is invoked upon the new handshake, will find the CometD
-session state saved in the `SessionStorage` and will re-establish
-the CometD session with the information retrieved from the `SessionStorage`.
+When the new page loads up, it will execute the same code executed on the first page load, namely the code that configured CometD, that registered channel listeners, and that finally called `cometd.handshake()`.
+The reload extension is invoked upon the new handshake, will find the CometD session state saved in the `SessionStorage` and will re-establish the CometD session with the information retrieved from the `SessionStorage`.
 
 [NOTE]
 ====
 Function `cometd.reload()` should be called from the page _unload_ event handler.
 
-Over the years, browsers, platforms and specifications have tried to clear the
-confusion around what actions really trigger an _unload_ event, and whether there
-are different events triggered for a single user action such as closing the
-browser window, hitting the browser back button or clicking on a link.
+Over the years, browsers, platforms and specifications have tried to clear the confusion around what actions really trigger an _unload_ event, and whether there are different events triggered for a single user action such as closing the browser window, hitting the browser back button or clicking on a link.
 
-As a rule of thumb, function `cometd.reload()` should be called from an
-event handler that allows to write to the `SessionStorage`.
+As a rule of thumb, function `cometd.reload()` should be called from an event handler that allows to write to the `SessionStorage`.
 
-Typically the `window.onbeforeunload` event is a good place to call
-`cometd.reload()`, but historically the `window.onunload` event worked
-too in most browser/platform combinations.
-More recently, the `window.onpagehide` event was defined (although with a
-slightly different semantic) and should work too.
+Typically the `window.onbeforeunload` event is a good place to call `cometd.reload()`, but historically the `window.onunload` event worked too in most browser/platform combinations.
+More recently, the `window.onpagehide` event was defined (although with a slightly different semantic) and should work too.
 
-Applications should start binding the `cometd.reload()` call to the
-`window.onbeforeunload` event and then test/experiment if that is the right
-event.
-You should verify the behaviour for your use case, for your browser/platform
-combinations, for actions that may trigger the event (for example: download
-links, `javascript:` links, etc.).
+Applications should start binding the `cometd.reload()` call to the `window.onbeforeunload` event and then test/experiment if that is the right event.
+You should verify the behaviour for your use case, for your browser/platform combinations, for actions that may trigger the event (for example: download links, `javascript:` links, etc.).
 
-Unfortunately the confusion about an _unload_ event is not completely
-cleared yet, so you are advised to test this feature very carefully
-in a variety of conditions.
+Unfortunately the confusion about an _unload_ event is not completely cleared yet, so you are advised to test this feature very carefully in a variety of conditions.
 ====
 
 A simple example follows:
 
-====
 [source,html]
 ----
 <html>
-    <head>
-        <script type="text/javascript" src="dojo.js"></script>
-        <script type="text/javascript">
-            require(["dojo", "dojo/on", "dojox/cometd", "dojox/cometd/reload", "dojo/domReady!"],
-            function(dojo, on, cometd) {
-                cometd.configure({ url: "http://localhost:8080/context/cometd", logLevel: "info" });
+  <head>
+    <script type="text/javascript" src="dojo.js"></script>
+    <script type="text/javascript">
+      require(["dojo", "dojo/on", "dojox/cometd", "dojox/cometd/reload", "dojo/domReady!"],
+        function(dojo, on, cometd) {
+          cometd.configure({ url: "http://localhost:8080/context/cometd", logLevel: "info" });
 
-                // Always subscribe to channels from successful handshake listeners.
-                cometd.addListener("/meta/handshake", new function(m) {
-                    if (m.successful) {
-                        cometd.subscribe("/some/channel", function() { ... });
-                        cometd.subscribe("/some/other/channel", function() { ... });
-                    }
-                });
+          // Always subscribe to channels from successful handshake listeners.
+          cometd.addListener("/meta/handshake", new function(m) {
+            if (m.successful) {
+              cometd.subscribe("/some/channel", function() { ... });
+              cometd.subscribe("/some/other/channel", function() { ... });
+            }
+          });
 
-            // Upon the unload event, call cometd.reload().
-            on(window, "beforeunload", cometd.reload);
+          // Upon the unload event, call cometd.reload().
+          on(window, "beforeunload", cometd.reload);
 
-            // Finally, handshake.
-            cometd.handshake();
-        </script>
-    </head>
-    <body>
+          // Finally, handshake.
+          cometd.handshake();
+        });
+    </script>
+  </head>
+  <body>
     ...
-    </body>
+  </body>
 </html>
 ----
-====
