@@ -2,115 +2,60 @@
 [[_java_json]]
 === JSON Libraries
 
-CometD allows you to customize the JSON library that it uses to convert
-incoming JSON into Bayeux messages and generate JSON from Bayeux messages.
+CometD allows you to customize the JSON library that it uses to convert incoming JSON into Bayeux messages and generate JSON from Bayeux messages.
 
-Two implementations are available, one based on Jetty's
-`org.eclipse.jetty.util.ajax.JSON` class, and the other based on the
-https://github.com/FasterXML/jackson[Jackson] library.
+Two implementations are available, one based on Jetty's `org.eclipse.jetty.util.ajax.JSON` class, and the other based on the https://github.com/FasterXML/jackson[Jackson] library.
 The default implementation uses the Jetty library.
 Distinctions between them include:
 
-* The Jetty library allows you to plug in custom serializers and deserializers,
-  to fine control the conversion from object to JSON and vice versa, via a custom API.
-  Refer to the `org.eclipse.jetty.util.ajax.JSON`
-  https://eclipse.org/jetty/javadoc/current/org/eclipse/jetty/util/ajax/JSON.html[javadocs]
-  for further information.
-* The Jackson library offers a rich API based on annotations to customize
-  JSON generation, but less so to customize JSON parsing and obtain objects
-  of custom classes.
-  Refer to the https://github.com/FasterXML/jackson[Jackson] documentation
-  for further details.
+* The Jetty library allows you to plug in custom serializers and deserializers, to fine control the conversion from object to JSON and vice versa, via a custom API.
+  Refer to the `org.eclipse.jetty.util.ajax.JSON` https://eclipse.org/jetty/javadoc/current/org/eclipse/jetty/util/ajax/JSON.html[javadocs] for further information.
+* The Jackson library offers a rich API based on annotations to customize JSON generation, but less so to customize JSON parsing and obtain objects of custom classes.
+  Refer to the https://github.com/FasterXML/jackson[Jackson] documentation for further details.
 
 [[_java_json_api]]
 ==== JSONContext API
 
-The CometD Java client implementation (see also xref:_java_client[the client section])
-uses the JSON library to generate JSON from and to parse JSON to
-`org.cometd.bayeux.Message` instances.
-The JSON library class that performs this generation/parsing on the client
-must implement `org.cometd.common.JSONContext.Client`.
+The CometD Java client implementation (see also xref:_java_client[the client section]) uses the JSON library to generate JSON from and to parse JSON to `org.cometd.bayeux.Message` instances.
+The JSON library class that performs this generation/parsing on the client must implement `org.cometd.common.JSONContext.Client`.
 
-Similarly, on the server, a `org.cometd.server.JSONContextServer` implementation
-generates JSON from and parses JSON to `org.cometd.bayeux.server.ServerMessage` instances.
+Similarly, on the server, a `org.cometd.server.JSONContextServer` implementation generates JSON from and parses JSON to `org.cometd.bayeux.server.ServerMessage` instances.
 
 [[_java_json_client_config]]
 ===== Client Configuration
 
-On the client, the `org.cometd.common.JSONContext.Client` instance must be
-passed directly into the transport configuration; if omitted, the default
-Jetty JSON library is used.
+On the client, the `org.cometd.common.JSONContext.Client` instance must be passed directly into the transport configuration; if omitted, the default Jetty JSON library is used.
 For example:
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-HttpClient httpClient = ...;
-
-Map<String, Object> transportOptions = new HashMap<String, Object>();
-
-// Use the Jackson implementation
-JSONContext.Client jsonContext = new JacksonJSONContextClient();
-transportOptions.put(ClientTransport.JSON_CONTEXT, jsonContext);
-
-ClientTransport transport = new LongPollingTransport(transportOptions, httpClient);
-
-BayeuxClient client = new BayeuxClient(cometdURL, transport);
+include::{doc_code}/JSONDocs.java[tags=clientConfig]
 ----
-====
 
-All client transports can share the `org.cometd.common.JSONContext.Client`
-instance (since only one transport is used at any time).
+All client transports can share the `org.cometd.common.JSONContext.Client` instance (since only one transport is used at any time).
 
-The `JSONContext.Server` and `JSONContext.Client` classes also offer methods
-to obtain a JSON parser (to deserialize JSON into objects) and a JSON generator
-(to generate JSON from objects), so that the application does not need to
-hardcode the usage of a specific implementation library.
+The `JSONContext.Server` and `JSONContext.Client` classes also offer methods to obtain a JSON parser (to deserialize JSON into objects) and a JSON generator(to generate JSON from objects), so that the application does not need to hardcode the usage of a specific implementation library.
 
-Class `JSONContext.Parser` can be used to convert into objects any JSON that
-the application needs to read for other purposes, for example from configuration
-files, and of course convert into custom objects (see also
-xref:_java_json_customization[the JSON customization section]):
+Class `JSONContext.Parser` can be used to convert into objects any JSON that the application needs to read for other purposes, for example from configuration files, and of course convert into custom objects (see also xref:_java_json_customization[the JSON customization section]):
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-public EchoInfo readFromConfigFile(BayeuxServer bayeuxServer) throws ParseException {
-    try (FileReader reader = new FileReader("echo.json")) {
-        JSONContext.Server jsonContext = (JSONContext.Server)bayeuxServer.getOption("jsonContext");
-        EchoInfo info = jsonContext.getParser().parse(reader, EchoInfo.class);
-        return info;
-    }
-}
+include::{doc_code}/JSONDocs.java[tags=readFile]
 ----
-====
 
 Similarly, objects can be converted into JSON:
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-public EchoInfo writeToConfigFile(BayeuxServer bayeuxServer, EchoInfo info) throws IOException {
-    // JDK 7's try-with-resources
-    try (FileWriter writer = new FileWriter("echo.json")) {
-        JSONContext.Server jsonContext = (JSONContext.Server)bayeuxServer.getOption("jsonContext");
-        String json = jsonContext.getGenerator().generate(info);
-        writer.write(json);
-    }
-}
+include::{doc_code}/JSONDocs.java[tags=writeFile]
 ----
-====
 
 [[_java_json_server_config]]
 ===== Server Configuration
 
-On the server, you can specify the fully qualified name of a class implementing
-`org.cometd.server.JSONContextServer` as init-parameter of the `CometDServlet`
-(see also xref:_java_server_configuration[the server configuration section]);
-if omitted, the default Jetty library is used.
+On the server, you can specify the fully qualified name of a class implementing `org.cometd.server.JSONContextServer` as `init-parameter` of the `CometDServlet` (see also xref:_java_server_configuration[the server configuration section]); if omitted, the default Jetty library is used.
 For example:
 
-====
 [source,xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
@@ -137,80 +82,44 @@ For example:
 
 </web-app>
 ----
-====
 
-The class specified must be instantiable using the default parameterless
-constructor, and it must implement `org.cometd.server.JSONContextServer`.
+The class specified must be instantiable using the default parameterless constructor, and it must implement `org.cometd.server.JSONContextServer`.
 You can customize it by adding serializers/deserializers as explained above.
 
 [[_java_json_oort_config]]
 ===== Oort Configuration
 
-In the Oort clustering (see also xref:_java_oort[the Oort section]), an `Oort`
-instance need to have both the server and the client `JSONContext`: the server
-one to deserialize messages that other Oort comets send, and the client one
-to serialize messages to send to other Oort comets.
+In the Oort clustering (see also xref:_java_oort[the Oort section]), an `Oort` instance need to have both the server and the client `JSONContext`: the server one to deserialize messages that other Oort comets send, and the client one to serialize messages to send to other Oort comets.
 
-The `Oort` instance will use the `JSONContext.Server` already configured for
-the server, as explained in xref:_java_json_server_config[the JSON server configuration section].
+The `Oort` instance will use the `JSONContext.Server` already configured for the server, as explained in xref:_java_json_server_config[the JSON server configuration section].
 
-The `Oort` instance will use of the `JSONContext.Client` specified in the
-configuration (see also xref:_java_oort_common_configuration[the Oort common configuration section]).
+The `Oort` instance will use of the `JSONContext.Client` specified in the configuration (see also xref:_java_oort_common_configuration[the Oort common configuration section]).
 
 [[_java_json_portability]]
 ==== Portability Considerations
 
-It is possible to switch from one implementation of the JSON library to
-another – for example from the Jetty library to the Jackson library, provided
-that you write the application code carefully.
+It is possible to switch from one implementation of the JSON library to another -- for example from the Jetty library to the Jackson library, provided that you write the application code carefully.
 
 Jackson may produce instances of `java.util.List` when deserializing JSON arrays.
-The Jetty library, however, produces `java.lang.Object[]` when deserializing
-JSON arrays.
+The Jetty library, however, produces `java.lang.Object[]` when deserializing JSON arrays.
 
-Similarly, Jackson may produce `java.lang.Integer` where the Jetty library
-produces `java.lang.Long`.
+Similarly, Jackson may produce `java.lang.Integer` where the Jetty library produces `java.lang.Long`.
 
 To write portable application code, use the following code patterns:
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-Message message = ...;
-Map<String, Object> data = message.getDataAsMap();
-
-// Expecting a JSON array
-
-// WRONG
-Object[] array = (Object[])data.get("array");
-
-// CORRECT
-Object field = data.get("array");
-Object[] array = field instanceof List ? ((List)field).toArray() : (Object[])field;
-
-
-// Expecting a long
-
-// WRONG
-long value = (Long)data.get("value");
-
-// CORRECT
-long value = ((Number)data.get("value")).longValue();
+include::{doc_code}/JSONDocs.java[tags=portability]
 ----
-====
 
 [[_java_json_customization]]
 ==== Customizing Deserialization of JSON objects
 
-Sometimes it is very useful to be able to obtain objects of application classes
-instead of just `Map<String, Object>` when calling `message.getData()`.
+Sometimes it is very useful to be able to obtain objects of application classes instead of just `Map<String, Object>` when calling `message.getData()`.
 
 You can easily achieve this with the Jetty JSON library.
-It is enough that the client formats the JSON object adding an additional
-`class` field whose value is the fully qualified class name that you want
-to convert the JSON to:
+It is enough that the client formats the JSON object adding an additional `class` field whose value is the fully qualified class name that you want to convert the JSON to:
 
-====
 [source,javascript]
 ----
 cometd.publish('/echo', {
@@ -219,84 +128,24 @@ cometd.publish('/echo', {
     echo: 'cometd'
 });
 ----
-====
 
-On the server, in the `web.xml` file, you register the `org.cometd.server.JettyJSONContextServer`
-as `jsonContext` (see also xref:_java_json_server_config[the JSON server configuration section]),
-and at startup you add a custom converter for the `org.cometd.example.EchoInfo`
-class (see also xref:_java_server_services_integration[the services integration section]
-for more details about configuring CometD at startup).
+On the server, in the `web.xml` file, you register the `org.cometd.server.JettyJSONContextServer` as `jsonContext` (see also xref:_java_json_server_config[the JSON server configuration section]), and at startup you add a custom converter for the `org.cometd.example.EchoInfo` class (see also xref:_java_server_services_integration[the services integration section] for more details about configuring CometD at startup).
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-BayeuxServer bayeuxServer = ...;
-JettyJSONContextServer jsonContext = (JettyJSONContextServer)bayeuxServer.getOption("jsonContext");
-jsonContext.getJSON().addConvertor(EchoInfo.class, new EchoInfoConvertor());
+include::{doc_code}/JSONDocs.java[tags=configureConvertor]
 ----
-====
 
 Finally, these are the `EchoInfoConvertor` and `EchoInfo` classes:
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-public class EchoInfoConvertor implements JSON.Convertor {
-    public void toJSON(Object obj, JSON.Output out) {
-        EchoInfo echoInfo = (EchoInfo)obj;
-        out.addClass(EchoInfo.class);
-        out.add("id", echoInfo.getId());
-        out.add("echo", echoInfo.getEcho());
-    }
-
-    public Object fromJSON(Map map) {
-        String id = (String)map.get("id");
-        String echo = (String)map.get("echo");
-        return new EchoInfo(id, echo);
-    }
-}
-
-public class EchoInfo {
-    private final String id;
-    private final String echo;
-
-    public EchoInfo(String id, String echo) {
-        this.id = id;
-        this.echo = echo;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public String getEcho() {
-        return echo;
-    }
-}
+include::{doc_code}/JSONDocs.java[tags=convertor]
 ----
-====
 
-If, instead of using the JavaScript client, you are using the Java client,
-it is possible to configure the Java client to perform the serialization/deserialization
-of JSON objects in the same way (see also xref:_java_json_client_config[the JSON client configuration section]):
+If, instead of using the JavaScript client, you are using the Java client, it is possible to configure the Java client to perform the serialization/deserialization of JSON objects in the same way (see also xref:_java_json_client_config[the JSON client configuration section]):
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-JettyJSONContextClient jsonContext = ...;
-jsonContext.getJSON().addConvertor(EchoInfo.class, new EchoInfoConvertor());
-
-// Later in the application
-BayeuxClient bayeuxClient = ...;
-
-bayeuxClient.getChannel("/echo").subscribe(new ClientSessionChannel.MessageListener() {
-    public void onMessage(ClientSessionChannel channel, Message message) {
-        // Receive directly EchoInfo objects
-        EchoInfo data = (EchoInfo)message.getData();
-    }
-});
-
-// Publish directly EchoInfo objects
-bayeuxClient.getChannel("/echo").publish(new EchoInfo("42", "wohoo"));
+include::{doc_code}/JSONDocs.java[tags=clientConvertor]
 ----
-====

@@ -2,20 +2,14 @@
 [[_java]]
 == Java Libraries
 
-The CometD Java implementation is based on the popular
-https://eclipse.org/jetty[Jetty Http Server and Servlet Container],
-for both the client and the server, version 9 or greater.
+The CometD Java implementation is based on the popular https://eclipse.org/jetty[Jetty Http Server and Servlet Container], for both the client and the server, version 9 or greater.
 
 === CometD Java Libraries and Servlet 3.0
 
-The CometD Java implementation, though based on Jetty, is based on the standard
-Servlet 3.0 API and therefore can be deployed to any Servlet 3.0 compliant Servlet
-container, leveraging the asynchronous features the Servlet Container offers.
-see also xref:_java_server_configuration_servlet_30[the Servlet 3.0 configuration section]
-for further details.
+The CometD Java implementation, though based on Jetty, is based on the standard Servlet 3.0 API and therefore can be deployed to any Servlet 3.0 or greater compliant Servlet Container, leveraging the asynchronous features the Servlet Container offers.
+See also xref:_java_server_configuration_servlet_30[the Servlet 3.0 configuration section] for further details.
 
-The CometD Java Implementation offers a client library and a server library,
-which the following sections document in detail.
+The CometD Java Implementation offers a client library and a server library, which the following sections document in detail.
 
 include::java_client.adoc[]
 include::java_server.adoc[]

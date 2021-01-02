@@ -2,19 +2,16 @@
 [[_java_client]]
 === Client Library
 
-You can use the CometD client implementation in any JSE(TM) or JEE(TM) application.
-It consists of one main class, `org.cometd.client.BayeuxClient`, which
-implements the `ClientSession` interface.
+You can use the CometD client implementation in any JSE(TM) or JEE(TM) or Android application.
+
+It consists of one main class, `org.cometd.client.BayeuxClient`, which implements the `ClientSession` interface.
 
 Typical uses of the CometD Java client include:
 
-* The transport for a rich thick Java UI (for example, Swing or Android) to communicate
-  to a Bayeux Server (also via firewalls).
-* A load generator to simulate thousands of CometD clients, for example
-  `org.cometd.benchmark.client.CometDLoadClient`
+* The transport for a rich thick Java UI (for example, Swing or Android) to communicate to a Bayeux Server (also via firewalls).
+* A load generator to simulate thousands of CometD clients, for example `org.cometd.benchmark.client.CometDLoadClient`
 
-The following sections provide details about the Java `BayeuxClient` APIs and their
-implementation secrets.
+The following sections provide details about the Java `BayeuxClient` APIs and their implementation secrets.
 
 include::java_client_handshake.adoc[]
 include::java_client_subscribe.adoc[]

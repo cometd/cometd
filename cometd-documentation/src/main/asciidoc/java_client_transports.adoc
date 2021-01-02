@@ -25,23 +25,19 @@ Maven artifact coordinates: `org.cometd.java:cometd-java-client-websocket-okhttp
 You should configure `BayeuxClient` with the `websocket` transport before the `long-polling` transport, so that `BayeuxClient` can fall back to the `long-polling` if the `websocket` transport fails.
 You do so by listing the `websocket` transport before the `long-polling` transport in the `BayeuxClient` constructor:
 
-====
 [source,java,indent=0]
 ----
 include::{doc_code}/client/ClientTransportDocs.java[tags=transports]
 ----
-====
 
 It is always recommended that the `websocket` transport is never used without a fallback `long-polling` transport such as `JettyHttpClientTransport`.
 
 This is how you configure the transports based on OkHttp:
 
-====
 [source,java,indent=0]
 ----
 include::{doc_code}/client/ClientTransportDocs.java[tags=okhttp]
 ----
-====
 
 ===== Client Transports Configuration
 
