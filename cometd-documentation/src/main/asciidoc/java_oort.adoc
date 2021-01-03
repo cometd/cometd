@@ -2,39 +2,23 @@
 [[_java_oort]]
 === Scalability Clustering with Oort
 
-The CometD distribution ships a clustering solution called _Oort_ that enhances
-the scalability of a CometD-based system.
-Instead of connecting to a single node (usually represented by a virtual or
-physical host), clients connect to multiple nodes so that the processing power
-required to cope with the load is spread among multiple nodes, giving the whole
-system more scalability than using a single node.
+The CometD distribution ships a clustering solution called _Oort_ that enhances the scalability of a CometD-based system.
+Instead of connecting to a single node (usually represented by a virtual or physical host), clients connect to multiple nodes so that the processing power required to cope with the load is spread among multiple nodes, giving the whole system more scalability than using a single node.
 
-Oort clustering _is not_ a high availability clustering solution: if one of the
-nodes crashes, then all the clients connected to it are disconnected and will
-reconnect to other nodes (with a new handshake).
-All the information built by one client with its server up to that point
-(for example, the state of an online chess game) is generally lost
-(unless the application has implemented some other way to retrieve that
-information).
+Oort clustering _is not_ a high availability clustering solution: if one of the nodes crashes, then all the clients connected to it are disconnected and will reconnect to other nodes (with a new handshake).
+All the information built by one client with its server up to that point (for example, the state of an online chess game) is generally lost (unless the application has implemented some other way to retrieve that information).
 
 ==== Typical Infrastructure
 
-A typical, but not the only, infrastructure to set up an Oort cluster is to
-have a load balancer in front of Oort nodes, so that clients can connect
-transparently to any node.
+A typical, but not the only, infrastructure to set up an Oort cluster is to have a load balancer in front of Oort nodes, so that clients can connect transparently to any node.
 The load balancer should implement stickyness, which can be based on:
 
 * The remote IP address (recommended)
-* CometD's BAYEUX_BROWSER cookie (see also xref:_bayeux_multiple_clients[the multiple clients section])
-  which will only work for HTTP transports
+* CometD's BAYEUX_BROWSER cookie (see also xref:_bayeux_multiple_clients[the multiple clients section]) which will only work for HTTP transports
 * Some other mechanism the load balancer supports.
 
-You should configure DNS with a single host name/IP address pair (that of
-the load balancer), so that in case of a node crash, when clients attempt
-to reconnect to the same host name, the load balancer notices that the node
-has crashed and directs the connection to another node.
-The second node does not know about this client, and upon receiving the
-connect request sends to the client the advice to handshake.
+You should configure DNS with a single host name/IP address pair (that of the load balancer), so that in case of a node crash, when clients attempt to reconnect to the same host name, the load balancer notices that the node has crashed and directs the connection to another node.
+The second node does not know about this client, and upon receiving the connect request sends to the client the advice to handshake.
 
 image::oort_infrastructure.png[]
 
@@ -42,24 +26,17 @@ image::oort_infrastructure.png[]
 
 The next sections use the following terminology:
 
-* An _Oort cluster_ is also referred to as an _Oort cloud_; it follows that
-  _cloud_ is a synonym for _cluster_
-* An Oort node is also referred to an _Oort comet_; it follows that _comet_
-  is a synonym for _node_
+* An _Oort cluster_ is also referred to as an _Oort cloud_; it follows that _cloud_ is a synonym for _cluster_
+* An Oort node is also referred to an _Oort comet_; it follows that _comet_ is a synonym for _node_
 
 ==== Oort Cluster
 
-Any CometD server can become an Oort node by configuring an instance of
-`org.cometd.oort.Oort`.
-The `org.cometd.oort.Oort` instance is associated to the `org.cometd.bayeux.server.BayeuxServer`
-instance, and there can be only one `Oort` instance for each `BayeuxServer` instance.
+Any CometD server can become an Oort node by configuring an instance of `org.cometd.oort.Oort`.
+The `org.cometd.oort.Oort` instance is associated to the `org.cometd.bayeux.server.BayeuxServer` instance, and there can be only one `Oort` instance for each `BayeuxServer` instance.
 
 Oort nodes need to know each others' URLs to connect and form a cluster.
-A new node that wants to join the cluster needs to know at least one URL of
-another node that is already part of the cluster.
-Once it has connected to one node, the cluster informs the new node of the
-other nodes to which the new node is not yet connected, and the new node
-then connects to all the existing nodes.
+A new node that wants to join the cluster needs to know at least one URL of another node that is already part of the cluster.
+Once it has connected to one node, the cluster informs the new node of the other nodes to which the new node is not yet connected, and the new node then connects to all the existing nodes.
 
 There are two ways for a new node to discover at least one other node:
 
@@ -69,10 +46,8 @@ There are two ways for a new node to discover at least one other node:
 [[_java_oort_common_configuration]]
 ==== Common Configuration
 
-For both static and automatic discovery there exists a set of parameters that
-you can use to configure the `Oort` instance.
-The following is the list of common configuration parameters the automatic
-discovery and static configuration servlets share:
+For both static and automatic discovery there exists a set of parameters that you can use to configure the `Oort` instance.
+The following is the list of common configuration parameters the automatic discovery and static configuration servlets share:
 
 .Oort Common Configuration Parameters
 [cols="3,1,2,10", options="header"]
@@ -91,8 +66,7 @@ discovery and static configuration servlets share:
 | no
 | random string
 | The pre-shared secret that authenticates connections from other Oort comets.
-  It is mandatory when applications want to authenticate other Oort comets,
-  see also xref:_java_oort_authentication[the Oort authentication section].
+  It is mandatory when applications want to authenticate other Oort comets, see also xref:_java_oort_authentication[the Oort authentication section].
 
 | oort.channels
 | no
@@ -102,29 +76,23 @@ discovery and static configuration servlets share:
 | enableAckExtension
 | no
 | true
-| Whether to enable the message acknowledgement extension (see also
-  xref:_extensions_acknowledge[The acknowledgement extension]) in the BayeuxServer
-  instance and in the OortComet instances
+| Whether to enable the message acknowledgement extension (see also xref:_extensions_acknowledge[The acknowledgement extension]) in the `BayeuxServer` instance and in the `OortComet` instances
 
 | clientDebug
 | no
 | false
-| Whether to enable debug logging in the OortComet instances
+| Whether to enable debug logging in the `OortComet` instances
 
 | jsonContext
 | no
 | empty string
-| The full qualified name of a `JSONContext.Client` implementation used by
-  the OortComet instances used to connect to other Oort nodes
+| The full qualified name of a `JSONContext.Client` implementation used by the `OortComet` instances used to connect to other Oort nodes
 |===
 
 ==== Automatic Discovery Configuration
 
-You can configure the automatic discovery mechanism either via code, or by
-configuring a `org.cometd.oort.OortMulticastConfigServlet` in `web.xml`,
-for example:
+You can configure the automatic discovery mechanism either via code, or by configuring a `org.cometd.oort.OortMulticastConfigServlet` in `web.xml`, for example:
 
-====
 [source,xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
@@ -155,22 +123,14 @@ for example:
     </servlet>
 </web-app>
 ----
-====
 
-Since `Oort` depends on `BayeuxServer`, the `load-on-startup` parameter of the
-`OortMulticastConfigServlet` must be greater than that of the `CometDServlet`.
+Since `Oort` depends on `BayeuxServer`, the `load-on-startup` parameter of the `OortMulticastConfigServlet` must be greater than that of the `CometDServlet`.
 
-The mandatory `oort.url` init parameter must identify the URL at which this
-Oort node can be contacted, and it must be the URL the `CometDServlet` of this
-node serves.
-This URL is sent to other Oort nodes, so it is important that the host part of
-the URL does not point to "localhost", but to a resolvable host name or to an
-IP address, so that other nodes in the cluster can contact this node.
-Likewise, you must properly configure the context path part of the URL for
-this web application.
+The mandatory `oort.url` init parameter must identify the URL at which this Oort node can be contacted, and it must be the URL the `CometDServlet` of this node serves.
+This URL is sent to other Oort nodes, so it is important that the host part of the URL does not point to "localhost", but to a resolvable host name or to an IP address, so that other nodes in the cluster can contact this node.
+Likewise, you must properly configure the context path part of the URL for this web application.
 
-In addition to the common configuration init parameters, `OortMulticastConfigServlet`
-supports the configuration of these additional init parameters:
+In addition to the common configuration init parameters, `OortMulticastConfigServlet` supports the configuration of these additional init parameters:
 
 .Oort Multicast Configuration Parameters
 [cols="3,1,2,10", options="header"]
@@ -199,9 +159,8 @@ supports the configuration of these additional init parameters:
 | oort.multicast.groupInterfaces
 | no
 | all interfaces that support multicast
-| A comma separated list of IP addresses of the interfaces that listen for
-  the advertisements. In case of multihomed hosts, this parameter allows to
-  configure the specific network interfaces that can received the advertisements.
+| A comma separated list of IP addresses of the interfaces that listen for the advertisements.
+  In case of multihomed hosts, this parameter allows to configure the specific network interfaces that can received the advertisements.
 
 | oort.multicast.timeToLive
 | no
@@ -221,19 +180,12 @@ supports the configuration of these additional init parameters:
 | oort.multicast.maxTransmissionLength
 | no
 | 1400
-| The maximum length in bytes of multicast messages (the MTU of datagrams) –
-  limits the length of the Oort URL advertised by the node
+| The maximum length in bytes of multicast messages (the MTU of datagrams) -- limits the length of the Oort URL advertised by the node
 |===
 
-Each node that you configure with automatic discovery emits an advertisement
-(containing the node URL) every `oort.multicast.advertiseInterval` milliseconds
-on the specified multicast address and port (`oort.multicast.groupAddress` and
-`oort.multicast.groupPort`) with the specified time-to-live
-(`oort.multicast.timeToLive`). Advertisements continue until the web application
-is stopped, and only serve to advertise that a new node has appeared.
-`Oort` has a built-in mechanism that takes care of membership organization
-(see also xref:_java_oort_membership_organization[the membership organization section]
-for details).
+Each node that you configure with automatic discovery emits an advertisement (containing the node URL) every `oort.multicast.advertiseInterval` milliseconds on the specified multicast address and port (`oort.multicast.groupAddress` and `oort.multicast.groupPort`) with the specified time-to-live (`oort.multicast.timeToLive`).
+Advertisements continue until the web application is stopped, and only serve to advertise that a new node has appeared.
+`Oort` has a built-in mechanism that takes care of membership organization (see also xref:_java_oort_membership_organization[the membership organization section] for details).
 
 When enabling the Oort automatic discovery mechanism, you must be sure that:
 
@@ -242,32 +194,23 @@ When enabling the Oort automatic discovery mechanism, you must be sure that:
 * Multicast traffic routing is properly configured.
 
 Linux is normally compiled with multicast support in the most common distributions.
-You can control network interfaces with the `ip link` command to check if they
-have multicast enabled.
-You can check multicast routing with the command `ip route`, and the output
-should contain a line similar to:
+You can control network interfaces with the `ip link` command to check if they have multicast enabled.
+You can check multicast routing with the command `ip route`, and the output should contain a line similar to:
 
 ----
 224.0.0.0/4 dev eth0  scope link
 ----
 
-You might also want to force the JVM to prefer an IPv4 stack by setting the
-system property `-Djava.net.preferIPv4Stack=true` to facilitate multicast
-networking.
+You might also want to force the JVM to prefer an IPv4 stack by setting the system property `-Djava.net.preferIPv4Stack=true` to facilitate multicast networking.
 
 ==== Static Discovery Configuration
 
-You can use the static discovery mechanism if multicast is not available on
-the system where CometD is deployed.
+You can use the static discovery mechanism if multicast is not available on the system where CometD is deployed.
 It is only slightly more cumbersome to set up.
-It does not allow dynamic discovery of new nodes, but it is enough to configure
-each node with the well-known URL of an existing, started, node (often named
-"primary"). The primary node should, of course, be started before all other nodes.
+It does not allow dynamic discovery of new nodes, but it is enough to configure each node with the well-known URL of an existing, started, node (often named "primary"). The primary node should, of course, be started before all other nodes.
 
-You can accomplish the static discovery configuration either via code, or by
-configuring an `org.cometd.oort.OortStaticConfigServlet` in `web.xml`, for example:
+You can accomplish the static discovery configuration either via code, or by configuring an `org.cometd.oort.OortStaticConfigServlet` in `web.xml`, for example:
 
-====
 [source,xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
@@ -298,13 +241,10 @@ configuring an `org.cometd.oort.OortStaticConfigServlet` in `web.xml`, for examp
     </servlet>
 </web-app>
 ----
-====
 
-Just as for the automatic discovery, the `load-on-startup` parameter of the
-`OortStaticConfigServlet` must be greater than that of the `CometDServlet`.
+Just as for the automatic discovery, the `load-on-startup` parameter of the `OortStaticConfigServlet` must be greater than that of the `CometDServlet`.
 
-`OortStaticConfigServlet` supports the common init parameters listed in the
-previous section, and the following additional init parameter:
+`OortStaticConfigServlet` supports the common init parameters listed in the previous section, and the following additional init parameter:
 
 .Oort Static Configuration Parameters
 [cols="3,1,2,10", options="header"]
@@ -320,14 +260,9 @@ previous section, and the following additional init parameter:
 | A comma-separated list of URLs of other Oort comets to connect to at startup
 |===
 
-Configured in this way, the Oort node is ready to be part of the Oort cluster,
-but it's not part of the cluster yet, since it does not know the URLs of other
-nodes (and there is no automatic discovery). To make the Oort node part of the
-Oort cluster, you can configure the `oort.cloud` init parameter of the
-`OortStaticConfigServlet` with one (or a comma-separated list) of Oort node
-URL(s) to connect to:
+Configured in this way, the Oort node is ready to be part of the Oort cluster, but it's not part of the cluster yet, since it does not know the URLs of other nodes (and there is no automatic discovery).
+To make the Oort node part of the Oort cluster, you can configure the `oort.cloud` init parameter of the `OortStaticConfigServlet` with one (or a comma-separated list) of Oort node URL(s) to connect to:
 
-====
 [source,xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
@@ -362,236 +297,105 @@ URL(s) to connect to:
     </servlet>
 </web-app>
 ----
-====
 
 A "primary" node may be configured _without_ the `oort.cloud` parameter.
-The other nodes will be configured with the URL of the "primary" node, and when
-they connect to the "primary" node, the "primary" node will connect back to them,
-see xref:_java_oort_membership_organization[the membership organization section].
+The other nodes will be configured with the URL of the "primary" node, and when they connect to the "primary" node, the "primary" node will connect back to them, see xref:_java_oort_membership_organization[the membership organization section].
 
-Alternatively, it's possible to write custom initialization code (see the section on
-xref:_java_server_services_integration[the services integration section] for suggestions
-on how to do so) that links the node to the Oort cluster (this might be useful if
-Oort node URLs cannot be known a priori, but can be known at runtime), for example:
+Alternatively, it's possible to write custom initialization code (see the section on xref:_java_server_services_integration[the services integration section] for suggestions on how to do so) that links the node to the Oort cluster (this might be useful if Oort node URLs cannot be known a priori, but can be known at runtime), for example:
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-public class OortConfigurationServlet extends GenericServlet {
-    public void init() throws ServletException {
-        // Grab the Oort object
-        Oort oort = (Oort)getServletContext().getAttribute(Oort.OORT_ATTRIBUTE);
-
-        // Figure out the URLs to connect to, using other discovery means
-        List<String> urls = ...;
-
-        // Connect to the other Oort nodes
-        for (String url : urls) {
-            OortComet oortComet = oort.observeComet(url);
-            if (!oortComet.waitFor(1000, BayeuxClient.State.CONNECTED)) {
-                throw new ServletException("Cannot connect to Oort node " + url);
-            }
-        }
-    }
-
-    public void service(ServletRequest request, ServletResponse response) throws ServletException, IOException {
-        throw new ServletException();
-    }
-}
+include::{doc_code}/oort/OortDocs.java[tags=config]
 ----
-====
 
-The `OortComet` instance that `Oort.observeComet(url)` returns is a specialized
-version of `BayeuxClient`, see also xref:_java_client[the Java client section].
+The `OortComet` instance that `Oort.observeComet(url)` returns is a specialized version of `BayeuxClient`, see also xref:_java_client[the Java client section].
 
 [[_java_oort_membership_organization]]
 ==== Membership Organization
 
 When an Oort node connects to another Oort node, a bidirectional communication is established.
-If `nodeA` connects to `nodeB` (for example, via `oortA.observeComet(urlB)`),
-then an `OortComet` instance is created in `nodeA` connected to `nodeB`,
-and another `OortComet` instance is created in `nodeB` connected to `nodeA`.
+If `nodeA` connects to `nodeB` (for example, via `oortA.observeComet(urlB)`), then an `OortComet` instance is created in `nodeA` connected to `nodeB`, and another `OortComet` instance is created in `nodeB` connected to `nodeA`.
 
-After this direct, bidirectional communication has been established, a special
-message broadcasts across the whole Oort cluster (on channel `/oort/cluster`)
-where the two nodes broadcast their known siblings.
-Every node receiving this message that does not know about those siblings then
-establishes a bidirectional communication with them.
+After this direct, bidirectional communication has been established, a special message broadcasts across the whole Oort cluster (on channel `/oort/cluster`) where the two nodes broadcast their known siblings.
+Every node receiving this message that does not know about those siblings then establishes a bidirectional communication with them.
 
-For example, imagine that there are two simple Oort clusters, one made of nodes A
-and B and the other made of nodes C and D.
-When A and C connect, they broadcast their siblings (A broadcasts its siblings,
-now B and C, while C broadcasts its siblings, now A and D). All nodes connected,
-directly or indirectly, to the broadcaster receive this message.
-When C receives broadcasts from A's siblings it notices that one is itself (so
-it does nothing since it's already connected to A). The other is the unknown
-sibling B, and C establishes a bidirectional connection with B as well.
+For example, imagine that there are two simple Oort clusters, one made of nodes A and B and the other made of nodes C and D.
+When A and C connect, they broadcast their siblings (A broadcasts its siblings, now B and C, while C broadcasts its siblings, now A and D). All nodes connected, directly or indirectly, to the broadcaster receive this message.
+When C receives broadcasts from A's siblings it notices that one is itself (so it does nothing since it's already connected to A).
+The other is the unknown sibling B, and C establishes a bidirectional connection with B as well.
 Likewise, A receives the sibling broadcast message from C, and connects to D.
-Each new bidirectional connection triggers a sibling broadcast message on the
-whole cluster, until all nodes are connected.
+Each new bidirectional connection triggers a sibling broadcast message on the whole cluster, until all nodes are connected.
 
-If a node crashes, for example D, then all other nodes detect that and disconnect
-from the faulty node.
+If a node crashes, for example D, then all other nodes detect that and disconnect from the faulty node.
 
 image::oort_cloud.png[]
 
-In this way, an Oort cluster is aware of its members, but it does not do anything
-useful for the application.
+In this way, an Oort cluster is aware of its members, but it does not do anything useful for the application.
 
 The next section covers broadcast message forwarding over the entire cluster.
 
 ===== Listening for Membership Events
 
-Applications sometimes need to know when other nodes join or leave the Oort cluster;
-they can do so by registering node listeners that are notified when a new node joins
-the cluster and when a node leaves the cluster:
+Applications sometimes need to know when other nodes join or leave the Oort cluster; they can do so by registering node listeners that are notified when a new node joins the cluster and when a node leaves the cluster:
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-Oort oort = ...;
-oort.addCometListener(new Oort.CometListener() {
-    public void cometJoined(Event event) {
-        System.out.printf("Node joined the cluster %s%n", event.getCometURL());
-    }
-
-    public void cometLeft(Event event) {
-        System.out.printf("Node left the cluster %s%n", event.getCometURL());
-    }
-});
+include::{doc_code}/oort/OortDocs.java[tags=cometListener]
 ----
-====
 
-The _comet joined_ event is notified only after the local Oort node has allowed
-connection from the remote node (this may be denied by a `SecurityPolicy`).
+The _comet joined_ event is notified only after the local Oort node has allowed connection from the remote node (this may be denied by a `SecurityPolicy`).
 
-When a node joined event is notified, it is possible to obtain the `OortComet`
-connected to the remote Oort via `Oort.observeComet(String)`, and publish messages
-(or subscribe to additional channels):
+When a node joined event is notified, it is possible to obtain the `OortComet` connected to the remote Oort via `Oort.observeComet(String)`, and publish messages (or subscribe to additional channels):
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-final Oort oort = ...;
-oort.addCometListener(new Oort.CometListener() {
-    public void cometJoined(Event event) {
-        String cometURL = event.getCometURL();
-        OortComet oortComet = oort.observeComet(cometURL);
-
-        // Push information to the new node
-        oortComet.getChannel("/service/foo").publish("bar");
-    }
-
-    public void cometLeft(Event event) {
-    }
-});
+include::{doc_code}/oort/OortDocs.java[tags=cometJoined]
 ----
-====
 
-Applications can use node listeners to synchronize nodes; a new node can
-request (or be pushed) application data that needs to be present in all nodes
-(for example to warm up a cache). Such activities occur in concert with a
-`SecurityPolicy` that denies handshakes from remote clients until the new node
-is properly warmed up (clients retry the handshakes until the new node is ready).
+Applications can use node listeners to synchronize nodes; a new node can request (or be pushed) application data that needs to be present in all nodes (for example to warm up a cache). Such activities occur in concert with a `SecurityPolicy` that denies handshakes from remote clients until the new node is properly warmed up (clients retry the handshakes until the new node is ready).
 
 [[_java_oort_authentication]]
 ==== Authentication
 
-When an Oort node connects to another Oort node, it sends a handshake message
-containing an extension field that is peculiar to Oort with the following format:
+When an Oort node connects to another Oort node, it sends a handshake message containing an extension field that is peculiar to Oort with the following format:
 
-====
 [source,json]
 ----
 {
-    "channel": "/meta/handshake",
-    ... /* other usual handshake fields */
-    "ext": {
-        "org.cometd.oort": {
-            "oortURL": "http://halley.cometd.org:8080/cometd",
-            "cometURL": "http://halebopp.cometd.org:8080/cometd",
-            "oortSecret": "cstw27r+l+XqE62IrNZdCDiUObA="
-        }
+  "channel": "/meta/handshake",
+  ... /* other usual handshake fields */
+  "ext": {
+    "org.cometd.oort": {
+      "oortURL": "http://halley.cometd.org:8080/cometd",
+      "cometURL": "http://halebopp.cometd.org:8080/cometd",
+      "oortSecret": "cstw27r+l+XqE62IrNZdCDiUObA="
     }
+  }
 }
 ----
-====
 
-The `oortURL` field is the URL of the node that initiates the handshake; the
-`cometURL` field is the URL of the node that receives the handshake; the
-`oortSecret` is the base64 encoding of the SHA-1 digested bytes of the
-pre-shared secret of the initiating Oort node (see the earlier section,
-xref:_java_oort_common_configuration[the Oort common configuration section]).
+The `oortURL` field is the URL of the node that initiates the handshake; the `cometURL` field is the URL of the node that receives the handshake; the `oortSecret` is the base64 encoding of the SHA-1 digested bytes of the pre-shared secret of the initiating Oort node (see the earlier section, xref:_java_oort_common_configuration[the Oort common configuration section]).
 
-These extension fields provide a way for an Oort node to distinguish a
-handshake of a remote client (which might be subject to authentication checks)
-from a handshake performed by a remote node.
-For example, assume that remote clients always send an extension field
-containing an authentication token; then it is possible to write an
-implementation of `SecurityPolicy` as follows (see also
-xref:_java_server_authentication[the authentication section]):
+These extension fields provide a way for an Oort node to distinguish a handshake of a remote client (which might be subject to authentication checks) from a handshake performed by a remote node.
+For example, assume that remote clients always send an extension field containing an authentication token; then it is possible to write an implementation of `SecurityPolicy` as follows (see also xref:_java_server_authentication[the authentication section]):
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-public class OortSecurityPolicy extends DefaultSecurityPolicy {
-    private final Oort oort;
-
-    private OortSecurityPolicy(Oort oort) {
-        this.oort = oort;
-    }
-
-    @Override
-    public void canHandshake(BayeuxServer server, ServerSession session, ServerMessage message, Promise<Boolean> promise) {
-        // Local sessions can always handshake
-        if (session.isLocalSession()) {
-            promise.succeed(true);
-            return;
-        }
-
-        // Remote Oort nodes are allowed to handshake
-        if (oort.isOortHandshake(message)) {
-            promise.succeed(true);
-            return;
-        }
-
-        // Remote clients must have a valid token
-        Map<String, Object> ext = message.getExt();
-        boolean valid = ext != null && isValid(ext.get("token"));
-        promise.succeed(valid);
-    }
-}
+include::{doc_code}/oort/OortDocs.java[tags=policy]
 ----
-====
 
-The `Oort.isOortHandshake(Message)` method validates the handshake message and
-returns true if it is a handshake from another Oort node that has been
-configured with the same pre-shared secret.
-In this case, where you want to validate that the handshake attempt really
-comes from a valid Oort node (and not from an attacker that forged a message
-similar to what an Oort node sends), the pre-shared secret must be explicitly
-set to the same value for all Oort nodes, because it defaults to a random
-string that is different for each Oort node.
+The `Oort.isOortHandshake(Message)` method validates the handshake message and returns true if it is a handshake from another Oort node that has been configured with the same pre-shared secret.
+In this case, where you want to validate that the handshake attempt really comes from a valid Oort node (and not from an attacker that forged a message similar to what an Oort node sends), the pre-shared secret must be explicitly set to the same value for all Oort nodes, because it defaults to a random string that is different for each Oort node.
 
 ==== Broadcast Messages Forwarding
 
-Broadcast messages (that is, messages sent to non-meta and non-service channels,
-(see also xref:_javascript_subscribe[this section] for further details) are by
-definition messages that all clients subscribing to the channel the message is
-being sent to should receive.
+Broadcast messages (that is, messages sent to non-meta and non-service channels,(see also xref:_javascript_subscribe[this section] for further details) are by definition messages that all clients subscribing to the channel the message is being sent to should receive.
 
-In an Oort cluster, you might have clients connected to different nodes that
-subscribe to the same channel.
-If `clientA` connects to `nodeA`, `clientB` connects to `nodeB` and `clientC`
-connects to `nodeC`, when `clientA` broadcasts a message and you want `clientB`
-and `clientC` to receive it, then the Oort cluster must forward the message
-(sent by `clientA` and received by `nodeA`) to `nodeB` and `nodeC`.
+In an Oort cluster, you might have clients connected to different nodes that subscribe to the same channel.
+If `clientA` connects to `nodeA`, `clientB` connects to `nodeB` and `clientC` connects to `nodeC`, when `clientA` broadcasts a message and you want `clientB` and `clientC` to receive it, then the Oort cluster must forward the message (sent by `clientA` and received by `nodeA`) to `nodeB` and `nodeC`.
 
-You accomplish this by configuring the Oort configuration servlets to set the
-`oort.channels` init parameter to a comma-separated list of channels whose
-messages are forwarded to the Oort cluster:
+You accomplish this by configuring the Oort configuration servlets to set the `oort.channels` init parameter to a comma-separated list of channels whose messages are forwarded to the Oort cluster:
 
-====
 [source,xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
@@ -626,57 +430,31 @@ messages are forwarded to the Oort cluster:
     </servlet>
 </web-app>
 ----
-====
 
-Alternatively, you can use `Oort.observeChannel(String channelName)` to
-instruct a node to listen for messages on that channel published to one
-of the known nodes it is connected to.
+Alternatively, you can use `Oort.observeChannel(String channelName)` to instruct a node to listen for messages on that channel published to one of the known nodes it is connected to.
 
-When `nodeA` observes a channel, it means that messages sent on that channel,
-but received by other nodes, are automatically forwarded to `nodeA`.
+When `nodeA` observes a channel, it means that messages sent on that channel, but received by other nodes, are automatically forwarded to `nodeA`.
 
 [IMPORTANT]
 ====
-Message forwarding is not bidirectional; if `nodeA` forwards
-messages to other nodes it is not automatic that the other nodes forward
-messages to `nodeA`.
-However, in most cases you configure the Oort nodes in the same way by
-the same initialization code, and therefore all nodes forward the same
-channels.
+Message forwarding is not bidirectional; if `nodeA` forwards messages to other nodes it is not automatic that the other nodes forward messages to `nodeA`.
+However, in most cases you configure the Oort nodes in the same way by the same initialization code, and therefore all nodes forward the same channels.
 ====
 
-Forwarding of messages may be subject to temporary interruptions in case
-there is a temporary network connectivity failure between two nodes.
-To overcome this problem, the message acknowledgement extension (see also
-xref:_extensions_acknowledge[the acknowledgement extension section]) is enabled
-by default among Oort nodes so that, for short failures, the messages lost
-are resent automatically by the acknowledgement extension.
-Refer to xref:_java_oort_common_configuration[the Oort common configuration section]
-for the configuration details.
+Forwarding of messages may be subject to temporary interruptions in case there is a temporary network connectivity failure between two nodes.
+To overcome this problem, the message acknowledgement extension (see also xref:_extensions_acknowledge[the acknowledgement extension section]) is enabled by default among Oort nodes so that, for short failures, the messages lost are resent automatically by the acknowledgement extension.
+Refer to xref:_java_oort_common_configuration[the Oort common configuration section] for the configuration details.
 
-Remember that the message acknowledgement extension is not a fully persistent
-solution for lost messages (for example it does not guarantee message
-redelivery in case of long network failures). CometD does not provide yet a fully
-persistent solution for messages in case of long network failures.
+Remember that the message acknowledgement extension is not a fully persistent solution for lost messages (for example it does not guarantee message redelivery in case of long network failures). CometD does not provide yet a fully persistent solution for messages in case of long network failures.
 
-Since it has the ability to observe messages published to broadcast channels,
-an Oort cluster can already implement a simple chat application among users
-connected to different nodes.
-In the example below, when `clientA` publishes a message on channel `/chat`
-(green arrow), it arrives on `nodeA`; since `nodeB` and `nodeC` have been
-configured to observe channel `/chat`, they both receive the message from
-`nodeA` (green arrows), and therefore they can deliver the chat message to
-`clientB` and `clientC` respectively (green arrows).
+Since it has the ability to observe messages published to broadcast channels, an Oort cluster can already implement a simple chat application among users connected to different nodes.
+In the example below, when `clientA` publishes a message on channel `/chat` (green arrow), it arrives on `nodeA`; since `nodeB` and `nodeC` have been configured to observe channel `/chat`, they both receive the message from `nodeA` (green arrows), and therefore they can deliver the chat message to `clientB` and `clientC` respectively (green arrows).
 
 image::oort_chat.png[]
 
-If your application only needs to broadcast messages to clients connected to
-other nodes, an `Oort` instance is all you need.
+If your application only needs to broadcast messages to clients connected to other nodes, an `Oort` instance is all you need.
 
-If you need to send messages directly to particular clients (for example, `clientA`
-wants to send a message to `clientC` but not to `clientB`, then you need to
-set up an additional component of the Oort clustering called _Seti_, see also
-xref:_java_oort_seti[the Seti section].
+If you need to send messages directly to particular clients (for example, `clientA` wants to send a message to `clientC` but not to `clientB`, then you need to set up an additional component of the Oort clustering called _Seti_, see also xref:_java_oort_seti[the Seti section].
 
 include::java_oort_seti.adoc[]
 include::java_oort_objects.adoc[]

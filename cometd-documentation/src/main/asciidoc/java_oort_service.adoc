@@ -2,195 +2,63 @@
 [[_java_oort_objects_oort_service]]
 ==== OortService
 
-An `org.cometd.oort.OortService` is a named CometD service (see also
-xref:_java_server_services[the services section]) that forwards actions from a
-_requesting_ node to the node in the cluster that owns the data onto which
-the action must be performed, called the _owner_ node, and receives the
-action result back.
+An `org.cometd.oort.OortService` is a named CometD service (see also xref:_java_server_services[the services section]) that forwards actions from a _requesting_ node to the node in the cluster that owns the data onto which the action must be performed, called the _owner_ node, and receives the action result back.
 
-`OortService` builds on the concept introduced by `OortObject` that the
-ownership of a particular data entity belongs to one node only.
+`OortService` builds on the concept introduced by `OortObject` that the ownership of a particular data entity belongs to one node only.
 Any node can read the data entity, but only the owner can create/modify/delete it.
-In order to perform actions that modify the data entity, a node has to know
-what is the node that owns the data entity, and then forward the action to
-the owner node. `OortService` provides the facilities to forward the action
-to the owner node and receive the result of the action, or its failure.
+In order to perform actions that modify the data entity, a node has to know what is the node that owns the data entity, and then forward the action to the owner node.
+`OortService` provides the facilities to forward the action to the owner node and receive the result of the action, or its failure.
 
-Class `org.cometd.oort.OortService` must be subclassed by the application to
-implement key methods that perform the action logic.
+Class `org.cometd.oort.OortService` must be subclassed by the application to implement key methods that perform the action logic.
 
 The typical workflow of an `OortService` is the following:
 
 . The `OortService` receives a message from a remote client.
-  The message contains enough information for the `OortService` to determine
-  which node owns the data onto which the action must be applied, in the form
-  of the owner node's Oort URL.
-. Once the owner node Oort URL is known, the `OortService` can forward the
-  action by calling method `forward(...)`, passing in action information and
-  an opaque context.
-  The owner node may be the node that received the message from the remote
-  client itself, and applications do not need to do anything different from
-  the case where the owner node is a different one.
-. The action arrives to the owner node and CometD invokes method `onForward(...)`
-  on the `OortService` that resides on the owner node, passing in the action
-  information sent from the second step.
-  Method `onForward(...)` is implemented by application to perform the custom
-  logic and may return a successful result or a failure.
-. The successful action result returned by `onForward(...)` is sent back by
-  CometD to the requesting node, and when it arrives there, CometD invokes
-  method `onForwardSucceeded(...)`, passing in the result of the action
-  returned by `onForward(...)` and the opaque context passed to the `forward(...)`
-  method in the second step.
+  The message contains enough information for the `OortService` to determine which node owns the data onto which the action must be applied, in the form of the owner node's Oort URL.
+. Once the owner node Oort URL is known, the `OortService` can forward the action by calling method `forward(...)`, passing in action information and an opaque context.
+  The owner node may be the node that received the message from the remote client itself, and applications do not need to do anything different from the case where the owner node is a different one.
+. The action arrives to the owner node and CometD invokes method `onForward(...)` on the `OortService` that resides on the owner node, passing in the action information sent from the second step.
+  Method `onForward(...)` is implemented by application to perform the custom logic and may return a successful result or a failure.
+. The successful action result returned by `onForward(...)` is sent back by CometD to the requesting node, and when it arrives there, CometD invokes method `onForwardSucceeded(...)`, passing in the result of the action returned by `onForward(...)` and the opaque context passed to the `forward(...)` method in the second step.
   Method `onForwardSucceeded(...)` is implemented by the application.
-. The action failure returned by `onForward(...)` is sent back by CometD to
-  the requesting node, and when it arrives there, CometD invokes method
-  `onForwardFailed(...)`, passing in the failure returned by `onForward(...)`
-  and the opaque context passed to the `forward(...)` method in the second step.
+. The action failure returned by `onForward(...)` is sent back by CometD to the requesting node, and when it arrives there, CometD invokes method `onForwardFailed(...)`, passing in the failure returned by `onForward(...)` and the opaque context passed to the `forward(...)` method in the second step.
   Method `onForwardFailed(...)` is implemented by the application.
 
 [[_java_oort_objects_oort_service_creation]]
 ===== OortService Creation
 
-`OortService` are uniquely named across the cluster, and are usually created
-at startup by subclassing them.
-Since they are CometD services, they are usually annotated to listen for messages
-on certain channels (see also xref:_java_server_services_annotated[the annotated services section]
-for further details on service annotations):
+`OortService` are uniquely named across the cluster, and are usually created at startup by subclassing them.
+Since they are CometD services, they are usually annotated to listen for messages on certain channels (see also xref:_java_server_services_annotated[the annotated services section] for further details on service annotations):
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-ServerAnnotationProcessor processor = ...;
-Oort oort = ...;
-
-// Create the service instance and process its annotations
-NameEditService nameEditService = new NameEditService(oort);
-processor.process(nameEditService);
+include::{doc_code}/oort/OortServiceDocs.java[tags=create]
 ----
-====
 
 where the `NameEditService` is defined as follows:
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-@Service(NameEditService.NAME)
-public class NameEditService extends OortService<String, Boolean> {
-    public static final String NAME = "name_edit";
-
-    public NameEditService(Oort oort) {
-        super(oort, NAME);
-    }
-
-    // Lifecycle methods triggered by standard lifecycle annotations
-
-    @PostConstruct
-    public void construct() throws Exception {
-        start();
-    }
-
-    @PreDestroy
-    public void destroy() throws Exception {
-        stop();
-    }
-
-    // CometD's listener method on channel "/service/edit"
-
-    @org.cometd.annotation.Listener("/service/edit")
-    public void editName(final ServerSession remote, final ServerMessage message) {
-        // Step #1: remote client sends an action request.
-        // This runs in the requesting node.
-
-        // Find the owner Oort URL from the message.
-        // Applications must implement this method with their logic.
-        String ownerURL = findOwnerURL(message);
-
-        // Prepare the action data.
-        String oldName = (String)remote.getAttribute("name");
-        String newName = (String)message.getDataAsMap().get("name");
-        Map<String, Object> actionData = new HashMap<String, Object>();
-        actionData.put("oldName", oldName);
-        actionData.put("newName", newName);
-
-        // Step #2: forward to the owner node.
-        // Method forward(...) is inherited from OortService
-        forward(ownerURL, actionData, new ServerContext(remote, message));
-    }
-
-    @Override
-    protected Result<Boolean> onForward(Request request) {
-        // Step #3: perform the action.
-        // This runs in the owner node.
-
-        try {
-            Map<String, Object> actionData = request.getDataAsMap();
-            // Edit the name.
-            // Applications must implement this method.
-            boolean result = editName(actionData);
-
-            // Return the action result.
-            return Result.success(result);
-        } catch (Exception x) {
-            // Return the action failure.
-            return Result.failure("Could not edit name, reason: " + x.getMessage());
-        }
-    }
-
-    @Override
-    protected void onForwardSucceeded(Boolean result, ServerContext context) {
-        // Step #4: successful result.
-        // This runs in the requesting node.
-
-        // Notify the remote client of the result of the edit.
-        context.getServerSession().deliver(getLocalSession(), context.getServerMessage().getChannel(), result, Promise.noop());
-    }
-
-    @Override
-    protected void onForwardFailed(Object failure, ServerContext context) {
-        // Step #5: failure result.
-        // This runs in the requesting node.
-
-        // Notify the remote client of the failure.
-        context.getServerSession().deliver(getLocalSession(), context.getServerMessage().getChannel(), failure, Promise.noop());
-    }
-}
+include::{doc_code}/oort/OortServiceDocs.java[tags=service]
 ----
-====
 
 [[_java_oort_objects_oort_service_primary]]
 ===== OortPrimaryService
 
 Applications may have data entities that are naturally owned by any node.
-For example, in a chat application a chat room may be created by a user in
-any node, and be owned by the node the user that created it is connected to.
+For example, in a chat application a chat room may be created by a user in any node, and be owned by the node the user that created it is connected to.
 
-There are cases, however, where entities cannot be owned by any node, but
-instead must be owned by one node only, usually referred to as the _primary_ node.
-A typical example of such an entity is a unique (across the cluster) ID
-generator that produces unique number values, or a service that accesses a
-storage for archiving purposes (such as a file system or a database) that is
-only available on a particular node, or a service that must perform the atomic
-creation of certain entities (for example, unique user names), etc.
+There are cases, however, where entities cannot be owned by any node, but instead must be owned by one node only, usually referred to as the _primary_ node.
+A typical example of such an entity is a unique (across the cluster) ID generator that produces unique number values, or a service that accesses a storage for archiving purposes (such as a file system or a database) that is only available on a particular node, or a service that must perform the atomic creation of certain entities (for example, unique user names), etc.
 
-CometD provides `org.cometd.oort.OortPrimaryService` that can be subclasses by
-applications to write services that perform actions on data entities that must
-be owned by a single node only.
-There is one instance of `OortPrimaryService` with the same name in each node
-(like for other `OortService` instances), but only one of them is the _primary_.
+CometD provides `org.cometd.oort.OortPrimaryService` that can be subclasses by applications to write services that perform actions on data entities that must be owned by a single node only.
+There is one instance of `OortPrimaryService` with the same name in each node (like for other `OortService` instances), but only one of them is the _primary_.
 
-CometD provides an out-of-the-box implementation of `OortPrimaryService`,
-`org.cometd.oort.OortPrimaryLong`, that can be used as a unique-across-the-cluster
-number generator.
+CometD provides an out-of-the-box implementation of `OortPrimaryService`, `org.cometd.oort.OortPrimaryLong`, that can be used as a unique-across-the-cluster number generator.
 
-The implementation of an `OortPrimaryService` subclass is similar to that of
-`OortService` (see also xref:_java_oort_objects_oort_service_creation[this section]),
-but this time the `forward(...)` is always called with the same Oort URL
-(that of the _primary_ node) that can be obtained by calling method
-`OortPrimaryService.getPrimaryOortURL()`.
+The implementation of an `OortPrimaryService` subclass is similar to that of `OortService` (see also xref:_java_oort_objects_oort_service_creation[this section]), but this time the `forward(...)` is always called with the same Oort URL (that of the _primary_ node) that can be obtained by calling method `OortPrimaryService.getPrimaryOortURL()`.
 
-Decide whether or not a node is a primary node can be done by reading system
-properties passed to the command line, or via configuration files, or other
-similar means.
+Decide whether or not a node is a primary node can be done by reading system properties passed to the command line, or via configuration files, or other similar means.
 
 [[_java_oort_objects_tradeoffs]]
 ==== OortObject and OortService TradeOffs
@@ -200,24 +68,11 @@ Given a certain node, the application may need to access data stored on a remote
 For modify/delete operations on the data, use an `OortService` and forward the action to the owner node.
 The read operation, however, can be performed either using an `OortObject` or using an `OortService`.
 
-When using an `OortObject`, you trade more memory usage for smaller latencies
-to read the data, since the data is replicated to all nodes and therefore the
-read operation is local and does not involve network communication.
+When using an `OortObject`, you trade more memory usage for smaller latencies to read the data, since the data is replicated to all nodes and therefore the read operation is local and does not involve network communication.
 
-When using an `OortService`, you trade less memory usage for bigger latencies
-to read the data, since reading the data requires to forward the action to the
-node that owns the data and have the owner node to send it back to the requesting node.
+When using an `OortService`, you trade less memory usage for bigger latencies to read the data, since reading the data requires to forward the action to the node that owns the data and have the owner node to send it back to the requesting node.
 
-Whether to use one solution or the other depends heavily on the application,
-the server machine specification (especially available memory), and may even
-change over time.
+Whether to use one solution or the other depends heavily on the application, the server machine specification (especially available memory), and may even change over time.
 
-For example, an application that is able to handle user information for a user
-base of 500 users using `OortObject` may not be able to do so when it grows
-to 500,000 users.
-Similarly, if the nodes are colocated in the same data center connected via a
-fast network, it may be worth using `OortService` (as the network time will be
-negligible), but if the nodes and geographically distributed (for example, one
-in America, one in Europe, one in Asia), then the network time may become an
-issue and data replication through `OortObject` a better solution to minimize
-latencies.
+For example, an application that is able to handle user information for a user base of 500 users using `OortObject` may not be able to do so when it grows to 500,000 users.
+Similarly, if the nodes are colocated in the same data center connected via a fast network, it may be worth using `OortService` (as the network time will be negligible), but if the nodes and geographically distributed (for example, one in America, one in Europe, one in Asia), then the network time may become an issue and data replication through `OortObject` a better solution to minimize latencies.

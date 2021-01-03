@@ -66,6 +66,11 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
+      <groupId>org.cometd.java</groupId>
+      <artifactId>cometd-java-oort</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
       <groupId>javax.servlet</groupId>
       <artifactId>javax.servlet-api</artifactId>
     </dependency>

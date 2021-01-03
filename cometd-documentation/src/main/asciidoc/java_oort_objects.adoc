@@ -2,34 +2,21 @@
 [[_java_oort_objects]]
 === Distributed Objects and Services
 
-The xref:_java_oort[Oort section] described how it is possible to link nodes to
-form an Oort cluster.
-Oort nodes are all connected to each other so that they are aware of all the
-other peer nodes.
-Additionally, each node can forward messages that have been published to
-broadcast channels (see also xref:_concepts_channels[this section]) to other nodes.
+The xref:_java_oort[Oort section] described how it is possible to link nodes to form an Oort cluster.
+Oort nodes are all connected to each other so that they are aware of all the other peer nodes.
+Additionally, each node can forward messages that have been published to broadcast channels (see also xref:_concepts_channels[this section]) to other nodes.
 
-Your application may need to maintain information, on each node, that is
-distributed across all nodes.
+Your application may need to maintain information, on each node, that is distributed across all nodes.
 A typical example is the total number of users connected to all nodes.
-Each node can easily know how many users are connected to itself, but in this
-case you want to know the total number of all users connected to all nodes (for
-example to display the number in a user interface). The information that you
-want to distribute is the "data entity" – in this case the number of users
-connected to each node – and this feature is named "data distribution". Having
-each node distributing its own data entity allows each node to know the data
-entity of the other nodes, and compute the total number of users.
+Each node can easily know how many users are connected to itself, but in this case you want to know the total number of all users connected to all nodes (for example to display the number in a user interface).
+The information that you want to distribute is the "data entity" -- in this case the number of users connected to each node -- and this feature is named "data distribution".
+Having each node distributing its own data entity allows each node to know the data entity of the other nodes, and compute the total number of users.
 
 Furthermore, your application may need to perform certain actions on a specific node.
-For example, your application may need to access a database system that is
-only accessible from a specific node for security reasons.
+For example, your application may need to access a database system that is only accessible from a specific node for security reasons.
 This feature is named "service forwarding".
 
-Oort and Seti (see also xref:_java_oort_seti[the java oort seti section]) alone
-do not offer data distribution or service forwarding out of the box, but it
-is possible to build on Oort features to implement them, and this is exactly
-what CometD offers, respectively, with xref:_java_oort_objects_oort_object[`OortObject`]
-and xref:_java_oort_objects_oort_service[`OortService`].
+Oort and Seti (see also xref:_java_oort_seti[the java oort seti section]) alone do not offer data distribution or service forwarding out of the box, but it is possible to build on Oort features to implement them, and this is exactly what CometD offers, respectively, with xref:_java_oort_objects_oort_object[`OortObject`] and xref:_java_oort_objects_oort_service[`OortService`].
 
 include::java_oort_object.adoc[]
 include::java_oort_service.adoc[]

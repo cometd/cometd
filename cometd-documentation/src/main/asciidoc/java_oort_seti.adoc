@@ -2,25 +2,19 @@
 [[_java_oort_seti]]
 === Seti
 
-`Seti` is the Oort clustering component that tracks clients connected to any
-node in the cluster, and allows an application to send messages to particular
-client(s) in the cluster transparently, as if they were in the local node.
+`Seti` is the Oort clustering component that tracks clients connected to any node in the cluster, and allows an application to send messages to particular client(s) in the cluster transparently, as if they were in the local node.
 
 ==== Configuring Seti
 
 Keep the following points in mind when configuring Seti:
 
-* You must configure an `org.cometd.oort.Seti` instance with an associated
-  `org.cometd.oort.Oort` instance, either via code or by configuring an
-  `org.cometd.oort.SetiServlet` in `web.xml`.
+* You must configure an `org.cometd.oort.Seti` instance with an associated `org.cometd.oort.Oort` instance, either via code or by configuring an `org.cometd.oort.SetiServlet` in `web.xml`.
 * There may be only one instance of `Seti` for each `Oort`.
-* The `load-on-startup` parameter of the `SetiServlet` must be greater than
-  that of the Oort configuration Servlet.
+* The `load-on-startup` parameter of the `SetiServlet` must be greater than that of the Oort configuration Servlet.
 * `SetiServlet` does not have any configuration init parameter.
 
 A configuration example follows:
 
-====
 [source,xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
@@ -57,166 +51,62 @@ A configuration example follows:
     </servlet>
 </web-app>
 ----
-====
 
 ==== Associating and Disassociating Users
 
-`Seti` allows you to associate a unique string representation of a user with
-one or more `ServerSessions` (see also xref:_concepts[the concepts section] for
-more details on `ServerSession`).
+`Seti` allows you to associate a unique string representation of a user with one or more `ServerSessions` (see also xref:_concepts[the concepts section] for more details on `ServerSession`).
 
-This normally occurs when the user first logs in to the application, and the
-unique string representation of the user can be anything that the user provides
-to authenticate itself (a user name, a token, a database ID). For brevity, this
-unique string representation of the user is called `userId`.
-The same `userId` may log in multiple times (for example from a desktop computer
-and from a mobile device), so it is associated to multiple `ServerSessions`.
+This normally occurs when the user first logs in to the application, and the unique string representation of the user can be anything that the user provides to authenticate itself (a user name, a token, a database ID).
+For brevity, this unique string representation of the user is called `userId`.
+The same `userId` may log in multiple times (for example from a desktop computer and from a mobile device), so it is associated to multiple `ServerSessions`.
 
-In practice, the best way to associate a `userId` with a `ServerSession` is in a
-`SecurityPolicy` during xref:_java_server_authentication[authentication], for example:
+In practice, the best way to associate a `userId` with a `ServerSession` is in a `SecurityPolicy` during xref:_java_server_authentication[authentication], for example:
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-public class MySecurityPolicy extends DefaultSecurityPolicy {
-    private final Seti seti;
-
-    public MySecurityPolicy(Seti seti) {
-        this.seti = seti;
-    }
-
-    @Override
-    public void canHandshake(BayeuxServer server, ServerSession session, ServerMessage message, Promise<Boolean> promise) {
-        if (session.isLocalSession()) {
-            promise.succeed(true);
-            return;
-        }
-
-        // Authenticate
-        String userId = performAuthentication(session, message);
-        if (userId == null) {
-            promise.succeed(false);
-            return;
-        }
-
-        // Associate
-        seti.associate(userId, session);
-
-        promise.succeed(true);
-    }
-}
+include::{doc_code}/oort/OortSetiDocs.java[tags=policy]
 ----
-====
 
-Alternatively, you can perform the association in a `BayeuxServer.Extension`
-or in a CometD service (see also xref:_java_server_services[the services section]),
-in response to a specific message that the client always sends after a
-successful handshake.
+Alternatively, you can perform the association in a `BayeuxServer.Extension` or in a CometD service (see also xref:_java_server_services[the services section]), in response to a specific message that the client always sends after a successful handshake.
 
-When a `Seti` instance first associates a `userId` with a session, it broadcasts
-a _presence_ message on the cluster (on channel `/seti/all`, (see also
-xref:_java_oort_seti_listeners[the Seti listeners section]) that tells all the
-other nodes where this `userId` is located.
+When a `Seti` instance first associates a `userId` with a session, it broadcasts a _presence_ message on the cluster (on channel `/seti/all`, (see also xref:_java_oort_seti_listeners[the Seti listeners section]) that tells all the other nodes where this `userId` is located.
 
 In this way, all the nodes in the cluster know where a particular `userId` resides.
-Further associations of the same `userId` (with different sessions) on the same `Seti`
-do not broadcast any presence message, because other `Setis` already know that
-that particular `userId` resides in that `Seti`.
-The same `userId` can be associated in different nodes (for example, the desktop
-computer logs in – and therefore is associated – in `comet1`, while the mobile
-device is associated in `comet2`).
+Further associations of the same `userId` (with different sessions) on the same `Seti` do not broadcast any presence message, because other `Setis` already know that that particular `userId` resides in that `Seti`.
+The same `userId` can be associated in different nodes (for example, the desktop computer logs in -- and therefore is associated -- in `comet1`, while the mobile device is associated in `comet2`).
 
-Similarly, you can disassociate a `userId` at any time by calling
-`Seti.disassociate(userId, session)`.
-If the user disconnects or "disappears" (for example, it crashed or its network
-dropped), the server removes or expires its session and `Seti` automatically
-disassociates the `userId`.
-When the last disassociation of a particular `userId` occurs on a `Seti`
-instance, `Seti` broadcasts a presence message on the cluster (on channel
-`/seti/all`) that tells all the other nodes that `userId` is no longer present
-on that `Seti` (although the same `userId` might still be associated in other
-`Setis`).
+Similarly, you can disassociate a `userId` at any time by calling `Seti.disassociate(userId, session)`.
+If the user disconnects or "disappears" (for example, it crashed or its network dropped), the server removes or expires its session and `Seti` automatically disassociates the `userId`.
+When the last disassociation of a particular `userId` occurs on a `Seti` instance, `Seti` broadcasts a presence message on the cluster (on channel `/seti/all`) that tells all the other nodes that `userId` is no longer present on that `Seti` (although the same `userId` might still be associated in other `Setis`).
 
 [[_java_oort_seti_listeners]]
 ==== Listening for Presence Messages
 
-Applications can register presence listeners that are notified when a presence
-message arrives at a `Seti` instance:
+Applications can register presence listeners that are notified when a presence message arrives at a `Seti` instance:
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-Seti seti = ...;
-seti.addPresenceListener(new Seti.PresenceListener() {
-    public void presenceAdded(Event event) {
-        System.out.printf("User ID %s is now present in node %s%n", event.getUserId(), event.getURL());
-    }
-
-    public void presenceRemoved(Event event) {
-        System.out.printf("User ID %s is now absent in node %s%n", event.getUserId(), event.getURL());
-    }
-});
+include::{doc_code}/oort/OortSetiDocs.java[tags=listener]
 ----
-====
 
-The URL `event.getURL()` returns is the URL of an Oort node; you can use it
-to retrieve the `OortComet` instance connected to that node, for example to
-publish messages (or to subscribe to additional channels):
+The URL `event.getURL()` returns is the URL of an Oort node; you can use it to retrieve the `OortComet` instance connected to that node, for example to publish messages (or to subscribe to additional channels):
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-final Seti seti = ...;
-seti.addPresenceListener(new Seti.PresenceListener() {
-    public void presenceAdded(Event event) {
-        Oort oort = seti.getOort();
-        String oortURL = event.getURL();
-        OortComet oortComet = oort.getComet(oortURL);
-
-        Map<String, Object> data = new HashMap<String, Object>
-        data.put("action", "sync_request");
-        data.put("userId", event.getUserId());
-
-        oortComet.getChannel("/service/sync").publish(data);
-    }
-
-    public void presenceRemoved(Event event) {
-    }
-});
+include::{doc_code}/oort/OortSetiDocs.java[tags=publish]
 ----
-====
 
 ==== Sending Messages
 
-After users have been associated, `Seti.sendMessage(String userId, String channel, Object data)`
-can send messages to a particular user in the cluster.
+After users have been associated, `Seti.sendMessage(String userId, String channel, Object data)` can send messages to a particular user in the cluster.
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-@Service("seti_forwarder");
-public class SetiForwarder {
-    @Inject
-    private Seti seti;
-
-    @Listener("/service/forward")
-    public void forward(ServerSession session, ServerMessage message) {
-        Map<String,Object> data = message.getDataAsMap();
-        String targetUserId = (String)data.get("targetUserId");
-        seti.sendMessage(targetUserId, message.getChannel(), data);
-    }
-}
+include::{doc_code}/oort/OortSetiDocs.java[tags=forward]
 ----
-====
 
-In the example below, `clientA` wants to send a message to `clientC`
-but not to `clientB`.
-Therefore `clientA` sends a message to the server it is connected to using a
-service channel so that the message is not broadcast, and then a specialized
-service (see also xref:_java_server_services[the services section]) routes the
-message to the appropriate user using `Seti` (see code snippet above).
-The `Seti` on `nodeA` knows that the target user is on `nodeC`
-(thanks to the association) and forwards the message to `nodeC`, which in
-turn delivers the message to `clientC`.
+In the example below, `clientA` wants to send a message to `clientC` but not to `clientB`.
+Therefore `clientA` sends a message to the server it is connected to using a service channel so that the message is not broadcast, and then a specialized service (see also xref:_java_server_services[the services section]) routes the message to the appropriate user using `Seti` (see code snippet above).
+The `Seti` on `nodeA` knows that the target user is on `nodeC` (thanks to the association) and forwards the message to `nodeC`, which in turn delivers the message to `clientC`.
 
 image::seti_chat.png[]
