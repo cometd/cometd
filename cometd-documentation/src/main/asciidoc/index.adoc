@@ -1,4 +1,4 @@
-= The CometD Reference Book – {version}
+= The CometD Reference Book -- {version}
 Simone Bordet
 :doctype: book
 :numbered:
@@ -8,6 +8,8 @@ Simone Bordet
 :sectanchors:
 :sectnumlevels: 5
 :icons: font
+:source-highlighter: coderay
+:linkcss:
 
 :toc!:
 

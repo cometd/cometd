@@ -2,58 +2,54 @@
 [[_javascript]]
 == JavaScript Library
 
-The CometD JavaScript library is a portable JavaScript implementation with
-a _vanilla_ implementation, entirely based on pure JavaScript and the standard
-objects available in the browser, and _bindings_ for the major JavaScript toolkits,
-currently https://dojotoolkit.org/[Dojo], https://jquery.com/[jQuery] and
-https://angularjs.org/[Angular 1].
-This means that the CometD Bayeux JavaScript implementation is written in pure
-JavaScript with no dependencies on the toolkits, and that the toolkit bindings
-add the syntactic sugar that makes the Bayeux APIs feel like they are native
-to the toolkit.
-For example, it is possible to refer to the standard `cometd` object using the
-following notations:
+The CometD project provides a client-side JavaScript library to be used in browsers, as well as client-side and server-side JavaScript library to be used in NodeJS.
 
-====
+=== CometD NodeJS Support
+
+Two sibling CometD subprojects provide respectively a https://github.com/cometd/cometd-nodejs-client/[client-side JavaScript library] and a https://github.com/cometd/cometd-nodejs-server/[server-side JavaScript library] for NodeJS.
+Please refer to those sibling projects for further information if you need CometD to run in a NodeJS environment.
+
+=== CometD Browser Support
+
+In the documentation that follows, you will find information about the client-side JavaScript library to be used in browsers.
+
+The CometD JavaScript library is a portable JavaScript implementation with a _vanilla_ implementation, entirely based on pure JavaScript and the standard objects available in the browser environment, and _bindings_ for the major JavaScript toolkits, currently https://dojotoolkit.org/[Dojo], https://jquery.com/[jQuery] and https://angularjs.org/[Angular 1].
+
+This means that the CometD Bayeux JavaScript implementation is written in pure JavaScript with no dependencies on the toolkits, and that the toolkit bindings add the syntactic sugar that makes the Bayeux APIs feel like they are native to the toolkit.
+For example, it is possible to refer to the standard `cometd` object using the following notations:
+
 [source,javascript]
 ----
-// CommonJS style
+// CommonJS style.
 var cometd = require('cometd');
 
-// AMD style
+// AMD style.
 require(['cometd'], function(cometd) {
     ...
 });
 
-// Vanilla style
+// Vanilla JavaScript style.
 var cometd = new org.cometd.CometD();
 
-// jQuery style
+// jQuery style.
 var cometd = $.cometd;
 
-// Angular style
+// Angular style.
 angular.module('cometdApp', ['cometd'])
     .controller('cometdCtrl', ['cometd'], function(cometd) {
         ...
     });
 
-// Old Dojo style
+// Old Dojo style.
 var cometd = dojox.cometd;
 ----
-====
 
-If you followed xref:_primer[the primer], you might have noticed that the skeleton
-project proposes you to reference both the portable implementation, under
-`cometd/cometd.js`, and one binding – for example Dojo's – under `dojox/cometd.js`.
+If you followed xref:_primer[the primer], you might have noticed that the skeleton project proposes you to reference both the portable implementation, under `cometd/cometd.js`, and one binding -- for example Dojo's -- under `dojox/cometd.js`.
 For jQuery, the binding is under `jquery/jquery.cometd.js`.
-The use of the Bayeux APIs from the JavaScript toolkits is almost identical, and
-the following sections do not refer to a particular toolkit.
-Small differences surface only when passing callback functions to the Bayeux API,
-where Dojo users might use `hitch()`, while jQuery users might prefer an
-anonymous function approach.
+The use of the Bayeux APIs from the JavaScript toolkits is almost identical, and the following sections do not refer to a particular toolkit.
+Small differences surface only when passing callback functions to the Bayeux API, where Dojo users might use `hitch()`, while jQuery users might prefer an anonymous function approach.
 
-The following sections present details about the JavaScript Bayeux APIs and their
-implementation secrets.
+The following sections present details about the JavaScript Bayeux APIs and their implementation secrets.
 
 include::javascript_configure.adoc[]
 include::javascript_handshake.adoc[]

@@ -8,7 +8,8 @@ The CometD project values your contribution, of _any_ kind, and participating in
 [[_contribute_mailing_lists]]
 === Contributing via Mailing Lists
 
-The simplest way to contribute to the CometD project is to subscribe to the CometD mailing lists. There are two mailing lists:
+The simplest way to contribute to the CometD project is to subscribe to the CometD mailing lists.
+There are two mailing lists:
 
 * *cometd-users@googlegroups.com*, to be used for discussions about how to use CometD.
   This is a low traffic mailing list.

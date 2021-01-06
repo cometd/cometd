@@ -5,7 +5,6 @@
 Often an application needs to send several messages to different channels.
 A naive way of doing it follows:
 
-====
 [source,javascript]
 ----
 // Warning: non-optimal code
@@ -13,47 +12,26 @@ cometd.publish('/channel1', { product: 'foo' });
 cometd.publish('/channel2', { notificationType: 'all' });
 cometd.publish('/channel3', { update: false });
 ----
-====
 
-You might think that the three publishes leave the client one after the other,
-but that is not the case.
-Remember that `publish()` is asynchronous (it returns immediately), so the three
-`publish()` calls in sequence likely return well before a single byte reaches the network.
-The first `publish()` executes immediately, and the other two are in a queue,
-waiting for the first `publish()` to _complete_.
-A `publish()` is complete when the server receives it, sends back the meta response,
-and the client receives the meta response for that publish.
+You might think that the three publishes leave the client one after the other, but that is not the case.
+Remember that `publish()` is asynchronous (it returns immediately), so the three `publish()` calls in sequence likely return well before a single byte reaches the network.
+The first `publish()` executes immediately, and the other two are in a queue, waiting for the first `publish()` to _complete_.
+A `publish()` is complete when the server receives it, sends back the meta response, and the client receives the meta response for that publish.
 When the first `publish` completes, the second publish is executed and waits to complete.
 After that, the third `publish()` finally executes.
 
-If you set the configuration parameter called _autoBatch_ to true, the implementation
-automatically batches messages that have been queued.
-In the example above, the first `publish()` executes immediately, and when it completes,
-the implementation batches the second and third `publish()` into one request to the server.
-The _autoBatch_ feature is interesting for those systems where events received
-asynchronously and unpredictably – either at a fast rate or in bursts – end up
-generating a `publish()` to the server: in such cases, using the batching API is
-not effective (as each event would generate only one `publish()`). A burst of events
-on the client generates a burst of `publish()` to the server, but the autobatch
-mechanism batches them automatically, making the communication more efficient.
+If you set the configuration parameter called _autoBatch_ to true, the implementation automatically batches messages that have been queued.
+In the example above, the first `publish()` executes immediately, and when it completes, the implementation batches the second and third `publish()` into one request to the server.
+The _autoBatch_ feature is interesting for those systems where events received asynchronously and unpredictably -- either at a fast rate or in bursts -- end up generating a `publish()` to the server: in such cases, using the batching API is not effective (as each event would generate only one `publish()`).
+A burst of events on the client generates a burst of `publish()` to the server, but the autobatch mechanism batches them automatically, making the communication more efficient.
 
 The queueing mechanism avoids queueing a `publish()` behind a long poll.
-If not for this mechanism, the browser would receive three publish requests but it
-has only two connections available, and one is already occupied by the long poll request.
-Therefore, the browser might decide to round-robin the publish requests, so that the
-first publish goes on the second connection, which is free, and it is actually sent
-over the network, (remember that the first connection is already busy with the long
-poll request),  schedule the second publish to the first connection (after the long
-poll returns), and schedule the third publish again to the second connection, after
-the first publish returns.
-The result is that if you have a long poll timeout of five minutes, the second publish
-request might arrive at the server five minutes later than the first and the third
-publish request.
+If not for this mechanism, the browser would receive three publish requests but it has only two connections available, and one is already occupied by the long poll request.
+Therefore, the browser might decide to round-robin the publish requests, so that the first publish goes on the second connection, which is free, and it is actually sent over the network, (remember that the first connection is already busy with the long poll request),  schedule the second publish to the first connection (after the long poll returns), and schedule the third publish again to the second connection, after the first publish returns.
+The result is that if you have a long poll timeout of five minutes, the second publish request might arrive at the server five minutes later than the first and the third publish request.
 
-You can optimize the three publishes using batching, which is a way to group messages
-together so that a single Bayeux message actually carries the three publish messages.
+You can optimize the three publishes using batching, which is a way to group messages together so that a single Bayeux message actually carries the three publish messages.
 
-====
 [source,javascript]
 ----
 cometd.batch(function() {
@@ -69,41 +47,29 @@ cometd.publish('/channel2', { notificationType: 'all' });
 cometd.publish('/channel3', { update: false });
 cometd.endBatch()
 ----
-====
 
 Notice how the three `publish()` calls are now within a function passed to `batch()`.
 
-Alternatively, but less recommended, you can surround the three `publish()` calls
-between `startBatch()` and `endBatch()`.
+Alternatively, but less recommended, you can surround the three `publish()` calls between `startBatch()` and `endBatch()`.
 
 [WARNING]
 ====
 Remember to call `endBatch()` after calling `startBatch()`.
-If you don't – for example, because an exception is thrown in the middle of the
-batch – your messages continue to queue, and your application does not work as expected.
+If you don't -- for example, because an exception is thrown in the middle of the batch -- your messages continue to queue, and your application does not work as expected.
 ====
 
-If you still want to risk using the `startBatch()` and `endBatch()` calls, remember
-that you must do so from the same context of execution; message batching has not been
-designed to span multiple user interactions.
-For example, it would be wrong to start a batch in functionA (triggered by user
-interaction), and ending the batch in functionB (also triggered by user interaction
-and not called by functionA). Similarly, it would be wrong to start a batch in functionA
-and then schedule (using `setTimeout()`) the execution of functionB to end the batch.
-Function `batch()` already does the correct batching for you (also in case of errors),
-so it is the recommended way to do message batching.
+If you still want to risk using the `startBatch()` and `endBatch()` calls, remember that you must do so from the same context of execution; message batching has not been designed to span multiple user interactions.
+For example, it would be wrong to start a batch in functionA (triggered by user interaction), and ending the batch in functionB (also triggered by user interaction and not called by functionA).
+Similarly, it would be wrong to start a batch in functionA and then schedule (using `setTimeout()`) the execution of functionB to end the batch.
+Function `batch()` already does the correct batching for you (also in case of errors), so it is the recommended way to do message batching.
 
-When a batch starts, subsequent API calls are not sent to the server, but instead
-queued until the batch ends.
-The end of the batch packs up all the queued messages into one single Bayeux message
-and sends it over the network to the Bayeux server.
+When a batch starts, subsequent API calls are not sent to the server, but instead queued until the batch ends.
+The end of the batch packs up all the queued messages into one single Bayeux message and sends it over the network to the Bayeux server.
 
-Message batching allows efficient use of the network: instead of making three
-request/response cycles, batching makes only one request/response cycle.
+Message batching allows efficient use of the network: instead of making three request/response cycles, batching makes only one request/response cycle.
 
 Batches can consist of different API calls:
 
-====
 [source,javascript]
 ----
 var _subscription;
@@ -113,6 +79,5 @@ cometd.batch(function() {
     cometd.publish('/bar', { ... });
 });
 ----
-====
 
 The Bayeux server processes batched messages in the order they are sent.

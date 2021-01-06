@@ -2,36 +2,22 @@
 [[_javascript_disconnect]]
 === Disconnecting
 
-The JavaScript CometD implementation performs automatic reconnect in case of
-network or Bayeux server failures. xref:_javascript_configure[The javascript configure section]
-describes the reconnect parameters.
+The JavaScript CometD implementation performs automatic reconnect in case of network or Bayeux server failures.
+xref:_javascript_configure[The javascript configure section] describes the reconnect parameters.
 
-Calling the JavaScript CometD API `disconnect()` results in a message being
-sent to the Bayeux server so that it can clean up any state associated with
-that client.
-As with all functions that involve a communication with the Bayeux server, it
-is an asynchronous function: it returns immediately, well before the Bayeux
-server has received the disconnect request.
-If the server is unreachable (because it is down or because of network failures),
-the JavaScript CometD implementation stops any reconnection attempt and cleans
-up any local state.
-It is normally safe to ignore if the `disconnect()` call has been successful or
-not: the client is in any case disconnected, its local state cleaned up, and if
-the server has not been reached it eventually times out the client and cleans up
-any server-side state for that client.
+Calling the JavaScript CometD API `disconnect()` results in a message being sent to the Bayeux server so that it can clean up any state associated with that client.
+As with all functions that involve a communication with the Bayeux server, it is an asynchronous function: it returns immediately, well before the Bayeux server has received the disconnect request.
+If the server is unreachable (because it is down or because of network failures), the JavaScript CometD implementation stops any reconnection attempt and cleans up any local state.
+It is normally safe to ignore if the `disconnect()` call has been successful or not: the client is in any case disconnected, its local state cleaned up, and if the server has not been reached it eventually times out the client and cleans up any server-side state for that client.
 
 [TIP]
 ====
-If you are debugging your application with Firebug, and you shut down
-the server, you see in the Firebug console the attempts to reconnect.
-To stop those attempts,  type in the Firebug command line: `dojox.cometd.disconnect()`
-(for Dojo) or `$.cometd.disconnect()` (for jQuery).
+If you are debugging your application with Firebug, and you shut down the server, you see in the Firebug console the attempts to reconnect.
+To stop those attempts,  type in the Firebug command line: `dojox.cometd.disconnect()` (for Dojo) or `$.cometd.disconnect()` (for jQuery).
 ====
 
-In case you really want to know whether the server received the disconnect
-request, you can pass a callback function to the `disconnect()` function:
+In case you really want to know whether the server received the disconnect request, you can pass a callback function to the `disconnect()` function:
 
-====
 [source,javascript]
 ----
 cometd.disconnect(function(disconnectReply) {
@@ -40,50 +26,35 @@ cometd.disconnect(function(disconnectReply) {
     }
 });
 ----
-====
 
 Like other APIs, also `disconnect()` may take an additional object that is sent to the server:
 
-====
 [source,javascript]
 ----
 var additional = {
-    com.acme.reset: false
+    "com.acme.reset": false
 };
 cometd.disconnect(additional, function(disconnectReply) {
     // Your logic here.
 });
 ----
-====
 
-See also xref:_javascript_handshake[the javascript handshake section] for
-further information about passing additional objects.
+See also xref:_javascript_handshake[the javascript handshake section] for further information about passing additional objects.
 
 ==== Short Network Failures
 
-In case of temporary network failures, the client is notified through the
-`/meta/connect` channel (see also xref:_javascript_subscribe[the javascript subscribe section]
-about meta channels) with messages that have the `successful` field set to
-false (see also the archetypes in xref:_primer[the primer section] as an example).
-However, the Bayeux server might be able to keep the client's state, and when
-the network resumes the Bayeux server might behave as if nothing happened.
-The client in this case just re-establishes the long poll, but any message the
-client publishes during the network failure is not automatically re-sent (though
-it is possible to be notified, through the `/meta/publish` channel or better
-yet through callback functions, of the failed publishes).
+In case of temporary network failures, the client is notified through the `/meta/connect` channel (see also xref:_javascript_subscribe[the javascript subscribe section] about meta channels) with messages that have the `successful` field set to false (see also the archetypes in xref:_primer[the primer section] as an example).
+However, the Bayeux server might be able to keep the client's state, and when the network resumes the Bayeux server might behave as if nothing happened.
+The client in this case just re-establishes the long poll, but any message the client publishes during the network failure is not automatically re-sent (though it is possible to be notified, through the `/meta/publish` channel or better yet through callback functions, of the failed publishes).
 
 ==== Long Network Failures or Server Failures
 
-If the network failure is long enough, the Bayeux server times out the lost
-client, and deletes the state associated with it.
-The same happens when the Bayeux server crashes (except that the state of all
-clients is lost). In this case, the reconnection mechanism on the client
-performs the following steps:
+If the network failure is long enough, the Bayeux server times out the lost client, and deletes the state associated with it.
+The same happens when the Bayeux server crashes (except that the state of all clients is lost).
+In this case, the reconnection mechanism on the client performs the following steps:
 
 * A long poll is re-attempted, but the server rejects it with a `402::unknown_session` error message.
 * A handshake is attempted, and the server normally accepts it and allocates a new client.
 * Upon the successful re-handshake, a long poll is re-established.
 
-If you register meta channels listener, or if you use callback functions, be
-aware of these steps, since a reconnection might involve more than one message
-exchange with the server.
+If you register meta channels listener, or if you use callback functions, be aware of these steps, since a reconnection might involve more than one message exchange with the server.

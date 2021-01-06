@@ -4,27 +4,21 @@
 
 Disconnecting is straightforward:
 
-====
 [source,java,indent=0]
 ----
 include::{doc_code}/client/ClientDisconnectDocs.java[tags=simpleDisconnect]
 ----
-====
 
 Like the other APIs, you can pass a callback `MessageListener` to be notified that the server received and processed the disconnect request:
 
-====
 [source,java,indent=0]
 ----
 include::{doc_code}/client/ClientDisconnectDocs.java[tags=callbackDisconnect]
 ----
-====
 
 Alternatively, you can block and wait for the disconnect to complete:
 
-====
 [source,java,indent=0]
 ----
 include::{doc_code}/client/ClientDisconnectDocs.java[tags=blockingDisconnect]
 ----
-====

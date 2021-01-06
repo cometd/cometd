@@ -2,84 +2,30 @@
 [[_java_server_context]]
 ==== Contextual Information
 
-Server-side components such as services (see also xref:_java_server_services[the services section]),
-extensions (see also xref:_extensions[the extensions section]) or authorizers (see also
-xref:_java_server_authorizers[the authorizers section]) may need to access contextual
-information, that is information provided by the Servlet environment such as
-request attributes, HTTP session attributes, servlet context attributes or
-network address information.
+Server-side components such as services (see also xref:_java_server_services[the services section]), extensions (see also xref:_extensions[the extensions section]) or authorizers (see also xref:_java_server_authorizers[the authorizers section]) may need to access contextual information, that is information provided by the Servlet environment such as request attributes, HTTP session attributes, servlet context attributes or network address information.
 
-While the Servlet model can easily provide such information, CometD can use
-also non-HTTP transports such as WebSocket that may not have such information
-readily available.
-CometD abstracts the retrieval of contextual information for any transport via
-the `org.cometd.bayeux.server.BayeuxContext` class.
+While the Servlet model can easily provide such information, CometD can use also non-HTTP transports such as WebSocket that may not have such information readily available.
+CometD abstracts the retrieval of contextual information for any transport via the `org.cometd.bayeux.server.BayeuxContext` class.
 
-An instance of `BayeuxContext` can be obtained from a `ServerMessage` instance:
+An instance of `BayeuxContext` can be obtained from a `ServerMessage` instance; a typical usage in a `SecurityPolicy` (see also xref:_java_server_authorization[the authorization section]) is the following:
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-public void yourMethod(ServerMessage message) {
-    BayeuxContext context = message.getBayeuxContext();
-    ...
-}
+include::{doc_code}/server/ServerContextDocs.java[tags=policy]
 ----
-====
 
-A typical usage in a `SecurityPolicy` (see also
-xref:_java_server_authorization[the authorization section]) is the following:
+Refer to the {javadocs}[Javadoc documentation] for further information about methods available in `BayeuxContext`.
 
-====
-[source,java]
-----
-public class OneClientPerAddressSecurityPolicy extends DefaultSecurityPolicy {
-    private final Set<String> addresses = new HashSet<>();
-
-    @Override
-    public void canHandshake(BayeuxServer bayeuxServer, ServerSession session, ServerMessage message, Promise<Boolean> promise) {
-        BayeuxContext context = message.getBayeuxContext();
-
-        // Get the remote address of the client
-        String remoteAddress = context.getRemoteAddress().getHostString();
-
-        // Only allow clients from different remote addresses
-
-        boolean notPresent = addresses.add(remoteAddress);
-
-        // Avoid to leak addresses
-        session.addListener(new ServerSession.RemovedListener() {
-            public void removed(ServerSession session, ServerMessage message, boolean timeout) {
-                addresses.remove(remoteAddress);
-            }
-        });
-
-        promise.succeed(notPresent ? true : false);
-    }
-}
-----
-====
-
-Refer to the {javadocs}[Javadoc documentation]
-for further information about methods available in `BayeuxContext`.
-
-It is recommended to always call `ServerMessage.getBayeuxContext()` to obtain the
-`BayeuxContext` instance; it should never be cached and then reused across messages.
-This allows maximum portability of your code in case you're using a mix of
-WebSocket and HTTP transports.
+It is recommended to always call `ServerMessage.getBayeuxContext()` to obtain the `BayeuxContext` instance; it should never be cached and then reused across messages.
+This allows maximum portability of your code in case you're using a mix of WebSocket and HTTP transports.
 
 ===== HTTP Contextual Information
 
-For pure HTTP transports such as `long-polling` and `callback-polling`, there
-is a direct link between the information contained in the `BayeuxContext`
-and the current HTTP request that carried the Bayeux message.
+For pure HTTP transports such as `long-polling` and `callback-polling`, there is a direct link between the information contained in the `BayeuxContext` and the current HTTP request that carried the Bayeux message.
 
 For these transports, the `BayeuxContext` is created anew for every HTTP request.
 
 ===== WebSocket Contextual Information
 
-For the WebSocket transport, the `BayeuxContext` instance is created only once
-per connection, during the upgrade from HTTP to WebSocket.
-The information contained in the HTTP upgrade request is copied into the
-`BayeuxContext` instance and never updated again, since after the upgrade the
-protocol is WebSocket, and the HTTP contextual information is not available anymore.
+For the WebSocket transport, the `BayeuxContext` instance is created only once per connection, during the upgrade from HTTP to WebSocket.
+The information contained in the HTTP upgrade request is copied into the `BayeuxContext` instance and never updated again, since after the upgrade the protocol is WebSocket, and the HTTP contextual information is not available anymore.

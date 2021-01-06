@@ -6,12 +6,10 @@ To initiate the communication with the Bayeux server, you need to call `BayeuxCl
 
 The following is a typical use:
 
-====
 [source,java,indent=0]
 ----
 include::{doc_code}/client/ClientHandshakeDocs.java[tags=handshakeSetup]
 ----
-====
 
 `BayeuxClient` must be instantiated passing the absolute URL (and therefore including the scheme, host, optionally the port and the path) of the Bayeux server.
 The scheme of the URL must always be either "http" or "https".
@@ -28,29 +26,23 @@ Calling `handshake()` _does not_ mean that you have completed the handshake with
 
 To verify that the handshake is successful, you can pass a callback `MessageListener` to `BayeuxClient.handshake()`:
 
-====
 [source,java,indent=0]
 ----
 include::{doc_code}/client/ClientHandshakeDocs.java[tags=callbackHandshake]
 ----
-====
 
 An alternative, equivalent, way is to add a `MessageListener` before calling `BayeuxClient.handshake()`:
 
-====
 [source,java,indent=0]
 ----
 include::{doc_code}/client/ClientHandshakeDocs.java[tags=listenerHandshake]
 ----
-====
 
 Another alternative is to use the built-in synchronous features of the `BayeuxClient` and wait for the handshake to complete:
 
-====
 [source,java,indent=0]
 ----
 include::{doc_code}/client/ClientHandshakeDocs.java[tags=blockingHandshake]
 ----
-====
 
 The `BayeuxClient.waitFor()` method waits the given timeout (in milliseconds)for the `BayeuxClient` to reach the given state, and returns true if the state is reached before the timeout expires.

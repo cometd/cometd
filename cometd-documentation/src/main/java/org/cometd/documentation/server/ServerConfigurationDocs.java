@@ -23,7 +23,7 @@ import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.server.BayeuxServerImpl;
 
 @SuppressWarnings("unused")
-public class ServerConfigDocs {
+public class ServerConfigurationDocs {
     public void init() {
         BayeuxServer bayeuxServer = new BayeuxServerImpl();
         // tag::init[]

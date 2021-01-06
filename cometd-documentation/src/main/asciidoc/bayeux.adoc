@@ -87,7 +87,7 @@ JSON::
   JavaScript Object Notation (JSON) is a lightweight data-interchange format.
   It is easy for humans to read and write.
   It is easy for machines to parse and generate.
-  It is based on a subset of the JavaScript Programming Language, Standard ECMA-262 3rd Edition – December 1999.
+  It is based on a subset of the JavaScript Programming Language, Standard ECMA-262 3rd Edition -- December 1999.
   JSON is described at https://www.json.org/.
 
 [[_bayeux_operation]]
@@ -340,7 +340,8 @@ integer  = digit *( digit )
 
 ==== Channels
 
-Channels are identified by names that are styled as the absolute path component of a URI without parameters. This is the BNF definition for channel names:
+Channels are identified by names that are styled as the absolute path component of a URI without parameters.
+This is the BNF definition for channel names:
 
 ----
 channel_name     = "/"  channel_segments
@@ -351,7 +352,8 @@ channel_segment  = token
 The channel name consists of an initial `/` followed by an optional sequence of path segments separated by a single slash `/` character.
 Within a path segment, the character `/` is reserved.
 
-Channel names commencing with `/meta/` are reserved for the Bayeux protocol (see also xref:_bayeux_meta_channels[the meta channels section]). Channel names commencing with `/service/` have a special meaning for the Bayeux protocol (see also xref:_bayeux_service_channels[the service channels section]).
+Channel names commencing with `/meta/` are reserved for the Bayeux protocol (see also xref:_bayeux_meta_channels[the meta channels section]).
+Channel names commencing with `/service/` have a special meaning for the Bayeux protocol (see also xref:_bayeux_service_channels[the service channels section]).
 Example non-meta channel names are:
 
 `/foo/bar`::
@@ -1179,7 +1181,8 @@ Application events are published in event messages sent from a Bayeux client to 
 A Bayeux client can publish events on a channel by sending event messages.
 An event message MAY be sent in new HTTP request, or it MAY be sent in the same HTTP request as any message other than a handshake meta message.
 
-A publish message MAY be sent from an unconnected client (that has not performed handshaking and thus does not have a client ID). It is OPTIONAL for a server to accept unconnected publish requests, and they should apply server specific authentication and authorization before doing so.
+A publish message MAY be sent from an unconnected client (that has not performed handshaking and thus does not have a client ID).
+It is OPTIONAL for a server to accept unconnected publish requests, and they should apply server specific authentication and authorization before doing so.
 
 A publish event message MUST contain the message fields:
 

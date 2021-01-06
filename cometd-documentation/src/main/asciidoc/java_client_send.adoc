@@ -15,12 +15,10 @@ The second case is covered by the `ClientSession.remoteCall(...)` API.
 
 The following is a typical example of publishing a message on a channel:
 
-====
 [source,java,indent=0]
 ----
 include::{doc_code}/client/ClientSendDocs.java[tags=simplePublish]
 ----
-====
 
 Publishing data on a channel is an asynchronous operation.
 
@@ -32,12 +30,10 @@ If the message publish fails for any reason, for example because server cannot b
 
 In order to be notified of publish acknowledgments or failures, you can use this variant of the `publish()` method:
 
-====
 [source,java,indent=0]
 ----
 include::{doc_code}/client/ClientSendDocs.java[tags=callbackPublish]
 ----
-====
 
 [NOTE]
 ====
@@ -46,12 +42,10 @@ Calling `publish()` _does not_ mean that you have published the message when `pu
 
 Message batching is also available:
 
-====
 [source,java,indent=0]
 ----
 include::{doc_code}/client/ClientSendDocs.java[tags=batchPublish]
 ----
-====
 
 [WARNING]
 ====
@@ -67,12 +61,10 @@ You can send binary data such as a `byte[]` or a `ByteBuffer` by using the `org.
 
 Remember that you must have the binary extension enabled as specified in xref:_extensions_binary[the binary extension section].
 
-====
 [source,java,indent=0]
 ----
 include::{doc_code}/client/ClientSendDocs.java[tags=binaryPublish]
 ----
-====
 
 As explained in the xref:_concepts_binary_data[concepts section], CometD takes care of converting the `BinaryData` object into the right format and adds the binary extension to the message.
 
@@ -83,12 +75,10 @@ Remote calls are used when the client only wants to call the server to perform s
 
 The typical usage is the following:
 
-====
 [source,java,indent=0]
 ----
 include::{doc_code}/client/ClientSendDocs.java[tags=remoteCall]
 ----
-====
 
 The first argument of `remoteCall()` is the _target_ of the remote call.
 You can think of it as a method name to invoke on the server, or you can think of it as the action you want to perform.
@@ -110,9 +100,7 @@ Remember that you must have the binary extension enabled in the client as specif
 
 Here is an example that sends a `ByteBuffer`:
 
-====
 [source,java,indent=0]
 ----
 include::{doc_code}/client/ClientSendDocs.java[tags=binaryRemoteCall]
 ----
-====

@@ -18,7 +18,8 @@ Like any benchmark, your mileage may vary, and while the benchmark may give you 
 
 === Benchmark Setup
 
-Load testing can be very stressful to the OS, TCP stack and network, so you may need to tune a few values to avoid that the OS, TCP stack or network become a bottleneck, making you think the CometD does not scale. CometD does scale.
+Load testing can be very stressful to the OS, TCP stack and network, so you may need to tune a few values to avoid that the OS, TCP stack or network become a bottleneck, making you think the CometD does not scale.
+CometD does scale.
 The setup must be done on both client(s) and server(s) hosts.
 
 A suggested Linux configuration follows, and you should try to match it for other operative systems if you don't use Linux.
@@ -68,11 +69,13 @@ max threads -> 2048
 max heap size -> 8 GiB
 ----
 
-The values above are just an example to make you aware of the fact that they heavily impact the benchmark results. You have to try yourself and tune those parameters depending on your benchmark goals, your operative system and your hardware.
+The values above are just an example to make you aware of the fact that they heavily impact the benchmark results.
+You have to try yourself and tune those parameters depending on your benchmark goals, your operative system and your hardware.
 
 === Running the Benchmark
 
-The benchmark consists of a real chat application, and simulates remote users sending messages to a chat room. The messages are broadcast to all room members.
+The benchmark consists of a real chat application, and simulates remote users sending messages to a chat room.
+The messages are broadcast to all room members.
 
 The benchmark stresses one core feature of CometD, namely the capability of receiving one message from a remote user and then fan-out this message to all room members.
 

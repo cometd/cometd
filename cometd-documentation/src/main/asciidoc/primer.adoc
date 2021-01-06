@@ -253,24 +253,25 @@ The JSP file, `index.jsp`, contains the reference to the JavaScript toolkit depe
 </html>
 ----
 
-It also configures a JavaScript configuration object, `config`, with variables that the JavaScript application might need. This is totally optional.
+It also configures a JavaScript configuration object, `config`, with variables that the JavaScript application might need.
+This is totally optional.
 
 The JavaScript application, contained in the `application.js` file, configures the `cometd` object and starts the application.
 The archetypes provide:
 
-====
 [source,javascript,indent=0]
 ----
 include::../../../../cometd-archetypes/dojo-jetty11/src/main/resources/archetype-resources/src/main/webapp/application.js[]
 ----
-====
 
 Notice the following:
 
 * The use of the `dojo/domReady!` dependency to wait for the document to load up before executing the `cometd` object initialization.
 * The use of `dojo.addOnUnload()` to disconnect when the page is refreshed or closed.
-* The use of the function `+_metaHandshake()+` to set up the initial configuration on first contact with the server (or when the server has lost client information, for example because of a server restart). This is totally optional, but highly recommended and it is the recommended way to perform subscriptions.
-* The use of the function `+_metaConnect()+` to detect when the communication has been successfully established (or re-established). This is totally optional, but highly recommended. +
+* The use of the function `+_metaHandshake()+` to set up the initial configuration on first contact with the server (or when the server has lost client information, for example because of a server restart).
+  This is totally optional, but highly recommended and it is the recommended way to perform subscriptions.
+* The use of the function `+_metaConnect()+` to detect when the communication has been successfully established (or re-established).
+  This is totally optional, but highly recommended. +
 Be warned that the use of the `+_metaConnect()+` along with the `+_connected+` status variable can result in your code (that in this simple example sets the innerHTML property) to be called more than once if, for example, you experience temporary network failures or if the server restarts. +
 Therefore the code that you put in the `+_connectionEstablished()+` function must be https://en.wikipedia.org/wiki/Idempotent[idempotent].
   In other words, make sure that if the `+_connectionEstablished()+` function is called more than one time, it will behave exactly as if it is called only once.
