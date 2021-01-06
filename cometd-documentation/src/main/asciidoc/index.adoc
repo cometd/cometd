@@ -8,6 +8,8 @@ Simone Bordet
 :sectanchors:
 :sectnumlevels: 5
 :icons: font
+:source-highlighter: coderay
+:linkcss:
 
 :toc!:
 
