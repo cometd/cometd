@@ -20,13 +20,13 @@
 
 /* AsciiDoctor Customization */
 
-h1, h2, h3, h4, h5, h6, div, table.tableblock>.title {
+h1, h2, h3, h4, h5, h6, div, table.tableblock>.title, #toctitle, #toc ul {
   font-family: "Varela Round", sans-serif;
 }
 table.tableblock>.title {
     font-style: normal;
 }
-code {
+code, pre {
     font-family: "Source Code Pro", monospace;
 }
 
