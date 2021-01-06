@@ -4,12 +4,10 @@
 
 A CometD inherited service is a Java class that extends the CometD class `org.cometd.server.AbstractService`, which specifies the Bayeux channels of interest to the service, and adheres to the contract the `AbstractService` class defines:
 
-====
 [source,java,indent=0]
 ----
 include::{doc_code}/server/ServerServiceDocs.java[tags=inherited]
 ----
-====
 
 This is a simple echo service that returns the message sent by the remote client on channel `/echo` to the remote client itself.
 Notice the following:
@@ -23,23 +21,19 @@ Notice the following:
 
 The contract that the `BayeuxService` class requires for service methods is that the method must have the following signature:
 
-====
 [source,java]
 ----
 public void processEcho(ServerSession remote, ServerMessage message)
 ----
-====
 
 Service methods must be `public`; they must have two parameters; the first parameter must be of type `ServerSession`; the second parameter must be of type `ServerMessage` or derived (such as `ServerMessage.Mutable`).
 
 The channel name specified to the `addService(...)` method may be a wildcard, for example:
 
-====
 [source,java,indent=0]
 ----
 include::{doc_code}/server/ServerServiceDocs.java[tags=wildcard]
 ----
-====
 
 Note also how the first example uses `ServerSession.deliver(...)` to send a message to a particular remote client, while the second uses `ServerChannel.publish(...)` to send a message to anyone who subscribes to channel `+/events/baseball/team/*+`.
 
@@ -47,12 +41,10 @@ Method `addService(...)` is used to map a server-side channel listener with a se
 
 It is not uncommon that a single service has multiple service methods, and service methods may be even added and removed dynamically:
 
-====
 [source,java,indent=0]
 ----
 include::{doc_code}/server/ServerServiceDocs.java[tags=dynamic]
 ----
-====
 
 Note how service methods can be removed using `removeService(...)`.
 

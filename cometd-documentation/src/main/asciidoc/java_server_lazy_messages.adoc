@@ -2,126 +2,50 @@
 [[_java_server_lazy_messages]]
 ==== Lazy Channels and Messages
 
-Sometimes applications need to send non-urgent messages to clients; alert
-messages such as "email received" or "server uptime", are typical examples,
-but chat messages sometimes also fit this definition.
-While these messages need to reach the client(s) eventually, there is no need
-to deliver them immediately: they are queued into the `ServerSession` message
-queue, but their delivery can be postponed to the first occasion.
+Sometimes applications need to send non-urgent messages to clients; alert messages such as "email received" or "server uptime", are typical examples, but chat messages sometimes also fit this definition.
+While these messages need to reach the client(s) eventually, there is no need to deliver them immediately: they are queued into the `ServerSession` message queue, but their delivery can be postponed to the first occasion.
 
-In CometD, "first occasion" means whichever of the following things occurs first
-(see also xref:_java_server_configuration[the server configuration section] for
-information about configuring the following parameters):
+In CometD, "first occasion" means whichever of the following things occurs first (see also xref:_java_server_configuration[the server configuration section] for information about configuring the following parameters):
 
 * the channel's lazy timeout expires
-* the `/meta/connect` timeout expires so that the `/meta/connect` response is
-  sent to the client
-* another non-lazy message triggered the `ServerSession` message queue to be
-  sent to the client
+* the `/meta/connect` timeout expires so that the `/meta/connect` response is sent to the client
+* another non-lazy message triggered the `ServerSession` message queue to be sent to the client
 
-To support this feature, CometD introduces the concepts of _lazy channel_ and
-_lazy messages_.
+To support this feature, CometD introduces the concepts of _lazy channel_ and _lazy messages_.
 
-An application can mark a message as lazy by calling `ServerMessage.Mutable.setLazy(true)`
-on the message instance itself, for example:
+An application can mark a message as lazy by calling `ServerMessage.Mutable.setLazy(true)` on the message instance itself, for example:
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-@Service
-public class LazyService {
-    @Inject
-    private BayeuxServer bayeuxServer;
-    @Session
-    private LocalSession session;
-
-    public void receiveNewsFromExternalSystem(NewsInfo news) {
-        ServerMessage.Mutable message = this.bayeuxServer.newMessage();
-        message.setChannel("/news");
-        message.setData(news);
-        message.setLazy(true);
-        this.bayeuxServer.getChannel("/news").publish(this.session, message, Promise.noop());
-    }
-}
+include::{doc_code}/server/ServerLazyMessagesDocs.java[tags=lazyMessage]
 ----
-====
 
-In this example, an external system invokes method `LazyService.receiveNewsFromExternalSystem(...)`
-every time there is news, and the service broadcasts the news to all interested clients.
+In this example, an external system invokes method `LazyMessageService.receiveNewsFromExternalSystem(...)` every time there is news, and the service broadcasts the news to all interested clients.
 However, since the news need not be delivered immediately, the message is marked as lazy.
-Each remote client possibly receives the message at a different time: some
-receive it immediately (because, for example, they have other non-lazy messages
-to be delivered), some receive it after few milliseconds (because, for example,
-their `/meta/connect` timeout expires in a few milliseconds), while others receive
-it only upon the whole `maxLazyInterval` timeout.
+
+Each remote client possibly receives the message at a different time: some receive it immediately (because, for example, they have other non-lazy messages to be delivered), some receive it after few milliseconds (because, for example, their `/meta/connect` timeout expires in a few milliseconds), while others receive it only upon the whole `maxLazyInterval` timeout.
 
 In the same way you can mark a message as lazy, you can also mark server channels as lazy.
-Every message that is published to a lazy channel becomes a lazy message which
-is then queued into the `ServerSession`'s message queue for delivery on first occasion.
+Every message that is published to a lazy channel becomes a lazy message which is then queued into the ``ServerSession``'s message queue for delivery on first occasion.
 
-You can mark server channels as lazy at any time, but it is best to configure
-them as lazy at creation time, for example:
+You can mark server channels as lazy at any time, but it is best to configure them as lazy at creation time, for example:
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-@Service
-public class LazyService {
-    @Inject
-    private BayeuxServer bayeuxServer;
-    @Session
-    private LocalSession session;
-
-    @Configure("/news")
-    public void setupNewsChannel(ConfigurableServerChannel channel) {
-        channel.setLazy(true);
-    }
-
-    public void receiveNewsFromExternalSystem(NewsInfo news) {
-        this.bayeuxServer.getChannel("/news").publish(this.session, news, Promise.noop());
-    }
-}
+include::{doc_code}/server/ServerLazyMessagesDocs.java[tags=lazyChannel]
 ----
-====
 
-When a server channel is marked lazy, by default it has a lazy timeout
-specified by the global `maxLazyTimeout` parameter (see also
-xref:_java_server_configuration[the server configuration section]).
+When a server channel is marked lazy, by default it has a lazy timeout specified by the global `maxLazyTimeout` parameter (see also xref:_java_server_configuration[the server configuration section]).
 
-In more sophisticated cases, you may want to specify different lazy timeouts
-for different server channels, for example:
+In more sophisticated cases, you may want to specify different lazy timeouts for different server channels, for example:
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-@Service
-public class LazyService {
-    ...
-
-    @Configure("/news")
-    public void setupNewsChannel(ConfigurableServerChannel channel) {
-        channel.setLazy(true);
-    }
-
-    @Configure("/chat")
-    public void setupChatChannel(ConfigurableServerChannel channel) {
-        channel.setLazyTimeout(2000);
-    }
-
-    ...
-}
+include::{doc_code}/server/ServerLazyMessagesDocs.java[tags=lazyTimeout]
 ----
-====
 
-In the example above, channel `/news` inherits the default `maxLazyTimeout`
-(5000 ms), while the `/chat` channel is configured with a specific lazy
-timeout of 2000 ms.
-A server channel that has a non-zero, positive lazy timeout is automatically
-marked as lazy.
+In the example above, channel `/news` inherits the default `maxLazyTimeout` (5000 ms), while the `/chat` channel is configured with a specific lazy timeout of 2000 ms.
+A server channel that has a non-zero, positive lazy timeout is automatically marked as lazy.
 
-If a wildcard server channel such as `+/chat/*+` is marked as lazy, then all
-messages sent to server channels that match that wildcard server channel
-(such as `/chat/1`) will be lazy.
-Conversely, if a non-wildcard server channel such as `/news` is lazy, then
-all messages sent to children server channels of that non-wildcard server
-channel (such as `/news/sport`) will not be lazy.
+If a wildcard server channel such as `+/chat/*+` is marked as lazy, then all messages sent to server channels that match that wildcard server channel (such as `/chat/1`) will be lazy.
+Conversely, if a non-wildcard server channel such as `/news` is lazy, then all messages sent to children server channels of that non-wildcard server channel (such as `/news/sport`) will not be lazy.

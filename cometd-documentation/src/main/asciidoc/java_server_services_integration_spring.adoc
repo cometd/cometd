@@ -14,7 +14,6 @@ The `BayeuxServer` object is directly configured and initialized in the Spring c
 
 The `web.xml` file is as follows:
 
-====
 [source,xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
@@ -39,7 +38,6 @@ The `web.xml` file is as follows:
 
 </web-app>
 ----
-====
 
 [IMPORTANT]
 ====
@@ -55,7 +53,6 @@ By not specifying a `<load-on-startup>` element in the `CometDServlet` definitio
 
 Spring's `applicationContext.xml` is as follows:
 
-====
 [source,xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
@@ -87,14 +84,12 @@ Spring's `applicationContext.xml` is as follows:
   </bean>
 </beans>
 ----
-====
 
 Spring now creates the `BayeuxServer` object, configuring it via the `options` property, initializing via the `start()` method, and exporting to the servlet context via Spring's `ServletContextAttributeExporter`.
 This ensures that `CometDServlet` will _not_ create its own instance of `BayeuxServer`, but use the one that is already present in the servlet context, created by Spring.
 
 Below you can find a Spring's `applicationContext.xml` that configures the `BayeuxServer` object with the WebSocket transport:
 
-====
 [source,xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
@@ -122,7 +117,6 @@ Below you can find a Spring's `applicationContext.xml` that configures the `Baye
 
 </beans>
 ----
-====
 
 [NOTE]
 ====
@@ -145,7 +139,6 @@ The `web.xml` file is exactly the same as the one given as an example in the xre
 
 Spring's `applicationContext.xml` is as follows:
 
-====
 [source,xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
@@ -159,27 +152,22 @@ Spring's `applicationContext.xml` is as follows:
 
 </beans>
 ----
-====
 
 Spring scans the classpath for classes that qualify as Spring beans in the given base package.
 
 The CometD annotated service needs some additional annotation to make it qualify as a Spring bean:
 
-====
 [source,java,indent=0]
 ----
 include::{doc_code}/server/ServerServiceIntegrationSpringDocs.java[tags=service]
 ----
-====
 
 The missing piece is that you need to tell Spring to perform the processing of the CometD annotations; do so using a `@Configuration` Spring component:
 
-====
 [source,java,indent=0]
 ----
 include::{doc_code}/server/ServerServiceIntegrationSpringDocs.java[tags=configurer]
 ----
-====
 
 Summary:
 
@@ -195,12 +183,10 @@ This is where you configure the `BayeuxServer` with the options you would normal
 
 Integration with Spring Boot is quite simple as shown in the following example:
 
-====
 [source,java,indent=0]
 ----
 include::{doc_code}/server/ServerServiceIntegrationSpringDocs.java[tags=boot]
 ----
-====
 
 What you have to do is:
 
@@ -211,7 +197,6 @@ What you have to do is:
 By default, Spring Boot uses embedded Tomcat, but Jetty is recommended with CometD.
 To use Jetty's Spring Boot support, you can modify your Maven dependencies in the following way in your `pom.xml`:
 
-====
 [source,xml]
 ----
 <project xmlns="http://maven.apache.org/POM/4.0.0"
@@ -237,6 +222,5 @@ To use Jetty's Spring Boot support, you can modify your Maven dependencies in th
   ...
 </project>
 ----
-====
 
 In the `pom.xml` above, the dependency on `spring-boot-starter-web` excludes the dependency on Tomcat `spring-boot-starter-tomcat` and adds the equivalent dependency on Jetty `spring-boot-starter-jetty`.

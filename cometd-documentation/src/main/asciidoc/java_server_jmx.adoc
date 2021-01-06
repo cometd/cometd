@@ -2,19 +2,15 @@
 [[_java_server_jmx]]
 ==== JMX Integration
 
-Server-side CometD components may be exposed as JMX MBeans and visible via
-monitoring tools such as
-https://jdk.java.net/jmc/[Java Mission Control], JVisualVM or JConsole.
+Server-side CometD components may be exposed as JMX MBeans and visible via monitoring tools such as https://jdk.java.net/jmc/[Java Mission Control], JVisualVM or JConsole.
 
 CometD MBeans build on Jetty's JMX support, and are portable across Servlet Containers.
 
 [[_java_server_jmx_jetty]]
 ===== JMX Integration in Jetty
 
-If your CometD application is deployed in Jetty, then it is enough that you
-modify `web.xml` by adding a Jetty-specific context parameter:
+If your CometD application is deployed in Jetty, then it is enough that you modify `web.xml` by adding a Jetty-specific context parameter:
 
-====
 [source,xml]
 ----
 <?xml version="1.0" encoding="ISO-8859-1"?>
@@ -31,99 +27,38 @@ modify `web.xml` by adding a Jetty-specific context parameter:
     <!-- The rest of your web.xml -->
 </webapp>
 ----
-====
 
-The value of the `org.eclipse.jetty.server.context.ManagedAttributes` context
-parameter is a comma separated list of attribute names stored in the servlet context.
-The CometD implementation stores for you the `BayeuxServer` instance in the
-servlet context under the name defined by the constant `BayeuxServer.ATTRIBUTE`
-which is indeed the string `org.cometd.bayeux` that you can find in the example
-above as the value of the context parameter.
+The value of the `org.eclipse.jetty.server.context.ManagedAttributes` context parameter is a comma separated list of attribute names stored in the servlet context.
+The CometD implementation stores for you the `BayeuxServer` instance in the servlet context under the name defined by the constant `BayeuxServer.ATTRIBUTE` which is indeed the string `org.cometd.bayeux` that you can find in the example above as the value of the context parameter.
 
-Similarly, the CometD implementation stores the `Oort` instance and `Seti`
-instance in the servlet context under the names defined – respectively – by the
-constants `Oort.OORT_ATTRIBUTE` and `Seti.SETI_ATTRIBUTE`, equivalent to the
-strings `org.cometd.oort.Oort` and `org.cometd.oort.Seti` respectively.
+Similarly, the CometD implementation stores the `Oort` instance and `Seti` instance in the servlet context under the names defined – respectively – by the constants `Oort.OORT_ATTRIBUTE` and `Seti.SETI_ATTRIBUTE`, equivalent to the strings `org.cometd.oort.Oort` and `org.cometd.oort.Seti` respectively.
 
-Optionally, remember that annotated service instances (see also
-xref:_java_server_services_annotated_server_side[the annotated services section])
-are stored in the servlet context, and as such are candidate to use the same
-mechanism to be exposed as MBeans, provided that you define the right Jetty
-JMX MBean metadata descriptors.
+Optionally, remember that annotated service instances (see also xref:_java_server_services_annotated_server_side[the annotated services section]) are stored in the servlet context, and as such are candidate to use the same mechanism to be exposed as MBeans, provided that you define the right Jetty JMX MBean metadata descriptors.
 
 This is all you need to do to export CometD MBeans when running within Jetty.
 
 [[_java_server_jmx_others]]
 ===== JMX Integration in Other Servlet Containers
 
-The context parameter configured above can be left in the `web.xml` even if
-your application is deployed in other Servlet Containers, as it will only be
-detected by Jetty.
+The context parameter configured above can be left in the `web.xml` even if your application is deployed in other Servlet Containers, as it will only be detected by Jetty.
 
-In order to leverage Jetty's JMX support in other Servlet Containers, you
-need the Jetty JMX utility classes and you need to export the CometD MBeans.
+In order to leverage Jetty's JMX support in other Servlet Containers, you need the Jetty JMX utility classes and you need to export the CometD MBeans.
 
-To have the Jetty JMX utility classes available to your web application,
-you need to include the `jetty-jmx-<version>.jar` in your `WEB-INF/lib`
-directory of your web application.
-This jar contains Jetty's JMX utility classes that can be used to easily
-create the CometD MBeans.
+To have the Jetty JMX utility classes available to your web application, you need to include the `jetty-jmx-<version>.jar` in your `WEB-INF/lib` directory of your web application.
+This jar contains Jetty's JMX utility classes that can be used to easily create the CometD MBeans.
 
-Exporting CometD MBeans in other Servlet Containers require a little bit
-more setup than what is needed in Jetty, but it is easily done with a
-small initializer class.
-Refer to xref:_java_server_services_integration[the services integration section]
-for a broader discussion of how to initialize CometD components.
+Exporting CometD MBeans in other Servlet Containers require a little more setup than what is needed in Jetty, but it is easily done with a small initializer class.
+Refer to xref:_java_server_services_integration[the services integration section] for a broader discussion of how to initialize CometD components.
 
 A simple example of such initializer class is the following:
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-import java.io.IOException;
-import java.lang.management.ManagementFactory;
-import javax.servlet.GenericServlet;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import org.cometd.bayeux.server.BayeuxServer;
-import org.eclipse.jetty.jmx.MBeanContainer;
-
-public class CometDJMXExporter extends GenericServlet {
-    private volatile MBeanContainer mbeanContainer;
-
-    @Override
-    public void init() throws ServletException {
-        try {
-            mbeanContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
-            BayeuxServer bayeuxServer = (BayeuxServer)getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
-            mbeanContainer.addBean(bayeuxServer);
-            // Add other components
-            mbeanContainer.start();
-        } catch (Exception x) {
-            throw new ServletException(x);
-        }
-    }
-
-    @Override
-    public void service(ServletRequest servletRequest, ServletResponse servletResponse) throws ServletException, IOException {
-        throw new ServletException();
-    }
-
-    @Override
-    public void destroy() {
-        try {
-            mbeanContainer.stop();
-        } catch (Exception ignored) {
-        }
-    }
-}
+include::{doc_code}/server/ServerJMXDocs.java[tags=jmx]
 ----
-====
 
 with the corresponding `web.xml` configuration:
 
-====
 [source,xml]
 ----
 <?xml version="1.0" encoding="ISO-8859-1"?>
@@ -132,23 +67,17 @@ with the corresponding `web.xml` configuration:
          xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
          version="3.1">
 
-    <!-- The rest of your web.xml -->
+  <!-- The rest of your web.xml -->
 
-    <servlet>
-        <servlet-name>jmx-exporter</servlet-name>
-        <servlet-class>com.acme.cometd.CometDJMXExporter</servlet-class>
-        <!-- Make sure it's the last started -->
-        <load-on-startup>2</load-on-startup>
-    </servlet>
+  <servlet>
+    <servlet-name>jmx-exporter</servlet-name>
+    <servlet-class>com.acme.cometd.CometDJMXExporter</servlet-class>
+    <!-- Make sure it's the last started -->
+    <load-on-startup>2</load-on-startup>
+  </servlet>
 
 </webapp>
 ----
-====
 
-In this example, `CometDJMXExporter` is a configuration Servlet (and as such
-it is not mapped to any path) that instantiates Jetty's JMX utility class
-`MBeanContainer`, extracts from the servlet context the CometD components that
-you want to expose as MBeans, and adds them to the `MBeanContainer` instance.
-It is doing, programmatically, what Jetty does under the covers for you when
-it detects the `org.eclipse.jetty.server.context.ManagedAttributes` context
-parameter in `web.xml`.
+In this example, `CometDJMXExporter` is a configuration Servlet (and as such it is not mapped to any path) that instantiates Jetty's JMX utility class `MBeanContainer`, extracts from the servlet context the CometD components that you want to expose as MBeans, and adds them to the `MBeanContainer` instance.
+It is doing, programmatically, what Jetty does under the covers for you when it detects the `org.eclipse.jetty.server.context.ManagedAttributes` context parameter in `web.xml`.
