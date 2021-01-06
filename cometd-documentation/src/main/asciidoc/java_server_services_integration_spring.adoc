@@ -192,7 +192,8 @@ What you have to do is:
 
 <1> Annotate the class with `@SpringBootApplication` so that Spring Boot can find it.
 <2> Implement `org.springframework.boot.web.servlet.ServletContextInitializer`, so that you can register the CometD Servlet.
-<3> Register and configure the CometD Servlet. You typically want to use the `AnnotationCometDServlet` because Spring Boot is heavily based on annotations, and so should your CometD application when using Spring Boot.
+<3> Register and configure the CometD Servlet.
+You typically want to use the `AnnotationCometDServlet` because Spring Boot is heavily based on annotations, and so should your CometD application when using Spring Boot.
 
 By default, Spring Boot uses embedded Tomcat, but Jetty is recommended with CometD.
 To use Jetty's Spring Boot support, you can modify your Maven dependencies in the following way in your `pom.xml`:

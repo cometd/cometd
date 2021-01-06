@@ -85,7 +85,8 @@ include::{doc_code}/server/ServerAuthenticationDocs.java[tags=users]
 
 The `Users` object can now be injected in xref:_java_server_services[CometD services] and its API enriched to fit the application needs such as retrieving the user name for a given session, or the `ServerSession` for a given user name, etc.
 
-Alternatively, the linking/unlinking (steps 5 and 8 above) can be performed in a `BayeuxServer.SessionListener`. These listeners are invoked _after_ `SecurityPolicy.canHandshake()` and are invoked also when a `ServerSession` is removed, therefore there is no need to register a `RemovedListener` with the `ServerSession` like done in step 6 above:
+Alternatively, the linking/unlinking (steps 5 and 8 above) can be performed in a `BayeuxServer.SessionListener`.
+These listeners are invoked _after_ `SecurityPolicy.canHandshake()` and are invoked also when a `ServerSession` is removed, therefore there is no need to register a `RemovedListener` with the `ServerSession` like done in step 6 above:
 
 [source,java,indent=0]
 ----

@@ -72,7 +72,7 @@ where:
 
 * _tc_ is the client timestamp of when the message was sent
 * _ts_ is the server timestamp of when the message was received
-* _p_ is the poll duration in ms – ie the time the server took before sending the response
+* _p_ is the poll duration in ms -- ie the time the server took before sending the response
 * _a_ is the measured accuracy of the calculated offset and lag sent by the client
 
 On receipt of the response, the client is able to use current time to determine the total trip time, from which it subtracts _p_ to determine an approximate two way network traversal time.

@@ -126,17 +126,18 @@ Here is the list of configuration init parameters (to be specified in `web.xml`)
 
 | metaConnectDeliverOnly
 | false
-| Whether the transport should deliver the messages only via `/meta/connect` (enables server-to-client strict message ordering – but not reliability).
+| Whether the transport should deliver the messages only via `/meta/connect` (enables server-to-client strict message ordering -- but not reliability).
   Enabling this option allows for server-to-client strict message ordering at the cost of a slightly chattier protocol (because delivery via `/meta/connect` may require waking up pending replies).
 
 | maxQueue
 | -1
-| The maximum size of the `ServerSession` queue. A value of -1 means no queue size limit.
+| The maximum size of the `ServerSession` queue.
+  A value of -1 means no queue size limit.
   A positive value triggers the invocation of `org.cometd.bayeux.server.ServerSession.QueueMaxedListener` when the max queue size is exceeded.
 
 | maxMessageSize
 | <impl>
-| The maximum size, in bytes, of an incoming transport message (the HTTP body or the WebSocket message - both may contain multiple Bayeux messages).
+| The maximum size, in bytes, of an incoming transport message (the HTTP body or the WebSocket message -- both may contain multiple Bayeux messages).
   The default value depends on the transport implementation.
 |===
 
@@ -166,7 +167,8 @@ Here is the list of configuration init parameters (to be specified in `web.xml`)
 
 | browserCookieDomain
 |
-| The domain of the cookie used to identify multiple sessions (see also xref:_java_server_multiple_sessions[this section]). By default there is no domain.
+| The domain of the cookie used to identify multiple sessions (see also xref:_java_server_multiple_sessions[this section]).
+  By default there is no domain.
 
 | browserCookiePath
 | /
@@ -195,7 +197,8 @@ Here is the list of configuration init parameters (to be specified in `web.xml`)
 
 | ws.cometdURLMapping
 |
-| *Mandatory*. A comma separated list of `url-pattern` strings defined by the `servlet-mapping` of the CometD Servlet.
+| *Mandatory*.
+  A comma separated list of `url-pattern` strings defined by the `servlet-mapping` of the CometD Servlet.
 
 | ws.messagesPerFrame
 | 1
@@ -205,12 +208,14 @@ Here is the list of configuration init parameters (to be specified in `web.xml`)
 | ws.bufferSize
 | <impl>
 | The size, in bytes, of the buffer used to read and write WebSocket frames.
-  The default value depends on the implementation. For the Jetty WebSocket implementation, this value is 4096.
+  The default value depends on the implementation.
+  For the Jetty WebSocket implementation, this value is 4096.
 
 | ws.idleTimeout
 | <impl>
 | The idle timeout, in milliseconds, for the WebSocket connection.
-  The default value depends on the implementation. For the Jetty WebSocket implementation this value is 300000.
+  The default value depends on the implementation.
+  For the Jetty WebSocket implementation this value is 300000.
 
 | ws.requireHandshakePerConnection
 | false
@@ -227,7 +232,7 @@ Here is the list of configuration init parameters (to be specified in `web.xml`)
 ===== Advanced Configuration for the Java Server
 
 The simplest way to setup a CometD server is to deploy your CometD application under context path `/`, and the CometD Servlet mapped to e.g. `/cometd/*`.
-In this way resources such as HTML, CSS and - more importantly - JavaScript files (in particular `cometd.js`) will belong to the same domain.
+In this way resources such as HTML, CSS and -- more importantly -- JavaScript files (in particular `cometd.js`) will belong to the same domain.
 This minimizes the server configuration to make browser work easily with CometD.
 
 A more complex setup is to have your main application deployed to domain `app.domain.com` and the CometD server to `cometd.domain.com`.

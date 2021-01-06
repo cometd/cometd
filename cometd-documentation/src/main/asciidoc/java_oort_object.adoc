@@ -16,7 +16,7 @@ The key concepts behind `OortObject` are that it is *named* and it is *composite
 The `OortObject` name allows for multiple, different, ``OortObject``s to exist in the same node.
 
 The composite nature of `OortObject` avoids the problem of having multiple nodes updating the same data, which can cause conflicts.
-Each node can only update its local _part_ - the other parts are read-only for the local node.
+Each node can only update its local _part_ -- the other parts are read-only for the local node.
 
 While `OortObject` can be seen as a distributed, in-memory, data store, it is different from other typical distributed in-memory data stores in that `OortObject` does not allow modification of the data owned by other nodes.
 Furthermore, if a node fails, its corresponding part is removed from the other nodes so that the data of the failed node is lost.
@@ -68,7 +68,8 @@ To avoid this inefficiency, CometD offers these specializations of `OortObject`:
 
 Each specialization replicates single operations like the addition/removal of a key/value pair in an `OortMap`, or the addition/removal of an element in an `OortList`.
 
-`OortMap` provides an `OortMap.EntryListener` to notify applications of map entry addition/removal, either local or remote. `OortList` provides an `OortList.ElementListener` to notify applications of element addition/removal, either local or remote.
+`OortMap` provides an `OortMap.EntryListener` to notify applications of map entry addition/removal, either local or remote.
+`OortList` provides an `OortList.ElementListener` to notify applications of element addition/removal, either local or remote.
 Applications can implement these listeners to be notified of entry or element updates in order to perform custom logic, see also xref:_java_oort_objects_oort_object_listeners[the `OortObject` listeners section].
 
 [IMPORTANT]
@@ -300,7 +301,8 @@ Class `org.cometd.oort.OortObject.Info` represents a data entity part of an `Oor
 For this particular example, the `Info` objects are not important, since you are only interested in the total user count, that can be obtained with the `sum()` method (which internally performs merging -- see also xref:_java_oort_objects_oort_object_merging[the `OortObject` merging section]).
 They can be used, however, to compute the difference before and after the update if needed, since `Info.getObject()` returns a `Long` value that is the contribution to the total count of the correspondent data entity part.
 
-Similarly, `OortMap` supports registration of `OortMap.EntryListener` that are notified when `OortMap` entries change due to calls to `putAndShare(...)` or `removeAndShare(...)`. `OortMap.EntryListener` are notified only when map entries are updated.
+Similarly, `OortMap` supports registration of `OortMap.EntryListener` that are notified when `OortMap` entries change due to calls to `putAndShare(...)` or `removeAndShare(...)`.
+`OortMap.EntryListener` are notified only when map entries are updated.
 To be notified when the whole map changes due to calls to `setAndShare(...)`, you can use an `OortMap.Listener` (inherited from `OortObject`) as described above.
 In some cases, the whole map is updated but you want to be notified as if single entries are changed; in this case you can use an `OortMap.DeltaListener`, that converts whole map updates into map entry updates.
 

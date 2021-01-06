@@ -54,7 +54,8 @@ include::{doc_code}/server/ServerServiceDocs.java[tags=inheritedService]
 ----
 |===
 
-The service class is annotated with `@Service` and specifies the (optional) service name "echoService". The BayeuxServer field is annotated with the standard https://jcp.org/en/jsr/detail?id=330[JSR 330] `@Inject` annotation.
+The service class is annotated with `@Service` and specifies the (optional) service name "echoService".
+The BayeuxServer field is annotated with the standard https://jcp.org/en/jsr/detail?id=330[JSR 330] `@Inject` annotation.
 The `@Inject` annotation is supported (for example, by Spring 3 or greater) for standard dependency injection as specified by JSR 330.
 
 ===== Lifecycle Management Support

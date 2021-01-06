@@ -42,8 +42,8 @@ Here is a sample `web.xml`:
 
 Notice that the `web.xml` file specifies `<load-on-startup>` to be:
 
-* 1 for the CometD servlet – so that the Bayeux object gets created and put in the `ServletContext`.
-* 2 for the configuration servlet – so that it will be initialized only after the CometD servlet has been initialized and hence the BayeuxServer object is available.
+* 1 for the CometD servlet -- so that the Bayeux object gets created and put in the `ServletContext`.
+* 2 for the configuration servlet -- so that it will be initialized only after the CometD servlet has been initialized and hence the BayeuxServer object is available.
 
 This is the code for the `ConfigurationServlet`:
 

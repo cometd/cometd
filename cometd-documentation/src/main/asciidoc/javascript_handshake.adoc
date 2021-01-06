@@ -2,69 +2,47 @@
 [[_javascript_handshake]]
 === Handshaking
 
-In order to initiate the communication with the Bayeux server, you must call
-either the `handshake()` or the `init()` functions on the `cometd` object.
-The `init()` function is a shorthand for a call to `configure()` (see
-xref:_javascript_configure[the javascript configuration section]) followed by
-a call to `handshake()`.
+In order to initiate the communication with the Bayeux server, you must call either the `handshake()` or the `init()` functions on the `cometd` object.
+The `init()` function is a shorthand for a call to `configure()` (see xref:_javascript_configure[the javascript configuration section]) followed by a call to `handshake()`.
 
-Calling `handshake()` effectively sends a handshake message request to the
-server, and the Bayeux protocol requires that the server sends to the client
-a handshake message reply.
+Calling `handshake()` effectively sends a handshake message request to the server, and the Bayeux protocol requires that the server sends to the client a handshake message reply.
 
-The Bayeux handshake creates a network communication with the Bayeux server,
-negotiates the type of transport to use, and negotiates a number of protocol
-parameters to be used in subsequent communications.
+The Bayeux handshake creates a network communication with the Bayeux server, negotiates the type of transport to use, and negotiates a number of protocol parameters to be used in subsequent communications.
 
-Once `handshake()` has been called, you must not call `handshake()` again
-unless you have explicitly disconnected by calling `disconnect()`.
+Once `handshake()` has been called, you must not call `handshake()` again unless you have explicitly disconnected by calling `disconnect()`.
 
-This is typically easy to enforce, by binding the call to `handshake()`
-to the page load event (that happens only once).
+This is typically easy to enforce, by binding the call to `handshake()` to the page load event (that happens only once).
 
-Alternatively, if the `handshake()` is triggered by interaction with the user
-interface (for example by clicking on a button), it is fairly easy to either
-disable the user interface (for example, disabling the button immediately
-after the click), or use a boolean variable to guard against multiple
-handshakes.
+Alternatively, if the `handshake()` is triggered by interaction with the user interface (for example by clicking on a button), it is fairly easy to either disable the user interface (for example, disabling the button immediately after the click), or use a boolean variable to guard against multiple handshakes.
 
-As with several functions of the JavaScript CometD API, `handshake()` is an
-asynchronous function: it returns immediately, well before the Bayeux handshake
-steps have completed.
+As with several functions of the JavaScript CometD API, `handshake()` is an asynchronous function: it returns immediately, well before the Bayeux handshake steps have completed.
 
 [NOTE]
 ====
-Calling `handshake()` _does not_ mean that you have completed the handshake
-with the server when `handshake()` returns.
+Calling `handshake()` _does not_ mean that you have completed the handshake with the server when `handshake()` returns.
 ====
 
-It is possible to invoke the `handshake()` function passing as parameter a
-callback function that will be invoked when the handshake message reply from
-the server arrives to the client (or, in case the server does not reply, when
-the client detects a handshake failure):
+It is possible to invoke the `handshake()` function passing as parameter a callback function that will be invoked when the handshake message reply from the server arrives to the client (or, in case the server does not reply, when the client detects a handshake failure):
 
-====
 [source,javascript]
 ----
-// Configure
+// Configure.
 cometd.configure({
     url: 'http://localhost:8080/cometd'
 });
 
-// Handshake with callback
+// Handshake with callback.
 cometd.init(function(handshakeReply) {
     if (handshakeReply.successful) {
         // Successfully connected to the server.
-        // Now it is possible to subscribe or send messages
+        // Now it is possible to subscribe or send messages.
     } else {
         // Cannot handshake with the server, alert user.
     }
 });
 ----
-====
 
-Passing a callback function to `handshake()` is equivalent to register a
-`/meta/handshake` listener (see also xref:_javascript_subscribe_vs_listen[this section]).
+Passing a callback function to `handshake()` is equivalent to register a `/meta/handshake` listener (see also xref:_javascript_subscribe_vs_listen[this section]).
 
 The handshake might fail for several reasons:
 
@@ -74,14 +52,11 @@ The handshake might fail for several reasons:
 * The server crashed.
 * There was a network failure.
 
-In case of a handshake failure, applications should not try to call `handshake()`
-again: the CometD library will do this on behalf of the application.
-A corollary of this is that applications should usually only ever call `handshake()`
-once in their code.
+In case of a handshake failure, applications should not try to call `handshake()` again: the CometD library will do this on behalf of the application.
+A corollary of this is that applications should usually only ever call `handshake()` once in their code.
 
 Since the `handshake()` call is asynchronous, it is not a good idea to write this code:
 
-====
 [source,javascript]
 ----
 // WRONG CODE
@@ -90,43 +65,35 @@ cometd.configure({
     url: 'http://localhost:8080/cometd'
 });
 
-// Handshake
+// Handshake.
 cometd.handshake();
 
-// Publish to a channel
+// Publish to a channel.
 cometd.publish('/foo', { foo: 'bar' });
 ----
-====
 
-It is not a good idea because there is no guarantee that the call to `publish()` (see
-xref:_javascript_publish[the javascript publish section]) can actually succeed in contacting
-the Bayeux server.
-Since the API is asynchronous, you have no way of knowing synchronously (that is, by having
-`handshake()` function return an error code or by throwing an exception) that the handshake failed.
+It is not a good idea because there is no guarantee that the call to `publish()` (see xref:_javascript_publish[the javascript publish section]) can actually succeed in contacting the Bayeux server.
+Since the API is asynchronous, you have no way of knowing synchronously (that is, by having `handshake()` function return an error code or by throwing an exception) that the handshake failed.
 
-The right way is the following:
+The correct way is the following:
 
-====
 [source,javascript]
 ----
 cometd.configure({
     url: 'http://localhost:8080/cometd'
 });
 
-// Handshake
+// Handshake.
 cometd.handshake(function(handshakeReply) {
     if (handshakeReply.successful) {
-        // Publish to a channel
+        // Publish to a channel.
         cometd.publish('/foo', { foo: 'bar' });
     }
 });
 ----
-====
 
-If you want to pass additional information to the handshake message (for example,
-authentication credentials) you can pass an additional object to the `handshake()` function:
+If you want to pass additional information to the handshake message (for example, authentication credentials) you can pass an additional object to the `handshake()` function:
 
-====
 [source,javascript]
 ----
 cometd.configure({
@@ -135,9 +102,9 @@ cometd.configure({
 
 // Handshake with additional information.
 var additional = {
-    com.acme.credentials: {
-        user: 'cometd',
-        token: 'xyzsecretabc'
+    "com.acme.credentials": {
+        "user": "cometd",
+        "token": "xyzsecretabc"
     }
 };
 cometd.handshake(additional, function(handshakeReply) {
@@ -146,41 +113,19 @@ cometd.handshake(additional, function(handshakeReply) {
     }
 });
 ----
-====
 
 The additional object will be _merged_ into the handshake message.
 
-The server will be able to access the message (but not yet the session)
-from a `/meta/handshake` listener, for example using annotated services
-(see also xref:_java_server_services_annotated[the annotated services section]):
+The server will be able to access the message (but not yet the session) from a `/meta/handshake` listener, for example using annotated services (see also xref:_java_server_services_annotated[the annotated services section]):
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-@Service
-public class MyService {
-    @Listener(Channel.META_HANDSHAKE)
-    public void metaHandshake(ServerSession remote, ServerMessage message) {
-        // Parameter "remote" will be null here.
-
-        Map<String, Object> credentials = (Map<String, Object>)message.get("com.acme.credentials");
-        // Verify credentials.
-    }
-}
+include::{doc_code}/server/ServerJavaScriptDocs.java[tags=handshakeService]
 ----
-====
 
-For more advanced processing of the handshake message that require the
-availability of the `ServerSession`, see
-xref:_java_server_authentication[the authentication section].
+For more advanced processing of the handshake message that require the availability of the `ServerSession`, see xref:_java_server_authentication[the authentication section].
 
-The additional object must not be used to tamper the handshake message by using
-reserved fields defined by the Bayeux protocol (see also xref:_bayeux[the Bayeux protocol section]).
-Instead, you should use field names that are unique to your application, better
-yet when fully qualified like `com.acme.credentials`.
+The additional object must not be used to tamper the handshake message by using reserved fields defined by the Bayeux protocol (see also xref:_bayeux[the Bayeux protocol section]).
+Instead, you should use field names that are unique to your application, better yet when fully qualified like `com.acme.credentials`.
 
-The CometD JavaScript API offer an easy way to receive notifications about the
-details of the Bayeux protocol message exchange: either by adding listeners to
-special channels (called _meta channels_), explained in
-xref:_javascript_subscribe[the javascript subscribe section], or by passing callback
-functions to the API like you did for `handshake()` in the example above.
+The CometD JavaScript API offer an easy way to receive notifications about the details of the Bayeux protocol message exchange: either by adding listeners to special channels (called _meta channels_), explained in xref:_javascript_subscribe[the javascript subscribe section], or by passing callback functions to the API like you did for `handshake()` in the example above.

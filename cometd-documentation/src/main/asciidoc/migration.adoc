@@ -99,8 +99,7 @@ Only the WebSocket artifacts have changed.
 
 [NOTE]
 ====
-The `load-on-startup` element is now required in order to use the `websocket` transport, unless Spring is used to configure the `BayeuxServer` object (see
-xref:_java_server_services_integration_spring_xml_based_spring_configuration[this section]).
+The `load-on-startup` element is now required in order to use the `websocket` transport, unless Spring is used to configure the `BayeuxServer` object (see xref:_java_server_services_integration_spring_xml_based_spring_configuration[this section]).
 
 If `load-on-startup` is not specified, the first request will lazily start the CometD Servlet, which will start the `BayeuxServer` object, which will configure the `websocket` transport, but at this point it is too late for the `websocket` transport to handle the request, which will be handled by the next transport (typically the `long-polling` transport).
 ====
@@ -121,8 +120,8 @@ If `load-on-startup` is not specified, the first request will lazily start the C
 | `transports`
 | `transports`
 | The parameter changed its meaning. +
-  In CometD 2.x it is a comma separated list of class names of _additional_ server transports. In CometD 3.0.x it is a comma separated list of the server
-  transports. +
+  In CometD 2.x it is a comma separated list of class names of _additional_ server transports.
+  In CometD 3.0.x it is a comma separated list of the server transports. +
   For example, in CometD 3.0.x `transports="org.cometd.server.websocket.jetty.JettyWebSocketTransport"` defines just one server transport: a `websocket` server transport based on Jetty WebSocket APIs.
 
 |
@@ -406,7 +405,8 @@ For this reason, access to `BayeuxContext` has been moved to `ServerMessage`.
 
 ==== Deprecated API Removed
 
-In `OortMap` and `OortList`, a number of deprecated (since 3.0.x) blocking APIs have been removed. Use the non-blocking variant of the same APIs.
+In `OortMap` and `OortList`, a number of deprecated (since 3.0.x) blocking APIs have been removed.
+Use the non-blocking variant of the same APIs.
 
 [cols="1,1", options="header"]
 |===

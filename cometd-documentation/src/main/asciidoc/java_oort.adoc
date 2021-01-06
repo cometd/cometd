@@ -207,7 +207,8 @@ You might also want to force the JVM to prefer an IPv4 stack by setting the syst
 
 You can use the static discovery mechanism if multicast is not available on the system where CometD is deployed.
 It is only slightly more cumbersome to set up.
-It does not allow dynamic discovery of new nodes, but it is enough to configure each node with the well-known URL of an existing, started, node (often named "primary"). The primary node should, of course, be started before all other nodes.
+It does not allow dynamic discovery of new nodes, but it is enough to configure each node with the well-known URL of an existing, started, node (often named "primary").
+The primary node should, of course, be started before all other nodes.
 
 You can accomplish the static discovery configuration either via code, or by configuring an `org.cometd.oort.OortStaticConfigServlet` in `web.xml`, for example:
 
@@ -320,7 +321,8 @@ After this direct, bidirectional communication has been established, a special m
 Every node receiving this message that does not know about those siblings then establishes a bidirectional communication with them.
 
 For example, imagine that there are two simple Oort clusters, one made of nodes A and B and the other made of nodes C and D.
-When A and C connect, they broadcast their siblings (A broadcasts its siblings, now B and C, while C broadcasts its siblings, now A and D). All nodes connected, directly or indirectly, to the broadcaster receive this message.
+When A and C connect, they broadcast their siblings (A broadcasts its siblings, now B and C, while C broadcasts its siblings, now A and D).
+All nodes connected, directly or indirectly, to the broadcaster receive this message.
 When C receives broadcasts from A's siblings it notices that one is itself (so it does nothing since it's already connected to A).
 The other is the unknown sibling B, and C establishes a bidirectional connection with B as well.
 Likewise, A receives the sibling broadcast message from C, and connects to D.
@@ -352,7 +354,8 @@ When a node joined event is notified, it is possible to obtain the `OortComet` c
 include::{doc_code}/oort/OortDocs.java[tags=cometJoined]
 ----
 
-Applications can use node listeners to synchronize nodes; a new node can request (or be pushed) application data that needs to be present in all nodes (for example to warm up a cache). Such activities occur in concert with a `SecurityPolicy` that denies handshakes from remote clients until the new node is properly warmed up (clients retry the handshakes until the new node is ready).
+Applications can use node listeners to synchronize nodes; a new node can request (or be pushed) application data that needs to be present in all nodes (for example to warm up a cache).
+Such activities occur in concert with a `SecurityPolicy` that denies handshakes from remote clients until the new node is properly warmed up (clients retry the handshakes until the new node is ready).
 
 [[_java_oort_authentication]]
 ==== Authentication
@@ -445,7 +448,8 @@ Forwarding of messages may be subject to temporary interruptions in case there i
 To overcome this problem, the message acknowledgement extension (see also xref:_extensions_acknowledge[the acknowledgement extension section]) is enabled by default among Oort nodes so that, for short failures, the messages lost are resent automatically by the acknowledgement extension.
 Refer to xref:_java_oort_common_configuration[the Oort common configuration section] for the configuration details.
 
-Remember that the message acknowledgement extension is not a fully persistent solution for lost messages (for example it does not guarantee message redelivery in case of long network failures). CometD does not provide yet a fully persistent solution for messages in case of long network failures.
+Remember that the message acknowledgement extension is not a fully persistent solution for lost messages (for example it does not guarantee message redelivery in case of long network failures).
+CometD does not provide yet a fully persistent solution for messages in case of long network failures.
 
 Since it has the ability to observe messages published to broadcast channels, an Oort cluster can already implement a simple chat application among users connected to different nodes.
 In the example below, when `clientA` publishes a message on channel `/chat` (green arrow), it arrives on `nodeA`; since `nodeB` and `nodeC` have been configured to observe channel `/chat`, they both receive the message from `nodeA` (green arrows), and therefore they can deliver the chat message to `clientB` and `clientC` respectively (green arrows).

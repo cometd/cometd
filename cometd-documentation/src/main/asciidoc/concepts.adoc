@@ -8,7 +8,7 @@ The CometD project implements various https://en.wikipedia.org/wiki/Comet_%28pro
 === Definitions
 
 The _client_ is the entity that initiates a connection, and the _server_ is the entity that accepts the connection.
-The connection established is persistent – that is, it remains open until either side decides to close it.
+The connection established is persistent -- that is, it remains open until either side decides to close it.
 
 Typical clients are browsers (after all, this is a web environment), but might also be other applications such as Java applications, browser plugin applications, or scripts in any scripting language.
 
@@ -100,7 +100,8 @@ Furthermore, if a publisher publishes a message on channel `/C`, neither `client
 Re-routing broadcast messages is the default behavior of the server, and it does not need any application code to perform the re-routing.
 
 Looking from a high level then, you see messages flowing back and forth among clients and server through the conduits.
-A single broadcast message might arrive at the server and be re-routed to all clients; you can imagine that when it arrives on the server, the message is copied and that a copy is sent to each client (although, for efficiency reasons, this is not exactly what happens). If the sender also subscribes to the channel it published the message to, it receives a copy of the message back.
+A single broadcast message might arrive at the server and be re-routed to all clients; you can imagine that when it arrives on the server, the message is copied and that a copy is sent to each client (although, for efficiency reasons, this is not exactly what happens).
+If the sender also subscribes to the channel it published the message to, it receives a copy of the message back.
 
 [[_concepts_low_level]]
 === The Lower Level View
@@ -109,7 +110,7 @@ The following sections take a deeper look at how the CometD implementation works
 
 It should be clear by now that CometD, at its heart, is a client/server system that communicates via a protocol, the Bayeux protocol.
 
-In the CometD implementation, the https://c2.com/cgi/wiki?HalfObjectPlusProtocol[half-object plus protocol] pattern captures the client/server communication: when a half-object on the client establishes a communication conduit with the server, its correspondent half-object is created on the server, and the two can – logically – communicate.
+In the CometD implementation, the https://c2.com/cgi/wiki?HalfObjectPlusProtocol[half-object plus protocol] pattern captures the client/server communication: when a half-object on the client establishes a communication conduit with the server, its correspondent half-object is created on the server, and the two can -- logically -- communicate.
 CometD uses a variation of this pattern because there is the need to abstract the transport that carries messages to and from the server.
 The transport can be based on the HTTP protocol, but in recent CometD versions also on the WebSocket protocol (and you can plug in more transports).
 
@@ -125,17 +126,17 @@ image::hopp.png[]
 
 There are three types of sessions:
 
-* _Client sessions_ – the client half-object on the remote client side.
+* _Client sessions_ -- the client half-object on the remote client side.
   Client sessions are represented by the `org.cometd.CometD` object in JavaScript, and by the `ClientSession` class (but more frequently by its subclass `org.cometd.bayeux.client.BayeuxClient`) in Java.
   The client creates a client session to establish a Bayeux communication with the server, and this allows the client to publish and receive messages.
-* _Server sessions_ – the server half-object on the server side.
+* _Server sessions_ -- the server half-object on the server side.
   Server sessions are on the server, and are represented by the `org.cometd.bayeux.server.ServerSession` class; they are the counterpart of client sessions.
   When a client creates a client session, it is not initially associated with a correspondent server session.
   Only when a client session establishes the Bayeux communication with the server does the server create its correspondent server session, as well as the link between the two half-objects.
   Each server session has a message queue.
   Messages publish to a channel and must be delivered to remote client sessions that subscribe to the channel.
   They are first queued into the server session's message queue, and then delivered to the correspondent client session.
-* _Local sessions_ – the client half-object on the server side, represented by class `org.cometd.bayeux.server.LocalSession`.
+* _Local sessions_ -- the client half-object on the server side, represented by class `org.cometd.bayeux.server.LocalSession`.
   Local sessions can be thought of as clients living in the server.
   They do not represent a remote client, but instead a server-side client.
   Local sessions can subscribe to channels and publish messages like a client session can, but they live on the server.
@@ -144,7 +145,8 @@ There are three types of sessions:
   A local session is a client session that happens to live on the server, and hence is local to the server. +
   For example, imagine that a remote client publishes a message every time it changes its state.
   Other remote clients can just subscribe to the channel and receive those state update messages.
-  But what if, upon receiving a remote client state update, you want to perform some activity on the server? Then you need the equivalent of a remote client, but living on the server, and that's what local sessions are. +
+  But what if, upon receiving a remote client state update, you want to perform some activity on the server?
+  Then you need the equivalent of a remote client, but living on the server, and that's what local sessions are. +
   Server-side services are associated with a local session.
   Upon creation of the server-side service, the local session handshakes and creates the correspondent server session half-object, so that the server can treat client sessions and local sessions in the same way (because it sees them both as server sessions).
   The server delivers messages sent to a channel to all server sessions that subscribe to that channel, no matter if they are remote client sessions or local sessions. +
@@ -157,20 +159,20 @@ The _server_ is represented by an instance of `org.cometd.bayeux.server.BayeuxSe
 The `BayeuxServer` object acts as a:
 
 * Repository for server sessions, see also xref:_concepts_sessions[the concepts sessions section].
-* Repository for _server transports_ – represented by the `org.cometd.bayeux.server.ServerTransport` class.
+* Repository for _server transports_ -- represented by the `org.cometd.bayeux.server.ServerTransport` class.
   A server transport is a server-side component that handles the details of the communication with the client.
   There are HTTP server transports as well as a WebSocket server transport, and you can plug in other types as well.
   Server transports abstract the communication details so that applications can work knowing only Bayeux messages, no matter how they arrive on the server.
-* Repository for _server channels_ – represented by the `org.cometd.bayeux.server.ServerChannel` class.
+* Repository for _server channels_ -- represented by the `org.cometd.bayeux.server.ServerChannel` class.
   A server channel is the server-side representation of a channel; it can receive and publish Bayeux messages.
-* Repository for _extensions_ – represented by the `org.cometd.bayeux.server.BayeuxServer.Extension` class.
+* Repository for _extensions_ -- represented by the `org.cometd.bayeux.server.BayeuxServer.Extension` class.
   Extensions allow applications to interact with the Bayeux protocol by modifying or even deleting or replaying incoming and/or outgoing Bayeux messages. +
   For further information about extensions, see also xref:_extensions[the extensions section].
 * Central authorization authority, via an instance of the _security policy_ -- represented by the `org.cometd.bayeux.server.SecurityPolicy` class.
   CometD interrogates the security policy to authorize any sensible operation the server performs, such as handshakes, channel creation, channel subscription and channel publishing.
   Applications can provide their own security policy to implement their own authorization logic. +
   For further information about the security policy, see xref:_java_server_authorization[the authorization section].
-* _Authorizers_ – represented by the `org.cometd.bayeux.server.Authorizer` class allow you to apply more fine-grained authorization policies. +
+* _Authorizers_ -- represented by the `org.cometd.bayeux.server.Authorizer` class allow you to apply more fine-grained authorization policies. +
   For further information on authorizers, see also xref:_java_server_authorizers[the authorizers section].
 * Message processor, by coordinating the work of server transports, extensions and security policy, and by implementing a message flow algorithm (see xref:_concepts_message_processing[the message processing section]) that allows applications to interact with messages and channels to implement their application logic.
 
@@ -226,7 +228,8 @@ The `BayeuxServer` processes each message in the following steps:
 . It invokes `BayeuxServer` extensions (method `incoming()`); if one extension denies processing, a reply is sent to the client indicating that the message has been deleted, and no further processing is performed for the message.
 . It invokes `ServerSession` extensions (method `incoming()`, only if a `ServerSession` for that client exists); if one extension denies processing, a reply is sent to the client indicating that the message has been deleted, and no further processing is performed for the message.
 . It invokes authorization checks for both the security policy and the authorizers; if the authorization is denied, a reply is sent to the client indicating the failure, and no further processing is performed for the message.
-. It invokes server channel listeners; the application adds server channel listeners on the server, and offers the last chance to modify the message before it is eventually sent to all subscribers (if it is a broadcast message). All subscribers see any modification a server channel listener makes to the message, just as if the publisher has sent the message already modified. +
+. It invokes server channel listeners; the application adds server channel listeners on the server, and offers the last chance to modify the message before it is eventually sent to all subscribers (if it is a broadcast message).
+  All subscribers see any modification a server channel listener makes to the message, just as if the publisher has sent the message already modified. +
   After the server channel listeners processing, the message is _frozen_ and no further modifications should be made to the message. +
   Applications should not worry about this freezing step, because the API clarifies whether the message is modifiable or not: the API has as a parameter a modifiable message interface or an unmodifiable one to represent the message object. +
   This step is the last processing step for an incoming non-broadcast message, and it therefore ends its journey on the server.
@@ -338,7 +341,8 @@ Applications that need to perform time consuming tasks in server-side listeners 
 
 Applications that want to deliver messages to a specific client can do so by looking up its correspondent server session and delivering the message using `ServerSession.deliver(...)`.
 
-For example, remote client `client1` wants to send a message to another remote client `client2`. Both clients are already connected and therefore have already performed the handshake with the server.
+For example, remote client `client1` wants to send a message to another remote client `client2`.
+Both clients are already connected and therefore have already performed the handshake with the server.
 Their handshake contained additional information regarding their `userId`, so that `client1` declared to be "Bob" and `client2` declared to be "Alice".
 The application could have used a `SecurityPolicy` or a `BayeuxServer.SessionListener` to perform a mapping between the `userId` and the server session's id, like explained in xref:_java_server_authentication[the authentication section].
 
@@ -390,7 +394,8 @@ Recent versions of JavaScript have https://developer.mozilla.org/en-US/docs/Web/
 A typical example of a JavaScript typed array is `Uint8Array` that represents an array of unsigned, 8-bit, integers.
 In turn, typed arrays are based on the lower level `ArrayBuffer` and `DataView` types.
 
-The JavaScript Web APIs have been enriched to use `ArrayBuffer` or higher level typed arrays such as `Uint8Array`. In this way, applications can now read the content of a file via JavaScript APIs such as `FileReader.readAsArrayBuffer()` or use `XMLHttpRequest` to send and receive data as `ArrayBuffer`.
+The JavaScript Web APIs have been enriched to use `ArrayBuffer` or higher level typed arrays such as `Uint8Array`.
+In this way, applications can now read the content of a file via JavaScript APIs such as `FileReader.readAsArrayBuffer()` or use `XMLHttpRequest` to send and receive data as `ArrayBuffer`.
 
 Java, of course, always had binary types in the form of `byte[]` and `ByteBuffer`.
 

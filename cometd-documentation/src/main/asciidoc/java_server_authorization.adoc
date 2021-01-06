@@ -22,7 +22,7 @@ The `SecurityPolicy` methods are invoked for ``ServerSession``s that correspond 
 
 Application code can determine whether a `ServerSession` corresponds to a local client by calling method `ServerSession.isLocalSession()`.
 
-In almost all cases, local clients should be authorized because they are created on the server by the application (for example, by services – see also xref:_java_server_services_inherited[the inherited services section]) and therefore are trusted clients.
+In almost all cases, local clients should be authorized because they are created on the server by the application (for example, by services -- see also xref:_java_server_services_inherited[the inherited services section]) and therefore are trusted clients.
 ====
 
 The default implementation `org.cometd.server.DefaultSecurityPolicy`:

@@ -1,4 +1,4 @@
-= The CometD Reference Book – {version}
+= The CometD Reference Book -- {version}
 Simone Bordet
 :doctype: book
 :numbered:

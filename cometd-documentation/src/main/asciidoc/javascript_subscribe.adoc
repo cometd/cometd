@@ -2,52 +2,33 @@
 [[_javascript_subscribe]]
 === Subscribing and Unsubscribing
 
-The following sections provide information about subscribing and unsubscribing
-with the JavaScript library.
+The following sections provide information about subscribing and unsubscribing with the JavaScript library.
 
-Depending on the type of channel, subscribing and unsubscribing to a channel
-have different meanings.
-Refer to xref:_concepts_channels[the channels concept section] for the channel
-type definitions.
+Depending on the type of channel, subscribing and unsubscribing to a channel have different meanings.
+Refer to xref:_concepts_channels[the channels concept section] for the channel type definitions.
 
 [[_javascript_subscribe_meta_channels]]
 ==== Meta Channels
 
 It is not possible to subscribe to meta channels: the server replies with an error message.
-It is possible to listen to meta channels (see
-xref:_javascript_subscribe_vs_listen[this section] for an explanation of the difference
-between subscribers and listeners). You cannot (and it makes no sense to) publish messages
-to meta channels: only the Bayeux protocol implementation creates and sends messages on meta channels.
-Meta channels are useful on the client to listen for error messages like handshake
-errors (for example, because the client did not provide the correct credentials)
-or network errors (for example, to know when the connection with the server has
-broken or when it has been re-established).
+It is possible to listen to meta channels (see xref:_javascript_subscribe_vs_listen[this section] for an explanation of the difference between subscribers and listeners).
+You cannot (and it makes no sense to) publish messages to meta channels: only the Bayeux protocol implementation creates and sends messages on meta channels.
+Meta channels are useful on the client to listen for error messages like handshake errors (for example, because the client did not provide the correct credentials) or network errors (for example, to know when the connection with the server has broken or when it has been re-established).
 
 [[_javascript_subscribe_service_channels]]
 ==== Service Channels
 
-Service channels are used in the case of request/response style of communication
-between client and server (as opposed to the publish/subscribe style of communication
-on broadcast channels). While subscribing to service channels yields no errors,
-this is a no-operation for the server: the server ignores the subscription request.
-It is possible to publish to service channels, with the semantic of a communication
-between a specific client (the one that is publishing the message on the service
-channel) and the server.
-Service channels are useful to implement, for example, private chat messages: in a
-chat with userA, userB and userC, userA can publish a private message to userC
-(without userB knowing about it) using service channels.
+Service channels are used in the case of request/response style of communication between client and server (as opposed to the publish/subscribe style of communication on broadcast channels).
+While subscribing to service channels yields no errors, this is a no-operation for the server: the server ignores the subscription request.
+It is possible to publish to service channels, with the semantic of a communication between a specific client (the one that is publishing the message on the service channel) and the server.
+Service channels are useful to implement, for example, private chat messages: in a chat with userA, userB and userC, userA can publish a private message to userC (without userB knowing about it) using service channels.
 
 [[_javascript_subscribe_broadcast_channels]]
 ==== Broadcast Channels
 
-Broadcast channels have the semantic of a messaging topic and are used in the case
-of publish/subscribe style of communication.
-Usually, it is possible to subscribe to broadcast channels and to publish to
-broadcast channels; this can only be forbidden using a security policy on the Bayeux
-server (see also xref:_java_server_authorization[the java server authorization section]) or
-by using authorizers (see also xref:_java_server_authorizers[the authorizers section]).
-Broadcast channels are useful to broadcast messages to all subscribed clients, for
-example in case of a stock price change.
+Broadcast channels have the semantic of a messaging topic and are used in the case of publish/subscribe style of communication.
+Usually, it is possible to subscribe to broadcast channels and to publish to broadcast channels; this can only be forbidden using a security policy on the Bayeux server (see also xref:_java_server_authorization[the java server authorization section]) or by using authorizers (see also xref:_java_server_authorizers[the authorizers section]).
+Broadcast channels are useful to broadcast messages to all subscribed clients, for example in case of a stock price change.
 
 [[_javascript_subscribe_vs_listen]]
 ==== Subscribers versus Listeners
@@ -62,8 +43,7 @@ The `addListener()` function:
 * Must be used to listen to meta channel messages.
 * May be used to listen to service channel messages.
 * Should not be used to listen broadcast channel messages (use `subscribe()` instead).
-* Does not involve any communication with the Bayeux server, and as such can be
-  called before calling `handshake().`
+* Does not involve any communication with the Bayeux server, and as such can be called before calling `handshake().`
 * Is synchronous: when it returns, you are guaranteed that the listener has been added.
 
 The `subscribe()` function:
@@ -76,15 +56,11 @@ The `subscribe()` function:
 
 [NOTE]
 ====
-Calling `subscribe()` _does not_ mean that you have completed the subscription
-with the server when function returns.
+Calling `subscribe()` _does not_ mean that you have completed the subscription with the server when function returns.
 ====
 
-If you want to be certain that the server received your subscription request
-(or not), you can either register a `/meta/subscribe` listener, or pass a callback
-function to `subscribe()`:
+If you want to be certain that the server received your subscription request (or not), you can either register a `/meta/subscribe` listener, or pass a callback function to `subscribe()`:
 
-====
 [source,javascript]
 ----
 cometd.subscribe('/foo', function(message) { ... }, function(subscribeReply) {
@@ -93,158 +69,114 @@ cometd.subscribe('/foo', function(message) { ... }, function(subscribeReply) {
     }
 });
 ----
-====
 
-Remember that subscriptions may fail on the server (for example, the client does
-not have enough permissions to subscribe) or on the client (for example, there
-is a network failure). In both cases `/meta/subscribe` listener, or the callback
-function, will be invoked with an unsuccessful subscribe message reply.
+Remember that subscriptions may fail on the server (for example, the client does not have enough permissions to subscribe) or on the client (for example, there is a network failure).
+In both cases `/meta/subscribe` listener, or the callback function, will be invoked with an unsuccessful subscribe message reply.
 
-You can pass additional information to the subscribe message by passing an
-additional object to the `subscribe()` function:
+You can pass additional information to the subscribe message by passing an additional object to the `subscribe()` function:
 
-====
 [source,javascript]
 ----
 var additional = {
-    com.acme.priority: 10
+    "com.acme.priority": 10
 };
 cometd.subscribe('/foo', function(message) { ... }, additional, function(subscribeReply) {
     // Your logic here.
 });
 ----
-====
 
-Remember that the subscribe message is sent to the server only when subscribing
-to a channel for the first time.
-Additional subscriptions to the same channel will not result in a message being
-sent to the server.
-See also xref:_javascript_handshake[the javascript handshake section] for further
-information about passing additional objects.
+Remember that the subscribe message is sent to the server only when subscribing to a channel for the first time.
+Additional subscriptions to the same channel will not result in a message being sent to the server.
+See also xref:_javascript_handshake[the javascript handshake section] for further information about passing additional objects.
 
-Both `addListener()` and `subscribe()` return a subscription object that is
-opaque to applications (that is, applications should not try to use the fields
-of this object since its format may vary across CometD releases).
+Both `addListener()` and `subscribe()` return a subscription object that is opaque to applications (that is, applications should not try to use the fields of this object since its format may vary across CometD releases).
 
-The returned subscription object should be passed to, respectively,
-`removeListener()` and `unsubscribe()`:
+The returned subscription object should be passed to, respectively, `removeListener()` and `unsubscribe()`:
 
-====
 [source,javascript]
 ----
-// Some initialization code
+// Some initialization code.
 var subscription1 = cometd.addListener('/meta/connect', function() { ... });
 var subscription2 = cometd.subscribe('/foo/bar/', function() { ... });
 
-// Some de-initialization code
+// Some de-initialization code.
 cometd.unsubscribe(subscription2);
 cometd.removeListener(subscription1);
 ----
-====
 
-Function `unsubscribe()` can too take an additional object and a callback
-function as parameters:
+Function `unsubscribe()` can too take an additional object and a callback function as parameters:
 
-====
 [source,javascript]
 ----
-// Some initialization code
+// Some initialization code.
 var subscription1 = cometd.subscribe('/foo/bar/', function() { ... });
 
-// Some de-initialization code
+// Some de-initialization code.
 var additional = {
-    com.acme.discard: true
+    "com.acme.discard": true
 }
 cometd.unsubscribe(subscription1, additional, function(unsubscribeReply) {
     // Your logic here.
 });
 ----
-====
 
-Similarly to `subscribe()`, the unsubscribe message is sent to the server only
-when unsubscribing from a channel for the last time.
-See also xref:_javascript_handshake[the javascript handshake section] for further
-information about passing additional objects.
+Similarly to `subscribe()`, the unsubscribe message is sent to the server only when unsubscribing from a channel for the last time.
+See also xref:_javascript_handshake[the javascript handshake section] for further information about passing additional objects.
 
-The major difference between listeners and subscribers is that subscribers are
-automatically removed upon re-handshake, while listeners are not modified by a
-re-handshake.
-When a client subscribes to a channel, the server maintains a client-specific
-server-side subscription state.
-If the server requires a re-handshake, it means that it lost the state for that
-client, and therefore also the server-side subscription state.
-In order to maintain the client-side state consistent with that of the server,
-subscriptions – but not listeners – are automatically removed upon re-handshake.
+The major difference between listeners and subscribers is that subscribers are automatically removed upon re-handshake, while listeners are not modified by a re-handshake.
+When a client subscribes to a channel, the server maintains a client-specific server-side subscription state.
+If the server requires a re-handshake, it means that it lost the state for that client, and therefore also the server-side subscription state.
+In order to maintain the client-side state consistent with that of the server, subscriptions -- but not listeners -- are automatically removed upon re-handshake.
 
 A good place in the code to perform subscriptions is in a `/meta/handshake` function.
-Since `/meta/handshake` listeners are invoked in both explicit handshakes the
-client performs and in re-handshakes the server triggers, it is guaranteed that
-your subscriptions are always performed properly and kept consistent with the server state.
+Since `/meta/handshake` listeners are invoked in both explicit handshakes the client performs and in re-handshakes the server triggers, it is guaranteed that your subscriptions are always performed properly and kept consistent with the server state.
 
-Equivalently, a callback function passed to the `handshake()` function behaves exactly
-like a `/meta/handshake` listener, and therefore can be used to perform subscriptions.
+Equivalently, a callback function passed to the `handshake()` function behaves exactly like a `/meta/handshake` listener, and therefore can be used to perform subscriptions.
 
-Applications do not need to unsubscribe in case of re-handshake; the CometD library
-takes care of removing all subscriptions upon re-handshake, so that when the
-`/meta/handshake` function executes again the subscriptions are correctly restored
-(and not duplicated).
+Applications do not need to unsubscribe in case of re-handshake; the CometD library takes care of removing all subscriptions upon re-handshake, so that when the `/meta/handshake` function executes again the subscriptions are correctly restored (and not duplicated).
 
-For the same reason, you should never add listeners inside a `/meta/handshake`
-function, because this will add another listener without removing the previous
-one, resulting in multiple notifications of the same messages.
+For the same reason, you should never add listeners inside a `/meta/handshake` function, because this will add another listener without removing the previous one, resulting in multiple notifications of the same messages.
 
-====
 [source,javascript]
 ----
 var _reportListener;
 cometd.addListener('/meta/handshake', function(message) {
-    // Only subscribe if the handshake is successful
+    // Only subscribe if the handshake is successful.
     if (message.successful) {
-        // Batch all subscriptions together
+        // Batch all subscriptions together.
         cometd.batch(function() {
-            // Correct to subscribe to broadcast channels
+            // Correct to subscribe to broadcast channels.
             cometd.subscribe('/members', function(m) { ... });
 
-            // Correct to subscribe to service channels
+            // Correct to subscribe to service channels.
             cometd.subscribe('/service/status', function(m) { ... });
 
-            // Messy to add listeners after removal, prefer using cometd.subscribe(...)
+            // Messy to add listeners after removal, prefer using cometd.subscribe(...).
             if (_reportListener) {
                 cometd.removeListener(_reportListener);
                 _reportListener = cometd.addListener('/service/report', function(m) { ... });
             }
 
-            // Wrong to add listeners without removal
+            // Wrong to add listeners without removal.
             cometd.addListener('/service/notification', function(m) { ... });
         });
     }
 });
 ----
-====
 
-In cases where the Bayeux server is not reachable (due to network failures or
-because the server crashed), `subscribe()` and `unsubscribe()` behave as follows:
+In cases where the Bayeux server is not reachable (due to network failures or because the server crashed), `subscribe()` and `unsubscribe()` behave as follows:
 
-* In `subscribe()` CometD first adds the local listener to the list of subscribers
-  for that channel, then attempts the server communication.
-  If the communication fails, the server does not know that it has to send messages
-  to this client and therefore on the client, the local listener (although present)
-  is never invoked.
-* In `unsubscribe()`, CometD first removes the local listener from the list of
-  subscribers for that channel, then attempts the server communication.
-  If the communication fails, the server still sends the message to the client,
-  but there is no local listener to dispatch to.
+* In `subscribe()` CometD first adds the local listener to the list of subscribersfor that channel, then attempts the server communication.
+  If the communication fails, the server does not know that it has to send messagesto this client and therefore on the client, the local listener (although present) is never invoked.
+* In `unsubscribe()`, CometD first removes the local listener from the list of subscribers for that channel, then attempts the server communication.
+  If the communication fails, the server still sends the message to the client, but there is no local listener to dispatch to.
 
 [[_javascript_subscribe_resubscribe]]
 ==== Dynamic Resubscription
 
-Often times, applications need to perform dynamic subscriptions and unsubscriptions,
-for example when a user clicks on a user interface element, you want to subscribe to
-a certain channel.
-In this case the subscription object returned upon subscription is stored to be able
-to dynamically unsubscribe from the channel upon user demand:
+Often times, applications need to perform dynamic subscriptions and unsubscriptions, for example when a user clicks on a user interface element, you want to subscribe to a certain channel.
+In this case the subscription object returned upon subscription is stored to be able to dynamically unsubscribe from the channel upon user demand:
 
-====
 [source,javascript]
 ----
 var _subscription;
@@ -265,16 +197,11 @@ function Controller() {
     }
 }
 ----
-====
 
-In case of a re-handshake, dynamic subscriptions are cleared (like any other
-subscription) and the application needs to figure out which dynamic subscription
-must be performed again.
-This information is already known to CometD at the moment `cometd.subscribe(...)`
-was called (above in function `dynamicSubscribe()`), so applications can just call
-`resubscribe()` using the subscription object obtained from `subscribe()`:
+In case of a re-handshake, dynamic subscriptions are cleared (like any other subscription) and the application needs to figure out which dynamic subscription must be performed again.
 
-====
+This information is already known to CometD at the moment `cometd.subscribe(...)` was called (above in function `dynamicSubscribe()`), so applications can just call `resubscribe()` using the subscription object obtained from `subscribe()`:
+
 [source,javascript]
 ----
 cometd.addListener('/meta/handshake', function(message) {
@@ -291,17 +218,13 @@ cometd.addListener('/meta/handshake', function(message) {
     }
 });
 ----
-====
 
 [[_javascript_subscribe_exception_handling]]
 ==== Listeners and Subscribers Exception Handling
 
-If a listener or subscriber function throws an exception (for example, calls a
-function on an undefined object), the error message is logged at level "debug".
-However, there is a way to intercept these errors by defining the global listener
-exception handler that is invoked every time a listener or subscriber throws an exception:
+If a listener or subscriber function throws an exception (for example, calls a function on an undefined object), the error message is logged at level "debug".
+However, there is a way to intercept these errors by defining the global listener exception handler that is invoked every time a listener or subscriber throws an exception:
 
-====
 [source,javascript]
 ----
 cometd.onListenerException = function(exception, subscriptionHandle, isListener, message) {
@@ -314,11 +237,9 @@ cometd.onListenerException = function(exception, subscriptionHandle, isListener,
     }
 }
 ----
-====
 
 It is possible to send messages to the server from the listener exception handler.
-If the listener exception handler itself throws an exception, this exception is
-logged at level "info" and the CometD implementation does not break.
+If the listener exception handler itself throws an exception, this exception is logged at level "info" and the CometD implementation does not break.
 Notice that a similar mechanism exists for extensions, see also xref:_extensions[the extensions section].
 
 [[_javascript_subscribe_wildcard]]
@@ -326,41 +247,29 @@ Notice that a similar mechanism exists for extensions, see also xref:_extensions
 
 It is possible to subscribe to several channels simultaneously using wildcards:
 
-====
 [source,javascript]
 ----
 cometd.subscribe("/chatrooms/*", function(message) { ... });
 ----
-====
 
-A single asterisk has the meaning of matching a single channel segment; in the
-example above it matches channels `/chatrooms/12` and `/chatrooms/15`, but not
-`/chatrooms/12/upload`.
+A single asterisk has the meaning of matching a single channel segment; in the example above it matches channels `/chatrooms/12` and `/chatrooms/15`, but not `/chatrooms/12/upload`.
 To match multiple channel segments, use the double asterisk:
 
-====
 [source,javascript]
 ----
 cometd.subscribe("/events/**", function(message) { ... });
 ----
-====
 
-With the double asterisk, the channels `/events/stock/FOO` and `/events/forex/EUR`
-match, as well as `/events/feed` and `/events/feed/2009/08/03`.
+With the double asterisk, the channels `/events/stock/FOO` and `/events/forex/EUR` match, as well as `/events/feed` and `/events/feed/2009/08/03`.
 
-The wildcard mechanism works also for listeners, so it is possible to listen to
-all meta channels as follows:
+The wildcard mechanism works also for listeners, so it is possible to listen to all meta channels as follows:
 
-====
 [source,javascript]
 ----
 cometd.addListener("/meta/*", function(message) { ... });
 ----
-====
 
-By default, subscriptions to the global wildcards `+/*+` and `+/**+` result in an
-error, but you can change this behavior by specifying a custom security policy
-on the Bayeux server.
+By default, subscriptions to the global wildcards `+/*+` and `+/**+` result in an error, but you can change this behavior by specifying a custom security policy on the Bayeux server.
 
 [[_javascript_meta_channels]]
 ==== Meta Channel List
@@ -375,19 +284,14 @@ These are the meta channels available in the JavaScript CometD implementation:
 * /meta/publish
 * /meta/unsuccessful
 
-Each meta channel is notified when the JavaScript CometD implementation handles
-the correspondent Bayeux message.
+Each meta channel is notified when the JavaScript CometD implementation handles the correspondent Bayeux message.
 The `/meta/unsuccessful` channel is notified in case of any failure.
 
-By far the most interesting meta channel to subscribe to is `/meta/connect`
-because it gives the status of the current connection with the Bayeux server.
-In combination with `/meta/disconnect`, you can use it, for example, to display
-a green _connected_ icon or a red _disconnected_ icon on the page, depending on
-the connection status with the Bayeux server.
+By far the most interesting meta channel to subscribe to is `/meta/connect` because it gives the status of the current connection with the Bayeux server.
+In combination with `/meta/disconnect`, you can use it, for example, to display a green _connected_ icon or a red _disconnected_ icon on the page, depending on the connection status with the Bayeux server.
 
 Here is a common pattern using the `/meta/connect` and `/meta/disconnect` channels:
 
-====
 [source,javascript]
 ----
 var _connected = false;
@@ -410,18 +314,12 @@ cometd.addListener('/meta/disconnect', function(message) {
     if (message.successful) {
         _connected = false;
     }
-}
+});
 ----
-====
 
-One small caveat with the `/meta/connect` channel is that `/meta/connect`
-is also used for polling the server.
-Therefore, if a disconnect is issued during an active poll, the server
-returns the active poll and this triggers the `/meta/connect` listener.
-The initial check on the status verifies that is not the case before
-executing the connection logic.
+One small caveat with the `/meta/connect` channel is that `/meta/connect` is also used for polling the server.
+Therefore, if a disconnect is issued during an active poll, the server returns the active poll and this triggers the `/meta/connect` listener.
+The initial check on the status verifies that is not the case before executing the connection logic.
 
-Another interesting use of meta channels is when there is an authentication
-step during the handshake.
-In this case the registration to the `/meta/handshake` channel can give
-details about, for example, authentication failures.
+Another interesting use of meta channels is when there is an authentication step during the handshake.
+In this case the registration to the `/meta/handshake` channel can give details about, for example, authentication failures.

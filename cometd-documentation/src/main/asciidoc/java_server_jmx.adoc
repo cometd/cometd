@@ -31,7 +31,7 @@ If your CometD application is deployed in Jetty, then it is enough that you modi
 The value of the `org.eclipse.jetty.server.context.ManagedAttributes` context parameter is a comma separated list of attribute names stored in the servlet context.
 The CometD implementation stores for you the `BayeuxServer` instance in the servlet context under the name defined by the constant `BayeuxServer.ATTRIBUTE` which is indeed the string `org.cometd.bayeux` that you can find in the example above as the value of the context parameter.
 
-Similarly, the CometD implementation stores the `Oort` instance and `Seti` instance in the servlet context under the names defined – respectively – by the constants `Oort.OORT_ATTRIBUTE` and `Seti.SETI_ATTRIBUTE`, equivalent to the strings `org.cometd.oort.Oort` and `org.cometd.oort.Seti` respectively.
+Similarly, the CometD implementation stores the `Oort` instance and `Seti` instance in the servlet context under the names defined -- respectively -- by the constants `Oort.OORT_ATTRIBUTE` and `Seti.SETI_ATTRIBUTE`, equivalent to the strings `org.cometd.oort.Oort` and `org.cometd.oort.Seti` respectively.
 
 Optionally, remember that annotated service instances (see also xref:_java_server_services_annotated_server_side[the annotated services section]) are stored in the servlet context, and as such are candidate to use the same mechanism to be exposed as MBeans, provided that you define the right Jetty JMX MBean metadata descriptors.
 

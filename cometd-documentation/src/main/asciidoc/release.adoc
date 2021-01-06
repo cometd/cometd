@@ -33,14 +33,9 @@ $ mvn release:perform -Darguments=-Dgpg.passphrase=...
 $ git push
 ----
 
-When the Maven Release Plugin runs it activates the `release` profile, running
-sections of the `pom.xml` files that perform additional actions, such as building
-the distribution tarball.
+When the Maven Release Plugin runs it activates the `release` profile, running sections of the `pom.xml` files that perform additional actions, such as building the distribution tarball.
 
-As the last step, the Maven Release Plugin will run an interactive Linux shell
-script that performs a number of automated steps such as uploading the distribution
-tarball, creating and uploading the JavaDocs, copying files to dependent GitHub
-repositories, publishing to NPM, etc.
+As the last step, the Maven Release Plugin will run an interactive Linux shell script that performs a number of automated steps such as uploading the distribution tarball, creating and uploading the JavaDocs, copying files to dependent GitHub repositories, publishing to NPM, etc.
 
 Below the manual steps that needs to be done to finish the release process.
 
@@ -49,23 +44,17 @@ Below the manual steps that needs to be done to finish the release process.
 
 Login to https://oss.sonatype.org[Sonatype OSS].
 
-Click on "Staging Repositories" and you should see the staged project just
-uploaded by the `mvn release:perform` command issued above, with status "open".
-Tick the checkbox correspondent to the open staged project, choose "Close" from
-the toolbar, enter a description such as "CometD Release 1.0.0", then click on
-the "Close" button.
-This will make the staged project downloadable for testing, but not yet published to central.
+Click on "Staging Repositories" and you should see the staged project just uploaded by the `mvn release:perform` command issued above, with status "open".
+Tick the checkbox correspondent to the open staged project, choose "Close" from the toolbar, enter a description such as "CometD Release 1.0.0", then click on the "Close" button.
+This will make the staged project downloadable for testing, but not yet published to the Maven Central Repository.
 
-Tick again the checkbox correspondent to the closed staged project, choose "Release"
-from the toolbar, enter a description such as "CometD Release 1.0.0", then click
-on the "Release" button.
+Tick again the checkbox correspondent to the closed staged project, choose "Release" from the toolbar, enter a description such as "CometD Release 1.0.0", then click on the "Release" button.
 This will publish the project to the Maven Central Repository.
 
 [[_release_archetype]]
 === Upload the Archetype Catalog
 
-Make sure the archetype catalog `$HOME/.m2/archetype-catalog.xml` refers to
-the release just prepared, then upload it.
+Make sure the archetype catalog `$HOME/.m2/archetype-catalog.xml` refers to the release just prepared, then upload it.
 
 ----
 $ dd if=$HOME/.m2/archetype-catalog.xml | ssh <user>@cometd.org "sudo -u www-data dd of=/var/www/cometd.org/archetype-catalog.xml"
