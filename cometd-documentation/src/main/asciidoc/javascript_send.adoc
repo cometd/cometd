@@ -4,57 +4,39 @@
 
 CometD allows you to send messages in three ways:
 
-. publish/subscribe: you publish a message onto a broadcast channel for
-  subscribers to receive the message
-. peer-to-peer: you publish a message onto a service channel for a particular
-  recipient to receive the message
-. remote procedure call: you remote call a target on the server to perform
-  an action, and receive a response back
+. publish/subscribe: you publish a message onto a broadcast channel for subscribers to receive the message
+. peer-to-peer: you publish a message onto a service channel for a particular recipient to receive the message
+. remote procedure call: you remote call a target on the server to perform an action, and receive a response back
 
 For the first and second case the API to use is `publish()`.
 For the third case the API to use is `remoteCall()`.
 
 CometD also allows applications to send messages that contain binary data.
-This case is supported by using the `publishBinary()` and `remoteCallBinary()`
-variants of the APIs.
+This case is supported by using the `publishBinary()` and `remoteCallBinary()` variants of the APIs.
 
 [[_javascript_publish]]
 ==== Publishing
 
 The `publish()` function allows you to publish data onto a certain channel:
 
-====
 [source,javascript]
 ----
 cometd.publish('/mychannel', { mydata: { foo: 'bar' } });
 ----
-====
 
-You cannot (and it makes no sense to) publish to a meta channel, but you can
-publish to a service or broadcast channel even if you are not subscribed to that channel.
-However, you have to handshake (see
-xref:_javascript_handshake[the handshake section]) before you can publish.
+You cannot (and it makes no sense to) publish to a meta channel, but you can publish to a service or broadcast channel even if you are not subscribed to that channel.
+However, you have to handshake (see xref:_javascript_handshake[the handshake section]) before you can publish.
 
-As with other JavaScript CometD API, `publish()` involves a communication with
-the server and it is asynchronous: it returns immediately, well before the Bayeux
-server has received the message.
+As with other JavaScript CometD API, `publish()` involves a communication with the server and it is asynchronous: it returns immediately, well before the Bayeux server has received the message.
 
-When the message you published arrives to the server, the server replies to
-the client with a publish acknowledgment; this allows clients to be sure that
-the message reached the server.
-The publish acknowledgment arrives on the same channel the message was published
-to, with the same message `id`, with a `successful` field.
-If the message publish fails for any reason, for example because server cannot
-be reached, then a publish failure will be emitted, similarly to a publish acknowledgment.
+When the message you published arrives to the server, the server replies to the client with a publish acknowledgment; this allows clients to be sure that the message reached the server.
+The publish acknowledgment arrives on the same channel the message was published to, with the same message `id`, with a `successful` field.
+If the message publish fails for any reason, for example because server cannot be reached, then a publish failure will be emitted, similarly to a publish acknowledgment.
 
-For historical reasons, publish acknowledgments and failures are notified on
-the `/meta/publish` channel (only in the JavaScript library), even if the
-`/meta/publish` channel is not part of xref:_bayeux[the Bayeux protocol].
+For historical reasons, publish acknowledgments and failures are notified on the `/meta/publish` channel (only in the JavaScript library), even if the `/meta/publish` channel is not part of xref:_bayeux[the Bayeux protocol].
 
-In order to be notified of publish acknowledgments or failures, is it recommended
-that you use this variant of the `publish()` function, passing a callback function:
+In order to be notified of publish acknowledgments or failures, is it recommended that you use this variant of the `publish()` function, passing a callback function:
 
-====
 [source,javascript]
 ----
 cometd.publish('/mychannel', { mydata: { foo: 'bar' } }, function(publishAck) {
@@ -63,43 +45,31 @@ cometd.publish('/mychannel', { mydata: { foo: 'bar' } }, function(publishAck) {
     }
 });
 ----
-====
 
 [NOTE]
 ====
-Calling `publish()` _does not_ mean that you have published the message
-when `publish()` returns.
+Calling `publish()` _does not_ mean that you have published the message when `publish()` returns.
 ====
 
-If you need to publish several messages, possibly to different channels, you might want
-to use xref:_javascript_batch[the javascript batch section].
+If you need to publish several messages, possibly to different channels, you might want to use xref:_javascript_batch[the javascript batch section].
 
-When you publish to a broadcast channel, the server will automatically deliver
-the message to all subscribers for that channel.
+When you publish to a broadcast channel, the server will automatically deliver the message to all subscribers for that channel.
 This is the publish/subscribe messaging style.
 
-When you publish to a service channel, the server will receive the message but
-the message journey will end on the server, and the message will not be delivered
-to any remote client. The message should contain an application-specific identifier
-of the recipient of the message, so that application-specific code on
-the server can extract this identifier and deliver the message to that particular
-recipient.
+When you publish to a service channel, the server will receive the message but the message journey will end on the server, and the message will not be delivered to any remote client.
+The message should contain an application-specific identifier of the recipient of the message, so that application-specific code on the server can extract this identifier and deliver the message to that particular recipient.
 This is the peer-to-peer messaging style.
 
 [[_javascript_publish_binary]]
 ==== Publishing Binary Data
 
 You can publish binary data by using the specialized `publishBinary()` API.
-A similar specialized API exists to perform
-xref:_javascript_rpc_binary[remote calls with binary data].
+A similar specialized API exists to perform xref:_javascript_rpc_binary[remote calls with binary data].
 
-Remember that you must have the binary extension enabled as specified
-in xref:_extensions_binary[the binary extension section].
+Remember that you must have the binary extension enabled as specified in xref:_extensions_binary[the binary extension section].
 
-To publish binary data, you must first create or obtain a JavaScript typed array,
-a `DataView` or an `ArrayBuffer`, and then use the `publishBinary()` API:
+To publish binary data, you must first create or obtain a JavaScript typed array, a `DataView` or an `ArrayBuffer`, and then use the `publishBinary()` API:
 
-====
 [source,javascript]
 ----
 // Create an ArrayBuffer.
@@ -115,24 +85,18 @@ view.setUint8(3, 0xBE);
 // Send it.
 cometd.publishBinary('/binary', view, true, { prolog: 'java' });
 ----
-====
 
 In the example above, the binary data to send can be either the `buffer` or the `view`.
-The third parameter to `publishBinary()` is the `last` parameter that indicates
-whether the binary data is the last chunk; when omitted, it defaults to `true`.
-The fourth parameter to `publishBinary()` is the `meta` parameter that associates
-additional information to the binary data, and may be omitted.
+The third parameter to `publishBinary()` is the `last` parameter that indicates whether the binary data is the last chunk; when omitted, it defaults to `true`.
+The fourth parameter to `publishBinary()` is the `meta` parameter that associates additional information to the binary data, and may be omitted.
 
-Like normal `publish()` calls, you can pass as last parameter to `publishBinary()`
-a function that is notified of the publish acknowledgement.
+Like normal `publish()` calls, you can pass as last parameter to `publishBinary()` a function that is notified of the publish acknowledgement.
 
 [[_javascript_rpc]]
 ==== Remote Calls
 
-When you need to just call the server to perform some action, such as retrieving
-data from a database, or updating some server state, you want to use a remote call:
+When you need to just call the server to perform some action, such as retrieving data from a database, or updating some server state, you want to use a remote call:
 
-====
 [source,javascript]
 ----
 cometd.remoteCall('target', { foo: 'bar' }, 5000, function(response) {
@@ -142,32 +106,22 @@ cometd.remoteCall('target', { foo: 'bar' }, 5000, function(response) {
     }
 });
 ----
-====
 
 The first argument of `remoteCall()` is the _target_ of the remote call.
-You can think of it as a method name to invoke on the server, or you can think
-of it as the action you want to perform.
-It may or may not have a leading `/` character, and may be composed of multiple
-segments such as `target/subtarget`.
+You can think of it as a method name to invoke on the server, or you can think of it as the action you want to perform.
+It may or may not have a leading `/` character, and may be composed of multiple segments such as `target/subtarget`.
 
-The second argument of `remoteCall()` is an object with the arguments of the
-remote call.
-You can think of it as the arguments of the remote method call, reified as
-an object, or you can think of it as the data needed to perform the action.
+The second argument of `remoteCall()` is an object with the arguments of the remote call.
+You can think of it as the arguments of the remote method call, reified as an object, or you can think of it as the data needed to perform the action.
 
-The third, optional, argument of `remoteCall()` is the timeout, in milliseconds,
-for the remote call to complete. If the timeout expires, the callback function
-will be invoked with a response object whose `successful` field is set to `false`,
-and whose `error` field is set to `'406::timeout'`.
-The default value of the timeout is the value specified by the `maxNetworkDelay`
-xref:_javascript_configure[parameter]. A negative value or `0` disables the timeout.
+The third, optional, argument of `remoteCall()` is the timeout, in milliseconds, for the remote call to complete.
+If the timeout expires, the callback function will be invoked with a response object whose `successful` field is set to `false`, and whose `error` field is set to `'406::timeout'`.
+The default value of the timeout is the value specified by the `maxNetworkDelay` xref:_javascript_configure[parameter].
+A negative value or `0` disables the timeout.
 
-The last argument of `remoteCall()` is the callback function invoked when
-the remote call returns, or when it fails (for example due to network failures),
-or when it times out.
+The last argument of `remoteCall()` is the callback function invoked when the remote call returns, or when it fails (for example due to network failures), or when it times out.
 
-The following table shows what response fields are present in the response object
-passed to the callback, in what cases:
+The following table shows what response fields are present in the response object passed to the callback, in what cases:
 
 [cols="<8,^1a,^4,^2a"]
 |===
@@ -195,27 +149,20 @@ passed to the callback, in what cases:
 | `'406::timeout'`
 |===
 
-Internally, remote calls are translated to messages published to a service channel,
-and handled on the server side by means of an
-xref:_java_server_services_annotated[annotated service], in particular one with a
-`@RemoteCall` xref:_java_server_services_annotated_server_side_remote_call[annotation].
+Internally, remote calls are translated to messages published to a service channel, and handled on the server side by means of an xref:_java_server_services_annotated[annotated service], in particular one with a `@RemoteCall` xref:_java_server_services_annotated_server_side_remote_call[annotation].
 
-However, remote calls are much simpler to use than service channels since the
-correlation between request and response is performed by CometD, along with error
-handling. In this way, application have a much simpler API to use.
+However, remote calls are much simpler to use than service channels since the correlation between request and response is performed by CometD, along with error handling.
+In this way, application have a much simpler API to use.
 
 [[_javascript_rpc_binary]]
 ==== Remote Calls with Binary Data
 
-Similarly to xref:_javascript_publish_binary[publishing binary data], it is possible
-to send binary data when performing remote calls.
+Similarly to xref:_javascript_publish_binary[publishing binary data], it is possible to send binary data when performing remote calls.
 
-Remember that you must have the binary extension enabled in the client as specified
-in xref:_extensions_binary[the binary extension section].
+Remember that you must have the binary extension enabled in the client as specified in xref:_extensions_binary[the binary extension section].
 
 Here is an example that sends an `ArrayBuffer`:
 
-====
 [source,javascript]
 ----
 // Obtain an ArrayBuffer.
@@ -223,11 +170,10 @@ var buffer = ...;
 var meta = {
     contentType: "application/pdf"
 };
-cometd.remoteCallBinary('target', buffer, true, meta, function(response) {
+cometd.remoteCallBinary('target', buffer, true, meta, 5000, function(response) {
     if (response.successful) {
         // The action was performed
         var data = response.data;
     }
 });
 ----
-====

@@ -2,105 +2,61 @@
 [[_javascript_transports]]
 === JavaScript Transports
 
-xref:_bayeux[The Bayeux protocol section] defines two mandatory transports:
-`long-polling` and `callback-polling`.
+xref:_bayeux[The Bayeux protocol section] defines two mandatory transports: `long-polling` and `callback-polling`.
 
-The JavaScript CometD implementation implements these two transports and
-supports also the `websocket` transport (based on HTML 5
-https://en.wikipedia.org/wiki/WebSockets[WebSockets]).
-
-[NOTE]
-====
-At the time of this writing, the IETF has finalized the WebSocket
-protocol into https://www.ietf.org/rfc/rfc6455.txt[RFC 6455].
-However, most of the browsers still implement earlier drafts of the
-WebSocket protocol, so browser support varies (most notably, Microsoft's
-Internet Explorer only supports WebSocket out of the box in version 10).
-CometD falls back to `long-polling` if the `websocket` transport does not work.
-====
+The JavaScript CometD implementation implements these two transports and supports also the `websocket` transport (based on https://en.wikipedia.org/wiki/WebSocket[WebSocket]).
 
 ==== The `long-polling` Transport
 
-The `long-polling` transport is the default transport if the browser and the
-server do not support WebSockets.
-This transport is used when the communication with the Bayeux server happens
-on the same domain, and also in the cross-domain mode for recent browsers,
-such as Firefox 3.5+ (see also xref:_javascript_transports_cross_origin[the cross origin section]).
-The data is sent to the server by means of a POST request with `Content-Type: application/json;charset=UTF-8`
-via a plain XMLHttpRequest call.
+The `long-polling` transport is the default transport if the browser and the server do not support WebSockets.
+This transport is used when the communication with the Bayeux server happens on the same domain, and also in the cross-domain mode for recent browsers (see also xref:_javascript_transports_cross_origin[the cross origin section]).
+The data is sent to the server by means of a POST request with `Content-Type: application/json;charset=UTF-8` via a plain XMLHttpRequest call.
 
 ==== The `callback-polling` Transport
 
-The `callback-polling` transport is used when the communication with the
-Bayeux server happens on a different domain and when the cross-domain mode
-is not supported (see also xref:_javascript_transports_cross_origin[the cross origin section]).
+The `callback-polling` transport is used when the communication with the Bayeux server happens on a different domain and when the cross-domain mode is not supported (see also xref:_javascript_transports_cross_origin[the cross origin section]).
 
-The JavaScript `XMLHttpRequest` object used to have restrictions when the
-invocation was directed to a domain different from the one to which the script
-had been downloaded.
+The JavaScript `XMLHttpRequest` object used to have restrictions when the invocation was directed to a domain different from the one to which the script had been downloaded.
 
-Recent browsers implement now a version of `XMLHttpRequest` object that supports
-cross domain invocations, but for the invocation to succeed the server must
-collaborate, typically by deploying a
-xref:_java_server_configuration_advanced[cross origin servlet filter].
+Recent browsers implement now a version of `XMLHttpRequest` object that supports cross domain invocations, but for the invocation to succeed the server must collaborate, typically by deploying a xref:_java_server_configuration_advanced[cross origin servlet filter].
 
-In case of older browsers or servers that do not deploy a cross origin solution,
-the `callback-polling` transport uses the JSONP script injection, which
-injects a `<script>` element whose `src` attribute points to the Bayeux server.
-The browser notices the script element injection and performs a GET request to the
-specified source URL.
-The Bayeux server is aware that this is a JSONP request and replies with a JavaScript
-function that the browser then executes, (and calls back into the JavaScript CometD
-implementation).
+In case of older browsers or servers that do not deploy a cross origin solution, the `callback-polling` transport uses the JSONP script injection, which injects a `<script>` element whose `src` attribute points to the Bayeux server.
+The browser notices the script element injection and performs a GET request to the specified source URL.
+The Bayeux server is aware that this is a JSONP request and replies with a JavaScript function that the browser then executes, (and calls back into the JavaScript CometD implementation).
 
 There are three main drawbacks in using this transport: 
 
 * The transport is chattier.
-  This is due to the fact that the browser executes the injected scripts sequentially,
-  and until a script has been completely "downloaded", it cannot be executed.
-  For example, imagine a communication that involves a script injection for the long poll,
-  and a script injection for a message publish.
-  The browser injects the long poll script, a request is made to the Bayeux server,
-  but the Bayeux server holds the request waiting for server-side events (so the script
-  is not downloaded). Then the browser injects the publish script, the request is made to
-  the Bayeux server, which replies (so the script is downloaded). However, the browser
-  does not execute the second script, because it has not executed the first yet (since its
-  download is not finished). In these conditions, the publish is executed only after the
-  long poll returns.
-  To avoid this situation, the Bayeux server, in case of `callback-polling` transport,
-  resumes the client's long poll for every message that arrives from that client, and
-  that's why the transport is chattier: the long poll returns more often.
-* The message size is limited.
-  This is necessary to support IE7, which has a 2083 character limit for GET requests. 
-* The reaction to failures is slower.This is due to the fact that if the script injection
-  points to a URL that returns an error (for example, the Bayeux server is down), the
-  browser silently ignores the error.
+  This is due to the fact that the browser executes the injected scripts sequentially, and until a script has been completely "downloaded", it cannot be executed.
+  For example, imagine a communication that involves a script injection for the long poll, and a script injection for a message publish.
+  The browser injects the long poll script, a request is made to the Bayeux server, but the Bayeux server holds the request waiting for server-side events (so the script is not downloaded).
+  Then the browser injects the publish script, the request is made to the Bayeux server, which replies (so the script is downloaded).
+  However, the browser does not execute the second script, because it has not executed the first yet (since its download is not finished).
+  In these conditions, the publish is executed only after the long poll returns.
+  To avoid this situation, the Bayeux server, in case of `callback-polling` transport, resumes the client's long poll for every message that arrives from that client, and that's why the transport is chattier: the long poll returns more often.
+* The message size may be limited, as some browsers have a limit the number of characters of GET requests.
+* The reaction to failures is slower.This is due to the fact that if the script injection points to a URL that returns an error (for example, the Bayeux server is down), the browser silently ignores the error.
 
 ==== The `websocket` Transport
 
 The `websocket` transport is available if the browser and the server support WebSocket.
-The WebSocket protocol is designed to be the bidirectional communication protocol
-for the web, so it is a natural fit in the CometD project.
+The WebSocket protocol is designed to be the bidirectional communication protocol for the web, so it is a natural fit in the CometD project.
 
-The easiest way of enabling/disabling the `websocket` transport is to set a boolean
-variable _before_ performing the initial CometD handshake:
+The easiest way of enabling/disabling the `websocket` transport is to set a boolean variable _before_ performing the initial CometD handshake:
 
-====
 [source,javascript]
 ----
-var cometd = dojox.cometd; // Dojo style
-var cometd = $.cometd; // jQuery style
+var cometd = dojox.cometd; // Dojo style.
+var cometd = $.cometd; // jQuery style.
 
-// Disable the websocket transport
+// Disable the websocket transport.
 cometd.websocketEnabled = false;
 
 // Initial handshake
 cometd.init('http://localhost:8080/cometd');
 ----
-====
 
-An alternative way of disabling the `websocket` transport is to unregister its transport,
-see also xref:_javascript_transports_unregistering[the transport unregistering section].
+An alternative way of disabling the `websocket` transport is to unregister its transport, see also xref:_javascript_transports_unregistering[the transport unregistering section].
 
 [IMPORTANT]
 ====
@@ -111,40 +67,28 @@ Follow xref:_java_server_transports[the server transports section] for configuri
 [[_javascript_transports_unregistering]]
 ==== Unregistering Transports
 
-CometD JavaScript transports are added in the JavaScript toolkit _bindings_
-for the CometD JavaScript library.
+CometD JavaScript transports are added in the JavaScript toolkit _bindings_ for the CometD JavaScript library.
 
-The CometD JavaScript API allows you to unregister transports, and this can
-be useful to force the use of only one transport (for example, for testing
-purposes), or to disable certain transports that might be unreliable.
-For example, it is possible to unregister the WebSocket transport by
-unregistering it with the following code:
+The CometD JavaScript API allows you to unregister transports, and this can be useful to force the use of only one transport (for example, for testing purposes), or to disable certain transports that might be unreliable.
+For example, it is possible to unregister the WebSocket transport by unregistering it with the following code:
 
-====
 [source,javascript]
 ----
-var cometd = dojox.cometd; // Dojo style
-var cometd = $.cometd; // jQuery style
+var cometd = dojox.cometd; // Dojo style.
+var cometd = $.cometd; // jQuery style.
 
 cometd.unregisterTransport('websocket');
 ----
-====
 
 [[_javascript_transports_cross_origin]]
 ==== The cross-origin Mode
 
-Recent browsers introduced the capability for `XMLHttpRequest` calls to be performed
-towards a different domain (see https://developer.mozilla.org/En/HTTP_access_control[HTTP Access Control]).
-The JavaScript CometD implementation also supports this, with no configuration
-necessary on the client (if the browser supports `XMLHttpRequest` cross-domain calls,
-CometD uses them) and with a bit of configuration for the server, explained in
-xref:_java_server_configuration_advanced[this section].
+Recent browsers introduced the capability for `XMLHttpRequest` calls to be performed towards a different domain (see https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS[HTTP Access Control]).
+The JavaScript CometD implementation also supports this, with no configuration necessary on the client (if the browser supports `XMLHttpRequest` cross-domain calls, CometD uses them) and with a bit of configuration for the server, explained in xref:_java_server_configuration_advanced[this section].
 
 To use the cross-domain mode, you need: 
 
 * A cross-domain compliant browser.
 * A compliant server (for example, Jetty configured with the `CrossOriginFilter`).
 
-With this setup, even when the communication with the Bayeux server is cross-domain,
-CometD uses the `long-polling` transport, avoiding the drawbacks of the `callback-polling`
-transport.
+With this setup, even when the communication with the Bayeux server is cross-domain, CometD uses the `long-polling` transport, avoiding the drawbacks of the `callback-polling` transport.

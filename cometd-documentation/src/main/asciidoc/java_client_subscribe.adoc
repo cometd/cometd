@@ -10,21 +10,17 @@ Subscribing (or unsubscribing) involves first retrieving the channel you want to
 
 Subscribing (or unsubscribing) sends a message to the CometD server so that the server knows that any server-side event on that channel must be delivered to the client.
 
-====
 [source,java,indent=0]
 ----
 include::{doc_code}/client/ClientSubscribeDocs.java[tags=simpleSubscribe]
 ----
-====
 
 Unsubscribing is straightforward: if you unsubscribe from a channel, the CometD server does not deliver messages on that channel to message listeners:
 
-====
 [source,java,indent=0]
 ----
 include::{doc_code}/client/ClientSubscribeDocs.java[tags=simpleUnsubscribe]
 ----
-====
 
 [NOTE]
 ====
@@ -37,12 +33,10 @@ If you need to know whether your subscription (or unsubscription) was received
 and processed by the server, you can pass a callback `MessageListener` to the
 `subscribe()` (or `unsubscribe()`) methods:
 
-====
 [source,java,indent=0]
 ----
 include::{doc_code}/client/ClientSubscribeDocs.java[tags=callbackSubscribe]
 ----
-====
 
 As in xref:_javascript_subscribe[the JavaScript subscribe section], a good place to perform subscriptions is a `handshake(...)` callback or a `/meta/handshake` listener, because they are invoked transparently if the server requests a new handshake.
 
@@ -53,11 +47,9 @@ Applications do not need to unsubscribe in case of re-handshake; the CometD libr
 The internal implementation of the Bayeux protocol uses meta channels, and it does not make any sense to subscribe to them because they are not broadcast channels.
 It does make sense, however, to listen to messages that arrive on those channels, for example to know whether the connectivity with the server breaks or whether the server requested a re-handshake.
 
-====
 [source,java,indent=0]
 ----
 include::{doc_code}/client/ClientSubscribeDocs.java[tags=metaListener]
 ----
-====
 
 Refer to xref:_javascript_subscribe_vs_listen[this section] for more information about the difference between a listener and a subscription, and in what cases you should use one or the other.

@@ -32,11 +32,31 @@
               <doctype>book</doctype>
               <sourceDocumentName>index.adoc</sourceDocumentName>
               <outputDirectory>${html-directory}</outputDirectory>
-              <sourceHighlighter>coderay</sourceHighlighter>
               <attributes>
-                <linkcss>true</linkcss>
                 <version>${project.version}</version>
               </attributes>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>css</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <target>
+                <move file="${html-directory}/asciidoctor.css" tofile="${html-directory}/asciidoctor-default.css" />
+                <echo file="${html-directory}/asciidoctor.css">
+                @import "cometd.css";
+                </echo>
+                <move file="${html-directory}/coderay-asciidoctor.css" tofile="${html-directory}/coderay-asciidoctor-default.css" />
+                <echo file="${html-directory}/coderay-asciidoctor.css" />
+              </target>
             </configuration>
           </execution>
         </executions>
@@ -66,6 +86,11 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
+      <groupId>org.cometd.java</groupId>
+      <artifactId>cometd-java-oort</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-servlet-api</artifactId>
     </dependency>
@@ -83,6 +108,16 @@
       <groupId>org.cometd.java</groupId>
       <artifactId>cometd-java-annotation-server</artifactId>
       <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-jmx</artifactId>
+      <version>${jetty-version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-util-ajax</artifactId>
+      <version>${jetty-version}</version>
     </dependency>
     <dependency>
       <groupId>org.springframework</groupId>

@@ -9,12 +9,10 @@ The `org.cometd.bayeux.server.SecurityPolicy` interface has a default implementa
 
 The `org.cometd.bayeux.server.SecurityPolicy` methods are:
 
-====
 [source,java,indent=0]
 ----
 include::{doc_code}/server/ServerAuthorizationDocs.java[tags=methods]
 ----
-====
 
 Those methods control whether a handshake, a channel creation, a subscription to a channel or a publish to a channel are to be authorized.
 
@@ -24,7 +22,7 @@ The `SecurityPolicy` methods are invoked for ``ServerSession``s that correspond 
 
 Application code can determine whether a `ServerSession` corresponds to a local client by calling method `ServerSession.isLocalSession()`.
 
-In almost all cases, local clients should be authorized because they are created on the server by the application (for example, by services – see also xref:_java_server_services_inherited[the inherited services section]) and therefore are trusted clients.
+In almost all cases, local clients should be authorized because they are created on the server by the application (for example, by services -- see also xref:_java_server_services_inherited[the inherited services section]) and therefore are trusted clients.
 ====
 
 The default implementation `org.cometd.server.DefaultSecurityPolicy`:
@@ -36,12 +34,10 @@ The default implementation `org.cometd.server.DefaultSecurityPolicy`:
 
 A typical custom `SecurityPolicy` may override the `canHandshake(...)` method to control authentication:
 
-====
 [source,java,indent=0]
 ----
 include::{doc_code}/server/ServerAuthorizationDocs.java[tags=custom]
 ----
-====
 
 To understand how to install your custom `SecurityPolicy` on the `BayeuxServer` object, see how it is done in xref:_java_server_authentication[the authentication section].
 

@@ -7,7 +7,6 @@ If the CometD servlet creates the `BayeuxServer` instance, the servlet init para
 
 If you followed xref:_primer[the primer], Maven has configured the `web.xml` file for you; here are details its configuration, a sample `web.xml`:
 
-====
 [source,xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
@@ -33,7 +32,6 @@ If you followed xref:_primer[the primer], Maven has configured the `web.xml` fil
 
 </web-app>
 ----
-====
 
 You must define and map the `org.cometd.server.CometDServlet` in `web.xml` to enable the server to interpret the Bayeux protocol.
 It is normally mapped to `+/cometd/*+`, but you can change the `url-pattern` mapping if you prefer, or even have multiple mappings.
@@ -128,17 +126,18 @@ Here is the list of configuration init parameters (to be specified in `web.xml`)
 
 | metaConnectDeliverOnly
 | false
-| Whether the transport should deliver the messages only via `/meta/connect` (enables server-to-client strict message ordering – but not reliability).
+| Whether the transport should deliver the messages only via `/meta/connect` (enables server-to-client strict message ordering -- but not reliability).
   Enabling this option allows for server-to-client strict message ordering at the cost of a slightly chattier protocol (because delivery via `/meta/connect` may require waking up pending replies).
 
 | maxQueue
 | -1
-| The maximum size of the `ServerSession` queue. A value of -1 means no queue size limit.
+| The maximum size of the `ServerSession` queue.
+  A value of -1 means no queue size limit.
   A positive value triggers the invocation of `org.cometd.bayeux.server.ServerSession.QueueMaxedListener` when the max queue size is exceeded.
 
 | maxMessageSize
 | <impl>
-| The maximum size, in bytes, of an incoming transport message (the HTTP body or the WebSocket message - both may contain multiple Bayeux messages).
+| The maximum size, in bytes, of an incoming transport message (the HTTP body or the WebSocket message -- both may contain multiple Bayeux messages).
   The default value depends on the transport implementation.
 |===
 
@@ -168,7 +167,8 @@ Here is the list of configuration init parameters (to be specified in `web.xml`)
 
 | browserCookieDomain
 |
-| The domain of the cookie used to identify multiple sessions (see also xref:_java_server_multiple_sessions[this section]). By default there is no domain.
+| The domain of the cookie used to identify multiple sessions (see also xref:_java_server_multiple_sessions[this section]).
+  By default there is no domain.
 
 | browserCookiePath
 | /
@@ -197,7 +197,8 @@ Here is the list of configuration init parameters (to be specified in `web.xml`)
 
 | ws.cometdURLMapping
 |
-| *Mandatory*. A comma separated list of `url-pattern` strings defined by the `servlet-mapping` of the CometD Servlet.
+| *Mandatory*.
+  A comma separated list of `url-pattern` strings defined by the `servlet-mapping` of the CometD Servlet.
 
 | ws.messagesPerFrame
 | 1
@@ -207,12 +208,14 @@ Here is the list of configuration init parameters (to be specified in `web.xml`)
 | ws.bufferSize
 | <impl>
 | The size, in bytes, of the buffer used to read and write WebSocket frames.
-  The default value depends on the implementation. For the Jetty WebSocket implementation, this value is 4096.
+  The default value depends on the implementation.
+  For the Jetty WebSocket implementation, this value is 4096.
 
 | ws.idleTimeout
 | <impl>
 | The idle timeout, in milliseconds, for the WebSocket connection.
-  The default value depends on the implementation. For the Jetty WebSocket implementation this value is 300000.
+  The default value depends on the implementation.
+  For the Jetty WebSocket implementation this value is 300000.
 
 | ws.requireHandshakePerConnection
 | false
@@ -229,7 +232,7 @@ Here is the list of configuration init parameters (to be specified in `web.xml`)
 ===== Advanced Configuration for the Java Server
 
 The simplest way to setup a CometD server is to deploy your CometD application under context path `/`, and the CometD Servlet mapped to e.g. `/cometd/*`.
-In this way resources such as HTML, CSS and - more importantly - JavaScript files (in particular `cometd.js`) will belong to the same domain.
+In this way resources such as HTML, CSS and -- more importantly -- JavaScript files (in particular `cometd.js`) will belong to the same domain.
 This minimizes the server configuration to make browser work easily with CometD.
 
 A more complex setup is to have your main application deployed to domain `app.domain.com` and the CometD server to `cometd.domain.com`.
@@ -247,7 +250,6 @@ This filter implements the https://www.w3.org/TR/access-control/[Cross-Origin Re
 
 Here is an example of `web.xml` configuration for the `CrossOriginFilter`:
 
-====
 [source,xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
@@ -283,7 +285,6 @@ Here is an example of `web.xml` configuration for the `CrossOriginFilter`:
 
 </web-app>
 ----
-====
 
 Refer to the https://www.eclipse.org/jetty/documentation/current/cross-origin-filter.html[Jetty Cross Origin Filter documentation] for the filter configuration.
 
@@ -315,7 +316,6 @@ Remember to always specify the `load-on-startup` element for the CometD Servlet.
 
 For example:
 
-====
 [source,xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
@@ -347,7 +347,6 @@ For example:
 
 </web-app>
 ----
-====
 
 The typical error that you get if you do not enable the Servlet 3 asynchronous features is the following:
 
@@ -381,47 +380,39 @@ Given the above, you need to solve two problems:
 
 The solution offered by the CometD API for the first problem is to provide a method that atomically creates and initializes server channels:
 
-====
 [source,java,indent=0]
 ----
-include::{doc_code}/server/ServerConfigDocs.java[tags=init]
+include::{doc_code}/server/ServerConfigurationDocs.java[tags=init]
 ----
-====
 
 Method `BayeuxServer.createChannelIfAbsent(String channelName, Initializer... initializers)` atomically creates the channel, and returns a `MarkedReference` that contains the `ServerChannel` reference and a boolean that indicates whether the channel was created or if it existed already.
 The `Initializer` callback is called only if the channel is created by the invocation to `BayeuxServer.createChannelIfAbsent()`.
 
 The solution to the second problem is to configure the channel as _persistent_, so that the sweeper does not remove the channel:
 
-====
 [source,java,indent=0]
 ----
-include::{doc_code}/server/ServerConfigDocs.java[tags=persist]
+include::{doc_code}/server/ServerConfigurationDocs.java[tags=persist]
 ----
-====
 
 Not only you can configure `ServerChannel` instances to be persistent, but to be _lazy_ (see also xref:_java_server_lazy_messages[this section]), you can add
 listeners, and you can add `Authorizer` (see also xref:_java_server_authorizers[the authorizers section]).
 
 Creating a server channel returns a `MarkedReference` that contains the `ServerChannel` reference and a boolean that indicates whether the channel was created or if it existed already:
 
-====
 [source,java,indent=0]
 ----
-include::{doc_code}/server/ServerConfigDocs.java[tags=reference]
+include::{doc_code}/server/ServerConfigurationDocs.java[tags=reference]
 ----
-====
 
 The code above creates the channel, configures it to be persistent and then obtains a reference to it, that is guaranteed to be non-null.
 
 A typical error in CometD applications is to create the channel without making it persistent, and then trying to obtain a reference to it without checking if it's null:
 
-====
 [source,java,indent=0]
 ----
-include::{doc_code}/server/ServerConfigDocs.java[tags=wrong]
+include::{doc_code}/server/ServerConfigurationDocs.java[tags=wrong]
 ----
-====
 
 Between the `BayeuxServer.createChannelIfAbsent()` call and the
 `BayeuxServer.getChannel()` call there is application code that may take a while to complete (therefore allowing the sweeper to sweep the just created server channel), so it is always safer to mark the channel as persistent, and when it is not needed anymore mark the server channel as non persistent (by calling `channel.setPersistent(false)`), to allow the sweeper to sweep it.

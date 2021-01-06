@@ -12,7 +12,6 @@ This configuration servlet has no URL mapping because its only scope is to initi
 
 Here is a sample `web.xml`:
 
-====
 [source,xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
@@ -40,21 +39,18 @@ Here is a sample `web.xml`:
 
 </web-app>
 ----
-====
 
 Notice that the `web.xml` file specifies `<load-on-startup>` to be:
 
-* 1 for the CometD servlet – so that the Bayeux object gets created and put in the `ServletContext`.
-* 2 for the configuration servlet – so that it will be initialized only after the CometD servlet has been initialized and hence the BayeuxServer object is available.
+* 1 for the CometD servlet -- so that the Bayeux object gets created and put in the `ServletContext`.
+* 2 for the configuration servlet -- so that it will be initialized only after the CometD servlet has been initialized and hence the BayeuxServer object is available.
 
 This is the code for the `ConfigurationServlet`:
 
-====
 [source,java,indent=0]
 ----
 include::{doc_code}/server/ServerServiceIntegrationDocs.java[tags=configServlet]
 ----
-====
 
 See also xref:_java_server_services_inherited[this section] about the `EchoService`.
 
@@ -64,7 +60,6 @@ Instead of using a configuration servlet, you can use a configuration listener, 
 
 Here is a sample `web.xml` file:
 
-====
 [source,xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
@@ -90,16 +85,13 @@ Here is a sample `web.xml` file:
 
 </web-app>
 ----
-====
 
 This is the code for the `ConfigurationListener`:
 
-====
 [source,java,indent=0]
 ----
 include::{doc_code}/server/ServerServiceIntegrationDocs.java[tags=configListener]
 ----
-====
 
 ===== Integration of Annotated Services
 
@@ -108,12 +100,10 @@ The procedure is very similar to the procedures above, but it requires use of th
 
 For example, the `ConfigurationServlet` becomes:
 
-====
 [source,java,indent=0]
 ----
 include::{doc_code}/server/ServerServiceIntegrationDocs.java[tags=annotationConfigServlet]
 ----
-====
 
 ===== Integration of Annotated Services via `AnnotationCometDServlet`
 
@@ -121,7 +111,6 @@ The `org.cometd.java.annotation.AnnotationCometDServlet` allows you to specify a
 
 This is a sample `web.xml`:
 
-====
 [source,xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
@@ -147,7 +136,6 @@ This is a sample `web.xml`:
 
 </web-app>
 ----
-====
 
 In this example, the `AnnotationCometDServlet` instantiates and processes the annotations of one object of class `com.acme.cometd.FooService` and of one object of class `com.acme.cometd.BarService`.
 
@@ -155,11 +143,9 @@ The service objects are stored as `ServletContext` attributes under their own cl
 
 For example, `FooService` can be retrieved using the following code:
 
-====
 [source,java,indent=0]
 ----
 include::{doc_code}/server/ServerServiceIntegrationDocs.java[tags=anotherServlet]
 ----
-====
 
 The services created are deprocessed when `AnnotationCometDServlet` is destroyed.

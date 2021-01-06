@@ -2,103 +2,62 @@
 [[_java_oort_objects_oort_object]]
 ==== OortObject
 
-An `org.cometd.oort.OortObject` instance represents a named composite data
-entity that is distributed in an Oort cluster.
+An `org.cometd.oort.OortObject` instance represents a named composite data entity that is distributed in an Oort cluster.
 
-Each node in the cluster has exactly one instance of an `OortObject` with a
-specific name, and the `OortObject` contains N data entities, one of each
-node in the cluster.
-There may be several Oort objects in the same node, provided they all have
-different names.
+Each node in the cluster has exactly one instance of an `OortObject` with a specific name, and the `OortObject` contains N data entities, one of each node in the cluster.
+There may be several Oort objects in the same node, provided they all have different names.
 
-Oort objects are composites in that they store N data entities, also called
-_parts_, where N is the number of nodes in the Oort cluster.
+Oort objects are composites in that they store N data entities, also called _parts_, where N is the number of nodes in the Oort cluster.
 
 [IMPORTANT]
 ====
-The key concepts behind `OortObject` are that it is *named* and it is
-*composite*.
+The key concepts behind `OortObject` are that it is *named* and it is *composite*.
 
-The `OortObject` name allows for multiple, different, ``OortObject``s to
-exist in the same node.
+The `OortObject` name allows for multiple, different, ``OortObject``s to exist in the same node.
 
-The composite nature of `OortObject` avoids the problem of having multiple
-nodes updating the same data, which can cause conflicts.
-Each node can only update its local _part_ - the other parts are read-only
-for the local node.
+The composite nature of `OortObject` avoids the problem of having multiple nodes updating the same data, which can cause conflicts.
+Each node can only update its local _part_ -- the other parts are read-only for the local node.
 
-While `OortObject` can be seen as a distributed, in-memory, data store, it
-is different from other typical distributed in-memory data stores in that
-`OortObject` does not allow modification of the data owned by other nodes.
-Furthermore, if a node fails, its corresponding part is removed from the
-other nodes so that the data of the failed node is lost.
+While `OortObject` can be seen as a distributed, in-memory, data store, it is different from other typical distributed in-memory data stores in that `OortObject` does not allow modification of the data owned by other nodes.
+Furthermore, if a node fails, its corresponding part is removed from the other nodes so that the data of the failed node is lost.
 ====
 
-The data entity may be the number of users connected to each node, or the
-number of games played on each node, or the list of chat rooms created on
-each node, or the names of systems monitored by each node, etc., depending
-on your application's business domain.
+The data entity may be the number of users connected to each node, or the number of games played on each node, or the list of chat rooms created on each node, or the names of systems monitored by each node, etc., depending on your application's business domain.
 
-In the image below, you can see 3 nodes (`nodeA`, `nodeB` and `nodeC`), each
-containing an Oort object named "users" (in orange) that stores the names
-of the users connected to each Oort node.
-The data entity in this case is a `List<String>` representing the names of
-the connected users for each node.
+In the image below, you can see 3 nodes (`nodeA`, `nodeB` and `nodeC`), each containing an Oort object named "users" (in orange) that stores the names of the users connected to each Oort node.
+The data entity in this case is a `List<String>` representing the names of the connected users for each node.
 
-`NodeA` has clients `Ca1` and `Ca2` connected, `nodeB` has only client `Cb1`
-connected, while `nodeC` has 3 clients connected.
-You can see that each Oort object is made of 3 parts (the innermost [blue]+blue+,
-[lime]+green+ and [red]+red+ boxes); each part is colored like the node it represents.
+`NodeA` has clients `Ca1` and `Ca2` connected, `nodeB` has only client `Cb1` connected, while `nodeC` has 3 clients connected.
+You can see that each Oort object is made of 3 parts (the innermost [blue]+blue+,[lime]+green+ and [red]+red+ boxes); each part is colored like the node it represents.
 The part that has the same color as the node it lives in it's the _local_ part.
 
 image::oort_object.png[]
 
-Each Oort object can only update its local part: `nodeA` can only add/remove
-user names from its local ([blue]+blue+) part, and cannot add/remove from the
-remote parts (in [lime]+green+ and [red]+red+). Likewise, `nodeB` can only
-update the [lime]+green+ part but not the [blue]+blue+ and [red]+red+ parts,
-and `nodeC` can only update the [red]+red+ part, but not the [blue]+blue+ and
-[lime]+green+ ones.
+Each Oort object can only update its local part: `nodeA` can only add/remove user names from its local ([blue]+blue+) part, and cannot add/remove from the remote parts (in [lime]+green+ and [red]+red+).
+Likewise, `nodeB` can only update the [lime]+green+ part but not the [blue]+blue+ and [red]+red+ parts, and `nodeC` can only update the [red]+red+ part, but not the [blue]+blue+ and [lime]+green+ ones.
 
-If a new client connects to `nodeB`, say `Cb2`, then the application on `nodeB`
-takes the user name (`B2`) that wants to share with other nodes, and adds it
-to the Oort object on `nodeB`.
-The user name `B2` will be added to the [lime]+green+ part of `nodeB`, and a
-message will be broadcast to the other nodes, which will also modify the
-correspondent [lime]+green+ parts on themselves, adding a copy of `B2`.
-The remote parts of an Oort object can only be updated by messages internal
-to the `OortObject` implementation; they cannot be updated by application
-code directly.
+If a new client connects to `nodeB`, say `Cb2`, then the application on `nodeB` takes the user name (`B2`) that wants to share with other nodes, and adds it to the Oort object on `nodeB`.
+The user name `B2` will be added to the [lime]+green+ part of `nodeB`, and a message will be broadcast to the other nodes, which will also modify the correspondent [lime]+green+ parts on themselves, adding a copy of `B2`.
+The remote parts of an Oort object can only be updated by messages internal to the `OortObject` implementation; they cannot be updated by application code directly.
 
 Each Oort object instance _owns_ only its local part.
-In the example, the user name `A2` is present in all the nodes, but it is
-_owned_ only by the Oort object in `nodeA`.
+In the example, the user name `A2` is present in all the nodes, but it is _owned_ only by the Oort object in `nodeA`.
 Anyone that wants to modify or remove `A2` must perform this action in `nodeA`.
-xref:_java_oort_objects_oort_service[The `OortService` section] shows how to
-forward service actions from one node to another.
+xref:_java_oort_objects_oort_service[The `OortService` section] shows how to forward service actions from one node to another.
 
-Since `OortObject` is a composite data structure, a
-xref:_java_oort_objects_oort_object_merging[merge] operation is necessary
-to get the data entities from all the parts.
-In the example above, to get the list of all users connected to all the nodes
-in the cluster you need to merge the list of users of each part.
+Since `OortObject` is a composite data structure, a xref:_java_oort_objects_oort_object_merging[merge] operation is necessary to get the data entities from all the parts.
+In the example above, to get the list of all users connected to all the nodes in the cluster you need to merge the list of users of each part.
 The merged list will contain `[A1, A2, B1, C1, C2, C3]`.
-Refer to the xref:_java_oort_objects_oort_object_merging[merge section] for
-further details.
+Refer to the xref:_java_oort_objects_oort_object_merging[merge section] for further details.
 
-`OortObject` allows applications to add/remove `OortObject.Listener` that
-are notified of modification of a part, either local or remote.
-Your application can implement these listeners to perform custom logic, see
-also xref:_java_oort_objects_oort_object_listeners[the `OortObject` listeners section].
+`OortObject` allows applications to add/remove `OortObject.Listener` that are notified of modification of a part, either local or remote.
+Your application can implement these listeners to perform custom logic, see also xref:_java_oort_objects_oort_object_listeners[the `OortObject` listeners section].
 
 [[_java_oort_objects_oort_object_specializations]]
 ===== OortObject Specializations
 
-While `OortObject` is a generic container of objects (like a `List<String>`),
-it may not be very efficient.
-Imagine the case where the list contains thousands of names: the addition/removal
-of one name will cause the whole list to be replicated to all other nodes,
-because the whole list is the data entity.
+While `OortObject` is a generic container of objects (like a `List<String>`), it may not be very efficient.
+Imagine the case where the list contains thousands of names: the addition/removal of one name will cause the whole list to be replicated to all other nodes, because the whole list is the data entity.
 
 To avoid this inefficiency, CometD offers these specializations of `OortObject`:
 
@@ -107,248 +66,122 @@ To avoid this inefficiency, CometD offers these specializations of `OortObject`:
 * `OortLongMap`, an `OortMap` with `Long` keys
 * `OortList`, an `OortObject` that contains a `List`
 
-Each specialization replicates single operations like the addition/removal
-of a key/value pair in an `OortMap`, or the addition/removal of an element
-in an `OortList`.
+Each specialization replicates single operations like the addition/removal of a key/value pair in an `OortMap`, or the addition/removal of an element in an `OortList`.
 
-`OortMap` provides an `OortMap.EntryListener` to notify applications of map
-entry addition/removal, either local or remote. `OortList` provides an
-`OortList.ElementListener` to notify applications of element addition/removal,
-either local or remote.
-Applications can implement these listeners to be notified of entry or element
-updates in order to perform custom logic, see also
-xref:_java_oort_objects_oort_object_listeners[the `OortObject` listeners section].
+`OortMap` provides an `OortMap.EntryListener` to notify applications of map entry addition/removal, either local or remote.
+`OortList` provides an `OortList.ElementListener` to notify applications of element addition/removal, either local or remote.
+Applications can implement these listeners to be notified of entry or element updates in order to perform custom logic, see also xref:_java_oort_objects_oort_object_listeners[the `OortObject` listeners section].
 
 [IMPORTANT]
 ====
-`OortMap` is different from typical distributed hash tables
-such as link:https://en.wikipedia.org/wiki/Hazelcast[Hazelcast].
+`OortMap` is different from typical distributed hash tables such as link:https://en.wikipedia.org/wiki/Hazelcast[Hazelcast].
 
-A typical distributed hash table behaves like a single `Map` whose
-entries are not owned by a particular node, but instead are distributed
-across the cluster (so that every node operates as if the distributed
-`Map` was local).
+A typical distributed hash table behaves like a single `Map` whose entries are not owned by a particular node, but instead are distributed across the cluster (so that every node operates as if the distributed `Map` was local).
 
-`OortMap` behaves like a composite made of many ``Map``s (one for each
-node in the cluster) whose entries are owned by a particular node.
+`OortMap` behaves like a composite made of many ``Map``s (one for each node in the cluster) whose entries are owned by a particular node.
 
-When a node fails, a typical distributed hash table retains the entries
-that were added by that node (other nodes can still access those entries).
+When a node fails, a typical distributed hash table retains the entries that were added by that node (other nodes can still access those entries).
 
-When a node fails, the `OortMap` part corresponding to the failed node is
-removed, and the entries of that part are lost (other nodes cannot access
-those entries).
+When a node fails, the `OortMap` part corresponding to the failed node is removed, and the entries of that part are lost (other nodes cannot access those entries).
 ====
 
 [[_java_oort_objects_oort_object_creation]]
 ===== OortObject Creation
 
 `OortObject` are created by providing an `OortObject.Factory`.
-This factory is needed to create the data entity from its raw representation
-obtained from JSON.
-This allows standard JDK containers such as `java.util.concurrent.ConcurrentHashMap`
-to be used as data entities, but replicated among nodes using standard JSON.
+This factory is needed to create the data entity from its raw representation obtained from JSON.
+This allows standard JDK containers such as `java.util.concurrent.ConcurrentHashMap` to be used as data entities, but replicated among nodes using standard JSON.
 
 CometD provides a number of predefined factories in class `org.cometd.oort.OortObjectFactories`, for example:
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-Oort oort = ...;
-
-// The factory for data entities
-OortObject.Factory<List<String>> factory = OortObjectFactories.forList();
-
-// Create the OortObject
-OortObject<List<String>> users = new OortObject<List<String>>(oort, "users", factory);
-
-// Start it before using it
-users.start();
+include::{doc_code}/oort/OortObjectDocs.java[tags=create]
 ----
-====
 
-The code above will create an `OortObject` named "users" whose data entity is
-a `List<String>` (this is an example; you may want to use the richer and more
-powerful `OortList<String>` instead). Once you have created an `OortObject`
-you must start it before using it.
+The code above will create an `OortObject` named "users" whose data entity is a `List<String>` (this is an example; you may want to use the richer and more powerful `OortList<String>` instead).
+Once you have created an `OortObject` you must start it before using it.
 
-`OortObject` are usually created at startup time, so that all the nodes have
-one instance of the same `OortObject` with the same names.
-Remember that the data entity is distributed among `OortObject` with the same
-name, so if a node does not have that particular named `OortObject`, then it
-will not receive updates for that data entity.
+`OortObject` are usually created at startup time, so that all the nodes have one instance of the same `OortObject` with the same names.
+Remember that the data entity is distributed among `OortObject` with the same name, so if a node does not have that particular named `OortObject`, then it will not receive updates for that data entity.
 
-It is possible to create `OortObject` on-the-fly in response to some event,
-but the application must make sure that this event is broadcast to all nodes
-so that each node can create its own `OortObject` instance with the same name.
+It is possible to create `OortObject` on-the-fly in response to some event, but the application must make sure that this event is broadcast to all nodes so that each node can create its own `OortObject` instance with the same name.
 
 [[_java_oort_objects_oort_object_sharing]]
 ===== OortObject Data Entity Sharing
 
 One `OortObject` owns one data entity, which is its local part.
-In the example above, the data entity is a whole `List<String>`, so that's
-what you want to share with other nodes:
+In the example above, the data entity is a whole `List<String>`, so that's what you want to share with other nodes:
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-OortObject.Factory<List<String>> factory = users.getFactory();
-
-// Create a "default" data entity
-List<String> names = factory.newObject(null);
-
-// Fill it with data
-names.add("B1");
-
-// Share the new list with the other nodes
-users.setAndShare(names, null);
+include::{doc_code}/oort/OortObjectDocs.java[tags=shareList]
 ----
-====
 
-Method `setAndShare(...)` will replace the empty list (created internally
-when the `OortObject` was created) with the provided list, and broadcast
-this event to the cluster so that other nodes can replace the part they
-have associated with this node with the new one.
+Method `setAndShare(...)` will replace the empty list (created internally when the `OortObject` was created) with the provided list, and broadcast this event to the cluster so that other nodes can replace the part they have associated with this node with the new one.
 
-Similarly, `OortMap` has the `putAndShare(...)` and `removeAndShare(...)`
-methods to put/remove the map entries and share them:
+Similarly, `OortMap` has the `putAndShare(...)` and `removeAndShare(...)` methods to put/remove the map entries and share them:
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-OortStringMap<UserInfo> userInfos = ...;
-
-// Map user name "B1" with its metadata
-userInfos.putAndShare("B1", new UserInfo("B1", ...), null);
-
-// In another place in the code
-
-// Remove the mapping for user "B1"
-userInfos.removeAndShare("B1", null);
+include::{doc_code}/oort/OortObjectDocs.java[tags=useMap]
 ----
-====
 
 `OortList` has `addAndShare(...)` and `removeAndShare(...)`:
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-OortList<String> names = ...;
-
-// Add user name "B1"
-names.addAndShare(null, "B1");
-
-// In another place in the code
-
-// Remove user "B1"
-names.removeAndShare(null, "B1");
+include::{doc_code}/oort/OortObjectDocs.java[tags=useList]
 ----
-====
 
-Both `OortMap` and `OortList` inherit from `OortObject` method `setAndShare(...)`
-if you need to replace the whole map or list.
+Both `OortMap` and `OortList` inherit from `OortObject` method `setAndShare(...)` if you need to replace the whole map or list.
 
-The `OortObject` API will try to make it hard for you to interact directly
-with the data entity, and this is by design.
-If you can modify the data entity directly without using the above methods,
-then the local data entity will be out of sync with the correspondent data
-entities in the other nodes.
-Whenever you feel the need to access the data entity, and you cannot find an
-easy way to do it, consider that you are probably taking the wrong approach.
+The `OortObject` API will try to make it hard for you to interact directly with the data entity, and this is by design.
+If you can modify the data entity directly without using the above methods, then the local data entity will be out of sync with the correspondent data entities in the other nodes.
+Whenever you feel the need to access the data entity, and you cannot find an easy way to do it, consider that you are probably taking the wrong approach.
 
-For the same reasons mentioned above, it is highly recommended that the data
-that you store in an Oort object is immutable.
-In the `OortStringMap` example above, the `UserInfo` object should be immutable,
-and if you need to change it, it is better to create a new `UserInfo` instance
-with the new data and then call `putAndShare(...)` to replace the old one,
-which will ensure that all nodes will get the update.
+For the same reasons mentioned above, it is highly recommended that the data that you store in an Oort object is immutable.
+In the `OortStringMap` example above, the `UserInfo` object should be immutable, and if you need to change it, it is better to create a new `UserInfo` instance with the new data and then call `putAndShare(...)` to replace the old one, which will ensure that all nodes will get the update.
 
 [[_java_oort_objects_oort_object_serialization]]
 ===== OortObject Custom Data Entity Serialization
 
-The `OortObject` implementation must be able to transmit and receive the data
-entity to/from other nodes in the cluster, and recursively so for all objects
-contained in the data entity that is being transmitted.
+The `OortObject` implementation must be able to transmit and receive the data entity to/from other nodes in the cluster, and recursively so for all objects contained in the data entity that is being transmitted.
 
-The data entity and the objects it contains are serialized to JSON using the
-standard CometD mechanism, and then transmitted.
-When a node receives the JSON representation of data entity and its contained
-objects, it deserializes it from JSON into an object graph.
+The data entity and the objects it contains are serialized to JSON using the standard CometD mechanism, and then transmitted.
+When a node receives the JSON representation of data entity and its contained objects, it deserializes it from JSON into an object graph.
 
-In the `OortStringMap` example above, the data entity is a
-`ConcurrentMap<String, Object>` and the values of this data entity are objects
-of class `UserInfo`.
+In the `OortStringMap` example above, the data entity is a `ConcurrentMap<String, Object>` and the values of this data entity are objects of class `UserInfo`.
 
-While the `OortObject` implementation is able to serialize a `ConcurrentMap`
-to JSON natively (because `ConcurrentMap` is a `Map` and therefore has a
-native representation as a JSON object), it usually cannot serialize `UserInfo`
-instances correctly (by default, CometD just calls `toString()` to convert
-such non natively representable objects to JSON).
+While the `OortObject` implementation is able to serialize a `ConcurrentMap` to JSON natively (because `ConcurrentMap` is a `Map` and therefore has a native representation as a JSON object), it usually cannot serialize `UserInfo` instances correctly (by default, CometD just calls `toString()` to convert such non natively representable objects to JSON).
 
-In order to serialize correctly instances of `UserInfo`, you must configure
-Oort as explained in xref:_java_json_oort_config[the Oort JSON configuration section].
+In order to serialize correctly instances of `UserInfo`, you must configure Oort as explained in xref:_java_json_oort_config[the Oort JSON configuration section].
 This is done by creating a custom implementation of `JSONContent.Client`:
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-package com.acme;
-
-import org.cometd.common.JettyJSONContextClient;
-
-public class MyCustomJSONContextClient extends JettyJSONContextClient {
-    public MyCustomJSONContextClient() {
-        getJSON().addConvertor(UserInfo.class, new UserInfoConvertor());
-    }
-}
+include::{doc_code}/oort/OortObjectDocs.java[tags=clientJSON]
 ----
-====
 
-In the example above the Jetty JSON library has been implicitly chosen by
-extending the CometD class `JettyJSONContextClient`.
+In the example above the Jetty JSON library has been implicitly chosen by extending the CometD class `JettyJSONContextClient`.
 A similar class exist for the Jackson JSON library.
-In the class above a convertor for the `UserInfo` class is added to the root
-`org.eclipse.jetty.util.ajax.JSON` object retrieved via `getJSON()`.
+In the class above a convertor for the `UserInfo` class is added to the root `org.eclipse.jetty.util.ajax.JSON` object retrieved via `getJSON()`.
 This root `JSON` object is the one responsible for CometD message serialization.
 
-A typical implementation of the convertor could be (assuming that your
-`UserInfo` class has an `id` property):
+A typical implementation of the convertor could be (assuming that your `UserInfo` class has an `id` property):
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-import java.util.Map;
-import org.eclipse.jetty.util.ajax.JSON;
-
-public class UserInfoConvertor implements JSON.Convertor {
-    @Override
-    public void toJSON(Object obj, JSON.Output out) {
-        UserInfo userInfo = (UserInfo)obj;
-        out.addClass(UserInfo.class);
-        out.add("id", userInfo.getId());
-    }
-
-    @Override
-    public Object fromJSON(Map object) {
-        String id = (String)object.get("id");
-        return new UserInfo(id);
-    }
-}
+include::{doc_code}/oort/OortObjectDocs.java[tags=clientConvertor]
 ----
-====
 
-Class `UserInfoConvertor` depends on the Jetty JSON library; a similar class
-can be written for the Jackson library (refer to xref:_java_json[the JSON section]
-for further information).
+Class `UserInfoConvertor` depends on the Jetty JSON library; a similar class can be written for the Jackson library (refer to xref:_java_json[the JSON section] for further information).
 
-Finally, you must specify class `MyCustomJSONContextClient` as the `jsonContext`
-parameter of the Oort configuration (as explained in
-xref:_java_oort_common_configuration[the Oort common configuration section]) in
-the `web.xml` file, for example:
+Finally, you must specify class `MyCustomJSONContextClient` as the `jsonContext` parameter of the Oort configuration (as explained in xref:_java_oort_common_configuration[the Oort common configuration section]) in the `web.xml` file, for example:
 
-====
 [source,xml]
 ----
+<?xml version="1.0" encoding="UTF-8"?>
 <web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd"
@@ -374,41 +207,24 @@ the `web.xml` file, for example:
     ...
 </web-app>
 ----
-====
 
-Similarly, in order to deserialize correctly instances of `UserInfo`, you must
-configure CometD, again as explained in xref:_java_json_oort_config[the Oort JSON configuration section].
-This is done by creating a custom implementation of `JSONContext.Server`:
+Similarly, in order to deserialize correctly instances of `UserInfo`, you must configure CometD, again as explained in xref:_java_json_oort_config[the Oort JSON configuration section].
+This is done by creating a custom implementation of `JSONContextServer`:
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-package com.acme;
-
-import org.cometd.server.JettyJSONContextServer;
-
-public class MyCustomJSONContextServer extends JettyJSONContextServer {
-    public MyCustomJSONContextServer() {
-        getJSON().addConvertor(UserInfo.class, new UserInfoConvertor());
-    }
-}
+include::{doc_code}/oort/OortObjectDocs.java[tags=serverJSON]
 ----
-====
 
-Like before, the Jetty JSON library has been implicitly chosen by extending
-the CometD class `JettyJSONContextServer`.
+Like before, the Jetty JSON library has been implicitly chosen by extending the CometD class `JettyJSONContextServer`.
 A similar class exist for the Jackson JSON library.
-Class `UserInfoConvertor` is the same class you defined above and it is
-therefore used for both serialization and deserialization.
+Class `UserInfoConvertor` is the same class you defined above and it is therefore used for both serialization and deserialization.
 
-You must specify class `MyCustomJSONContextServer` as the `jsonContext`
-parameter of the CometD configuration (as explained in
-xref:_java_server_configuration[the server configuration section]) in the
-`web.xml` file, for example:
+You must specify class `MyCustomJSONContextServer` as the `jsonContext` parameter of the CometD configuration (as explained in xref:_java_server_configuration[the server configuration section]) in the `web.xml` file, for example:
 
-====
 [source,xml]
 ----
+<?xml version="1.0" encoding="UTF-8"?>
 <web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd"
@@ -427,175 +243,91 @@ xref:_java_server_configuration[the server configuration section]) in the
     ...
 </web-app>
 ----
-====
 
-To summarize, the serialization of the `ConcurrentMap` data entity of a
-`OortStringMap` will happen in the following way: the `ConcurrentMap` is
-a `Map` and is natively represented as a JSON object; the `UserInfo` values
-will be converted to JSON as specified by the `UserInfoConvertor.toJSON(...)`
-method.
+To summarize, the serialization of the `ConcurrentMap` data entity of a `OortStringMap` will happen in the following way: the `ConcurrentMap` is a `Map` and is natively represented as a JSON object; the `UserInfo` values will be converted to JSON as specified by the `UserInfoConvertor.toJSON(...)` method.
 
 The JSON obtained after the serialization is transmitted to other nodes.
-The node that receive it will deserialize the received JSON into a plain
-`Map` containing `UserInfo` value objects converted as specified by the
-`UserInfoConvertor.fromJSON(...)` method.
-Finally the plain `Map` object will be passed to the Oort object factory
-(see also
-xref:_java_oort_objects_oort_object_creation[the `OortObjects` creation section])
-to be converted into a `ConcurrentMap`.
+The node that receive it will deserialize the received JSON into a plain `Map` containing `UserInfo` value objects converted as specified by the `UserInfoConvertor.fromJSON(...)` method.
+Finally, the plain `Map` object will be passed to the Oort object factory (see also xref:_java_oort_objects_oort_object_creation[the `OortObjects` creation section]) to be converted into a `ConcurrentMap`.
 
 [[_java_oort_objects_oort_object_merging]]
 ===== OortObject Data Entity Merging
 
-`OortObject` is made of _parts_, and applications may need to access the
-data contained in all the parts.
-In the examples above, an application may want to be able to access all
-the user names from all nodes.
+`OortObject` is made of _parts_, and applications may need to access the data contained in all the parts.
+In the examples above, an application may want to be able to access all the user names from all nodes.
 
-In order to access the data from all the parts, `OortObject` provides the
-`merge(OortObject.Merger merger)` method.
-Applications can use mergers provided by `org.cometd.oort.OortObjectMergers`
-or implement their own, for example:
+In order to access the data from all the parts, `OortObject` provides the `merge(OortObject.Merger merger)` method.
+Applications can use mergers provided by `org.cometd.oort.OortObjectMergers` or implement their own, for example:
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-OortList<String> names = ...;
-
-// Merge all the names from all the nodes
-List<String> allNames = names.merge(OortObjectMergers.listUnion());
+include::{doc_code}/oort/OortObjectDocs.java[tags=merge]
 ----
-====
 
-Merging is a local operation that does not involve network communication:
-it is just merging all the data entity parts contained in the `OortObject`.
+Merging is a local operation that does not involve network communication: it is just merging all the data entity parts contained in the `OortObject`.
 
 [IMPORTANT]
 ====
 Remember that `OortMap` and `OortList` are composite ``OortObject``s.
 
-Each `OortMap` part is a `ConcurrentMap`, and if you want all the entries
-of all the parts you must use `merge(OortObject.Merger merger)`.
+Each `OortMap` part is a `ConcurrentMap`, and if you want all the entries of all the parts you must use `merge(OortObject.Merger merger)`.
 
-Similarly, each `OortList` part is a `List` and if you want all the elements
-of all the parts you must use `merge(OortObject.Merger merger)`.
+Similarly, each `OortList` part is a `List` and if you want all the elements of all the parts you must use `merge(OortObject.Merger merger)`.
 ====
 
-Applications may require that the merge operation implements some logic -
-for example discarding duplicates.
-In these cases, applications can implement their own `OortObject.Merger`
-with the desired logic, and pass it to the `merge(OortObject.Merger merger)`
-API.
+Applications may require that the merge operation implements some logic -- for example discarding duplicates.
+In these cases, applications can implement their own `OortObject.Merger` with the desired logic, and pass it to the `merge(OortObject.Merger merger)` API.
 
 [[_java_oort_objects_oort_object_listeners]]
 ===== OortObject Listeners
 
-When one node updates the data entity it owns, CometD notifies the other nodes
-so that they can keep in sync the data entity part correspondent to the node
-that performed the update.
-Applications can register listeners to be notified of such events, and perform
-their custom logic.
+When one node updates the data entity it owns, CometD notifies the other nodes so that they can keep in sync the data entity part correspondent to the node that performed the update.
+Applications can register listeners to be notified of such events, and perform their custom logic.
 
-A typical example is when an application needs to show the total number of
-currently logged in users.
-Every time a user connects and logs in, say, in NodeA, then NodeB needs to be
-notified to update the total number in the user interface of the users connected
-to NodeB.
-The Oort object you use in this example is an `OortObject<Long>`, but you want
-to use CometD's built-in `org.cometd.oort.OortLong` in your application.
+A typical example is when an application needs to show the total number of currently logged in users.
+Every time a user connects and logs in, say, in NodeA, then NodeB needs to be notified to update the total number in the user interface of the users connected to NodeB.
+The Oort object you use in this example is an `OortObject<Long>`, but you want to use CometD's built-in `org.cometd.oort.OortLong` in your application.
 
-Since the application already updates the `OortObject<Long>` in NodeA, the
-correspondent `OortObject<Long>` in NodeB is updated too.
-The application can register a listener for such events, and update the user
-interface:
+Since the application already updates the `OortObject<Long>` in NodeA, the correspondent `OortObject<Long>` in NodeB is updated too.
+The application can register a listener for such events, and update the user interface:
 
-====
-[source,java]
+[source,java,indent=0]
 ----
-// At initialization time, create the OortObject and add the listener
-final OortObject<Long> userCount = new ...;
-userCount.addListener(new OortObject.Listener() {
-    public void onUpdated(OortObject.Info<T> oldInfo, OortObject.Info<T> newInfo) {
-        // The user count changed somewhere, broadcast the new value
-        long count = userCount.merge(OortObjectMergers.longSum());
-        broadcastUserCount(count);
-    }
-
-    public void onRemoved(OortObject.Info<T> info) {
-        // A node disappeared, broadcast the new user count
-        long count = userCount.merge(OortObjectMergers.longSum());
-        broadcastUserCount(count);
-    }
-
-    private void broadcastUserCount(long count) {
-        // Publish a message on "/user/count" to update the remote clients connected to this node
-        BayeuxServer bayeuxServer = userCount.getOort().getBayeuxServer();
-        bayeuxServer.getChannel("/user/count").publish(userCount.getLocalSession(), count, Promise.noop());
-    }
-});
+include::{doc_code}/oort/OortObjectDocs.java[tags=listener]
 ----
-====
 
-Class `org.cometd.oort.OortObject.Info` represents a data entity part of an
-`OortObject` and contains the data entity and the Oort URL correspondent to
-the node that it represent.
-For this particular example, the `Info` objects are not important, since you
-are only interested in the total user count, that can be obtained by merging
-(see also xref:_java_oort_objects_oort_object_merging[the `OortObject` merging section]).
-They can be used, however, to compute the difference before and after the update if needed.
+Class `org.cometd.oort.OortObject.Info` represents a data entity part of an `OortObject` and contains the data entity and the Oort URL correspondent to the node that it represent.
 
-Similarly, `OortMap` supports registration of `OortMap.EntryListener` that
-are notified when `OortMap` entries change due to calls to `putAndShare(...)`
-or `removeAndShare(...)`. `OortMap.EntryListener` are notified only when map
-entries are updated.
-To be notified when the whole map changes due to calls to `setAndShare(...)`,
-you can use an `OortMap.Listener` (inherited from `OortObject`) as described above.
-In some cases, the whole map is updated but you want to be notified as if
-single entries are changed; in this case you can use an `OortMap.DeltaListener`,
-that converts whole map updates into map entry updates.
+For this particular example, the `Info` objects are not important, since you are only interested in the total user count, that can be obtained with the `sum()` method (which internally performs merging -- see also xref:_java_oort_objects_oort_object_merging[the `OortObject` merging section]).
+They can be used, however, to compute the difference before and after the update if needed, since `Info.getObject()` returns a `Long` value that is the contribution to the total count of the correspondent data entity part.
 
-`OortList` supports registration of `OortList.ElementListener` that are
-notified when `OortList` elements change due to calls to `addAndShare(...)`
-or `removeAndShare(...)`. `OortList.ElementListener` are notified only when
-list elements are updated.
-To be notified when the whole list changes due to calls to `setAndShare(...)`,
-you can use an `OortList.Listener` (inherited from `OortObject`) as described above.
-In some cases, the whole list is updated but you want to be notified as if
-single elements are changed; in this case you can use an `OortList.DeltaListener`,
-that converts whole list updates into list element updates.
+Similarly, `OortMap` supports registration of `OortMap.EntryListener` that are notified when `OortMap` entries change due to calls to `putAndShare(...)` or `removeAndShare(...)`.
+`OortMap.EntryListener` are notified only when map entries are updated.
+To be notified when the whole map changes due to calls to `setAndShare(...)`, you can use an `OortMap.Listener` (inherited from `OortObject`) as described above.
+In some cases, the whole map is updated but you want to be notified as if single entries are changed; in this case you can use an `OortMap.DeltaListener`, that converts whole map updates into map entry updates.
+
+`OortList` supports registration of `OortList.ElementListener` that are notified when `OortList` elements change due to calls to `addAndShare(...)` or `removeAndShare(...)`.
+`OortList.ElementListener` are notified only when list elements are updated.
+To be notified when the whole list changes due to calls to `setAndShare(...)`, you can use an `OortList.Listener` (inherited from `OortObject`) as described above.
+In some cases, the whole list is updated but you want to be notified as if single elements are changed; in this case you can use an `OortList.DeltaListener`, that converts whole list updates into list element updates.
 
 ===== OortObjects Synchronization Limits
 
-`OortObject` instances synchronize their state by sending the data entity to
-other nodes.
+`OortObject` instances synchronize their state by sending the data entity to other nodes.
 
-`OortMap` and `OortList` have a built-in mechanism to synchronize the whole
-object in case entry updates (for `OortMap`) or element updates (for `OortList`)
-are out of date.
+`OortMap` and `OortList` have a built-in mechanism to synchronize the whole object in case entry updates (for `OortMap`) or element updates (for `OortList`) are out of date.
 
-When the data entity is itself a large composite object, the message that
-synchronizes the whole object may be very large.
+When the data entity is itself a large composite object, the message that synchronizes the whole object may be very large.
 
-Let's imagine an `OortObject<List<String>>`, or equivalently an `OortList<String>`
-or similarly an `OortStringMap<String>`. In these cases, the data entity is
-a collection that may contain thousands of entries, and each entry may be a
-large string. Replicating the data entity across the cluster means that a very
-large message (possibly of the order of MiB) must be sent.
+Let's imagine an `OortObject<List<String>>`, or equivalently an `OortList<String>` or similarly an `OortStringMap<String>`.
+In these cases, the data entity is a collection that may contain thousands of entries, and each entry may be a large string.
+Replicating the data entity across the cluster means that a very large message (possibly of the order of MiB) must be sent.
 
 `Oort` nodes use by default the WebSocket transport to communicate among nodes.
-Depending on the WebSocket implementation provided by the Servlet Container,
-it may happen that there is a limit to the WebSocket message size that can be
-sent or received.
+Depending on the WebSocket implementation provided by the Servlet Container, it may happen that there is a limit to the WebSocket message size that can be sent or received.
 
-If your application stores large data entities, it is highly recommended to
-estimate the size of the JSON representation of the data entity in bytes, and
-configure an appropriate WebSocket max message size via the configuration
-parameter `ws.maxMessageSize` as explained in the
-xref:_java_server_configuration[] section.
+If your application stores large data entities, it is highly recommended to estimate the size of the JSON representation of the data entity in bytes, and configure an appropriate WebSocket max message size via the configuration parameter `ws.maxMessageSize` as explained in the xref:_java_server_configuration[] section.
 
-`Oort` will use the `ws.maxMessageSize` parameter for both the sending and
-receiving WebSocket messages, so that large data entities can be replicated
-without errors.
+`Oort` will use the `ws.maxMessageSize` parameter for both the sending and receiving WebSocket messages, so that large data entities can be replicated without errors.
 
-`Oort` may also be configured to use the HTTP transport, which does not have
-such restriction and can therefore replicate large entities out-of-the-box.
+`Oort` may also be configured to use the HTTP transport, which does not have such restriction and can therefore replicate large entities out-of-the-box.

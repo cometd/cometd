@@ -8,12 +8,10 @@ CometD provides application with _authorizers_, a feature that allows fine-grain
 
 Authorizers are objects that implement `org.cometd.bayeux.server.Authorizer`; you add them to server-side channels at setup time (before any operation on that channel can happen) in the following way:
 
-====
 [source,java,indent=0]
 ----
 include::{doc_code}/server/ServerAuthorizersDocs.java[tags=add]
 ----
-====
 
 The utility class `org.cometd.server.authorizer.GrantAuthorizer` provides some pre-made authorizers, but you can create your own at will.
 
@@ -30,12 +28,10 @@ Authorizers control access to channels in collaboration with the `org.cometd.bay
 
 The `org.cometd.bayeux.server.SecurityPolicy` class exposes three methods that you can use to control access to channels:
 
-====
 [source,java,indent=0]
 ----
 include::{doc_code}/server/ServerAuthorizersDocs.java[tags=methods]
 ----
-====
 
 These authorizers control, respectively, the operation to create a channel, the operation to subscribe to a channel, and the operation to publish to a channel.
 
@@ -55,12 +51,10 @@ One of three possible results must be used as the result of the authorization:
 
 * `Result.grant()`:
 +
-====
 [source,java,indent=0]
 ----
 include::{doc_code}/server/ServerAuthorizersDocs.java[tags=grant]
 ----
-====
 `Result.grant()` explicitly grants permission to perform the operation passed in as a parameter on the channel.
 At least one authorizer must grant the operation, otherwise the operation is denied.
 +
@@ -68,24 +62,20 @@ The fact that one (or multiple) authorizers grant an operation does not imply th
 
 * `Result.ignore()`:
 +
-====
 [source,java,indent=0]
 ----
 include::{doc_code}/server/ServerAuthorizersDocs.java[tags=ignore]
 ----
-====
 `Result.ignore()` neither grants nor denies the permission to perform the operation passed in as a parameter on the channel.
 Ignoring the authorization request is the usual way to deny authorization if the conditions for which the operation must be granted do not apply.
 +
 
 * `Result.deny()`:
 +
-====
 [source,java,indent=0]
 ----
 include::{doc_code}/server/ServerAuthorizersDocs.java[tags=deny]
 ----
-====
 `Result.deny()` explicitly denies the permission to perform the operation passed in as a parameter on the channel.
 Denying the authorization request immediately results in the authorization being denied without even consulting other authorizers in the authorizerset for that channel.
 +
@@ -102,66 +92,52 @@ Imagine an application that allows you to watch and play games.
 
 Typically, an ignoring authorizer is added on a root channel:
 
-====
 [source,java,indent=0]
 ----
 include::{doc_code}/server/ServerAuthorizersDocs.java[tags=example1]
 ----
-====
 
 This ensures that the authorizer set is not empty, and that by default (if no other authorizer grants or denies) the authorization is ignored and hence denied.
 
 Only captains can start a new game, and to do so they create a new channel for that game, for example `/game/123` (where `123` is the game identifier):
 
-====
 [source,java,indent=0]
 ----
 include::{doc_code}/server/ServerAuthorizersDocs.java[tags=example2]
 ----
-====
 
 Everyone can watch the game:
 
-====
 [source,java,indent=0]
 ----
 include::{doc_code}/server/ServerAuthorizersDocs.java[tags=example3]
 ----
-====
 
 Only players can play:
 
-====
 [source,java,indent=0]
 ----
 include::{doc_code}/server/ServerAuthorizersDocs.java[tags=example4]
 ----
-====
 
 The authorizers are the following:
 
-====
-[source]
 ----
 /game/**  --> one authorizer that ignores everything
           --> one authorizer that grants captains authority to create games
           --> one authorizer that grants everyone the ability to watch games
 /game/123 --> one authorizer that grants players the ability to play
 ----
-====
 
 Imagine that later you want to forbid criminal supporters to watch games, so you can add another authorizer (instead of modifying the one that allows everyone to watch games):
 
-====
 [source,java,indent=0]
 ----
 include::{doc_code}/server/ServerAuthorizersDocs.java[tags=example5]
 ----
-====
 
 The authorizers are now the following:
 
-====
 ----
 /game/**  --> one authorizer that ignores everything
           --> one authorizer that grants captains the ability to create games
@@ -169,7 +145,6 @@ The authorizers are now the following:
           --> one authorizer that denies criminal supporters the ability to watch games
 /game/123 --> one authorizer that grants players the ability to play
 ----
-====
 
 Notice how authorizers on `+/game/**+` never grant `Operation.PUBLISH`, which authorizers only grant on specific game channels.
 Also, the specific game channel does not need to grant `Operation.SUBSCRIBE`, because its authorizer ignores the subscribe operation that is authorizers therefore handle on the `+/game/**+` channel.

@@ -4,81 +4,43 @@
 
 ==== Multiple Sessions with HTTP/1.1
 
-In the HTTP/1.1 protocol, clients such as browsers open a limited number of
-connections for each domain, typically 6.
+In the HTTP/1.1 protocol, clients such as browsers open a limited number of connections for each domain, typically 6.
 
-https://tools.ietf.org/html/rfc2616[RFC 2616] recommended that client opened no
-more than two connections per domain.
-This limit has been removed in https://tools.ietf.org/html/rfc7230[RFC 7230],
-but it is still not a good idea to open too many connections to a domain.
+https://tools.ietf.org/html/rfc2616[RFC 2616] recommended that client opened no more than two connections per domain.
+This limit has been removed in https://tools.ietf.org/html/rfc7230[RFC 7230], but it is still not a good idea to open too many connections to a domain.
 
-Clients such as browsers that have this _implementation_ limit for the HTTP/1.1
-protocol consequently limit also the number of concurrent, outstanding, requests
-that they can make to a server.
+Clients such as browsers that have this _implementation_ limit for the HTTP/1.1 protocol consequently limit also the number of concurrent, outstanding, requests that they can make to a server.
 
-In browsers, all the tabs pointing to the same domain will share this small,
-per domain, connection pool.
-If a user opens 6 browser tabs to the same CometD application (and therefore,
-the same domain), then 6 long poll requests will be sent to the server,
-therefore consuming all available connections.
-This means that any further communication with the server (for example,
-the publish of a message, but also any other interaction, either via clicking
-on a link or using `XMLHttpRequest`) will be queued and will wait for one of the
-long polls to return before taking the chance to be sent to the server.
+In browsers, all the tabs pointing to the same domain will share this small, per domain, connection pool.
+If a user opens 6 browser tabs to the same CometD application (and therefore, the same domain), then 6 long poll requests will be sent to the server, therefore consuming all available connections.
+This means that any further communication with the server (for example, the publish of a message, but also any other interaction, either via clicking on a link or using `XMLHttpRequest`) will be queued and will wait for one of the long polls to return before taking the chance to be sent to the server.
 
 This is not good for the user experience.
-An interaction of the user with the application should result in some immediate
-feedback, but instead the interaction is queued for many seconds, leaving the
-user with the doubt that interaction with the user interface really happened,
-causing frustration in using the application.
+An interaction of the user with the application should result in some immediate feedback, but instead the interaction is queued for many seconds, leaving the user with the doubt that interaction with the user interface really happened, causing frustration in using the application.
 
-The CometD Server implements the `multiple-clients` advice (see also
-xref:_bayeux_multiple_clients_advice[this section]).
-The server uses `BAYEUX_BROWSER` cookie to detect multiple CometD sessions from
-the same browser.
+The CometD Server implements the `multiple-clients` advice (see also xref:_bayeux_multiple_clients_advice[this section]).
+The server uses `BAYEUX_BROWSER` cookie to detect multiple CometD sessions from the same browser.
 
-When the CometD server detects multiple sessions, it uses the parameter
-`maxSessionsPerBrowser` (by default set to 1) to decide how many sessions (or,
-equivalently, how many long polls) are allowed for that client when it uses the
-HTTP/1.1 protocol (see also
-xref:_java_server_configuration[the server configuration section]).
-Additional long poll requests will be returned immediately by the server
-with the `multiple-clients` field of the `advice` object set to true.
+When the CometD server detects multiple sessions, it uses the parameter `maxSessionsPerBrowser` (by default set to 1) to decide how many sessions (or, equivalently, how many long polls) are allowed for that client when it uses the HTTP/1.1 protocol (see also xref:_java_server_configuration[the server configuration section]).
+Additional long poll requests will be returned immediately by the server with the `multiple-clients` field of the `advice` object set to true.
 A negative value for `maxSessionsPerBrowser` allows unlimited number of long polls.
 
-The `advice` object also contains an `interval` field set to the value of the
-`multiSessionInterval` parameter (see also
-xref:_java_server_configuration[the server configuration section]).
+The `advice` object also contains an `interval` field set to the value of the `multiSessionInterval` parameter (see also xref:_java_server_configuration[the server configuration section]).
 This instructs the client not to send another poll until that interval has elapsed.
-The effect of this `advice` is that additional client sessions will perform
-normal polls (not long polls) to the server with a period of `multiSessionInterval`.
-This avoids consuming all the HTTP connections at the cost of some latency for
-the additional tabs.
+The effect of this `advice` is that additional client sessions will perform normal polls (not long polls) to the server with a period of `multiSessionInterval`.
+This avoids consuming all the HTTP connections at the cost of some latency for the additional tabs.
 
-The recommendation is that the client application monitors the `/meta/connect`
-channel for `multiple-clients` field in the `advice` object.
-If detected, the application might ask the user to close the additional tabs,
-or it could automatically close them, or take some other action.
+The recommendation is that the client application monitors the `/meta/connect` channel for `multiple-clients` field in the `advice` object.
+If detected, the application might ask the user to close the additional tabs, or it could automatically close them, or take some other action.
 
-Non-browser clients should handle the `BAYEUX_BROWSER` cookie with the same
-semantic of browsers: store the cookies and send them along with subsequent
-requests to the corresponding domains.
-This ensures two things: that the server can recognize valid sessions (see
-xref:_security[the security section]), and that the server can detect multiple
-sessions from the same client.
+Non-browser clients should handle the `BAYEUX_BROWSER` cookie with the same semantic of browsers: store the cookies and send them along with subsequent requests to the corresponding domains.
+This ensures two things: that the server can recognize valid sessions (see xref:_security[the security section]), and that the server can detect multiple sessions from the same client.
 
 ==== Multiple Sessions with HTTP/2
 
-The HTTP/2 protocol uses a single connection for each domain, and a large
-number of concurrent requests can be multiplexed within this single connection.
-This has the effect of removing the limit of concurrent, outstanding, requests
-that a client can make to the server, allowing the server to support
-as many long poll requests as the client wants.
+The HTTP/2 protocol uses a single connection for each domain, and a large number of concurrent requests can be multiplexed within this single connection.
+This has the effect of removing the limit of concurrent, outstanding, requests that a client can make to the server, allowing the server to support as many long poll requests as the client wants.
 
-The parameter `http2MaxSessionsPerBrowser` (by default set to -1) controls
-the number of sessions (or, equivalently, how many long polls) that are allowed
-for that client when it uses the HTTP/2 protocol (see also
-xref:_java_server_configuration[the server configuration section]).
+The parameter `http2MaxSessionsPerBrowser` (by default set to -1) controls the number of sessions (or, equivalently, how many long polls) that are allowed for that client when it uses the HTTP/2 protocol (see also xref:_java_server_configuration[the server configuration section]).
 
-A negative value of `http2MaxSessionsPerBrowser` allows an unlimited number of
-sessions; a positive value restricts the max number of session allowed per client.
+A negative value of `http2MaxSessionsPerBrowser` allows an unlimited number of sessions; a positive value restricts the max number of session allowed per client.

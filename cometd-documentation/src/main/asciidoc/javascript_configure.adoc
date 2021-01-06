@@ -2,42 +2,32 @@
 [[_javascript_configure]]
 === Configuring and Initializing
 
-After you set up your skeleton project following xref:_primer[the primer], you
-probably want to fully understand how to customize and configure the parameters
-that govern the behavior of the CometD implementation.
+After you set up your skeleton project following xref:_primer[the primer], you probably want to fully understand how to customize and configure the parameters that govern the behavior of the CometD implementation.
 
 The complete API is available through a single object prototype named `org.cometd.CometD`.
-The Dojo toolkit has one instance of this object available under the name
-`dojox.cometd`, while for jQuery it is available under the name `$.cometd`.
-This default `cometd` object has been instantiated and configured with the
-default values and it has not yet started any Bayeux communication.
+The Dojo toolkit has one instance of this object available under the name `dojox.cometd`, while for jQuery it is available under the name `$.cometd`.
+This default `cometd` object has been instantiated and configured with the default values and it has not yet started any Bayeux communication.
 
-Before the `cometd` object can start Bayeux communication it needs a mandatory
-parameter: the URL of the Bayeux server.
-The URL of the server must be absolute (and therefore include the scheme, host,
-optionally the port and the path of the server). The scheme of the URL must
-always be either "http" or "https". The CometD JavaScript implementation will
-transparently take care of converting the scheme to "ws" or "wss" in case of
-usage of the WebSocket protocol.
+Before the `cometd` object can start Bayeux communication it needs a mandatory parameter: the URL of the Bayeux server.
+The URL of the server must be absolute (and therefore include the scheme, host, optionally the port and the path of the server).
+The scheme of the URL must always be either "http" or "https".
+The CometD JavaScript implementation will transparently take care of converting the scheme to "ws" or "wss" in case of usage of the WebSocket protocol.
 
 One `cometd` object connects to one Bayeux server.
-If you need to connect to multiple Bayeux servers, see
-xref:_javascript_configure_multiple_objects[this section].
+If you need to connect to multiple Bayeux servers, see xref:_javascript_configure_multiple_objects[this section].
 
 There are two ways of passing the URL parameter:
 
-====
 [source,javascript]
 ----
-// First style: URL string
+// First style: URL string.
 cometd.configure('http://localhost:8080/cometd');
 
-// Second style: configuration object
+// Second style: configuration object.
 cometd.configure({
     url: 'http://localhost:8080/cometd'
 });
 ----
-====
 
 The first way is a shorthand for the second way.
 However, the second way allows you to pass other configuration parameters, currently:
@@ -54,27 +44,26 @@ However, the second way allows you to pass other configuration parameters, curre
 | logLevel
 | no
 | info
-| The log level. Possible values are: "warn", "info", "debug". Output to window.console if available.
+| The log level.
+  Possible values are: "warn", "info", "debug".
+  Output to window.console if available.
 
 | maxConnections
 | no
 | 2
 | The maximum number of connections used to connect to the Bayeux server.
-  Change this value only if you know exactly the client's connection limit
-  and what "request queued behind long poll" means.
+  Change this value only if you know exactly the client's connection limit and what "request queued behind long poll" means.
 
 | backoffIncrement
 | no
 | 1000
-| The number of milliseconds that the backoff time increments every time a
-  connection with the Bayeux server fails. CometD attempts to reconnect after
-  the backoff time elapses.
+| The number of milliseconds that the backoff time increments every time a connection with the Bayeux server fails.
+  CometD attempts to reconnect after the backoff time elapses.
 
 | maxBackoff
 | no
 | 60000
-| The maximum number of milliseconds of the backoff time after which the
-  backoff time is not incremented further.
+| The maximum number of milliseconds of the backoff time after which the backoff time is not incremented further.
 
 | maxNetworkDelay
 | no
@@ -84,57 +73,46 @@ However, the second way allows you to pass other configuration parameters, curre
 | requestHeaders
 | no
 | {}
-| An object containing the request headers to be sent for every
-  Bayeux request (for example, {"My-Custom-Header":"MyValue"}).
+| An object containing the request headers to be sent for every Bayeux request (for example, `{"My-Custom-Header":"MyValue"}`).
 
 | appendMessageTypeToURL
 | no
 | true
-| Determines whether or not the Bayeux message type (handshake, connect, disconnect)
-  is appended to the URL of the Bayeux server (see above).
+| Determines whether the Bayeux message type (handshake, connect, disconnect) is appended to the URL of the Bayeux server (see above).
 
 | autoBatch
 | no
 | false
-| Determines whether multiple publishes that get queued are sent as a batch
-  on the first occasion, without requiring explicit batching.
+| Determines whether multiple publishes that get queued are sent as a batch on the first occasion, without requiring explicit batching.
 
 | connectTimeout
 | no
 | 0
 | The maximum number of milliseconds to wait for a WebSocket connection to be opened.
-  It does not apply to HTTP connections. A timeout value of 0 means to wait forever.
+  It does not apply to HTTP connections.
+  A timeout value of 0 means to wait forever.
 
 | stickyReconnect
 | no
 | true
-| Only applies to the `websocket` transport. Determines whether to stick
-  using the `websocket` transport when a `websocket` transport failure has
-  been detected after the `websocket` transport was able to successfully
-  connect to the server.
+| Only applies to the `websocket` transport.
+  Determines whether to stick using the `websocket` transport when a `websocket` transport failure has been detected after the `websocket` transport was able to successfully connect to the server.
 
 | maxURILength
 | no
 | 2000
-| The max length of the URI for a request made with the `callback-polling`
-  transport. Microsoft Internet Explorer 7 and 8 are known to limit the URI
-  length, so single large messages sent by CometD may fail to remain within
-  the max URI length when encoded in JSON.
+| The max length of the URI for a request made with the `callback-polling` transport.
+  Microsoft browsers are known to limit the URI length, so single large messages sent by CometD may fail to remain within the max URI length when encoded in JSON.
 
 | useWorkerScheduler
 | no
 | true
-| Uses the scheduler service available in Web Workers via `Worker.setTimeout(fn, delay)`
-  rather than using that available via `Window.setTimeout(fn, delay)`.
-  Browsers are now throttling the `Window` scheduler in background tabs to save battery
-  in mobile devices, so the `Window` scheduler events are delayed by possibly several
-  seconds, causing CometD sessions to timeout on the server.
-  The `Worker` scheduler is not throttled and guarantees that scheduler events happen
-  on time.
+| Uses the scheduler service available in Web Workers via `Worker.setTimeout(fn, delay)` rather than using that available via `Window.setTimeout(fn, delay)`.
+  Browsers are now throttling the `Window` scheduler in background tabs to save battery in mobile devices, so the `Window` scheduler events are delayed by possibly several seconds, causing CometD sessions to timeout on the server.
+  The `Worker` scheduler is not throttled and guarantees that scheduler events happen on time.
 |===
 
-After you have configured the `cometd` object, the Bayeux communication does
-not start until you call `handshake()` (see also xref:_javascript_handshake[the javascript handshake section]).
+After you have configured the `cometd` object, the Bayeux communication does not start until you call `handshake()` (see also xref:_javascript_handshake[the javascript handshake section]).
 
 Previous users of the JavaScript CometD implementation called a function named `init()`.
 This function still exists, and it is a shorthand for calling `configure()` followed by `handshake()`.
@@ -144,64 +122,53 @@ Follow the advice in xref:_javascript_handshake[the handshake section] as it app
 ==== Configuring and Initializing Multiple Objects
 
 Sometimes there is the need to connect to multiple Bayeux servers.
-The default `cometd` object available as `dojox.cometd` or `$.cometd`
-can only be configured to connect to one server.
+The default `cometd` object available as `dojox.cometd` or `$.cometd` can only be configured to connect to one server.
 
 However, it is easy to create other `cometd` objects.
-In Dojo, there is a `dojox.CometD` (note the capital 'C' and 'D' of `CometD`)
-constructor function that can be used to create new `cometd` objects.
+In Dojo, there is a `dojox.CometD` (note the capital 'C' and 'D' of `CometD`) constructor function that can be used to create new `cometd` objects.
 In jQuery, there is an equivalent `$.CometD` constructor function.
 It can be used in this way:
 
-====
 [source,javascript]
 ----
-// Dojo style
-var cometd1 = dojox.cometd; // The default cometd object
-var cometd2 = new dojox.CometD(); // A second cometd object
+// Dojo style.
+var cometd1 = dojox.cometd; // The default cometd object.
+var cometd2 = new dojox.CometD(); // A second cometd object.
 
-// jQuery style
-var cometd1 = $.cometd; // The default cometd object
-var cometd2 = new $.CometD(); // A second cometd object
+// jQuery style.
+var cometd1 = $.cometd; // The default cometd object.
+var cometd2 = new $.CometD(); // A second cometd object.
 
-// Configure and handshake
+// Configure and handshake.
 cometd1.init('http://host1:8080/cometd');
 cometd2.init('http://host2:9090/cometd');
 ----
-====
 
 Note how the two `cometd` objects are initialized with different URLs.
 
 ==== Configuring Extensions in Multiple Objects
 
-Configuring extensions in the default `cometd` object is covered in
-xref:_extensions[the extensions section].
-To configure extensions for the additional `cometd` objects must be
-done manually in the following way:
+Configuring extensions in the default `cometd` object is covered in xref:_extensions[the extensions section].
+To configure extensions for the additional `cometd` objects must be done manually in the following way:
 
-====
 [source,javascript]
 ----
-// Dojo style
-var cometd1 = dojox.cometd; // The default cometd object
-var cometd2 = new dojox.CometD(); // A second cometd object
+// Dojo style.
+var cometd1 = dojox.cometd; // The default cometd object.
+var cometd2 = new dojox.CometD(); // A second cometd object.
 
-// jQuery style
-var cometd1 = $.cometd; // The default cometd object
-var cometd2 = new $.CometD(); // A second cometd object
+// jQuery style.
+var cometd1 = $.cometd; // The default cometd object.
+var cometd2 = new $.CometD(); // A second cometd object.
 
-// Configure extensions for the second object
+// Configure extensions for the second object.
 cometd2.registerExtension('ack', new org.cometd.AckExtension());
 cometd2.registerExtension('timestamp', new org.cometd.TimeStampExtension());
 cometd2.registerExtension('timesync', new org.cometd.TimeSyncExtension());
 cometd2.registerExtension('reload', new org.cometd.ReloadExtension());
 ----
-====
 
-You should not configure the extensions for the default `cometd` object in
-this way, but instead follow xref:_extensions[the extensions section].
+You should not configure the extensions for the default `cometd` object in this way, but instead follow xref:_extensions[the extensions section].
 
-You should configure extension manually like shown above only for additional
-`cometd` objects.
-You can configure zero, one, or all the extensions for the additional `cometd`
-objects, depending on your application needs.
+You should configure extension manually like shown above only for additional `cometd` objects.
+You can configure zero, one, or all the extensions for the additional `cometd` objects, depending on your application needs.
