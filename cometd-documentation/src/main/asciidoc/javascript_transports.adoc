@@ -83,7 +83,7 @@ cometd.unregisterTransport('websocket');
 [[_javascript_transports_cross_origin]]
 ==== The cross-origin Mode
 
-Recent browsers introduced the capability for `XMLHttpRequest` calls to be performed towards a different domain (see https://developer.mozilla.org/En/HTTP_access_control[HTTP Access Control]).
+Recent browsers introduced the capability for `XMLHttpRequest` calls to be performed towards a different domain (see https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS[HTTP Access Control]).
 The JavaScript CometD implementation also supports this, with no configuration necessary on the client (if the browser supports `XMLHttpRequest` cross-domain calls, CometD uses them) and with a bit of configuration for the server, explained in xref:_java_server_configuration_advanced[this section].
 
 To use the cross-domain mode, you need: 

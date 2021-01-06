@@ -382,7 +382,7 @@ The solution offered by the CometD API for the first problem is to provide a met
 
 [source,java,indent=0]
 ----
-include::{doc_code}/server/ServerConfigDocs.java[tags=init]
+include::{doc_code}/server/ServerConfigurationDocs.java[tags=init]
 ----
 
 Method `BayeuxServer.createChannelIfAbsent(String channelName, Initializer... initializers)` atomically creates the channel, and returns a `MarkedReference` that contains the `ServerChannel` reference and a boolean that indicates whether the channel was created or if it existed already.
@@ -392,7 +392,7 @@ The solution to the second problem is to configure the channel as _persistent_, 
 
 [source,java,indent=0]
 ----
-include::{doc_code}/server/ServerConfigDocs.java[tags=persist]
+include::{doc_code}/server/ServerConfigurationDocs.java[tags=persist]
 ----
 
 Not only you can configure `ServerChannel` instances to be persistent, but to be _lazy_ (see also xref:_java_server_lazy_messages[this section]), you can add
@@ -402,7 +402,7 @@ Creating a server channel returns a `MarkedReference` that contains the `ServerC
 
 [source,java,indent=0]
 ----
-include::{doc_code}/server/ServerConfigDocs.java[tags=reference]
+include::{doc_code}/server/ServerConfigurationDocs.java[tags=reference]
 ----
 
 The code above creates the channel, configures it to be persistent and then obtains a reference to it, that is guaranteed to be non-null.
@@ -411,7 +411,7 @@ A typical error in CometD applications is to create the channel without making i
 
 [source,java,indent=0]
 ----
-include::{doc_code}/server/ServerConfigDocs.java[tags=wrong]
+include::{doc_code}/server/ServerConfigurationDocs.java[tags=wrong]
 ----
 
 Between the `BayeuxServer.createChannelIfAbsent()` call and the

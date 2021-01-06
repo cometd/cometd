@@ -25,7 +25,7 @@ In this way, all the traffic between the client and the server is encrypted end-
 [[_security_xss]]
 === Security against Cross-Site Scripting (XSS) attacks
 
-A https://www.owasp.org/index.php/Cross-site_Scripting_(XSS)[cross-site scripting attack] is a particularly important vulnerability of web applications.
+A https://owasp.org/www-community/attacks/xss[cross-site scripting attack] is a particularly important vulnerability of web applications.
 
 A typical example of XSS is the following:
 
@@ -85,7 +85,7 @@ This is controlled by the `requireHandshakePerConnection` parameter, see xref:_j
 [[_security_csrf]]
 === Security against Cross Site Request Forgery (CSRF) attacks
 
-A https://www.owasp.org/index.php/Cross-Site_Request_Forgery_(CSRF)[cross site request forgery attack] is a particularly important vulnerability of web applications.
+A https://owasp.org/www-community/attacks/csrf[cross site request forgery attack] is a particularly important vulnerability of web applications.
 
 A typical example of CSRF is the following:
 
