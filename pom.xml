@@ -60,8 +60,8 @@
     <!-- end::jetty-version[] -->
     <slf4j-version>1.7.30</slf4j-version>
     <log4j2-version>2.14.0</log4j2-version>
-    <spring-version>5.3.2</spring-version>
-    <spring-boot-version>2.4.1</spring-boot-version>
+    <spring-version>5.3.3</spring-version>
+    <spring-boot-version>2.4.2</spring-boot-version>
     <jackson-version>2.12.1</jackson-version>
     <dojo-version>1.16.3</dojo-version>
     <okhttp-version>4.9.0</okhttp-version>
