@@ -21,8 +21,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -46,7 +46,7 @@ public class ServerChannelImpl implements ServerChannel, Dumpable {
     private final BayeuxServerImpl _bayeux;
     private final ChannelId _id;
     private final AttributesMap _attributes = new AttributesMap();
-    private final Set<ServerSession> _subscribers = new CopyOnWriteArraySet<>();
+    private final Set<ServerSession> _subscribers = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final List<ServerChannelListener> _listeners = new CopyOnWriteArrayList<>();
     private final List<Authorizer> _authorizers = new CopyOnWriteArrayList<>();
     private final CountDownLatch _initialized = new CountDownLatch(1);
