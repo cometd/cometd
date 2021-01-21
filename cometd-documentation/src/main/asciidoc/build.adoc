@@ -1,6 +1,3 @@
-
-:numbered!:
-
 [appendix]
 [[_build]]
 == Building
@@ -57,5 +54,3 @@ $ mvn jetty:run
 ----
 
 Then point your browser at `+http://localhost:8080+` and you should see the CometD Demo page.
-
-:numbered:

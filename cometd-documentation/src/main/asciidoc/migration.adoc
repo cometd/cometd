@@ -1,6 +1,3 @@
-
-:numbered!:
-
 [appendix]
 [[_migration]]
 == Migration Guides
@@ -696,5 +693,3 @@ A number of deprecated APIs (since 5.0.x) have been removed.
 <1> `schemaLocation` attribute changed from `3.1` to `4.0`
 <2> `version` attribute changed from `3.1` to `4.0`
 |===
-
-:numbered:
