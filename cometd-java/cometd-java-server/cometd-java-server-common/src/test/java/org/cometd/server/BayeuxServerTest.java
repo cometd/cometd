@@ -15,9 +15,10 @@
  */
 package org.cometd.server;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
@@ -181,16 +182,14 @@ public class BayeuxServerTest {
 
         foobar0.publish("hello");
 
-        Assertions.assertEquals(session0.getId(), events.poll());
-        Assertions.assertEquals("hello", events.poll());
-        Assertions.assertEquals(session0.getId(), events.poll());
-        Assertions.assertEquals("hello", events.poll());
-        Assertions.assertEquals(session0.getId(), events.poll());
-        Assertions.assertEquals("hello", events.poll());
-        Assertions.assertEquals(session1.getId(), events.poll());
-        Assertions.assertEquals("hello", events.poll());
-        Assertions.assertEquals(session2.getId(), events.poll());
-        Assertions.assertEquals("hello", events.poll());
+        List<String> sessionIds = new ArrayList<>();
+        for (int i = 0; i < 5; ++i) {
+            sessionIds.add(events.poll());
+            Assertions.assertEquals("hello", events.poll());
+        }
+        Assertions.assertEquals(3, sessionIds.stream().filter(id -> id.equals(session0.getId())).count());
+        Assertions.assertEquals(1, sessionIds.stream().filter(id -> id.equals(session1.getId())).count());
+        Assertions.assertEquals(1, sessionIds.stream().filter(id -> id.equals(session2.getId())).count());
         foostar0.unsubscribe(listener);
 
         session1.batch(() -> {
@@ -200,22 +199,17 @@ public class BayeuxServerTest {
             foobar1.publish("part2");
         });
 
-        Assertions.assertEquals(session1.getId(), events.poll());
-        Assertions.assertEquals("part1", events.poll());
-        Assertions.assertEquals(session2.getId(), events.poll());
-        Assertions.assertEquals("part1", events.poll());
-        Assertions.assertEquals(session0.getId(), events.poll());
-        Assertions.assertEquals("part1", events.poll());
-        Assertions.assertEquals(session0.getId(), events.poll());
-        Assertions.assertEquals("part1", events.poll());
-        Assertions.assertEquals(session1.getId(), events.poll());
-        Assertions.assertEquals("part2", events.poll());
-        Assertions.assertEquals(session2.getId(), events.poll());
-        Assertions.assertEquals("part2", events.poll());
-        Assertions.assertEquals(session0.getId(), events.poll());
-        Assertions.assertEquals("part2", events.poll());
-        Assertions.assertEquals(session0.getId(), events.poll());
-        Assertions.assertEquals("part2", events.poll());
+        sessionIds.clear();
+        List<String> data = new ArrayList<>();
+        for (int i = 0; i < 8; ++i) {
+            sessionIds.add(events.poll());
+            data.add(events.poll());
+        }
+        Assertions.assertEquals(4, sessionIds.stream().filter(id -> id.equals(session0.getId())).count());
+        Assertions.assertEquals(2, sessionIds.stream().filter(id -> id.equals(session1.getId())).count());
+        Assertions.assertEquals(2, sessionIds.stream().filter(id -> id.equals(session2.getId())).count());
+        Assertions.assertEquals(4, data.stream().filter(id -> id.equals("part1")).count());
+        Assertions.assertEquals(4, data.stream().filter(id -> id.equals("part2")).count());
 
         foobar0.unsubscribe();
         Assertions.assertEquals(2, _bayeux.getChannel("/foo/bar").getSubscribers().size());
