@@ -1,6 +1,3 @@
-
-:numbered!:
-
 [appendix]
 [[_bayeux]]
 == The Bayeux Protocol Specification 1.0
@@ -1400,5 +1397,3 @@ Bayeux clients would subscribe the `/service/echo` channel, but the Bayeux serve
 When a client publishes a message to the `/service/echo` channel, it will be delivered only to server-side subscribers (in an implementation dependent fashion).
 The server side subscriber for the echo service would handle each message received by publishing a response directly to the client regardless of any subscription.
 As the client has subscribed to `/service/echo`, the response message will be routed correctly within the client to the appropriate subscription handler.
-
-:numbered:
