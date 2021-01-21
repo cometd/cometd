@@ -1,6 +1,3 @@
-
-:numbered!:
-
 [preface]
 == Preface
 
@@ -58,5 +55,3 @@ You can contribute to the CometD project and be involved in the CometD community
 * Participating in the https://groups.google.com/group/cometd-users/[CometD Users] and https://groups.google.com/group/cometd-dev/[CometD Development] mailing lists.
 * Helping out with the documentation by contacting the mailing lists or by reporting issues.
 * Spreading the word about CometD in your organization.
-
-:numbered:

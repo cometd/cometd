@@ -50,10 +50,6 @@
             </goals>
             <configuration>
               <target>
-                <move file="${html-directory}/asciidoctor.css" tofile="${html-directory}/asciidoctor-default.css" />
-                <echo file="${html-directory}/asciidoctor.css">
-                @import "cometd.css";
-                </echo>
                 <move file="${html-directory}/coderay-asciidoctor.css" tofile="${html-directory}/coderay-asciidoctor-default.css" />
                 <echo file="${html-directory}/coderay-asciidoctor.css" />
               </target>
