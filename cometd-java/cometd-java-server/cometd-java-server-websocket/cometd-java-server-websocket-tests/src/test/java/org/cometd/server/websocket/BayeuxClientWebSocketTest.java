@@ -59,8 +59,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.cometd.bayeux.server.ConfigurableServerChannel.Initializer.Persistent;
 
-import static org.cometd.bayeux.server.ConfigurableServerChannel.Initializer.Persistent;
-
 public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
     @ParameterizedTest
     @MethodSource("wsTypes")
