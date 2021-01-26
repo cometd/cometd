@@ -312,7 +312,7 @@ public class CometDLoadServer {
         // Add more handlers if needed
 
         ServletContextHandler context = new ServletContextHandler(handler, Config.CONTEXT_PATH, ServletContextHandler.SESSIONS);
-        context.setAttribute(BayeuxServer.ATTRIBUTE, bayeuxServer);
+        context.getServletContext().setAttribute(BayeuxServer.ATTRIBUTE, bayeuxServer);
         context.setInitParameter(ServletContextHandler.MANAGED_ATTRIBUTES, BayeuxServer.ATTRIBUTE);
 
         WebSocketServerContainerInitializer.configure(context, null);
