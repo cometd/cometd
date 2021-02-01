@@ -400,7 +400,6 @@
               <additionalOption>-html5</additionalOption>
             </additionalOptions>
             <detectJavaApiLink>false</detectJavaApiLink>
-            <source>8</source>
           </configuration>
         </plugin>
         <plugin>
