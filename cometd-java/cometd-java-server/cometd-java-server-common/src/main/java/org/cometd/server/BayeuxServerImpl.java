@@ -158,9 +158,11 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
         _transports.clear();
         _allowedTransports.clear();
         _options.clear();
+        removeBean(_scheduler.getReference());
         if (_scheduler.isMarked()) {
             _scheduler = null;
         }
+        removeBean(_executor.getReference());
         if (_executor.isMarked()) {
             _executor = null;
         }
