@@ -65,7 +65,7 @@
     <spring-boot-version>2.4.2</spring-boot-version>
     <jackson-version>2.12.1</jackson-version>
     <dojo-version>1.16.3</dojo-version>
-    <okhttp-version>4.9.0</okhttp-version>
+    <okhttp-version>4.9.1</okhttp-version>
   </properties>
 
   <url>https://cometd.org</url>
