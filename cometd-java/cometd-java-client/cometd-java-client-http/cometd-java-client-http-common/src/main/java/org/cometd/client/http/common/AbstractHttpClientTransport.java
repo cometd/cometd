@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.client.transport.ClientTransport;
@@ -68,7 +67,8 @@ public abstract class AbstractHttpClientTransport extends HttpClientTransport {
         _aborted = false;
         _maxMessageSize = getOption(ClientTransport.MAX_MESSAGE_SIZE_OPTION, 1024 * 1024);
 
-        Pattern uriRegexp = Pattern.compile("(^https?://(((\\[[^]]+])|([^:/?#]+))(:(\\d+))?))?([^?#]*)(.*)?");
+        // Escape closing bracket to support Android.
+        Pattern uriRegexp = Pattern.compile("(^https?://(((\\[[^\\]]+])|([^:/?#]+))(:(\\d+))?))?([^?#]*)(.*)?");
         Matcher uriMatcher = uriRegexp.matcher(getURL());
         if (uriMatcher.matches()) {
             String afterPath = uriMatcher.group(9);

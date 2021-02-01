@@ -38,7 +38,8 @@ import java.util.regex.Pattern;
 public class ChannelId {
     public static final String WILD = "*";
     public static final String DEEPWILD = "**";
-    private static final Pattern VAR = Pattern.compile("\\{(\\w+)}");
+    // Escape closing brace to support Android.
+    private static final Pattern VAR = Pattern.compile("\\{(\\w+)\\}");
 
     private final String _id;
     private String[] _segments;
