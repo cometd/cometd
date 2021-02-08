@@ -530,7 +530,7 @@
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-perf-helper</artifactId>
-        <version>1.0.6</version>
+        <version>1.0.7</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
@@ -540,13 +540,13 @@
       <dependency>
         <groupId>com.google.javascript</groupId>
         <artifactId>closure-compiler</artifactId>
-        <version>v20210106</version>
+        <version>v20210202</version>
       </dependency>
 
       <dependency>
         <groupId>org.junit.jupiter</groupId>
         <artifactId>junit-jupiter</artifactId>
-        <version>5.7.0</version>
+        <version>5.7.1</version>
         <scope>test</scope>
       </dependency>
       <dependency>
