@@ -28,19 +28,6 @@ table.tableblock>.title {
 code, pre {
     font-family: "Source Code Pro", monospace;
 }
-.hidden {
-    display: none;
-}
-.toc-current {
-    font-weight: bold;
-}
-.toc-item {
-    padding-right: 0.4em;
-}
-.toc-toggle {
-    padding-right: 0.4em;
-    cursor: pointer;
-}
 
 /* Source Highlighting Customization */
 
