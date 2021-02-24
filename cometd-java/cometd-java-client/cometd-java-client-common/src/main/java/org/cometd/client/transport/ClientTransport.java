@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.stream.Collectors;
 import org.cometd.bayeux.Message;
 import org.cometd.client.BayeuxClient;
 import org.cometd.common.AbstractTransport;
@@ -35,6 +36,7 @@ public abstract class ClientTransport extends AbstractTransport {
     public static final String MAX_NETWORK_DELAY_OPTION = "maxNetworkDelay";
     public static final String JSON_CONTEXT_OPTION = "jsonContext";
     public static final String SCHEDULER_OPTION = "scheduler";
+    public static final String MAX_SEND_BAYEUX_MESSAGE_SIZE_OPTION = "maxSendBayeuxMessageSize";
     public static final String MAX_MESSAGE_SIZE_OPTION = "maxMessageSize";
 
     private String url;
@@ -42,6 +44,7 @@ public abstract class ClientTransport extends AbstractTransport {
     private SchedulerSource schedulerSource = SchedulerSource.UNKNOWN;
     private long maxNetworkDelay;
     private JSONContext.Client jsonContext;
+    private int maxSendBayeuxMessageSize;
 
     @Deprecated
     protected ClientTransport(String name, String url, Map<String, Object> options) {
@@ -93,6 +96,8 @@ public abstract class ClientTransport extends AbstractTransport {
             }
         }
         setOption(JSON_CONTEXT_OPTION, jsonContext);
+
+        maxSendBayeuxMessageSize = getOption(MAX_SEND_BAYEUX_MESSAGE_SIZE_OPTION, 1024 * 1024);
     }
 
     protected JSONContext.Client getJSONContextClient() {
@@ -128,8 +133,8 @@ public abstract class ClientTransport extends AbstractTransport {
      * Aborts this transport, usually by cancelling all pending Bayeux messages that require a response,
      * such as {@code /meta/connect}s, without waiting for a response.
      *
-     * @see org.cometd.client.BayeuxClient#abort()
      * @param failure the cause of the abort
+     * @see org.cometd.client.BayeuxClient#abort()
      */
     public abstract void abort(Throwable failure);
 
@@ -150,7 +155,13 @@ public abstract class ClientTransport extends AbstractTransport {
     }
 
     protected String generateJSON(List<Message.Mutable> messages) {
-        return jsonContext.generate(messages);
+        return messages.stream()
+                .map(message -> jsonContext.generate(message))
+                .peek(json -> {
+                    if (json.length() > maxSendBayeuxMessageSize)
+                        throw new IllegalArgumentException("Max send Bayeux message size " + maxSendBayeuxMessageSize + " exceeded");
+                })
+                .collect(Collectors.joining(",", "[", "]"));
     }
 
     public long getMaxNetworkDelay() {

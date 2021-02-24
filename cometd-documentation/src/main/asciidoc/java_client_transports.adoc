@@ -54,8 +54,13 @@ Below you can find the parameters that are common to all transports, and those s
 
 | jsonContext
 | no
-| `org.cometd.common.JettyJSONContextClient`
-| The `JSONContext.Client` class name (see also xref:_java_json[the JSON section])
+a| `org.cometd.common.JettyJSONContextClient`
+a| The `JSONContext.Client` class name (see also xref:_java_json[the JSON section])
+
+| maxSendMessageSize
+| no
+| 1048576
+| The maximum size of the JSON representation of an outgoing Bayeux message
 |===
 
 .Long Polling Client Transport Parameters
@@ -68,13 +73,13 @@ Below you can find the parameters that are common to all transports, and those s
 
 | maxNetworkDelay
 | no
-| `HttpClient` request timeout
+| Implementation dependent
 | The maximum number of milliseconds to wait before considering a request to the Bayeux server failed
 
 | maxMessageSize
 | no
 | 1048576
-| The maximum number of bytes of a HTTP response, which may contain many Bayeux messages
+| The maximum number of bytes of an HTTP response content, which may contain many Bayeux messages
 |===
 
 .WebSocket Client Transport Parameters
@@ -102,9 +107,8 @@ Below you can find the parameters that are common to all transports, and those s
 
 | maxMessageSize
 | no
-| 8192
-| The maximum number of bytes allowed for each WebSocket message (each WebSocket message
-  may carry many Bayeux messages)
+| Implementation dependent
+| The maximum number of bytes allowed for each WebSocket message, which may contain many Bayeux messages
 
 | stickyReconnect
 | no

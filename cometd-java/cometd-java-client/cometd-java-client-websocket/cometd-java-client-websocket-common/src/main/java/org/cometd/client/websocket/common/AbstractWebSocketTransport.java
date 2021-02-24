@@ -173,9 +173,9 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
             });
         }
 
-        delegate.registerMessages(listener, messages);
-
         try {
+            delegate.registerMessages(listener, messages);
+
             String content = generateJSON(messages);
 
             // The onSending() callback must be invoked before the actual send

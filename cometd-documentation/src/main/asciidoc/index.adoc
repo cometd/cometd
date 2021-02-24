@@ -9,6 +9,7 @@ Simone Bordet
 :source-highlighter: coderay
 :linkcss:
 :docinfo: private-head
+:table-stripes: even
 
 {localdate} +
 Copyright (C) The Original Author(s) +
