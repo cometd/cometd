@@ -15,10 +15,13 @@
  */
 package org.cometd.server.ext;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.ServerMessage;
@@ -35,6 +38,7 @@ import org.slf4j.LoggerFactory;
 public class AcknowledgedMessagesSessionExtension implements Extension, ServerSession.DeQueueListener, ServerSession.QueueListener {
     private static final Logger _logger = LoggerFactory.getLogger(AcknowledgedMessagesSessionExtension.class);
 
+    private final List<AcknowledgedMessagesExtension.Listener> _listeners = new CopyOnWriteArrayList<>();
     private final Map<String, Long> _batches = new HashMap<>();
     private final ServerSessionImpl _session;
     private final BatchArrayQueue<ServerMessage> _queue;
@@ -45,6 +49,18 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
         _queue = new BatchArrayQueue<>(16, _session.getLock());
         _session.setMetaConnectDeliveryOnly(true);
         _session.addListener(this);
+    }
+
+    void addListeners(List<AcknowledgedMessagesExtension.Listener> listeners) {
+        _listeners.addAll(listeners);
+    }
+
+    public void addListener(AcknowledgedMessagesExtension.Listener listener) {
+        _listeners.add(listener);
+    }
+
+    public void removeListener(AcknowledgedMessagesExtension.Listener listener) {
+        _listeners.remove(listener);
     }
 
     @Override
@@ -88,6 +104,7 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
             }
             _lastBatch = batch;
             _queue.clearToBatch(batch);
+            notifyBatchReceive(_session,  batch);
         }
     }
 
@@ -164,6 +181,7 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
                 }
                 queue.clear();
                 _queue.exportMessagesToBatch(queue, batch);
+                notifyBatchSend(_session, queue, batch);
             }
         }
     }
@@ -175,6 +193,30 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
     protected void importMessages(ServerSessionImpl session) {
         synchronized (_session.getLock()) {
             _queue.addAll(session.getQueue());
+        }
+    }
+
+    private void notifyBatchSend(ServerSession session, Queue<ServerMessage> queue, long batch) {
+        List<ServerMessage> messages = null;
+        for (AcknowledgedMessagesExtension.Listener listener : _listeners) {
+            if (messages == null) {
+                messages = Collections.unmodifiableList(new ArrayList<>(queue));
+            }
+            try {
+                listener.onBatchSend(session, messages, batch);
+            } catch (Throwable x) {
+                _logger.info("Exception while invoking listener " + listener, x);
+            }
+        }
+    }
+
+    private void notifyBatchReceive(ServerSession session, long batch) {
+        for (AcknowledgedMessagesExtension.Listener listener : _listeners) {
+            try {
+                listener.onBatchReceive(session, batch);
+            } catch (Throwable x) {
+                _logger.info("Exception while invoking listener " + listener, x);
+            }
         }
     }
 
