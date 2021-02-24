@@ -15,10 +15,13 @@
  */
 package org.cometd.server.ext;
 
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.BayeuxServer.Extension;
+import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.ServerSessionImpl;
@@ -34,6 +37,15 @@ import org.slf4j.LoggerFactory;
  */
 public class AcknowledgedMessagesExtension implements Extension {
     private final Logger _logger = LoggerFactory.getLogger(getClass().getName());
+    private final List<Listener> _listeners = new CopyOnWriteArrayList<>();
+
+    public void addListener(Listener listener) {
+        _listeners.add(listener);
+    }
+
+    public void removeListener(Listener listener) {
+        _listeners.remove(listener);
+    }
 
     @Override
     public boolean rcvMeta(ServerSession remote, Mutable message) {
@@ -46,7 +58,8 @@ public class AcknowledgedMessagesExtension implements Extension {
                     _logger.debug("Enabled message acknowledgement for session {}", remote);
                 }
 
-                AcknowledgedMessagesSessionExtension extension = new AcknowledgedMessagesSessionExtension(remote);
+                AcknowledgedMessagesSessionExtension extension = newSessionExtension(remote);
+                extension.addListeners(_listeners);
 
                 // Make sure that adding the extension and importing the queue is atomic.
                 ServerSessionImpl session = (ServerSessionImpl)remote;
@@ -57,5 +70,40 @@ public class AcknowledgedMessagesExtension implements Extension {
             }
         }
         return true;
+    }
+
+    protected AcknowledgedMessagesSessionExtension newSessionExtension(ServerSession session) {
+        return new AcknowledgedMessagesSessionExtension(session);
+    }
+
+    /**
+     * <p>A listener for acknowledgement events.</p>
+     * <p>Implementation will be notified of these events:</p>
+     * <ul>
+     *   <li>{@link #onBatchSend(ServerSession, List, long) batchSend}, when a batch of messages is sent to a client session</li>
+     *   <li>{@link #onBatchReceive(ServerSession, long)}, when the client session confirms it has received a batch of messages</li>
+     * </ul>
+     * <p>Stateful implementations may use {@link ServerSession#setAttribute(String, Object)}
+     * to store per-session data, or a {@code Map&lt;ServerSession, ?&gt;}</p>
+     */
+    public interface Listener {
+        /**
+         * <p>Callback method invoked when a batch of message is about to be sent to a client session.</p>
+         *
+         * @param session the session
+         * @param messages the messages to send, as an immutable list
+         * @param batch the batch number
+         */
+        default void onBatchSend(ServerSession session, List<ServerMessage> messages, long batch) {
+        }
+
+        /**
+         * <p>Callback method invoked when a client session confirms it has received the given batch of messages.</p>
+         *
+         * @param session the session
+         * @param batch the batch number
+         */
+        default void onBatchReceive(ServerSession session, long batch) {
+        }
     }
 }
