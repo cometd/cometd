@@ -299,7 +299,7 @@ public class Oort extends ContainerLifeCycle {
             options.put(maxMessageSizeOption, option);
         }
 
-        maxMessageSizeOption = WebSocketTransport.PREFIX + "." + ClientTransport.MAX_MESSAGE_SIZE_OPTION;
+        maxMessageSizeOption = WebSocketTransport.PREFIX + "." + maxMessageSizeOption;
         option = _bayeux.getOption(maxMessageSizeOption);
         if (option != null) {
             options.put(maxMessageSizeOption, option);

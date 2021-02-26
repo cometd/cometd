@@ -110,6 +110,11 @@ However, the second way allows you to pass other configuration parameters, curre
 | Uses the scheduler service available in Web Workers via `Worker.setTimeout(fn, delay)` rather than using that available via `Window.setTimeout(fn, delay)`.
   Browsers are now throttling the `Window` scheduler in background tabs to save battery in mobile devices, so the `Window` scheduler events are delayed by possibly several seconds, causing CometD sessions to timeout on the server.
   The `Worker` scheduler is not throttled and guarantees that scheduler events happen on time.
+
+| maxSendBayeuxMessageSize
+| no
+| 8192
+| The maximum size of the JSON representation of an outgoing Bayeux message
 |===
 
 After you have configured the `cometd` object, the Bayeux communication does not start until you call `handshake()` (see also xref:_javascript_handshake[the javascript handshake section]).
