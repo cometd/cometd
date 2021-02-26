@@ -97,29 +97,33 @@ public class JettyHttpClientTransport extends AbstractHttpClientTransport {
     }
 
     @Override
-    public void send(final TransportListener listener, final List<Message.Mutable> messages) {
-        String requestURI = newRequestURI(messages);
+    public void send(TransportListener listener, List<Message.Mutable> messages) {
+        try {
+            String requestURI = newRequestURI(messages);
 
-        final Request request = httpClient.newRequest(requestURI).method(HttpMethod.POST);
+        Request request = httpClient.newRequest(requestURI).method(HttpMethod.POST);
         request.headers(headers -> headers.put(HttpHeader.CONTENT_TYPE, "application/json;charset=UTF-8"));
 
-        URI cookieURI = URI.create(getURL());
-        List<HttpCookie> cookies = getCookies(cookieURI);
-        StringBuilder value = new StringBuilder(cookies.size() * 32);
-        for (HttpCookie cookie : cookies) {
-            if (value.length() > 0) {
-                value.append("; ");
+            URI cookieURI = URI.create(getURL());
+            List<HttpCookie> cookies = getCookies(cookieURI);
+            StringBuilder value = new StringBuilder(cookies.size() * 32);
+            for (HttpCookie cookie : cookies) {
+                if (value.length() > 0) {
+                    value.append("; ");
+                }
+                value.append(cookie.getName()).append("=").append(cookie.getValue());
             }
-            value.append(cookie.getName()).append("=").append(cookie.getValue());
+            request.headers(headers -> headers.put(HttpHeader.COOKIE, value.toString()));
+
+            request.body(new StringRequestContent(generateJSON(messages)));
+
+            customize(request, Promise.from(
+                    customizedRequest -> send(listener, messages, cookieURI, customizedRequest),
+                    error -> listener.onFailure(error, messages)
+            ));
+        } catch (Throwable x) {
+            listener.onFailure(x, messages);
         }
-        request.headers(headers -> headers.put(HttpHeader.COOKIE, value.toString()));
-
-        request.body(new StringRequestContent(generateJSON(messages)));
-
-        customize(request, Promise.from(
-                customizedRequest -> send(listener, messages, cookieURI, customizedRequest),
-                error -> listener.onFailure(error, messages)
-        ));
     }
 
     private void send(TransportListener listener, List<Message.Mutable> messages, URI cookieURI, Request request) {

@@ -254,6 +254,24 @@
             _cometd.clearTimeout(id);
         };
 
+        this.convertToJSON = function(messages) {
+            const maxSize = this.getConfiguration().maxSendBayeuxMessageSize;
+            let result = '[';
+            for (let i = 0; i < messages.length; ++i) {
+                if (i > 0) {
+                    result += ',';
+                }
+                const message = messages[i];
+                const json = JSON.stringify(message);
+                if (json.length > maxSize) {
+                    throw 'maxSendBayeuxMessageSize ' + maxSize + ' exceeded';
+                }
+                result += json;
+            }
+            result += ']';
+            return result;
+        };
+
         /**
          * Converts the given response into an array of bayeux messages
          * @param response the response to convert
@@ -383,20 +401,21 @@
         }
 
         function _transportSend(envelope, request) {
-            this.transportSend(envelope, request);
-            request.expired = false;
+            if (this.transportSend(envelope, request)) {
+                request.expired = false;
 
-            if (!envelope.sync) {
-                let delay = this.getConfiguration().maxNetworkDelay;
-                if (request.metaConnect === true) {
-                    delay += this.getAdvice().timeout;
+                if (!envelope.sync) {
+                    let delay = this.getConfiguration().maxNetworkDelay;
+                    if (request.metaConnect === true) {
+                        delay += this.getAdvice().timeout;
+                    }
+
+                    this._debug('Transport', this.getType(), 'started waiting for message replies of request', request.id, ':', delay, 'ms');
+
+                    request.timeout = this.setTimeout(() => {
+                        _onTransportTimeout.call(this, envelope, request, delay);
+                    }, delay);
                 }
-
-                this._debug('Transport', this.getType(), 'started waiting for message replies of request', request.id, ':', delay, 'ms');
-
-                request.timeout = this.setTimeout(() => {
-                    _onTransportTimeout.call(this, envelope, request, delay);
-                }, delay);
             }
         }
 
@@ -446,7 +465,7 @@
                     _queueSend.call(this, nextEnvelope);
                     this._debug('Transport completed request', request.id, nextEnvelope);
                 } else {
-                    // Keep the semantic of calling response callbacks asynchronously after the request
+                    // Keep the semantic of calling callbacks asynchronously.
                     this.setTimeout(() => {
                         this.complete(nextRequest, false, nextRequest.metaConnect);
                         const failure = {
@@ -472,6 +491,7 @@
          * Performs the actual send depending on the transport type details.
          * @param envelope the envelope to send
          * @param request the request information
+         * @return {boolean} whether the send succeeded
          */
         _self.transportSend = (envelope, request) => {
             throw 'Abstract';
@@ -640,7 +660,7 @@
                     url: envelope.url,
                     sync: envelope.sync,
                     headers: this.getConfiguration().requestHeaders,
-                    body: JSON.stringify(envelope.messages),
+                    body: this.convertToJSON(envelope.messages),
                     onSuccess: response => {
                         this._debug('Transport', this.getType(), 'received response', response);
                         let success = false;
@@ -676,7 +696,7 @@
                         };
                         failure.httpCode = this.xhrStatus(request.xhr);
                         if (sameStack) {
-                            // Keep the semantic of calling response callbacks asynchronously after the request
+                            // Keep the semantic of calling callbacks asynchronously.
                             this.setTimeout(() => {
                                 this.transportFailure(envelope, request, failure);
                             }, 0);
@@ -686,14 +706,17 @@
                     }
                 });
                 sameStack = false;
+                return true;
             } catch (x) {
+                this._debug('Transport', this.getType(), 'exception:', x);
                 _supportsCrossDomain = false;
-                // Keep the semantic of calling response callbacks asynchronously after the request
+                // Keep the semantic of calling callbacks asynchronously.
                 this.setTimeout(() => {
                     this.transportFailure(envelope, request, {
                         exception: x
                     });
                 }, 0);
+                return false;
             }
         };
 
@@ -760,7 +783,7 @@
                     if (length === 1) {
                         const x = 'Bayeux message too big (' + urlLength + ' bytes, max is ' + maxLength + ') ' +
                             'for transport ' + this.getType();
-                        // Keep the semantic of calling response callbacks asynchronously after the request
+                        // Keep the semantic of calling callbacks asynchronously.
                         this.setTimeout(_failTransportFn.call(this, envelope, request, x), 0);
                         return;
                     }
@@ -834,7 +857,7 @@
                             exception: exception
                         };
                         if (sameStack) {
-                            // Keep the semantic of calling response callbacks asynchronously after the request
+                            // Keep the semantic of calling callbacks asynchronously.
                             this.setTimeout(() => {
                                 this.transportFailure(envelopeToSend, request, failure);
                             }, 0);
@@ -844,13 +867,15 @@
                     }
                 });
                 sameStack = false;
+                return true;
             } catch (xx) {
-                // Keep the semantic of calling response callbacks asynchronously after the request
+                // Keep the semantic of calling callbacks asynchronously.
                 this.setTimeout(() => {
                     this.transportFailure(envelopeToSend, request, {
                         exception: xx
                     });
                 }, 0);
+                return false;
             }
         };
 
@@ -912,6 +937,34 @@
             }
             context.envelopes[messageIds.join(',')] = [envelope, metaConnect];
             this._debug('Transport', this.getType(), 'stored envelope, envelopes', context.envelopes);
+        }
+
+        function _removeEnvelope(context, messageIds) {
+            let removed = false;
+            const envelopes = context.envelopes;
+            for (let j = 0; j < messageIds.length; ++j) {
+                const id = messageIds[j];
+                for (let key in envelopes) {
+                    if (envelopes.hasOwnProperty(key)) {
+                        const ids = key.split(',');
+                        const index = ids.indexOf(id);
+                        if (index >= 0) {
+                            removed = true;
+                            ids.splice(index, 1);
+                            const envelope = envelopes[key][0];
+                            const metaConnect = envelopes[key][1];
+                            delete envelopes[key];
+                            if (ids.length > 0) {
+                                envelopes[ids.join(',')] = [envelope, metaConnect];
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+            if (removed) {
+                this._debug('Transport', this.getType(), 'removed envelope, envelopes', envelopes);
+            }
         }
 
         function _websocketConnect(context) {
@@ -1012,7 +1065,26 @@
         }
 
         function _webSocketSend(context, envelope, metaConnect) {
-            const json = JSON.stringify(envelope.messages);
+            let json;
+            try {
+                json = this.convertToJSON(envelope.messages);
+            } catch (x) {
+                this._debug('Transport', this.getType(), 'exception:', x);
+                const mIds = [];
+                for (let j = 0; j < envelope.messages.length; ++j) {
+                    const m = envelope.messages[j];
+                    mIds.push(m.id);
+                }
+                _removeEnvelope.call(this, context, mIds);
+                // Keep the semantic of calling callbacks asynchronously.
+                this.setTimeout(() => {
+                    this._notifyFailure(envelope.onFailure, context, envelope.messages, {
+                        exception: x
+                    });
+                }, 0);
+                return;
+            }
+
             context.webSocket.send(json);
             this._debug('Transport', this.getType(), 'sent', envelope, '/meta/connect =', metaConnect);
 
@@ -1059,7 +1131,7 @@
                     _webSocketSend.call(this, context, envelope, metaConnect);
                 }
             } catch (x) {
-                // Keep the semantic of calling response callbacks asynchronously after the request.
+                // Keep the semantic of calling callbacks asynchronously.
                 this.setTimeout(() => {
                     _forceClose.call(this, context, {
                         code: 1000,
@@ -1120,31 +1192,7 @@
             }
 
             // Remove the envelope corresponding to the messages.
-            let removed = false;
-            const envelopes = context.envelopes;
-            for (let j = 0; j < messageIds.length; ++j) {
-                const id = messageIds[j];
-                for (let key in envelopes) {
-                    if (envelopes.hasOwnProperty(key)) {
-                        const ids = key.split(',');
-                        const index = ids.indexOf(id);
-                        if (index >= 0) {
-                            removed = true;
-                            ids.splice(index, 1);
-                            const envelope = envelopes[key][0];
-                            const metaConnect = envelopes[key][1];
-                            delete envelopes[key];
-                            if (ids.length > 0) {
-                                envelopes[ids.join(',')] = [envelope, metaConnect];
-                            }
-                            break;
-                        }
-                    }
-                }
-            }
-            if (removed) {
-                this._debug('Transport', this.getType(), 'removed envelope, envelopes', envelopes);
-            }
+            _removeEnvelope.call(this, context, messageIds);
 
             this._notifySuccess(_successCallback, messages);
 
@@ -1279,6 +1327,7 @@
             autoBatch: false,
             urls: {},
             maxURILength: 2000,
+            maxSendBayeuxMessageSize: 8192,
             advice: {
                 timeout: 60000,
                 interval: 0,
@@ -2929,7 +2978,7 @@
                 _queueSend(message);
             } else {
                 if (_isFunction(subscribeCallback)) {
-                    // Keep the semantic that the callback is notified asynchronously.
+                    // Keep the semantic of calling callbacks asynchronously.
                     _cometd.setTimeout(() => {
                         _notifyCallback(subscribeCallback, {
                             id: _nextMessageId(),
@@ -2984,7 +3033,7 @@
                 _queueSend(message);
             } else {
                 if (_isFunction(unsubscribeCallback)) {
-                    // Keep the semantic that the callback is notified asynchronously.
+                    // Keep the semantic of calling callbacks asynchronously.
                     _cometd.setTimeout(() => {
                         _notifyCallback(unsubscribeCallback, {
                             id: _nextMessageId(),

@@ -22,6 +22,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSessionChannel;
+import org.cometd.bayeux.server.ServerChannel;
+import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.server.AbstractServerTransport;
@@ -89,5 +92,47 @@ public class MaxMessageSizeTest extends AbstractClientServerTest {
         Assertions.assertFalse(messageLatch.await(1, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
+    }
+
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testClientMaxSendBayeuxMessageSize(Transport transport) throws Exception {
+        startServer(transport);
+
+        int maxMessageSize = 512;
+        char[] chars = new char[maxMessageSize];
+        Arrays.fill(chars, 'a');
+        String data = new String(chars);
+
+        Map<String, Object> clientOptions = new HashMap<>();
+        clientOptions.put(ClientTransport.MAX_SEND_BAYEUX_MESSAGE_SIZE_OPTION, maxMessageSize);
+        BayeuxClient client = new BayeuxClient(cometdURL, newClientTransport(transport, clientOptions));
+
+        String channelName = "/max_msg";
+
+        CountDownLatch serverLatch = new CountDownLatch(1);
+        bayeux.createChannelIfAbsent(channelName).getReference().addListener(new ServerChannel.MessageListener() {
+            @Override
+            public boolean onMessage(ServerSession sender, ServerChannel channel, ServerMessage.Mutable message) {
+                serverLatch.countDown();
+                return true;
+            }
+        });
+
+        CountDownLatch clientLatch = new CountDownLatch(1);
+        client.handshake(hsReply -> {
+            if (hsReply.isSuccessful()) {
+                ClientSessionChannel channel = client.getChannel(channelName);
+                channel.publish(data, reply -> {
+                    if (!reply.isSuccessful()) {
+                        clientLatch.countDown();
+                    }
+                });
+            }
+        });
+
+        Assertions.assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
+        // The message should not reach the server.
+        Assertions.assertFalse(serverLatch.await(1, TimeUnit.SECONDS));
     }
 }

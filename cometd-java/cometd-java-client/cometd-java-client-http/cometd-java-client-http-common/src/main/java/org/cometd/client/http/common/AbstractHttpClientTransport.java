@@ -24,7 +24,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
-import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.HttpClientTransport;
 import org.cometd.client.transport.TransportListener;
 import org.cometd.common.TransportException;
@@ -65,7 +64,7 @@ public abstract class AbstractHttpClientTransport extends HttpClientTransport {
     public void init() {
         super.init();
         _aborted = false;
-        _maxMessageSize = getOption(ClientTransport.MAX_MESSAGE_SIZE_OPTION, 1024 * 1024);
+        _maxMessageSize = getOption(MAX_MESSAGE_SIZE_OPTION, 1024 * 1024);
 
         // Escape closing bracket to support Android.
         Pattern uriRegexp = Pattern.compile("(^https?://(((\\[[^\\]]+])|([^:/?#]+))(:(\\d+))?))?([^?#]*)(.*)?");

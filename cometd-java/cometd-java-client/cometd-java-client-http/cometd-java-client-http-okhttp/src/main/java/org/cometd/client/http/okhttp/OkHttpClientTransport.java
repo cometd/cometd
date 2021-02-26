@@ -98,21 +98,25 @@ public class OkHttpClientTransport extends AbstractHttpClientTransport {
 
     @Override
     public void send(TransportListener listener, List<Message.Mutable> messages) {
-        Request.Builder request = new Request.Builder()
-                .url(newRequestURI(messages))
-                .post(RequestBody.create(generateJSON(messages), JSON_MEDIA_TYPE));
+        try {
+            Request.Builder request = new Request.Builder()
+                    .url(newRequestURI(messages))
+                    .post(RequestBody.create(generateJSON(messages), JSON_MEDIA_TYPE));
 
-        URI cookieURI = URI.create(getURL());
-        String cookies = getCookies(cookieURI).stream()
-                .map(cookie -> cookie.getName() + "=" + cookie.getValue())
-                .collect(Collectors.joining(";"));
-        if (!cookies.isEmpty()) {
-            request = request.header("Cookie", cookies);
+            URI cookieURI = URI.create(getURL());
+            String cookies = getCookies(cookieURI).stream()
+                    .map(cookie -> cookie.getName() + "=" + cookie.getValue())
+                    .collect(Collectors.joining(";"));
+            if (!cookies.isEmpty()) {
+                request = request.header("Cookie", cookies);
+            }
+
+            customize(request, Promise.from(
+                    customizedRequest -> send(listener, messages, cookieURI, customizedRequest),
+                    failure -> listener.onFailure(failure, messages)));
+        } catch (Throwable x) {
+            listener.onFailure(x, messages);
         }
-
-        customize(request, Promise.from(
-                customizedRequest -> send(listener, messages, cookieURI, customizedRequest),
-                failure -> listener.onFailure(failure, messages)));
     }
 
     protected void customize(Request.Builder request, Promise<Request.Builder> promise) {
