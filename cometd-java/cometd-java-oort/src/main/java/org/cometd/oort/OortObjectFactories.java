@@ -40,7 +40,7 @@ public class OortObjectFactories {
     }
 
     public static <K, V> OortObject.Factory<Map<K, V>> forMap() {
-        return forMap(new HashMap<K, V>());
+        return forMap(new HashMap<>());
     }
 
     public static <K, V> OortObject.Factory<Map<K, V>> forMap(Map<K, V> defaultValue) {
@@ -48,7 +48,7 @@ public class OortObjectFactories {
     }
 
     public static <K, V> OortObject.Factory<ConcurrentMap<K, V>> forConcurrentMap() {
-        return forConcurrentMap(new HashMap<K, V>());
+        return forConcurrentMap(new HashMap<>());
     }
 
     public static <K, V> OortObject.Factory<ConcurrentMap<K, V>> forConcurrentMap(Map<K, V> defaultValue) {
@@ -56,7 +56,7 @@ public class OortObjectFactories {
     }
 
     public static <E> OortObject.Factory<List<E>> forConcurrentList() {
-        return forConcurrentList(new ArrayList<E>());
+        return forConcurrentList(new ArrayList<>());
     }
 
     public static <E> OortObject.Factory<List<E>> forConcurrentList(List<E> defaultValue) {

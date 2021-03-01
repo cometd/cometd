@@ -234,10 +234,10 @@ public class OortListTest extends AbstractOortObjectTest {
         startOortObjects(oortList1, oortList2);
 
         int threads = 64;
-        final int iterations = 32;
-        final CyclicBarrier barrier = new CyclicBarrier(threads + 1);
-        final CountDownLatch latch1 = new CountDownLatch(threads);
-        final CountDownLatch latch2 = new CountDownLatch(threads * iterations);
+        int iterations = 32;
+        CyclicBarrier barrier = new CyclicBarrier(threads + 1);
+        CountDownLatch latch1 = new CountDownLatch(threads);
+        CountDownLatch latch2 = new CountDownLatch(threads * iterations);
 
         oortList2.addListener(new OortList.DeltaListener<>(oortList2));
         oortList2.addElementListener(new OortList.ElementListener<>() {
@@ -250,7 +250,7 @@ public class OortListTest extends AbstractOortObjectTest {
         });
 
         for (int i = 0; i < threads; ++i) {
-            final int index = i;
+            int index = i;
             new Thread(() -> {
                 try {
                     barrier.await();

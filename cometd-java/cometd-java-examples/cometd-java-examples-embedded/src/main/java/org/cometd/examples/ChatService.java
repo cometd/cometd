@@ -63,7 +63,7 @@ public class ChatService {
     @Listener("/service/members")
     public void handleMembership(ServerSession client, ServerMessage message) {
         Map<String, Object> data = message.getDataAsMap();
-        final String room = ((String)data.get("room")).substring("/chat/".length());
+        String room = ((String)data.get("room")).substring("/chat/".length());
         Map<String, String> roomMembers = _members.get(room);
         if (roomMembers == null) {
             Map<String, String> new_room = new ConcurrentHashMap<>();
@@ -72,7 +72,7 @@ public class ChatService {
                 roomMembers = new_room;
             }
         }
-        final Map<String, String> members = roomMembers;
+        Map<String, String> members = roomMembers;
         String userName = (String)data.get("user");
         members.put(userName, client.getId());
         client.addListener((ServerSession.RemovedListener)(s, m, t) -> {

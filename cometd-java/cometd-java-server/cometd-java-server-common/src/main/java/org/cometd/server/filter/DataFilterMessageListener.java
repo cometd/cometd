@@ -42,7 +42,7 @@ public class DataFilterMessageListener implements ServerChannel.MessageListener 
     public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message) {
         try {
             Object data = message.getData();
-            final Object orig = data;
+            Object orig = data;
             for (DataFilter filter : _filters) {
                 data = filter.filter(from, channel, data);
                 if (data == null) {

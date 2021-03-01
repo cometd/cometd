@@ -298,7 +298,7 @@ public abstract class AbstractService {
         LOGGER.info("Exception while invoking " + _name + "#" + method + " from " + session + " with " + message, x);
     }
 
-    private void invoke(final Method method, final ServerSession fromClient, final ServerMessage msg) {
+    private void invoke(Method method, ServerSession fromClient, ServerMessage msg) {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("Invoking {}#{} from {} with {}", _name, method.getName(), fromClient, msg);
         }

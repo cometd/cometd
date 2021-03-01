@@ -22,7 +22,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.webtide.demo.auction.Bid;
 
 public class AuctionDao {
-    final static ConcurrentMap<Integer, List<Bid>> _bids = new ConcurrentHashMap<Integer, List<Bid>>();
+    static final ConcurrentMap<Integer, List<Bid>> _bids = new ConcurrentHashMap<>();
 
     public List<Bid> getAllBids(Integer itemId) {
         return _bids.get(itemId);
@@ -31,7 +31,7 @@ public class AuctionDao {
     public void saveAuctionBid(Bid bid) {
         List<Bid> bids = _bids.get(bid.getItemId());
         if (bids == null) {
-            bids = new CopyOnWriteArrayList<Bid>();
+            bids = new CopyOnWriteArrayList<>();
             List<Bid> tmp = _bids.putIfAbsent(bid.getItemId(), bids);
             bids = tmp == null ? bids : tmp;
         }

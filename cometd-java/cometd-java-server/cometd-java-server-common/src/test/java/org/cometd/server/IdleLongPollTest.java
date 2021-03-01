@@ -39,7 +39,7 @@ public class IdleLongPollTest extends AbstractBayeuxClientServerTest {
         startServer(serverTransport, null);
 
         long timeout = 2000;
-        final long sleep = 500;
+        long sleep = 500;
         JSONTransport transport = new JSONTransport(bayeux) {
             @Override
             protected HttpScheduler newHttpScheduler(Context context, Promise<Void> promise, ServerMessage.Mutable message, long timeout) {
@@ -47,7 +47,7 @@ public class IdleLongPollTest extends AbstractBayeuxClientServerTest {
                     private final AtomicInteger decrements = new AtomicInteger();
 
                     @Override
-                    public void onComplete(final AsyncEvent asyncEvent) throws IOException {
+                    public void onComplete(AsyncEvent asyncEvent) throws IOException {
                         if (decrements.incrementAndGet() == 1) {
                             // Simulate that onComplete() is delayed without blocking
                             // this thread, to cause a race condition

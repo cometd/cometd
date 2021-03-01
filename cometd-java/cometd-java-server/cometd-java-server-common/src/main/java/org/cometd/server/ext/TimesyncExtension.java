@@ -108,10 +108,10 @@ public class TimesyncExtension implements Extension {
                 @SuppressWarnings("unchecked")
                 Map<String, Object> sync = (Map<String, Object>)extIn.get("timesync");
                 if (sync != null) {
-                    final long tc = ((Number)sync.get("tc")).longValue();
-                    final long ts = ((Number)sync.get("ts")).longValue();
+                    long tc = ((Number)sync.get("tc")).longValue();
+                    long ts = ((Number)sync.get("ts")).longValue();
 
-                    final Number lag = (Number)sync.get("l");
+                    Number lag = (Number)sync.get("l");
                     if (lag == null) {
                         // old style timesync
                         Map<String, Object> extOut = message.getExt(true);
@@ -121,9 +121,9 @@ public class TimesyncExtension implements Extension {
                         timesync.put("p", System.currentTimeMillis() - ts);
                         extOut.put("timesync", timesync);
                     } else {
-                        final int l = lag.intValue();
-                        final int o = ((Number)sync.get("o")).intValue();
-                        final int a = (int)((tc + o + l) - ts);
+                        int l = lag.intValue();
+                        int o = ((Number)sync.get("o")).intValue();
+                        int a = (int)((tc + o + l) - ts);
 
                         // is a OK ?
                         if (l == 0 || a >= _accuracyTarget || a <= -_accuracyTarget) {

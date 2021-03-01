@@ -46,7 +46,7 @@ public class CometDDemoServlet extends HttpServlet {
     @Override
     public void init() throws ServletException {
         super.init();
-        final BayeuxServerImpl bayeux = (BayeuxServerImpl)getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
+        BayeuxServerImpl bayeux = (BayeuxServerImpl)getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
 
         if (bayeux == null) {
             throw new UnavailableException("No BayeuxServer!");

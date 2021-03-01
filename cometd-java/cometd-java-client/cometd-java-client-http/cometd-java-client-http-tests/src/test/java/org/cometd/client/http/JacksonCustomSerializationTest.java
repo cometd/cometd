@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSession;
+import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.http.jetty.JettyHttpClientTransport;
@@ -66,14 +67,18 @@ public class JacksonCustomSerializationTest extends ClientServerTest {
 
         BayeuxClient client = new BayeuxClient(cometdURL, new JettyHttpClientTransport(clientOptions, httpClient));
         client.addExtension(new ExtraExtension(extraContent));
+        ClientSessionChannel clientChannel = client.getChannel(channelName);
 
-        client.handshake();
+        CountDownLatch messageLatch = new CountDownLatch(1);
+        client.handshake(hsReply -> clientChannel.subscribe((channel, message) -> messageLatch.countDown()));
         Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
-        // Wait for the connect to establish
+        // Wait for the /meta/connect to be held.
         Thread.sleep(1000);
 
-        client.getChannel(channelName).publish(new Data(dataContent));
+        clientChannel.publish(new Data(dataContent));
+
         Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }

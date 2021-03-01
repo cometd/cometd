@@ -54,7 +54,7 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest {
         startServer(serverTransport, null);
 
         bayeux.addExtension(new MetaExtension());
-        final AtomicReference<ServerMessage> handshakeRef = new AtomicReference<>();
+        AtomicReference<ServerMessage> handshakeRef = new AtomicReference<>();
         new MetaHandshakeService(bayeux, handshakeRef);
 
         Request handshake = newBayeuxRequest("" +
@@ -91,9 +91,9 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest {
     public void testBayeuxExtensionOnServiceChannel(String serverTransport) throws Exception {
         startServer(serverTransport, null);
 
-        final String channel = "/service/test";
+        String channel = "/service/test";
         bayeux.addExtension(new NonMetaExtension(channel));
-        final AtomicReference<ServerMessage> publishRef = new AtomicReference<>();
+        AtomicReference<ServerMessage> publishRef = new AtomicReference<>();
         new ServiceChannelService(bayeux, channel, publishRef);
 
         Request handshake = newBayeuxRequest("" +
@@ -143,9 +143,9 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest {
     public void testBayeuxExtensionOnBroadcastChannel(String serverTransport) throws Exception {
         startServer(serverTransport, null);
 
-        final String channel = "/test";
+        String channel = "/test";
         bayeux.addExtension(new NonMetaExtension(channel));
-        final AtomicReference<ServerMessage> publishRef = new AtomicReference<>();
+        AtomicReference<ServerMessage> publishRef = new AtomicReference<>();
         new BroadcastChannelService(bayeux, channel, publishRef);
 
         Request handshake = newBayeuxRequest("" +
