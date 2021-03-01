@@ -98,7 +98,6 @@ public abstract class AbstractWebSocketEndPoint {
             if (_logger.isDebugEnabled()) {
                 _logger.debug("Closing {}/{} - {}", code, reason, session);
             }
-            terminate(session);
             _transport.onClose(code, reason);
         }
     }
@@ -119,15 +118,6 @@ public abstract class AbstractWebSocketEndPoint {
                     _logger.info("WebSocket failure, address: " + address, failure);
                 }
             }
-            terminate(_session);
-        }
-    }
-
-    private void terminate(ServerSessionImpl session) {
-        // Detach the current scheduler from the session, so that if a new
-        // message is received, it will be processed by the new scheduler.
-        if (session != null) {
-            session.setScheduler(null);
         }
     }
 
