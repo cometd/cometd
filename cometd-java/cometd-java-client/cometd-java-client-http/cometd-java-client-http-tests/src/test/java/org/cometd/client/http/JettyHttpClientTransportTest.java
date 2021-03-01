@@ -112,8 +112,7 @@ public class JettyHttpClientTransportTest {
                 transport.setCookieStore(new HttpCookieStore());
                 transport.init();
 
-                List<Message.Mutable> messages = new ArrayList<>(1);
-                messages.add(new HashMapMessage());
+                List<Message.Mutable> messages = List.of(new HashMapMessage());
                 long start = System.nanoTime();
                 transport.send(new TransportListener() {
                     @Override

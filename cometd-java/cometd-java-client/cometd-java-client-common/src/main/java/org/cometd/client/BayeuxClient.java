@@ -377,8 +377,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
             logger.debug("Handshaking on transport {}: {}", getTransport(), message);
         }
 
-        List<Message.Mutable> messages = new ArrayList<>(1);
-        messages.add(message);
+        List<Message.Mutable> messages = List.of(message);
         sendMessages(messages, Promise.complete((r, x) -> {
             if (logger.isDebugEnabled()) {
                 logger.debug("{} handshake {}", x == null ? "Sent" : "Failed", message);
@@ -463,8 +462,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
             logger.debug("Connecting, transport {}", transport);
         }
 
-        List<Message.Mutable> messages = new ArrayList<>(1);
-        messages.add(message);
+        List<Message.Mutable> messages = List.of(message);
         sendMessages(messages, Promise.complete((r, x) -> {
             if (logger.isDebugEnabled()) {
                 logger.debug("{} connect {}", x == null ? "Sent" : "Failed", message);
@@ -958,8 +956,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
 
     protected void enqueueSend(Message.Mutable message) {
         if (canSend()) {
-            List<Message.Mutable> messages = new ArrayList<>(1);
-            messages.add(message);
+            List<Message.Mutable> messages = List.of(message);
             sendMessages(messages, Promise.complete((r, x) -> {
                 if (logger.isDebugEnabled()) {
                     logger.debug("{} message {}", x == null ? "Sent" : "Failed", message);
@@ -1530,8 +1527,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
 
                 registerCallback(messageId, callback);
 
-                List<Message.Mutable> messages = new ArrayList<>(1);
-                messages.add(message);
+                List<Message.Mutable> messages = List.of(message);
                 sendMessages(messages, Promise.complete((r, x) -> {
                     if (logger.isDebugEnabled()) {
                         logger.debug("{} disconnect {}", x == null ? "Sent" : "Failed", message);

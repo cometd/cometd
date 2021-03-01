@@ -18,6 +18,7 @@ package org.cometd.oort;
 import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EventListener;
 import java.util.EventObject;
 import java.util.HashMap;
@@ -416,7 +417,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
         if (_logger.isDebugEnabled()) {
             _logger.debug("Broadcasting association removal for users {}", userIds);
         }
-        SetiPresence presence = new SetiPresence(Set.of());
+        SetiPresence presence = new SetiPresence(Collections.emptySet());
         presence.put(SetiPresence.ALIVE_FIELD, false);
         _session.getChannel(SETI_ALL_CHANNEL).publish(presence);
     }

@@ -1191,10 +1191,11 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
         return null;
     }
 
-    @ManagedAttribute(value = "The transports allowed by this CoemtD server", readonly = true)
+    @ManagedAttribute(value = "The transports allowed by this CometD server", readonly = true)
     @Override
     public List<String> getAllowedTransports() {
-        return List.copyOf(_allowedTransports);
+        // Jackson is not able to deserialize List.of().
+        return Collections.unmodifiableList(_allowedTransports);
     }
 
     public void setAllowedTransports(String... allowed) {
