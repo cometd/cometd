@@ -16,15 +16,14 @@
 package org.cometd.client.transport;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 public class TransportRegistry {
-    private final Map<String, ClientTransport> _transports = new HashMap<String, ClientTransport>();
-    private final List<String> _allowed = new ArrayList<String>();
+    private final Map<String, ClientTransport> _transports = new HashMap<>();
+    private final List<String> _allowed = new ArrayList<>();
 
     public void add(ClientTransport transport) {
         if (transport != null) {
@@ -34,15 +33,15 @@ public class TransportRegistry {
     }
 
     public Set<String> getKnownTransports() {
-        return Collections.unmodifiableSet(_transports.keySet());
+        return Set.copyOf(_transports.keySet());
     }
 
     public List<String> getAllowedTransports() {
-        return Collections.unmodifiableList(_allowed);
+        return List.copyOf(_allowed);
     }
 
     public List<ClientTransport> negotiate(Object[] requestedTransports, String bayeuxVersion) {
-        List<ClientTransport> list = new ArrayList<ClientTransport>();
+        List<ClientTransport> list = new ArrayList<>();
 
         for (String transportName : _allowed) {
             for (Object requestedTransportName : requestedTransports) {

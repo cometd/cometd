@@ -16,8 +16,8 @@
 package org.cometd.common;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import org.cometd.bayeux.Promise;
 import org.junit.jupiter.api.Assertions;
@@ -33,11 +33,11 @@ public class AsyncFoldLeftTest {
         Assertions.assertEquals(zero, promise1.get());
 
         Promise.Completable<String> promise2 = new Promise.Completable<>();
-        AsyncFoldLeft.run(Collections.emptyList(), zero, (result, element, loop) -> loop.proceed(result + element), promise2);
+        AsyncFoldLeft.run(List.of(), zero, (result, element, loop) -> loop.proceed(result + element), promise2);
         Assertions.assertEquals(zero, promise2.get());
 
         Promise.Completable<String> promise3 = new Promise.Completable<>();
-        AsyncFoldLeft.run(Collections.emptySet(), zero, (result, element, loop) -> loop.proceed(result + element), promise3);
+        AsyncFoldLeft.run(Set.of(), zero, (result, element, loop) -> loop.proceed(result + element), promise3);
         Assertions.assertEquals(zero, promise3.get());
     }
 

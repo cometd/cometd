@@ -502,7 +502,7 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
 
     @Override
     public List<ServerSession> getSessions() {
-        return Collections.unmodifiableList(new ArrayList<ServerSession>(_sessions.values()));
+        return List.copyOf(_sessions.values());
     }
 
     @Override
@@ -615,7 +615,7 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
 
     @Override
     public List<Extension> getExtensions() {
-        return Collections.unmodifiableList(_extensions);
+        return List.copyOf(_extensions);
     }
 
     @Override
@@ -1142,7 +1142,7 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
     }
 
     protected List<BayeuxServerListener> getListeners() {
-        return Collections.unmodifiableList(_listeners);
+        return List.copyOf(_listeners);
     }
 
     @Override
@@ -1194,7 +1194,7 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
     @ManagedAttribute(value = "The transports allowed by this CoemtD server", readonly = true)
     @Override
     public List<String> getAllowedTransports() {
-        return Collections.unmodifiableList(_allowedTransports);
+        return List.copyOf(_allowedTransports);
     }
 
     public void setAllowedTransports(String... allowed) {

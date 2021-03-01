@@ -351,7 +351,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
     }
 
     protected void flush(Context context, Promise<Void> promise) {
-        List<ServerMessage> messages = Collections.emptyList();
+        List<ServerMessage> messages = List.of();
         ServerSessionImpl session = context.session;
         if (context.sendQueue && session != null) {
             messages = session.takeQueue(context.replies);

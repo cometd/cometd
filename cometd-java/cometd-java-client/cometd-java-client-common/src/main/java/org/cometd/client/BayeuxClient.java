@@ -23,7 +23,6 @@ import java.net.URI;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
@@ -512,7 +511,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
                 loop.proceed(toSend);
             }, loop::fail));
         }, Promise.from(toSend -> {
-            List<Message.Mutable> deleted = Collections.emptyList();
+            List<Message.Mutable> deleted = List.of();
             if (toSend.size() != messages.size()) {
                 deleted = new ArrayList<>(messages);
                 deleted.removeAll(toSend);
@@ -949,7 +948,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
      * @return the options that configure with BayeuxClient.
      */
     public Map<String, Object> getOptions() {
-        return Collections.unmodifiableMap(options);
+        return Map.copyOf(options);
     }
 
     @Override

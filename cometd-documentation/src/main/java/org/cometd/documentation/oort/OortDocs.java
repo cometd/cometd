@@ -16,7 +16,6 @@
 package org.cometd.documentation.oort;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import javax.servlet.ServletException;
@@ -62,7 +61,7 @@ public class OortDocs {
     // end::config[]
 
     private List<String> discoverNodeURLs() {
-        return Collections.emptyList();
+        return List.of();
     }
 
     public static void cometListener(Oort oort) {
