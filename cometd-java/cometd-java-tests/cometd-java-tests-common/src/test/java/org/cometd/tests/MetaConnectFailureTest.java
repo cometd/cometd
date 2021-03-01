@@ -18,6 +18,9 @@ package org.cometd.tests;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
 import org.cometd.server.AbstractServerTransport;
@@ -46,6 +49,18 @@ public class MetaConnectFailureTest extends AbstractClientServerTest {
         // Wait for the /meta/connect to be held by the server.
         Thread.sleep(500);
 
+        // Verify that the /meta/connect reply is written.
+        CountDownLatch metaConnectReplyLatch = new CountDownLatch(1);
+        bayeux.addExtension(new BayeuxServer.Extension() {
+            @Override
+            public boolean sendMeta(ServerSession session, ServerMessage.Mutable message) {
+                if (Channel.META_CONNECT.equals(message.getChannel())) {
+                    metaConnectReplyLatch.countDown();
+                }
+                return true;
+            }
+        });
+
         // Verify that the session is swept.
         CountDownLatch sessionRemovedLatch = new CountDownLatch(1);
         ServerSession session = bayeux.getSession(client.getId());
@@ -58,10 +73,12 @@ public class MetaConnectFailureTest extends AbstractClientServerTest {
         // the transport will try to write the /meta/connect reply and then
         // schedule the session expiration.
         // For WebSocket transports, they will notice that the connection has
-        // been closed, either via onClose() or onError(), and they will detach
-        // the associated transport Scheduler, and then schedule session expiration.
+        // been closed, either via onClose() or onError(), and they must behave
+        // like the HTTP transports for consistency: write the /meta/connect
+        // reply and then schedule the session expiration.
         connector.stop();
 
+        Assertions.assertTrue(metaConnectReplyLatch.await(timeout, TimeUnit.MILLISECONDS));
         Assertions.assertTrue(sessionRemovedLatch.await(timeout + maxInterval + 2 * sweepPeriod, TimeUnit.MILLISECONDS));
     }
 }
