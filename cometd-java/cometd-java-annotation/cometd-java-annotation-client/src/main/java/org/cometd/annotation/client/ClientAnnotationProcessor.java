@@ -443,7 +443,7 @@ public class ClientAnnotationProcessor extends AnnotationProcessor {
         @Override
         public void onMessage(ClientSessionChannel channel, Message message) {
             if (message.isSuccessful()) {
-                final List<SubscriptionCallback> subscriptions = subscribers.get(bean);
+                List<SubscriptionCallback> subscriptions = subscribers.get(bean);
                 if (subscriptions != null) {
                     clientSession.batch(() -> {
                         for (SubscriptionCallback subscription : subscriptions) {

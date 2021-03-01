@@ -59,7 +59,7 @@ public class WebSocketConnection implements WebSocketListener {
                 logger.debug("Opening WebSocket session to {}", uri);
             }
             wsClient.connect(this, uri, request);
-        } catch (final Throwable x) {
+        } catch (Throwable x) {
             // This method is invoked from JavaScript, so we must fail asynchronously
             wsClient.getExecutor().execute(() -> onWebSocketError(x));
         }
@@ -80,7 +80,7 @@ public class WebSocketConnection implements WebSocketListener {
                 }
                 session.getRemote().sendString(data, null);
             }
-        } catch (final Throwable x) {
+        } catch (Throwable x) {
             // This method is invoked from JavaScript, so we must fail asynchronously
             wsClient.getExecutor().execute(() -> onWebSocketError(x));
         }

@@ -207,7 +207,7 @@ public class OortStringMapDisconnectTest extends OortTest {
         // Start the OortStringMaps.
         String name = "users";
         OortObject.Factory<ConcurrentMap<String, String>> factory = OortObjectFactories.forConcurrentMap();
-        final CountDownLatch mapLatch = new CountDownLatch(edges);
+        CountDownLatch mapLatch = new CountDownLatch(edges);
         for (Oort oort : oorts) {
             OortStringMap<String> users = new OortStringMap<>(oort, name, factory);
             oortStringMaps.add(users);
@@ -225,8 +225,8 @@ public class OortStringMapDisconnectTest extends OortTest {
         logger.debug("OortObjects started");
 
         // Verify that the OortStringMaps are setup correctly.
-        final String setupKey = "setup";
-        final CountDownLatch setupLatch = new CountDownLatch(2 * nodes);
+        String setupKey = "setup";
+        CountDownLatch setupLatch = new CountDownLatch(2 * nodes);
         OortMap.EntryListener<String, String> setupListener = new OortMap.EntryListener<String, String>() {
             @Override
             public void onPut(OortObject.Info<ConcurrentMap<String, String>> info, OortMap.Entry<String, String> entry) {

@@ -313,11 +313,11 @@ public class OortObjectTest extends AbstractOortObjectTest {
 
         // Update "concurrently": the concurrence will be simulated
         long delay = 1000;
-        final long value2 = 2;
-        final long value3 = 3;
+        long value2 = 2;
+        long value3 = 3;
         oort2.getBayeuxServer().addExtension(new BayeuxServer.Extension() {
             @Override
-            public boolean rcv(ServerSession from, final ServerMessage.Mutable message) {
+            public boolean rcv(ServerSession from, ServerMessage.Mutable message) {
                 if (oortObject1.getChannelName().equals(message.getChannel())) {
                     Map<String, Object> data = message.getDataAsMap();
                     if (data != null) {
@@ -359,11 +359,11 @@ public class OortObjectTest extends AbstractOortObjectTest {
 
         String name = "concurrent";
         OortObject.Factory<String> factory = OortObjectFactories.forString("");
-        final OortObject<String> oortObject1 = new OortObject<>(oort1, name, factory);
+        OortObject<String> oortObject1 = new OortObject<>(oort1, name, factory);
         OortObject<String> oortObject2 = new OortObject<>(oort2, name, factory);
         startOortObjects(oortObject1, oortObject2);
 
-        final BlockingQueue<String> values = new LinkedBlockingQueue<>();
+        BlockingQueue<String> values = new LinkedBlockingQueue<>();
         oortObject2.addListener(new OortObject.Listener<String>() {
             @Override
             public void onUpdated(OortObject.Info<String> oldInfo, OortObject.Info<String> newInfo) {
@@ -373,12 +373,12 @@ public class OortObjectTest extends AbstractOortObjectTest {
         });
 
         int threads = 64;
-        final int iterations = 32;
-        final CyclicBarrier barrier = new CyclicBarrier(threads + 1);
-        final CountDownLatch latch = new CountDownLatch(threads);
+        int iterations = 32;
+        CyclicBarrier barrier = new CyclicBarrier(threads + 1);
+        CountDownLatch latch = new CountDownLatch(threads);
 
         for (int i = 0; i < threads; ++i) {
-            final int index = i;
+            int index = i;
             new Thread(() -> {
                 try {
                     barrier.await();
@@ -434,8 +434,8 @@ public class OortObjectTest extends AbstractOortObjectTest {
         OortObject<String> oortObject2 = new OortObject<>(oort2, name, factory);
         startOortObjects(oortObject1, oortObject2);
 
-        final ReentrantLock lock = new ReentrantLock();
-        final CountDownLatch updatedLatch = new CountDownLatch(1);
+        ReentrantLock lock = new ReentrantLock();
+        CountDownLatch updatedLatch = new CountDownLatch(1);
         oortObject1.addListener(new OortObject.Listener<String>() {
             @Override
             public void onUpdated(OortObject.Info<String> oldInfo, OortObject.Info<String> newInfo) {
@@ -510,7 +510,7 @@ public class OortObjectTest extends AbstractOortObjectTest {
         result2.get(5, TimeUnit.SECONDS);
 
         CountDownLatch joinedLatch = new CountDownLatch(1);
-        final CountDownLatch updateLatch2 = new CountDownLatch(1);
+        CountDownLatch updateLatch2 = new CountDownLatch(1);
         oort1.addCometListener(new CometJoinedListener(joinedLatch));
         oortObject2.addListener(new OortObject.Listener<String>() {
             @Override
@@ -547,7 +547,7 @@ public class OortObjectTest extends AbstractOortObjectTest {
         OortObject.Result.Deferred<String> result3 = new OortObject.Result.Deferred<>();
         oortObject1.setAndShare("data3", result3);
         result3.get(5, TimeUnit.SECONDS);
-        final CountDownLatch updateLatch1 = new CountDownLatch(1);
+        CountDownLatch updateLatch1 = new CountDownLatch(1);
         oortObject1.addListener(new OortObject.Listener<String>() {
             @Override
             public void onUpdated(OortObject.Info<String> oldInfo, OortObject.Info<String> newInfo) {

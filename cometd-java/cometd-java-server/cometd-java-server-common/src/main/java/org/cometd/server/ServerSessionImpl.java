@@ -281,7 +281,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         synchronized (getLock()) {
             for (ServerSessionListener listener : _listeners) {
                 if (listener instanceof QueueMaxedListener) {
-                    final int maxQueueSize = _maxQueue;
+                    int maxQueueSize = _maxQueue;
                     if (maxQueueSize > 0 && _queue.size() >= maxQueueSize) {
                         if (!notifyQueueMaxed((QueueMaxedListener)listener, this, _queue, sender, message)) {
                             return null;

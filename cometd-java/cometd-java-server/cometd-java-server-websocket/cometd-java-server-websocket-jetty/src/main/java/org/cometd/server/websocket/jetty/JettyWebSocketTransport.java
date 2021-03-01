@@ -44,7 +44,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport {
     public void init() {
         super.init();
 
-        final ServletContext context = (ServletContext)getOption(ServletContext.class.getName());
+        ServletContext context = (ServletContext)getOption(ServletContext.class.getName());
         if (context == null) {
             throw new IllegalArgumentException("Missing ServletContext");
         }

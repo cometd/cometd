@@ -25,11 +25,11 @@ import org.webtide.demo.auction.Category;
 import org.webtide.demo.auction.Item;
 
 public class CategoryDao {
-    final static ConcurrentMap<Integer, Item> _items = new ConcurrentHashMap<Integer, Item>();
-    final static ConcurrentMap<Integer, Category> _categories = new ConcurrentHashMap<Integer, Category>();
+    static final ConcurrentMap<Integer, Item> _items = new ConcurrentHashMap<>();
+    static final ConcurrentMap<Integer, Category> _categories = new ConcurrentHashMap<>();
 
     public List<Item> getItemsInCategory(Integer categoryId) {
-        List<Item> items = new ArrayList<Item>();
+        List<Item> items = new ArrayList<>();
         for (Item item : _items.values()) {
             if (item.getCategory().getId().equals(categoryId)) {
                 items.add(item);
@@ -49,13 +49,13 @@ public class CategoryDao {
     }
 
     public List<Category> getAllCategories() {
-        List<Category> all = new ArrayList<Category>(_categories.values());
+        List<Category> all = new ArrayList<>(_categories.values());
         Collections.sort(all);
         return all;
     }
 
     public List<Item> findItems(String expression) {
-        List<Item> items = new ArrayList<Item>();
+        List<Item> items = new ArrayList<>();
 
         String[] words = expression.toLowerCase().split("[ ,]");
 

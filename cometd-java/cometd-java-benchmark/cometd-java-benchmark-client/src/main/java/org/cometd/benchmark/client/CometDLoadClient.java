@@ -952,7 +952,7 @@ public class CometDLoadClient implements MeasureConverter {
         }
 
         private void notifyServer(String channelName) throws InterruptedException {
-            final CountDownLatch latch = new CountDownLatch(1);
+            CountDownLatch latch = new CountDownLatch(1);
             ClientSessionChannel channel = getChannel(channelName);
             channel.publish(new HashMap<String, Object>(1), message -> latch.countDown());
             latch.await();

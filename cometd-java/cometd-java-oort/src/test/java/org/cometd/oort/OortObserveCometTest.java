@@ -316,7 +316,7 @@ public class OortObserveCometTest extends OortTest {
         sleep(1000);
 
         AtomicInteger leftCountA = new AtomicInteger();
-        final CountDownLatch leftLatchA = new CountDownLatch(1);
+        CountDownLatch leftLatchA = new CountDownLatch(1);
         oortA.addCometListener(new Oort.CometListener() {
             @Override
             public void cometLeft(Event event) {
@@ -343,8 +343,8 @@ public class OortObserveCometTest extends OortTest {
         bayeuxServer2.setOption(Server.class.getName(), serverB);
         oortB = new Oort(bayeuxServer2, url2);
         oorts.add(oortB);
-        final AtomicInteger joinedCountA = new AtomicInteger();
-        final CountDownLatch joinedLatchA = new CountDownLatch(1);
+        AtomicInteger joinedCountA = new AtomicInteger();
+        CountDownLatch joinedLatchA = new CountDownLatch(1);
         oortA.addCometListener(new Oort.CometListener() {
             @Override
             public void cometJoined(Event event) {
@@ -352,8 +352,8 @@ public class OortObserveCometTest extends OortTest {
                 joinedLatchA.countDown();
             }
         });
-        final AtomicInteger joinedCountB = new AtomicInteger();
-        final CountDownLatch joinedLatchB = new CountDownLatch(1);
+        AtomicInteger joinedCountB = new AtomicInteger();
+        CountDownLatch joinedLatchB = new CountDownLatch(1);
         oortB.addCometListener(new Oort.CometListener() {
             @Override
             public void cometJoined(Event event) {
@@ -455,10 +455,10 @@ public class OortObserveCometTest extends OortTest {
         // Wait for the comet events and for /meta/connect to be held.
         sleep(1000);
 
-        final AtomicInteger joinCount = new AtomicInteger();
-        final CountDownLatch joinLatch = new CountDownLatch(2);
-        final AtomicInteger leftCount = new AtomicInteger();
-        final CountDownLatch leftLatch = new CountDownLatch(2);
+        AtomicInteger joinCount = new AtomicInteger();
+        CountDownLatch joinLatch = new CountDownLatch(2);
+        AtomicInteger leftCount = new AtomicInteger();
+        CountDownLatch leftLatch = new CountDownLatch(2);
         Oort.CometListener listener = new Oort.CometListener() {
             @Override
             public void cometJoined(Event event) {
@@ -542,10 +542,10 @@ public class OortObserveCometTest extends OortTest {
 
         // Make sure that on reconnect the system emits
         // comet events for the right comet at the right time.
-        final String oortId1 = oort1.getId();
-        final String oortURL1 = oort1.getURL();
-        final CountDownLatch joinedLatch = new CountDownLatch(1);
-        final CountDownLatch leftLatch = new CountDownLatch(1);
+        String oortId1 = oort1.getId();
+        String oortURL1 = oort1.getURL();
+        CountDownLatch joinedLatch = new CountDownLatch(1);
+        CountDownLatch leftLatch = new CountDownLatch(1);
         Oort.CometListener cometListener = new Oort.CometListener() {
             @Override
             public void cometLeft(Event event) {
@@ -634,7 +634,7 @@ public class OortObserveCometTest extends OortTest {
         // Wait to let the comets disconnect.
         Thread.sleep(maxInterval / 4);
 
-        final String oortId1 = oort1.getId();
+        String oortId1 = oort1.getId();
 
         // Restart the comet.
         server1 = startServer(serverTransport, port1, options);
@@ -646,10 +646,10 @@ public class OortObserveCometTest extends OortTest {
         CountDownLatch joinedLatch1 = new CountDownLatch(1);
         oort1.addCometListener(new CometJoinedListener(joinedLatch1));
 
-        final String newOortId1 = oort1.getId();
-        final String oortURL1 = oort1.getURL();
-        final CountDownLatch joinedLatch2 = new CountDownLatch(1);
-        final CountDownLatch leftLatch2 = new CountDownLatch(1);
+        String newOortId1 = oort1.getId();
+        String oortURL1 = oort1.getURL();
+        CountDownLatch joinedLatch2 = new CountDownLatch(1);
+        CountDownLatch leftLatch2 = new CountDownLatch(1);
         Oort.CometListener cometListener = new Oort.CometListener() {
             @Override
             public void cometLeft(Event event) {
@@ -827,7 +827,7 @@ public class OortObserveCometTest extends OortTest {
         // Try with yet another URL.
         // The previous OortComet will be disconnected, but since
         // it was already connected, no join/left events are emitted.
-        final BlockingQueue<Oort.CometListener.Event> cometEvents = new LinkedBlockingQueue<>();
+        BlockingQueue<Oort.CometListener.Event> cometEvents = new LinkedBlockingQueue<>();
         oortB.addCometListener(new Oort.CometListener() {
             @Override
             public void cometLeft(Event event) {
@@ -993,14 +993,14 @@ public class OortObserveCometTest extends OortTest {
     @MethodSource("transports")
     public void testPublishDuringCometJoined(String serverTransport) throws Exception {
         Server serverA = startServer(serverTransport, 0);
-        final Oort oortA = startOort(serverA);
-        final BayeuxServer bayeuxServerA = oortA.getBayeuxServer();
+        Oort oortA = startOort(serverA);
+        BayeuxServer bayeuxServerA = oortA.getBayeuxServer();
 
-        final LocalSession serviceA = bayeuxServerA.newLocalSession("test");
+        LocalSession serviceA = bayeuxServerA.newLocalSession("test");
         serviceA.handshake();
-        final String channelName = "/test";
-        final String data = "data";
-        final CountDownLatch joinedLatch = new CountDownLatch(1);
+        String channelName = "/test";
+        String data = "data";
+        CountDownLatch joinedLatch = new CountDownLatch(1);
         oortA.addCometListener(new Oort.CometListener() {
             @Override
             public void cometJoined(Event event) {
@@ -1015,7 +1015,7 @@ public class OortObserveCometTest extends OortTest {
         oortB.observeChannel(channelName);
 
         BayeuxServer bayeuxServerB = oortB.getBayeuxServer();
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         bayeuxServerB.createChannelIfAbsent(channelName).getReference().addListener(new ServerChannel.MessageListener() {
             @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
@@ -1066,7 +1066,7 @@ public class OortObserveCometTest extends OortTest {
         BayeuxClient clientB = startClient(oortB, null);
         Assertions.assertTrue(clientB.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        final AtomicReference<CountDownLatch> messageLatch = new AtomicReference<>(new CountDownLatch(1));
+        AtomicReference<CountDownLatch> messageLatch = new AtomicReference<>(new CountDownLatch(1));
         clientB.getChannel(channelName).subscribe((channel, message) -> messageLatch.get().countDown());
 
         // Wait a while to be sure to be subscribed
@@ -1091,7 +1091,7 @@ public class OortObserveCometTest extends OortTest {
         Server serverA = startServer(serverTransport, 0);
         Oort oortA = startOort(serverA);
         Server serverB = startServer(serverTransport, 0);
-        final long maxNetworkDelay = 1000;
+        long maxNetworkDelay = 1000;
         BayeuxServer bayeuxServerB = (BayeuxServer)serverB.getAttribute(BayeuxServer.ATTRIBUTE);
         bayeuxServerB.addExtension(new BayeuxServer.Extension() {
             private final AtomicInteger replies = new AtomicInteger();
@@ -1118,7 +1118,7 @@ public class OortObserveCometTest extends OortTest {
 
         OortComet oortCometAB = oortA.createOortComet(oortB.getURL());
         oortCometAB.setOption(ClientTransport.MAX_NETWORK_DELAY_OPTION, maxNetworkDelay);
-        final CountDownLatch handshakeLatch = new CountDownLatch(1);
+        CountDownLatch handshakeLatch = new CountDownLatch(1);
         oortCometAB.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener() {
             private final AtomicInteger handshakes = new AtomicInteger();
 
@@ -1152,7 +1152,7 @@ public class OortObserveCometTest extends OortTest {
         Server serverB = startServer(serverTransport, 0);
         BayeuxServer bayeuxServerB = (BayeuxServer)serverB.getAttribute(BayeuxServer.ATTRIBUTE);
         ServerChannel joinChannel = bayeuxServerB.createChannelIfAbsent(Oort.OORT_SERVICE_CHANNEL).getReference();
-        final AtomicBoolean joinMessage = new AtomicBoolean();
+        AtomicBoolean joinMessage = new AtomicBoolean();
         joinChannel.addListener(new ServerChannel.MessageListener() {
             @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
@@ -1161,7 +1161,7 @@ public class OortObserveCometTest extends OortTest {
         });
         Oort oortB = startOort(serverB);
 
-        final AtomicReference<CountDownLatch> joinEventLatch = new AtomicReference<>(new CountDownLatch(1));
+        AtomicReference<CountDownLatch> joinEventLatch = new AtomicReference<>(new CountDownLatch(1));
         oortB.addCometListener(new Oort.CometListener() {
             @Override
             public void cometJoined(Event event) {
@@ -1170,8 +1170,8 @@ public class OortObserveCometTest extends OortTest {
         });
 
         OortComet oortCometAB = oortA.createOortComet(oortB.getURL());
-        final CountDownLatch joinMessageFailure = new CountDownLatch(1);
-        final CountDownLatch joinMessageSuccess = new CountDownLatch(1);
+        CountDownLatch joinMessageFailure = new CountDownLatch(1);
+        CountDownLatch joinMessageSuccess = new CountDownLatch(1);
         oortCometAB.getChannel(Oort.OORT_SERVICE_CHANNEL).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
             if (message.isSuccessful()) {
                 joinMessageSuccess.countDown();
@@ -1234,7 +1234,7 @@ public class OortObserveCometTest extends OortTest {
         String urlA = (String)serverA.getAttribute(OortConfigServlet.OORT_URL_PARAM);
         BayeuxServerImpl bayeuxServerA = (BayeuxServerImpl)serverA.getAttribute(BayeuxServer.ATTRIBUTE);
         bayeuxServerA.setOption(Server.class.getName(), serverA);
-        final AtomicBoolean halfNetworkDown = new AtomicBoolean();
+        AtomicBoolean halfNetworkDown = new AtomicBoolean();
         Oort oortA = new Oort(bayeuxServerA, urlA) {
             @Override
             protected OortComet newOortComet(String cometURL, ClientTransport transport, ClientTransport[] otherTransports) {
@@ -1242,7 +1242,7 @@ public class OortObserveCometTest extends OortTest {
                     {
                         addTransportListener(new TransportListener() {
                             @Override
-                            public void onMessages(final List<Message.Mutable> messages) {
+                            public void onMessages(List<Message.Mutable> messages) {
                                 if (halfNetworkDown.get()) {
                                     logger.info("Network down for client receive {}", messages);
                                     messagesFailure(new Exception(), messages);
@@ -1266,8 +1266,8 @@ public class OortObserveCometTest extends OortTest {
         Server serverB = startServer(serverTransport, 0, options);
         Oort oortB = startOort(serverB);
 
-        final AtomicInteger joinCount = new AtomicInteger();
-        final AtomicReference<CountDownLatch> joinLatch = new AtomicReference<>(new CountDownLatch(2));
+        AtomicInteger joinCount = new AtomicInteger();
+        AtomicReference<CountDownLatch> joinLatch = new AtomicReference<>(new CountDownLatch(2));
         Oort.CometListener joinListener = new Oort.CometListener() {
             @Override
             public void cometJoined(Event event) {
@@ -1286,8 +1286,8 @@ public class OortObserveCometTest extends OortTest {
         // Wait for the /meta/connects to be held.
         sleep(1000);
 
-        final AtomicInteger leftCount = new AtomicInteger();
-        final CountDownLatch leftLatch = new CountDownLatch(1);
+        AtomicInteger leftCount = new AtomicInteger();
+        CountDownLatch leftLatch = new CountDownLatch(1);
         Oort.CometListener leftListener = new Oort.CometListener() {
             @Override
             public void cometLeft(Event event) {

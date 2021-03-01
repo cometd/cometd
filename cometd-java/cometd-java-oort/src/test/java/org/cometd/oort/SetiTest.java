@@ -437,7 +437,7 @@ public class SetiTest extends OortTest {
         Assertions.assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         CountDownLatch presenceOnLatch = new CountDownLatch(1);
-        final CountDownLatch presenceOffLatch = new CountDownLatch(1);
+        CountDownLatch presenceOffLatch = new CountDownLatch(1);
         Seti.PresenceListener listener = new Seti.PresenceListener() {
             @Override
             public void presenceAdded(Event event) {
@@ -498,7 +498,7 @@ public class SetiTest extends OortTest {
         String userId = "user1";
         login1.put("user", userId);
         ClientSessionChannel loginChannel1 = client1.getChannel("/service/login");
-        final CountDownLatch publishLatch = new CountDownLatch(1);
+        CountDownLatch publishLatch = new CountDownLatch(1);
         loginChannel1.publish(login1, message -> publishLatch.countDown());
         Assertions.assertTrue(publishLatch.await(5, TimeUnit.SECONDS));
 
@@ -523,7 +523,7 @@ public class SetiTest extends OortTest {
         Assertions.assertTrue(seti2.isPresent(userId));
 
         // Stop Seti1
-        final CountDownLatch presenceOffLatch = new CountDownLatch(1);
+        CountDownLatch presenceOffLatch = new CountDownLatch(1);
         seti2.addPresenceListener(new Seti.PresenceListener() {
             @Override
             public void presenceRemoved(Event event) {
@@ -561,10 +561,10 @@ public class SetiTest extends OortTest {
         BayeuxClient client2 = startClient(oort2, null);
         Assertions.assertTrue(client2.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        final CountDownLatch localPresenceOnLatch = new CountDownLatch(1);
-        final CountDownLatch remotePresenceOnLatch = new CountDownLatch(1);
-        final CountDownLatch localPresenceOffLatch = new CountDownLatch(1);
-        final CountDownLatch remotePresenceOffLatch = new CountDownLatch(1);
+        CountDownLatch localPresenceOnLatch = new CountDownLatch(1);
+        CountDownLatch remotePresenceOnLatch = new CountDownLatch(1);
+        CountDownLatch localPresenceOffLatch = new CountDownLatch(1);
+        CountDownLatch remotePresenceOffLatch = new CountDownLatch(1);
         Seti.PresenceListener listener = new Seti.PresenceListener() {
             @Override
             public void presenceAdded(Event event) {
@@ -587,7 +587,7 @@ public class SetiTest extends OortTest {
         seti2.addPresenceListener(listener);
 
         // Login user1
-        final CountDownLatch loginLatch1 = new CountDownLatch(1);
+        CountDownLatch loginLatch1 = new CountDownLatch(1);
         Map<String, Object> login1 = new HashMap<>();
         String userId1 = "user1";
         login1.put("user", userId1);
@@ -597,7 +597,7 @@ public class SetiTest extends OortTest {
         Assertions.assertTrue(remotePresenceOnLatch.await(5, TimeUnit.SECONDS));
 
         // Login user2
-        final CountDownLatch loginLatch2 = new CountDownLatch(1);
+        CountDownLatch loginLatch2 = new CountDownLatch(1);
         Map<String, Object> login2 = new HashMap<>();
         String userId2 = "user2";
         login2.put("user", userId2);
@@ -607,7 +607,7 @@ public class SetiTest extends OortTest {
         Assertions.assertTrue(localPresenceOnLatch.await(5, TimeUnit.SECONDS));
 
         // Logout user2
-        final CountDownLatch logoutLatch2 = new CountDownLatch(1);
+        CountDownLatch logoutLatch2 = new CountDownLatch(1);
         Map<String, Object> logout2 = new HashMap<>();
         logout2.put("user", userId2);
         ClientSessionChannel logoutChannel2 = client2.getChannel("/service/logout");
@@ -616,7 +616,7 @@ public class SetiTest extends OortTest {
         Assertions.assertTrue(localPresenceOffLatch.await(5, TimeUnit.SECONDS));
 
         // Logout user1
-        final CountDownLatch logoutLatch1 = new CountDownLatch(1);
+        CountDownLatch logoutLatch1 = new CountDownLatch(1);
         Map<String, Object> logout1 = new HashMap<>();
         logout1.put("user", userId1);
         ClientSessionChannel logoutChannel1 = client1.getChannel("/service/logout");
@@ -654,12 +654,12 @@ public class SetiTest extends OortTest {
         BayeuxClient client2 = startClient(oort2, null);
         Assertions.assertTrue(client2.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        final CountDownLatch presenceAddedLatch = new CountDownLatch(4);
+        CountDownLatch presenceAddedLatch = new CountDownLatch(4);
         seti1.addPresenceListener(new UserPresentListener(presenceAddedLatch));
         seti2.addPresenceListener(new UserPresentListener(presenceAddedLatch));
 
         // Login user1
-        final CountDownLatch loginLatch1 = new CountDownLatch(1);
+        CountDownLatch loginLatch1 = new CountDownLatch(1);
         Map<String, Object> login1 = new HashMap<>();
         String userId1 = "user1";
         login1.put("user", userId1);
@@ -668,7 +668,7 @@ public class SetiTest extends OortTest {
         Assertions.assertTrue(loginLatch1.await(5, TimeUnit.SECONDS));
 
         // Login user2
-        final CountDownLatch loginLatch2 = new CountDownLatch(1);
+        CountDownLatch loginLatch2 = new CountDownLatch(1);
         Map<String, Object> login2 = new HashMap<>();
         String userId2 = "user2";
         login2.put("user", userId2);
@@ -679,7 +679,7 @@ public class SetiTest extends OortTest {
         // Make sure all Setis see all users
         Assertions.assertTrue(presenceAddedLatch.await(5, TimeUnit.SECONDS));
 
-        final CountDownLatch presenceRemovedLatch = new CountDownLatch(1);
+        CountDownLatch presenceRemovedLatch = new CountDownLatch(1);
         seti2.addPresenceListener(new UserAbsentListener(presenceRemovedLatch));
 
         // Stop Seti1
@@ -728,7 +728,7 @@ public class SetiTest extends OortTest {
         seti2.addPresenceListener(new UserPresentListener(presenceAddedLatch));
 
         // Login user1
-        final CountDownLatch loginLatch1 = new CountDownLatch(1);
+        CountDownLatch loginLatch1 = new CountDownLatch(1);
         Map<String, Object> login1 = new HashMap<>();
         String userId1 = "user1";
         login1.put("user", userId1);
@@ -737,7 +737,7 @@ public class SetiTest extends OortTest {
         Assertions.assertTrue(loginLatch1.await(5, TimeUnit.SECONDS));
 
         // Login user2
-        final CountDownLatch loginLatch2 = new CountDownLatch(1);
+        CountDownLatch loginLatch2 = new CountDownLatch(1);
         Map<String, Object> login2 = new HashMap<>();
         String userId2 = "user2";
         login2.put("user", userId2);
@@ -748,7 +748,7 @@ public class SetiTest extends OortTest {
         // Make sure all Setis see all users
         Assertions.assertTrue(presenceAddedLatch.await(5, TimeUnit.SECONDS));
 
-        final CountDownLatch presenceRemovedLatch = new CountDownLatch(2);
+        CountDownLatch presenceRemovedLatch = new CountDownLatch(2);
         seti1.addPresenceListener(new UserAbsentListener(presenceRemovedLatch));
         seti2.addPresenceListener(new UserAbsentListener(presenceRemovedLatch));
 
@@ -828,7 +828,7 @@ public class SetiTest extends OortTest {
         seti2.addPresenceListener(new UserPresentListener(presenceAddedLatch));
 
         // Login user1
-        final CountDownLatch loginLatch1 = new CountDownLatch(1);
+        CountDownLatch loginLatch1 = new CountDownLatch(1);
         Map<String, Object> login1 = new HashMap<>();
         String userId1 = "user1";
         login1.put("user", userId1);
@@ -855,7 +855,7 @@ public class SetiTest extends OortTest {
             client1.disconnect();
             Assertions.assertTrue(client1.waitFor(5000, BayeuxClient.State.DISCONNECTED));
             client1 = startClient(oort2, null);
-            final CountDownLatch loginLatch2 = new CountDownLatch(1);
+            CountDownLatch loginLatch2 = new CountDownLatch(1);
             loginChannel1 = client1.getChannel("/service/login");
             loginChannel1.publish(login1, message -> loginLatch2.countDown());
             Assertions.assertTrue(loginLatch2.await(5, TimeUnit.SECONDS));
@@ -896,7 +896,7 @@ public class SetiTest extends OortTest {
             client1.disconnect();
             Assertions.assertTrue(client1.waitFor(5000, BayeuxClient.State.DISCONNECTED));
             client1 = startClient(oort1, null);
-            final CountDownLatch loginLatch3 = new CountDownLatch(1);
+            CountDownLatch loginLatch3 = new CountDownLatch(1);
             loginChannel1 = client1.getChannel("/service/login");
             loginChannel1.publish(login1, message -> loginLatch3.countDown());
             Assertions.assertTrue(loginLatch3.await(5, TimeUnit.SECONDS));
@@ -949,7 +949,7 @@ public class SetiTest extends OortTest {
         OortComet oortComet21 = oort2.findComet(oort1.getURL());
         Assertions.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        final Seti seti1 = startSeti(oort1);
+        Seti seti1 = startSeti(oort1);
         Seti seti2 = startSeti(oort2);
 
         new SetiService(seti1);
@@ -965,7 +965,7 @@ public class SetiTest extends OortTest {
         seti2.addPresenceListener(new UserPresentListener(presenceAddedLatch));
 
         // Login user1
-        final CountDownLatch loginLatch1 = new CountDownLatch(1);
+        CountDownLatch loginLatch1 = new CountDownLatch(1);
         Map<String, Object> login1 = new HashMap<>();
         String userId1 = "user1";
         login1.put("user", userId1);
@@ -974,7 +974,7 @@ public class SetiTest extends OortTest {
         Assertions.assertTrue(loginLatch1.await(5, TimeUnit.SECONDS));
 
         // Login user2
-        final CountDownLatch loginLatch2 = new CountDownLatch(1);
+        CountDownLatch loginLatch2 = new CountDownLatch(1);
         Map<String, Object> login2 = new HashMap<>();
         String userId2 = "user2";
         login2.put("user", userId2);
@@ -987,8 +987,8 @@ public class SetiTest extends OortTest {
 
         // Setup test: register a service for the service channel
         // that broadcasts to another channel that is not observed
-        final String serviceChannel = "/service/foo";
-        final String broadcastChannel = "/foo";
+        String serviceChannel = "/service/foo";
+        String broadcastChannel = "/foo";
 
         if (forward) {
             oort2.observeChannel(broadcastChannel);
@@ -1000,7 +1000,7 @@ public class SetiTest extends OortTest {
 
         // Subscribe user2
         LatchListener subscribeListener = new LatchListener(1);
-        final CountDownLatch messageLatch = new CountDownLatch(1);
+        CountDownLatch messageLatch = new CountDownLatch(1);
         client2.getChannel(Channel.META_SUBSCRIBE).addListener(subscribeListener);
         client2.getChannel(broadcastChannel).subscribe((channel, message) -> messageLatch.countDown());
         Assertions.assertTrue(subscribeListener.await(5, TimeUnit.SECONDS));
@@ -1028,7 +1028,7 @@ public class SetiTest extends OortTest {
     @MethodSource("transports")
     public void testConcurrent(String serverTransport) throws Exception {
         Server server1 = startServer(serverTransport, 0);
-        final Oort oort1 = startOort(server1);
+        Oort oort1 = startOort(server1);
         Server server2 = startServer(serverTransport, 0);
         Oort oort2 = startOort(server2);
 
@@ -1040,12 +1040,12 @@ public class SetiTest extends OortTest {
         OortComet oortComet21 = oort2.findComet(oort1.getURL());
         Assertions.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        final Seti seti1 = startSeti(oort1);
+        Seti seti1 = startSeti(oort1);
         Seti seti2 = startSeti(oort2);
 
         int threads = 64;
-        final int iterations = 32;
-        final CyclicBarrier barrier = new CyclicBarrier(threads + 1);
+        int iterations = 32;
+        CyclicBarrier barrier = new CyclicBarrier(threads + 1);
 
         CountDownLatch presentLatch = new CountDownLatch(threads * iterations);
         seti2.addPresenceListener(new UserPresentListener(presentLatch));
@@ -1053,7 +1053,7 @@ public class SetiTest extends OortTest {
         seti2.addPresenceListener(new UserAbsentListener(absentLatch));
 
         for (int i = 0; i < threads; ++i) {
-            final int index = i;
+            int index = i;
             new Thread(() -> {
                 try {
                     Map<String, ServerSession> sessions = new HashMap<>();
@@ -1184,7 +1184,7 @@ public class SetiTest extends OortTest {
         BayeuxServerImpl bayeuxServer2 = (BayeuxServerImpl)server2.getAttribute(BayeuxServer.ATTRIBUTE);
         bayeuxServer2.setDetailedDump(true);
         bayeuxServer2.setOption(Server.class.getName(), server2);
-        final AtomicBoolean halfNetworkDown = new AtomicBoolean();
+        AtomicBoolean halfNetworkDown = new AtomicBoolean();
         Oort oort2 = new Oort(bayeuxServer2, url2) {
             @Override
             protected OortComet newOortComet(String cometURL, ClientTransport transport, ClientTransport[] otherTransports) {
@@ -1216,7 +1216,7 @@ public class SetiTest extends OortTest {
         OortComet oortComet21 = oort2.findComet(oort1.getURL());
         Assertions.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        final Seti seti1 = startSeti(oort1);
+        Seti seti1 = startSeti(oort1);
         Seti seti2 = startSeti(oort2);
 
         new SetiService(seti1);
@@ -1232,7 +1232,7 @@ public class SetiTest extends OortTest {
         seti2.addPresenceListener(new UserPresentListener(presenceAddedLatch));
 
         // Login user1
-        final CountDownLatch loginLatch1 = new CountDownLatch(1);
+        CountDownLatch loginLatch1 = new CountDownLatch(1);
         Map<String, Object> login1 = new HashMap<>();
         String userId1 = "user1";
         login1.put("user", userId1);
@@ -1241,7 +1241,7 @@ public class SetiTest extends OortTest {
         Assertions.assertTrue(loginLatch1.await(5, TimeUnit.SECONDS));
 
         // Login user2
-        final CountDownLatch loginLatch2 = new CountDownLatch(1);
+        CountDownLatch loginLatch2 = new CountDownLatch(1);
         Map<String, Object> login2 = new HashMap<>();
         String userId2 = "user2";
         login2.put("user", userId2);
@@ -1256,13 +1256,13 @@ public class SetiTest extends OortTest {
         halfNetworkDown.set(true);
 
         // Logout user1 and login user3, node2 won't see these changes.
-        final CountDownLatch logoutLatch1 = new CountDownLatch(1);
+        CountDownLatch logoutLatch1 = new CountDownLatch(1);
         Map<String, Object> logout1 = new HashMap<>();
         logout1.put("user", userId1);
         ClientSessionChannel logoutChannel1 = client1.getChannel("/service/logout");
         logoutChannel1.publish(logout1, message -> logoutLatch1.countDown());
         Assertions.assertTrue(logoutLatch1.await(5, TimeUnit.SECONDS));
-        final CountDownLatch loginLatch3 = new CountDownLatch(1);
+        CountDownLatch loginLatch3 = new CountDownLatch(1);
         Map<String, Object> login3 = new HashMap<>();
         String userId3 = "user3";
         login3.put("user", userId3);
@@ -1275,7 +1275,7 @@ public class SetiTest extends OortTest {
         Set<String> userIds2 = seti2.getUserIds();
         Assertions.assertEquals(new HashSet<>(Arrays.asList("user1", "user2")), userIds2, seti2.dump());
 
-        final CountDownLatch presenceLatch2 = new CountDownLatch(2);
+        CountDownLatch presenceLatch2 = new CountDownLatch(2);
         seti2.addPresenceListener(new Seti.PresenceListener() {
             @Override
             public void presenceAdded(Event event) {
@@ -1319,7 +1319,7 @@ public class SetiTest extends OortTest {
         BayeuxServerImpl bayeuxServer1 = (BayeuxServerImpl)server1.getAttribute(BayeuxServer.ATTRIBUTE);
         bayeuxServer1.setOption(Server.class.getName(), server1);
         bayeuxServer1.setDetailedDump(true);
-        final AtomicBoolean networkDown21 = new AtomicBoolean();
+        AtomicBoolean networkDown21 = new AtomicBoolean();
         Oort oort1 = new Oort(bayeuxServer1, url1) {
             @Override
             protected OortComet newOortComet(String cometURL, ClientTransport transport, ClientTransport[] otherTransports) {
@@ -1353,7 +1353,7 @@ public class SetiTest extends OortTest {
         BayeuxServerImpl bayeuxServer2 = (BayeuxServerImpl)server2.getAttribute(BayeuxServer.ATTRIBUTE);
         bayeuxServer2.setOption(Server.class.getName(), server2);
         bayeuxServer2.setDetailedDump(true);
-        final AtomicBoolean networkDown12 = new AtomicBoolean();
+        AtomicBoolean networkDown12 = new AtomicBoolean();
         Oort oort2 = new Oort(bayeuxServer2, url2) {
             @Override
             protected OortComet newOortComet(String cometURL, ClientTransport transport, ClientTransport[] otherTransports) {
@@ -1391,7 +1391,7 @@ public class SetiTest extends OortTest {
         OortComet oortComet21 = oort2.findComet(oort1.getURL());
         Assertions.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        final Seti seti1 = startSeti(oort1);
+        Seti seti1 = startSeti(oort1);
         Seti seti2 = startSeti(oort2);
 
         new SetiService(seti1);
@@ -1410,7 +1410,7 @@ public class SetiTest extends OortTest {
         seti2.addPresenceListener(new UserPresentListener(presenceAddedLatch));
 
         // Login user1
-        final CountDownLatch loginLatch1 = new CountDownLatch(1);
+        CountDownLatch loginLatch1 = new CountDownLatch(1);
         Map<String, Object> login1 = new HashMap<>();
         String userId1 = "user1";
         login1.put("user", userId1);
@@ -1419,7 +1419,7 @@ public class SetiTest extends OortTest {
         Assertions.assertTrue(loginLatch1.await(5, TimeUnit.SECONDS));
 
         // Login user2
-        final CountDownLatch loginLatch2 = new CountDownLatch(1);
+        CountDownLatch loginLatch2 = new CountDownLatch(1);
         Map<String, Object> login2 = new HashMap<>();
         String userId2 = "user2";
         login2.put("user", userId2);
@@ -1438,13 +1438,13 @@ public class SetiTest extends OortTest {
         networkDown21.set(true);
 
         // Logout user1 and login user3, node2 won't see this change.
-        final CountDownLatch logoutLatch1 = new CountDownLatch(1);
+        CountDownLatch logoutLatch1 = new CountDownLatch(1);
         Map<String, Object> logout1 = new HashMap<>();
         logout1.put("user", userId1);
         ClientSessionChannel logoutChannel1 = client1.getChannel("/service/logout");
         logoutChannel1.publish(logout1, message -> logoutLatch1.countDown());
         Assertions.assertTrue(logoutLatch1.await(5, TimeUnit.SECONDS));
-        final CountDownLatch loginLatch3 = new CountDownLatch(1);
+        CountDownLatch loginLatch3 = new CountDownLatch(1);
         Map<String, Object> login3 = new HashMap<>();
         String userId3 = "user3";
         login3.put("user", userId3);
@@ -1467,9 +1467,9 @@ public class SetiTest extends OortTest {
         bayeuxServer1.removeServerSession(bayeuxServer1.getSession(oortComet21.getId()), true);
         Assertions.assertTrue(leftLatch1.await(timeout + 2 * maxInterval, TimeUnit.MILLISECONDS));
 
-        final AtomicInteger presenceAddedCount1 = new AtomicInteger();
-        final AtomicInteger presenceRemovedCount1 = new AtomicInteger();
-        final CountDownLatch presenceLatch1 = new CountDownLatch(1);
+        AtomicInteger presenceAddedCount1 = new AtomicInteger();
+        AtomicInteger presenceRemovedCount1 = new AtomicInteger();
+        CountDownLatch presenceLatch1 = new CountDownLatch(1);
         seti1.addPresenceListener(new Seti.PresenceListener() {
             @Override
             public void presenceAdded(Event event) {
@@ -1486,9 +1486,9 @@ public class SetiTest extends OortTest {
             }
         });
 
-        final AtomicInteger presenceAddedCount2 = new AtomicInteger();
-        final AtomicInteger presenceRemovedCount2 = new AtomicInteger();
-        final CountDownLatch presenceLatch2 = new CountDownLatch(2);
+        AtomicInteger presenceAddedCount2 = new AtomicInteger();
+        AtomicInteger presenceRemovedCount2 = new AtomicInteger();
+        CountDownLatch presenceLatch2 = new CountDownLatch(2);
         seti2.addPresenceListener(new Seti.PresenceListener() {
             @Override
             public void presenceAdded(Event event) {

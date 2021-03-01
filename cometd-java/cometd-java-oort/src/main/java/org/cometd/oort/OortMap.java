@@ -235,9 +235,9 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>> {
         @SuppressWarnings("unchecked")
         Map<String, Object> object = (Map<String, Object>)data.get(Info.OBJECT_FIELD);
         @SuppressWarnings("unchecked")
-        final K key = (K)object.get(KEY_FIELD);
+        K key = (K)object.get(KEY_FIELD);
         @SuppressWarnings("unchecked")
-        final V value = (V)object.get(VALUE_FIELD);
+        V value = (V)object.get(VALUE_FIELD);
 
         // Perform the action.
         ConcurrentMap<K, V> map = info.getObject();

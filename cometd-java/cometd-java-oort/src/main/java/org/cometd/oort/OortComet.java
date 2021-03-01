@@ -94,7 +94,7 @@ public class OortComet extends BayeuxClient {
         }
     }
 
-    void open(final ClientSession.MessageListener callback) {
+    void open(ClientSession.MessageListener callback) {
         batch(() -> {
             // Subscribe to cloud notifications
             getChannel(Oort.OORT_CLOUD_CHANNEL).subscribe((channel, message) -> {
