@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.cometd.java</groupId>
     <artifactId>cometd-java-annotation</artifactId>
-    <version>5.0.5-SNAPSHOT</version>
+    <version>5.0.5</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
