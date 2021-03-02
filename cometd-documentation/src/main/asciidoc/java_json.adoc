@@ -9,9 +9,24 @@ The default implementation uses the Jetty library.
 Distinctions between them include:
 
 * The Jetty library allows you to plug in custom serializers and deserializers, to fine control the conversion from object to JSON and vice versa, via a custom API.
-  Refer to the `org.eclipse.jetty.util.ajax.JSON` https://eclipse.org/jetty/javadoc/current/org/eclipse/jetty/util/ajax/JSON.html[javadocs] for further information.
++
+Refer to the `org.eclipse.jetty.util.ajax.JSON` https://eclipse.org/jetty/javadoc/current/org/eclipse/jetty/util/ajax/JSON.html[javadocs] for further information.
 * The Jackson library offers a rich API based on annotations to customize JSON generation, but less so to customize JSON parsing and obtain objects of custom classes.
-  Refer to the https://github.com/FasterXML/jackson[Jackson] documentation for further details.
++
+Jackson does not support out-of-the-box collections created with the collection factory methods introduced in Java 9, such as `Map.of()`, `List.of()`, etc.
++
+Jackson may add additional metadata fields and make the JSON messages larger.
++
+Refer to the https://github.com/FasterXML/jackson[Jackson] documentation for further details.
+
+[IMPORTANT]
+====
+It is recommended that you use the same JSON library on both client and server.
+
+Mixed configurations may not work because, for example, Jackson may add additional metadata fields, or change the structure of fields, that Jetty's `JSON` does not expect, and viceversa.
+
+Jetty's JSON is recommended as it typically produces smaller JSON, it is simpler to configure and customize, supports Java 9 and later collections, and it has very good performance.
+====
 
 [[_java_json_api]]
 ==== JSONContext API
@@ -118,18 +133,18 @@ include::{doc_code}/JSONDocs.java[tags=portability]
 Sometimes it is very useful to be able to obtain objects of application classes instead of just `Map<String, Object>` when calling `message.getData()`.
 
 You can easily achieve this with the Jetty JSON library.
-It is enough that the client formats the JSON object adding an additional `class` field whose value is the fully qualified class name that you want to convert the JSON to:
+It is enough that the client formats the JSON object by adding an additional `class` field whose value is the fully qualified class name that you want to convert the JSON to:
 
 [source,javascript]
 ----
-cometd.publish('/echo', {
-    class: 'org.cometd.example.EchoInfo',
-    id: '42',
-    echo: 'cometd'
+cometd.publish("/echo", {
+    class: "org.cometd.example.EchoInfo",
+    id: "42",
+    echo: "cometd"
 });
 ----
 
-On the server, in the `web.xml` file, you register the `org.cometd.server.JettyJSONContextServer` as `jsonContext` (see also xref:_java_json_server_config[the JSON server configuration section]), and at startup you add a custom converter for the `org.cometd.example.EchoInfo` class (see also xref:_java_server_services_integration[the services integration section] for more details about configuring CometD at startup).
+On the server, in the `web.xml` file, you register the `org.cometd.server.JettyJSONContextServer` as `jsonContext` (see also xref:_java_json_server_config[the JSON server configuration section]), and at start-up you add a custom converter for the `org.cometd.example.EchoInfo` class (see also xref:_java_server_services_integration[the services integration section] for more details about configuring CometD at start-up).
 
 [source,java,indent=0]
 ----
