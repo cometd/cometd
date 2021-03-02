@@ -21,7 +21,6 @@ import java.net.SocketTimeoutException;
 import java.text.ParseException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -286,7 +285,7 @@ public abstract class AbstractWebSocketEndPoint {
     }
 
     protected void flush(Context context, Promise<Void> promise) {
-        List<ServerMessage> msgs = Collections.emptyList();
+        List<ServerMessage> msgs = List.of();
         ServerSessionImpl session = context.session;
         if (context.sendQueue && session != null) {
             msgs = session.takeQueue(context.replies);

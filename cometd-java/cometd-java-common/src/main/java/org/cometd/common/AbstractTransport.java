@@ -29,7 +29,7 @@ public class AbstractTransport implements Transport {
 
     protected AbstractTransport(String name, Map<String, Object> options) {
         _name = name;
-        _options = options == null ? new HashMap<String, Object>(1) : options;
+        _options = options == null ? new HashMap<>(1) : options;
     }
 
     @Override
@@ -128,7 +128,7 @@ public class AbstractTransport implements Transport {
 
     @Override
     public Set<String> getOptionNames() {
-        Set<String> names = new HashSet<String>();
+        Set<String> names = new HashSet<>();
         for (String name : _options.keySet()) {
             int lastDot = name.lastIndexOf('.');
             if (lastDot >= 0) {

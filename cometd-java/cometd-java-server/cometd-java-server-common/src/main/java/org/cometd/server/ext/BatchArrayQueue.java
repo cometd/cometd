@@ -221,7 +221,7 @@ public class BatchArrayQueue<T> implements Queue<T> {
 
     @Override
     public Iterator<T> iterator() {
-        final Object[] objects = toArray();
+        Object[] objects = toArray();
         return new Iterator<>() {
             private int index = 0;
 

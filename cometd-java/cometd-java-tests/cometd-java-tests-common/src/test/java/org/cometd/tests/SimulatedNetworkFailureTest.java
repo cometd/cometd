@@ -15,7 +15,6 @@
  */
 package org.cometd.tests;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -244,8 +243,7 @@ public class SimulatedNetworkFailureTest extends AbstractClientServerTest {
         @Override
         protected void enqueueSend(Message.Mutable message) {
             if (networkDown > 0) {
-                List<Message.Mutable> messages = new ArrayList<>(1);
-                messages.add(message);
+                List<Message.Mutable> messages = List.of(message);
                 messagesFailure(null, messages);
             } else {
                 super.enqueueSend(message);

@@ -34,10 +34,10 @@ public class TimesyncClientExtension implements Extension {
             if (sync != null) {
                 long now = System.currentTimeMillis();
 
-                final long tc = ((Number)sync.get("tc")).longValue();
-                final long ts = ((Number)sync.get("ts")).longValue();
-                final int p = ((Number)sync.get("p")).intValue();
-                // final int a=((Number)sync.get("a")).intValue();
+                long tc = ((Number)sync.get("tc")).longValue();
+                long ts = ((Number)sync.get("ts")).longValue();
+                int p = ((Number)sync.get("p")).intValue();
+                // int a=((Number)sync.get("a")).intValue();
 
                 int l2 = (int)((now - tc - p) / 2);
                 int o2 = (int)(ts - tc - l2);

@@ -63,8 +63,8 @@ public class AuctionChatService extends AbstractService {
         addService("/service/auction/chat", "privateChat");
     }
 
-    public void trackMembers(final ServerSession joiner, ServerMessage message) {
-        final String channelName = message.getChannel();
+    public void trackMembers(ServerSession joiner, ServerMessage message) {
+        String channelName = message.getChannel();
         Object data = message.getData();
         if (data instanceof Object[]) {
             Set<String> members = _members.get(channelName);
@@ -99,7 +99,7 @@ public class AuctionChatService extends AbstractService {
                     }
                 }
 
-                final String userName = (String)map.get("user");
+                String userName = (String)map.get("user");
 
                 members.add(userName);
 

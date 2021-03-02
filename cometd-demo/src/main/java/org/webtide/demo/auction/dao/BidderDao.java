@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentMap;
 import org.webtide.demo.auction.Bidder;
 
 public class BidderDao {
-    final static ConcurrentMap<String, Bidder> _bidders = new ConcurrentHashMap<String, Bidder>();
+    static final ConcurrentMap<String, Bidder> _bidders = new ConcurrentHashMap<>();
 
     public Bidder getBidder(String username) {
         return _bidders.get(username);

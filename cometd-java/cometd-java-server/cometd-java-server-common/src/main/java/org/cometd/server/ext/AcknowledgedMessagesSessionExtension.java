@@ -15,8 +15,6 @@
  */
 package org.cometd.server.ext;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -218,7 +216,7 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
         List<ServerMessage> messages = null;
         for (AcknowledgedMessagesExtension.Listener listener : _listeners) {
             if (messages == null) {
-                messages = Collections.unmodifiableList(new ArrayList<>(queue));
+                messages = List.copyOf(queue);
             }
             try {
                 listener.onBatchSend(session, messages, batch);

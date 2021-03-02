@@ -185,7 +185,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
 
     @Override
     public Set<ServerChannel> getSubscriptions() {
-        return Collections.unmodifiableSet(subscriptions);
+        return Set.copyOf(subscriptions);
     }
 
     @Override
@@ -200,7 +200,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
 
     @Override
     public List<Extension> getExtensions() {
-        return Collections.unmodifiableList(_extensions);
+        return List.copyOf(_extensions);
     }
 
     @Override
@@ -288,7 +288,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         try {
             for (ServerSessionListener listener : _listeners) {
                 if (listener instanceof QueueMaxedListener) {
-                    final int maxQueueSize = _maxQueue;
+                    int maxQueueSize = _maxQueue;
                     if (maxQueueSize > 0 && _queue.size() >= maxQueueSize) {
                         if (!notifyQueueMaxed((QueueMaxedListener)listener, this, _queue, sender, message)) {
                             return null;
@@ -483,7 +483,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
     }
 
     public List<ServerMessage> takeQueue(List<ServerMessage.Mutable> replies) {
-        List<ServerMessage> copy = Collections.emptyList();
+        List<ServerMessage> copy = List.of();
         lock.lock();
         try {
             // Always call listeners, even if the queue is
@@ -538,7 +538,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
     }
 
     public List<ServerSessionListener> getListeners() {
-        return Collections.unmodifiableList(_listeners);
+        return List.copyOf(_listeners);
     }
 
     public void setScheduler(AbstractServerTransport.Scheduler newScheduler) {
@@ -606,7 +606,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         } else {
             // Local delivery.
             if (hasNonLazyMessages()) {
-                for (ServerMessage msg : takeQueue(Collections.emptyList())) {
+                for (ServerMessage msg : takeQueue(List.of())) {
                     _localSession.receive(new HashMapMessage(msg), Promise.noop());
                 }
             }

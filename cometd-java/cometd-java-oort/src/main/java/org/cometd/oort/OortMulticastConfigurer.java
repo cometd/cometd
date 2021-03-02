@@ -346,7 +346,7 @@ public class OortMulticastConfigurer extends AbstractLifeCycle {
                 logger.debug("Entering multicast sender thread");
             }
             try {
-                final String cometURL = oort.getURL();
+                String cometURL = oort.getURL();
                 byte[] cometURLBytes = cometURL.getBytes(StandardCharsets.UTF_8);
                 if (cometURLBytes.length > getMaxTransmissionLength()) {
                     logger.warn("Oort URL {} exceeds max transmission unit and will not be advertised", cometURL);

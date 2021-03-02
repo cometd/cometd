@@ -23,7 +23,6 @@ import java.net.URI;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
@@ -378,8 +377,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
             logger.debug("Handshaking on transport {}: {}", getTransport(), message);
         }
 
-        List<Message.Mutable> messages = new ArrayList<>(1);
-        messages.add(message);
+        List<Message.Mutable> messages = List.of(message);
         sendMessages(messages, Promise.complete((r, x) -> {
             if (logger.isDebugEnabled()) {
                 logger.debug("{} handshake {}", x == null ? "Sent" : "Failed", message);
@@ -464,8 +462,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
             logger.debug("Connecting, transport {}", transport);
         }
 
-        List<Message.Mutable> messages = new ArrayList<>(1);
-        messages.add(message);
+        List<Message.Mutable> messages = List.of(message);
         sendMessages(messages, Promise.complete((r, x) -> {
             if (logger.isDebugEnabled()) {
                 logger.debug("{} connect {}", x == null ? "Sent" : "Failed", message);
@@ -512,7 +509,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
                 loop.proceed(toSend);
             }, loop::fail));
         }, Promise.from(toSend -> {
-            List<Message.Mutable> deleted = Collections.emptyList();
+            List<Message.Mutable> deleted = List.of();
             if (toSend.size() != messages.size()) {
                 deleted = new ArrayList<>(messages);
                 deleted.removeAll(toSend);
@@ -556,7 +553,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
     }
 
     @Override
-    public void disconnect(final ClientSession.MessageListener callback) {
+    public void disconnect(ClientSession.MessageListener callback) {
         sessionState.submit(() -> sessionState.disconnecting(callback));
     }
 
@@ -580,9 +577,9 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
             return true;
         }
 
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         ClientSessionChannel.MessageListener lastConnectListener = (channel, message) -> {
-            final Map<String, Object> advice = message.getAdvice();
+            Map<String, Object> advice = message.getAdvice();
             if (!message.isSuccessful() ||
                     advice != null && Message.RECONNECT_NONE_VALUE.equals(advice.get(Message.RECONNECT_FIELD))) {
                 latch.countDown();
@@ -695,12 +692,12 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         return reply;
     }
 
-    protected void processHandshake(final Message.Mutable handshake) {
+    protected void processHandshake(Message.Mutable handshake) {
         if (handshake.isSuccessful()) {
-            final ClientTransport oldTransport = getTransport();
+            ClientTransport oldTransport = getTransport();
 
             Object field = handshake.get(Message.SUPPORTED_CONNECTION_TYPES_FIELD);
-            Object[] serverTransports = field instanceof List ? ((List)field).toArray() : (Object[])field;
+            Object[] serverTransports = field instanceof List ? ((List<?>)field).toArray() : (Object[])field;
             List<ClientTransport> negotiatedTransports = transportRegistry.negotiate(serverTransports, BAYEUX_VERSION);
             if (negotiatedTransports.isEmpty()) {
                 ClientTransport.FailureInfo failureInfo = new ClientTransport.FailureInfo();
@@ -713,9 +710,9 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
                 failHandshake(handshake, failureInfo);
             } else {
                 Number messagesField = (Number)handshake.get("x-messages");
-                final int messages = messagesField == null ? 0 : messagesField.intValue();
+                int messages = messagesField == null ? 0 : messagesField.intValue();
 
-                final ClientTransport newTransport = negotiatedTransports.get(0);
+                ClientTransport newTransport = negotiatedTransports.get(0);
                 if (newTransport != oldTransport) {
                     prepareTransport(oldTransport, newTransport);
                 }
@@ -732,7 +729,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         }
     }
 
-    private void handshakeFailure(Message.Mutable handshake, final Throwable failure) {
+    private void handshakeFailure(Message.Mutable handshake, Throwable failure) {
         ClientTransport.FailureInfo failureInfo = new ClientTransport.FailureInfo();
         failureInfo.transport = null;
         failureInfo.cause = failure;
@@ -751,7 +748,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         }, x -> logger.info("Failure while receiving " + handshake, x)));
     }
 
-    protected void processConnect(final Message.Mutable connect) {
+    protected void processConnect(Message.Mutable connect) {
         if (sessionState.matchMetaConnect(connect)) {
             if (connect.isSuccessful()) {
                 receive(connect, Promise.from(r -> sessionState.submit(() -> {
@@ -797,7 +794,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         }, x -> logger.info("Failure while receiving " + connect, x)));
     }
 
-    protected void processDisconnect(final Message.Mutable disconnect) {
+    protected void processDisconnect(Message.Mutable disconnect) {
         if (disconnect.isSuccessful()) {
             receive(disconnect, Promise.complete((r, x) -> sessionState.submit(sessionState::terminating)));
         } else {
@@ -949,7 +946,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
      * @return the options that configure with BayeuxClient.
      */
     public Map<String, Object> getOptions() {
-        return Collections.unmodifiableMap(options);
+        return Map.copyOf(options);
     }
 
     @Override
@@ -959,8 +956,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
 
     protected void enqueueSend(Message.Mutable message) {
         if (canSend()) {
-            List<Message.Mutable> messages = new ArrayList<>(1);
-            messages.add(message);
+            List<Message.Mutable> messages = List.of(message);
             sendMessages(messages, Promise.complete((r, x) -> {
                 if (logger.isDebugEnabled()) {
                     logger.debug("{} message {}", x == null ? "Sent" : "Failed", message);
@@ -989,7 +985,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         newTransport.init();
     }
 
-    protected void onTransportFailure(Message message, ClientTransport.FailureInfo failureInfo, final ClientTransport.FailureHandler handler) {
+    protected void onTransportFailure(Message message, ClientTransport.FailureInfo failureInfo, ClientTransport.FailureHandler handler) {
         if (logger.isDebugEnabled()) {
             logger.debug("Transport failure: {} for {}", failureInfo, message);
         }
@@ -1412,7 +1408,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
 
                 List<String> allowedTransports = getAllowedTransports();
                 // Pick the first transport for the handshake, it will renegotiate if not right
-                final ClientTransport transport = transportRegistry.negotiate(allowedTransports.toArray(), BAYEUX_VERSION).get(0);
+                ClientTransport transport = transportRegistry.negotiate(allowedTransports.toArray(), BAYEUX_VERSION).get(0);
                 prepareTransport(null, transport);
                 if (logger.isDebugEnabled()) {
                     logger.debug("Using initial transport {} from {}", transport.getName(), allowedTransports);
@@ -1531,8 +1527,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
 
                 registerCallback(messageId, callback);
 
-                List<Message.Mutable> messages = new ArrayList<>(1);
-                messages.add(message);
+                List<Message.Mutable> messages = List.of(message);
                 sendMessages(messages, Promise.complete((r, x) -> {
                     if (logger.isDebugEnabled()) {
                         logger.debug("{} disconnect {}", x == null ? "Sent" : "Failed", message);
@@ -1684,7 +1679,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         }
 
         @Override
-        public void handle(final ClientTransport.FailureInfo failureInfo) {
+        public void handle(ClientTransport.FailureInfo failureInfo) {
             if (logger.isDebugEnabled()) {
                 logger.debug("Transport failure handling: {}", failureInfo);
             }

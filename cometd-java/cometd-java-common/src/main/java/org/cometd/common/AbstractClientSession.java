@@ -75,7 +75,7 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
 
     @Override
     public List<Extension> getExtensions() {
-        return Collections.unmodifiableList(_extensions);
+        return List.copyOf(_extensions);
     }
 
     protected void extendOutgoing(Message.Mutable message, Promise<Boolean> promise) {
@@ -409,7 +409,7 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
 
         @Override
         public List<ClientSessionChannelListener> getListeners() {
-            return Collections.unmodifiableList(_listeners);
+            return List.copyOf(_listeners);
         }
 
         @Override
@@ -530,7 +530,7 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
 
         @Override
         public List<MessageListener> getSubscribers() {
-            return Collections.unmodifiableList(_subscriptions);
+            return List.copyOf(_subscriptions);
         }
 
         @Override

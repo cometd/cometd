@@ -22,7 +22,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import jakarta.inject.Inject;
@@ -262,7 +261,7 @@ public class ServerServiceDocs {
     // end::annotatedServiceBinary[]
 
     private static List<String> retrieveContactsFromDatabase(String userId) {
-        return Collections.emptyList();
+        return List.of();
     }
 
     @SuppressWarnings("InnerClassMayBeStatic")

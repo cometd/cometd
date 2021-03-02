@@ -16,7 +16,6 @@
 package org.cometd.oort;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.EventListener;
 import java.util.List;
 import java.util.Map;
@@ -267,7 +266,7 @@ public class OortList<E> extends OortContainer<List<E>> {
 
         @Override
         public void onUpdated(Info<List<E>> oldInfo, Info<List<E>> newInfo) {
-            List<E> oldList = oldInfo == null ? Collections.emptyList() : oldInfo.getObject();
+            List<E> oldList = oldInfo == null ? List.of() : oldInfo.getObject();
             List<E> newList = newInfo.getObject();
 
             List<E> added = new ArrayList<>(newList);

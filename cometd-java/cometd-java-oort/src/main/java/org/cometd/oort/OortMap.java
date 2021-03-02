@@ -15,7 +15,6 @@
  */
 package org.cometd.oort;
 
-import java.util.Collections;
 import java.util.EventListener;
 import java.util.HashMap;
 import java.util.List;
@@ -235,9 +234,9 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>> {
         @SuppressWarnings("unchecked")
         Map<String, Object> object = (Map<String, Object>)data.get(Info.OBJECT_FIELD);
         @SuppressWarnings("unchecked")
-        final K key = (K)object.get(KEY_FIELD);
+        K key = (K)object.get(KEY_FIELD);
         @SuppressWarnings("unchecked")
-        final V value = (V)object.get(VALUE_FIELD);
+        V value = (V)object.get(VALUE_FIELD);
 
         // Perform the action.
         ConcurrentMap<K, V> map = info.getObject();
@@ -418,7 +417,7 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>> {
 
         @Override
         public void onUpdated(Info<ConcurrentMap<K, V>> oldInfo, Info<ConcurrentMap<K, V>> newInfo) {
-            Map<K, V> oldMap = oldInfo == null ? Collections.emptyMap() : oldInfo.getObject();
+            Map<K, V> oldMap = oldInfo == null ? Map.of() : oldInfo.getObject();
             Map<K, V> newMap = new HashMap<>(newInfo.getObject());
             for (Map.Entry<K, V> oldEntry : oldMap.entrySet()) {
                 K key = oldEntry.getKey();

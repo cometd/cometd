@@ -106,7 +106,7 @@ public class WebSocketEndPoint extends Endpoint implements MessageHandler.Whole<
         }
 
         @Override
-        public void close(final int code, String reason) {
+        public void close(int code, String reason) {
             try {
                 // Limits of the WebSocket APIs, otherwise an exception is thrown.
                 reason = reason.substring(0, Math.min(reason.length(), 30));

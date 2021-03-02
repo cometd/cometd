@@ -17,7 +17,6 @@ package org.cometd.server;
 
 import java.nio.charset.StandardCharsets;
 import java.util.AbstractSet;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -109,7 +108,7 @@ public class ServerMessageImpl extends HashMapMessage implements ServerMessage.M
         if (isFrozen() && data instanceof Map) {
             @SuppressWarnings("unchecked")
             Map<String, Object> map = (Map<String, Object>)data;
-            return Collections.unmodifiableMap(map);
+            return Map.copyOf(map);
         }
         return data;
     }
@@ -134,7 +133,7 @@ public class ServerMessageImpl extends HashMapMessage implements ServerMessage.M
     public Map<String, Object> getDataAsMap() {
         Map<String, Object> data = super.getDataAsMap();
         if (isFrozen() && data != null) {
-            return Collections.unmodifiableMap(data);
+            return Map.copyOf(data);
         }
         return data;
     }
@@ -143,7 +142,7 @@ public class ServerMessageImpl extends HashMapMessage implements ServerMessage.M
     public Map<String, Object> getExt() {
         Map<String, Object> ext = super.getExt();
         if (isFrozen() && ext != null) {
-            return Collections.unmodifiableMap(ext);
+            return Map.copyOf(ext);
         }
         return ext;
     }
@@ -152,7 +151,7 @@ public class ServerMessageImpl extends HashMapMessage implements ServerMessage.M
     public Map<String, Object> getAdvice() {
         Map<String, Object> advice = super.getAdvice();
         if (isFrozen() && advice != null) {
-            return Collections.unmodifiableMap(advice);
+            return Map.copyOf(advice);
         }
         return advice;
     }

@@ -125,7 +125,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor {
      * @param bean the annotated service instance
      * @return true if at least one annotated configure has been processed, false otherwise
      */
-    public boolean processConfigurations(final Object bean) {
+    public boolean processConfigurations(Object bean) {
         if (bean == null) {
             return false;
         }
@@ -141,11 +141,11 @@ public class ServerAnnotationProcessor extends AnnotationProcessor {
             return false;
         }
 
-        for (final Method method : methods) {
+        for (Method method : methods) {
             Configure configure = method.getAnnotation(Configure.class);
             String[] channels = configure.value();
             for (String channelName : channels) {
-                final Initializer init = channel -> {
+                Initializer init = channel -> {
                     if (LOGGER.isDebugEnabled()) {
                         LOGGER.debug("Configure channel {} with method {} on bean {}", channel, method, bean);
                     }

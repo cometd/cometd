@@ -16,7 +16,6 @@
 package org.cometd.bayeux;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -106,16 +105,16 @@ public class ChannelId {
         }
 
         if (_vars == null) {
-            _vars = Collections.emptyList();
+            _vars = List.of();
         } else {
-            _vars = Collections.unmodifiableList(_vars);
+            _vars = List.copyOf(_vars);
         }
 
         if (_wild > 0) {
             if (!_vars.isEmpty()) {
                 throw new IllegalArgumentException("Invalid channel id: " + this);
             }
-            _wilds = Collections.emptyList();
+            _wilds = List.of();
         } else {
             boolean addShallow = true;
             List<String> wilds = new ArrayList<>(segments.length + 1);
@@ -140,7 +139,7 @@ public class ChannelId {
             if (addShallow) {
                 wilds.add(0, b + "*");
             }
-            _wilds = Collections.unmodifiableList(wilds);
+            _wilds = List.copyOf(wilds);
         }
 
         _parent = segments.length == 1 ? null : name.substring(0, name.length() - segments[segments.length - 1].length() - 1);
@@ -341,7 +340,7 @@ public class ChannelId {
      */
     public Map<String, String> bind(ChannelId target) {
         if (!isTemplate() || target.isTemplate() || target.isWild() || depth() != target.depth()) {
-            return Collections.emptyMap();
+            return Map.of();
         }
 
         Map<String, String> result = new LinkedHashMap<>();
@@ -354,7 +353,7 @@ public class ChannelId {
                 result.put(matcher.group(1), thatSegment);
             } else {
                 if (!thisSegment.equals(thatSegment)) {
-                    return Collections.emptyMap();
+                    return Map.of();
                 }
             }
         }

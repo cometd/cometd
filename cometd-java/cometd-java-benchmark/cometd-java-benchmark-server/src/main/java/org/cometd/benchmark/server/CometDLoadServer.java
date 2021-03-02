@@ -452,10 +452,10 @@ public class CometDLoadServer {
         }
 
         @Override
-        public void handle(String target, Request request, final HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException {
-            final long requestId = requestIds.incrementAndGet();
-            final AtomicBoolean longRequest = new AtomicBoolean(false);
-            final Thread thread = Thread.currentThread();
+        public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException {
+            long requestId = requestIds.incrementAndGet();
+            AtomicBoolean longRequest = new AtomicBoolean(false);
+            Thread thread = Thread.currentThread();
             ScheduledFuture<?> task = scheduler.scheduleWithFixedDelay(() -> {
                 longRequest.set(true);
                 onLongRequestDetected(requestId, httpRequest, thread);
@@ -521,7 +521,7 @@ public class CometDLoadServer {
         private final ThreadLocal<Boolean> currentEnabled = ThreadLocal.withInitial(() -> Boolean.TRUE);
 
         @Override
-        public void handle(String target, Request request, final HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException {
+        public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException {
             long begin = System.nanoTime();
             try {
                 super.handle(target, request, httpRequest, httpResponse);

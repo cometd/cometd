@@ -197,7 +197,7 @@ public class ServerChannelImpl implements ServerChannel, Dumpable {
 
     @Override
     public Set<ServerSession> getSubscribers() {
-        return Collections.unmodifiableSet(subscribers());
+        return Set.copyOf(subscribers());
     }
 
     public Set<ServerSession> subscribers() {
@@ -277,7 +277,7 @@ public class ServerChannelImpl implements ServerChannel, Dumpable {
 
     @Override
     public List<ServerChannelListener> getListeners() {
-        return Collections.unmodifiableList(listeners());
+        return List.copyOf(listeners());
     }
 
     protected List<ServerChannelListener> listeners() {
@@ -409,7 +409,7 @@ public class ServerChannelImpl implements ServerChannel, Dumpable {
 
     @Override
     public List<Authorizer> getAuthorizers() {
-        return Collections.unmodifiableList(authorizers());
+        return List.copyOf(authorizers());
     }
 
     protected List<Authorizer> authorizers() {

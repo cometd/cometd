@@ -64,7 +64,7 @@ public class GrantAuthorizer implements Authorizer {
 
     private final EnumSet<Authorizer.Operation> _operations;
 
-    private GrantAuthorizer(final EnumSet<Authorizer.Operation> operations) {
+    private GrantAuthorizer(EnumSet<Authorizer.Operation> operations) {
         _operations = operations;
     }
 
