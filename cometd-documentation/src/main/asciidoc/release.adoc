@@ -18,16 +18,13 @@ Before creating the release, the following tests should be performed:
 === Creating the Release
 
 ----
-$ git clone git://github.com/cometd/cometd.git release/cometd
-...
-$ cd release/cometd
-$ mvn clean install
-...
-$ mvn release:prepare # Specify the tag to be just the version number
-...
-$ mvn release:perform -Darguments=-Dgpg.passphrase=...
-...
-$ git push
+$ mvn release:prepare -Darguments="-DskipTests"
+----
+
+When asked, specify the version control _tag_ to be just the version number, for example `5.0.0`, not `cometd-project-5.0.0`.
+
+----
+$ mvn release:perform -Darguments="-DskipTests"
 ----
 
 When the Maven Release Plugin runs it activates the `release` profile, running sections of the `pom.xml` files that perform additional actions, such as building the distribution tarball.
@@ -42,10 +39,10 @@ Below the manual steps that needs to be done to finish the release process.
 Login to https://oss.sonatype.org[Sonatype OSS].
 
 Click on "Staging Repositories" and you should see the staged project just uploaded by the `mvn release:perform` command issued above, with status "open".
-Tick the checkbox correspondent to the open staged project, choose "Close" from the toolbar, enter a description such as "CometD Release 1.0.0", then click on the "Close" button.
+Tick the checkbox correspondent to the open staged project, choose "Close", then click on the "Close" button.
 This will make the staged project downloadable for testing, but not yet published to the Maven Central Repository.
 
-Tick again the checkbox correspondent to the closed staged project, choose "Release" from the toolbar, enter a description such as "CometD Release 1.0.0", then click on the "Release" button.
+Tick again the checkbox correspondent to the closed staged project, choose "Release" from the toolbar, then click on the "Release" button.
 This will publish the project to the Maven Central Repository.
 
 [[_release_archetype]]
