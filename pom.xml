@@ -62,7 +62,7 @@
     <log4j2-version>2.14.0</log4j2-version>
     <spring-version>5.3.4</spring-version>
     <spring-boot-version>2.4.3</spring-boot-version>
-    <jackson-version>2.12.1</jackson-version>
+    <jackson-version>2.12.2</jackson-version>
     <dojo-version>1.16.3</dojo-version>
     <okhttp-version>4.9.1</okhttp-version>
   </properties>
@@ -554,7 +554,7 @@
       <dependency>
         <groupId>com.google.javascript</groupId>
         <artifactId>closure-compiler</artifactId>
-        <version>v20210202</version>
+        <version>v20210302</version>
       </dependency>
 
       <dependency>
