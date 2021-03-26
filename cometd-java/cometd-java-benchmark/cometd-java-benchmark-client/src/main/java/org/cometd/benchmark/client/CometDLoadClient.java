@@ -42,6 +42,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicStampedReference;
 import java.util.concurrent.atomic.LongAdder;
+import javax.websocket.WebSocketContainer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.HdrHistogram.Histogram;
@@ -76,10 +77,11 @@ import org.eclipse.jetty.toolchain.perf.MeasureConverter;
 import org.eclipse.jetty.toolchain.perf.PlatformMonitor;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.SocketAddressResolver;
+import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.javax.client.internal.JavaxWebSocketClientContainer;
+import org.eclipse.jetty.websocket.javax.client.JavaxWebSocketClientContainerProvider;
 
 public class CometDLoadClient implements MeasureConverter {
     private static final String START_FIELD = "start";
@@ -111,7 +113,7 @@ public class CometDLoadClient implements MeasureConverter {
     private final DynamicConnectionStatistics connectionStatistics = new DynamicConnectionStatistics();
     private HttpClient httpClient;
     private WebSocketClient webSocketClient;
-    private JavaxWebSocketClientContainer webSocketContainer;
+    private WebSocketContainer webSocketContainer;
     private LatencyListener latencyListener;
     private HandshakeListener handshakeListener;
     private DisconnectListener disconnectListener;
@@ -364,10 +366,9 @@ public class CometDLoadClient implements MeasureConverter {
         LifeCycle.start(webSocketClient);
         mbeanContainer.beanAdded(null, webSocketClient);
 
-        webSocketContainer = new JavaxWebSocketClientContainer(httpClient);
-        webSocketContainer.addBean(mbeanContainer);
-        webSocketContainer.addBean(connectionStatistics);
-        LifeCycle.start(webSocketContainer);
+        webSocketContainer = JavaxWebSocketClientContainerProvider.getContainer(httpClient);
+        Container.addBean(webSocketContainer, mbeanContainer);
+        Container.addBean(webSocketContainer, connectionStatistics);
         mbeanContainer.beanAdded(null, webSocketContainer);
 
         latencyListener = new LatencyListener();
