@@ -99,7 +99,7 @@ public class JSONDocs {
     public void configureConvertor(BayeuxServer bayeuxServer) {
         // tag::configureConvertor[]
         JettyJSONContextServer jsonContext = (JettyJSONContextServer)bayeuxServer.getOption(AbstractServerTransport.JSON_CONTEXT_OPTION);
-        jsonContext.getJSON().addConvertor(EchoInfo.class, new EchoInfoConvertor());
+        jsonContext.putConvertor(EchoInfo.class.getName(), new EchoInfoConvertor());
         // end::configureConvertor[]
     }
 
@@ -147,7 +147,7 @@ public class JSONDocs {
         // tag::clientConvertor[]
         // At application initialization.
         JettyJSONContextClient jsonContext = new JettyJSONContextClient();
-        jsonContext.getJSON().addConvertor(EchoInfo.class, new EchoInfoConvertor());
+        jsonContext.putConvertor(EchoInfo.class.getName(), new EchoInfoConvertor());
 
         // Later in the application.
         bayeuxClient.getChannel("/echo").subscribe((channel, message) -> {

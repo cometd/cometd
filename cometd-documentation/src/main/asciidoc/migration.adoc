@@ -531,6 +531,22 @@ API method name changes and parameter list changes.
 | `ServerSession.Extension.send(**ServerSession,** ServerSession, ServerMessage)`
 |===
 
+===== JSON API Changes
+
+In CometD 5.0.x a new, more performant, non-blocking, JSON parser has been introduced with class `JSONContext.AsyncParser`.
+
+`JSONContext.AsyncParser` is the default parser on the client when using `JettyHttpClientTransport`, and the default parser on the server when using `AsyncJSONTransport`.
+
+If you are using the Jetty `JSONContext` implementation, and you have custom ``JSON.Convertor``s to convert your application classes to/from JSON, use the new APIs indicated in the following table.
+
+[cols="1a,1a", options="header"]
+|===
+| CometD 4.0.x | CometD 5.0.x
+| `JettyJSONContextServer.**getJSON().addConvertor(Custom.class**, new CustomConvertor())` | `JettyJSONContextServer.**putConvertor(Custom.class.getName()**, new CustomConvertor())`
+
+| `JettyJSONContextClient.**getJSON().addConvertor(Custom.class**, new CustomConvertor())` | `JettyJSONContextClient.**putConvertor(Custom.class.getName()**, new CustomConvertor())`
+|===
+
 ==== Deprecated API Removed
 
 A number of deprecated APIs (since 4.0.x) have been removed.
