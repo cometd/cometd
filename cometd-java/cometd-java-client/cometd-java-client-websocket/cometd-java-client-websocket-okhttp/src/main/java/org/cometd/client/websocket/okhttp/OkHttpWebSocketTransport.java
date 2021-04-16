@@ -236,6 +236,10 @@ public class OkHttpWebSocketTransport extends AbstractWebSocketTransport {
     public static class Factory extends ContainerLifeCycle implements ClientTransport.Factory {
         private final OkHttpClient okHttpClient;
 
+        public Factory() {
+            this(new OkHttpClient());
+        }
+
         public Factory(OkHttpClient okHttpClient) {
             this.okHttpClient = okHttpClient;
             addBean(okHttpClient);

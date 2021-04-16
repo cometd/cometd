@@ -198,6 +198,10 @@ public class JettyHttpClientTransport extends AbstractHttpClientTransport {
     public static class Factory extends ContainerLifeCycle implements ClientTransport.Factory {
         private final HttpClient httpClient;
 
+        public Factory() {
+            this(new HttpClient());
+        }
+
         public Factory(HttpClient httpClient) {
             this.httpClient = httpClient;
             addBean(httpClient);

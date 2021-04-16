@@ -232,6 +232,10 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
     public static class Factory extends ContainerLifeCycle implements ClientTransport.Factory {
         private final WebSocketClient wsClient;
 
+        public Factory() {
+            this(new WebSocketClient());
+        }
+
         public Factory(WebSocketClient wsClient) {
             this.wsClient = wsClient;
             addBean(wsClient);
