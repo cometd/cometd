@@ -61,8 +61,8 @@
     <!--<jetty-version>9.4.40.v20210413</jetty-version>-->
     <!-- end::jetty-version[] -->
     <slf4j-version>1.7.30</slf4j-version>
-    <spring-version>5.3.5</spring-version>
-    <jackson-version>2.12.2</jackson-version>
+    <spring-version>5.3.6</spring-version>
+    <jackson-version>2.12.3</jackson-version>
     <dojo-version>1.16.3</dojo-version>
     <rhino-version>1.7R5</rhino-version>
   </properties>
@@ -423,7 +423,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-release-plugin</artifactId>
-          <version>3.0.0-M1</version>
+          <version>3.0.0-M4</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -554,7 +554,7 @@
       <dependency>
         <groupId>com.google.javascript</groupId>
         <artifactId>closure-compiler</artifactId>
-        <version>v20210302</version>
+        <version>v20210406</version>
       </dependency>
 
       <dependency>
