@@ -58,12 +58,12 @@
     <!-- tag::jetty-version[] -->
     <jetty-version>11.0.2</jetty-version>
     <!-- end::jetty-version[] -->
-    <graalvm-version>21.0.0.2</graalvm-version>
+    <graalvm-version>21.1.0</graalvm-version>
     <slf4j-version>2.0.0-alpha1</slf4j-version>
     <log4j2-version>2.14.1</log4j2-version>
-    <spring-version>5.3.5</spring-version>
-    <spring-boot-version>2.4.4</spring-boot-version>
-    <jackson-version>2.12.2</jackson-version>
+    <spring-version>5.3.6</spring-version>
+    <spring-boot-version>2.4.5</spring-boot-version>
+    <jackson-version>2.12.3</jackson-version>
     <dojo-version>1.16.3</dojo-version>
     <okhttp-version>4.9.1</okhttp-version>
   </properties>
@@ -405,7 +405,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-release-plugin</artifactId>
-          <version>3.0.0-M1</version>
+          <version>3.0.0-M4</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -455,7 +455,7 @@
         <plugin>
           <groupId>com.mycila</groupId>
           <artifactId>license-maven-plugin</artifactId>
-          <version>4.0</version>
+          <version>4.1</version>
         </plugin>
         <plugin>
           <groupId>org.asciidoctor</groupId>
@@ -523,7 +523,7 @@
       <dependency>
         <groupId>com.google.javascript</groupId>
         <artifactId>closure-compiler</artifactId>
-        <version>v20210302</version>
+        <version>v20210406</version>
       </dependency>
 
       <dependency>

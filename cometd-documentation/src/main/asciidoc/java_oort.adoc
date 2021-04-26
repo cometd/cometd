@@ -50,7 +50,7 @@ For both static and automatic discovery there exists a set of parameters that yo
 The following is the list of common configuration parameters the automatic discovery and static configuration servlets share:
 
 .Oort Common Configuration Parameters
-[cols="3,1,2,10", options="header"]
+[cols="5a,1a,4a,8a", options="header"]
 |===
 | Parameter Name
 | Required
@@ -85,8 +85,13 @@ The following is the list of common configuration parameters the automatic disco
 
 | jsonContext
 | no
-| empty string
-| The full qualified name of a `JSONContext.Client` implementation used by the `OortComet` instances used to connect to other Oort nodes
+| The Jetty `JSONContext.Client` implementation
+| The fully qualified class name of a `JSONContext.Client` implementation used by the `OortComet` instances used to connect to other Oort nodes
+
+| clientTransportFactories
+| no
+| The JSR WebSocket and the Jetty HTTP `ClientTransport.Factory` implementations
+| A comma-separated list of fully qualified class names of `ClientTransport.Factory` implementations used to create `OortComet` transports
 |===
 
 ==== Automatic Discovery Configuration

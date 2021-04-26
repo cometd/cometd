@@ -220,6 +220,10 @@ public class OkHttpClientTransport extends AbstractHttpClientTransport {
     public static class Factory extends ContainerLifeCycle implements ClientTransport.Factory {
         private final OkHttpClient _client;
 
+        public Factory() {
+            this(new OkHttpClient());
+        }
+
         public Factory(OkHttpClient httpClient) {
             _client = httpClient;
             addBean(httpClient);

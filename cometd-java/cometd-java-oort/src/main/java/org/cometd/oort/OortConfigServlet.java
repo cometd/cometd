@@ -15,6 +15,8 @@
  */
 package org.cometd.oort;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletContext;
@@ -23,6 +25,7 @@ import jakarta.servlet.UnavailableException;
 import jakarta.servlet.http.HttpServlet;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.client.BayeuxClient;
+import org.cometd.client.transport.ClientTransport;
 import org.cometd.common.JSONContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,6 +55,7 @@ public abstract class OortConfigServlet extends HttpServlet {
     public static final String OORT_ENABLE_ACK_EXTENSION_PARAM = "enableAckExtension";
     public static final String OORT_ENABLE_BINARY_EXTENSION_PARAM = "enableBinaryExtension";
     public static final String OORT_JSON_CONTEXT_PARAM = "jsonContext";
+    public static final String OORT_CLIENT_TRANSPORT_FACTORIES_PARAM = "clientTransportFactories";
     private static final Logger LOGGER = LoggerFactory.getLogger(OortConfigServlet.class);
 
     @Override
@@ -133,6 +137,16 @@ public abstract class OortConfigServlet extends HttpServlet {
         if (jsonContext != null) {
             Class<?> klass = getClass().getClassLoader().loadClass(jsonContext);
             oort.setJSONContextClient((JSONContext.Client)klass.getConstructor().newInstance());
+        }
+
+        String clientTransportFactories = config.getInitParameter(OORT_CLIENT_TRANSPORT_FACTORIES_PARAM);
+        if (clientTransportFactories != null) {
+            List<ClientTransport.Factory> factories = new ArrayList<>();
+            for (String className : clientTransportFactories.split(",")) {
+                Class<?> klass = getClass().getClassLoader().loadClass(className.trim());
+                factories.add((ClientTransport.Factory)klass.getConstructor().newInstance());
+            }
+            oort.setClientTransportFactories(factories);
         }
     }
 
