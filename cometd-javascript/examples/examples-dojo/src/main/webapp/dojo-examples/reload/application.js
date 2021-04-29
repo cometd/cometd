@@ -2,7 +2,8 @@ require({
         baseUrl: '../../js',
         paths: {
             'cometd': 'cometd',
-            'dojox/cometd': 'dojox/cometd'
+            'dojo': 'dojo',
+            'dojox': 'dojox'
         }
     },
     ['dojox/cometd', 'dojo/dom', 'dojo/_base/unload', 'dojox/cometd/reload'],
