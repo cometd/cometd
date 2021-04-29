@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
-    <script type="text/javascript" src="https://code.jquery.com/jquery-3.5.1.js"></script>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.6.0.js"></script>
     <script type="text/javascript" src="${pageContext.request.contextPath}/js/cometd/cometd.js"></script>
     <script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery/jquery.cometd.js"></script>
     <script type="text/javascript" src="application.js"></script>
