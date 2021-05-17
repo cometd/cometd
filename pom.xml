@@ -56,11 +56,11 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <!-- tag::jetty-version[] -->
-    <jetty-version>9.4.40.v20210413</jetty-version>
+    <jetty-version>9.4.41.v20210516</jetty-version>
     <!-- end::jetty-version[] -->
     <slf4j-version>1.7.30</slf4j-version>
     <log4j2-version>2.14.1</log4j2-version>
-    <spring-version>5.3.6</spring-version>
+    <spring-version>5.3.7</spring-version>
     <spring-boot-version>2.4.5</spring-boot-version>
     <jackson-version>2.12.3</jackson-version>
     <dojo-version>1.16.3</dojo-version>
