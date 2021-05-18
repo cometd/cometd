@@ -1174,136 +1174,142 @@ public class SetiTest extends OortTest {
     @ParameterizedTest
     @MethodSource("transports")
     public void testShortHalfNetworkDisconnectionBetweenNodes(String serverTransport) throws Exception {
-        Map<String, String> options = new HashMap<>();
-        long timeout = 2000;
-        options.put(AbstractServerTransport.TIMEOUT_OPTION, String.valueOf(timeout));
-        Server server1 = startServer(serverTransport, 0, options);
-        BayeuxServerImpl bayeuxServer1 = (BayeuxServerImpl)server1.getAttribute(BayeuxServer.ATTRIBUTE);
-        bayeuxServer1.setDetailedDump(true);
-        Oort oort1 = startOort(server1);
-        Server server2 = startServer(serverTransport, 0, options);
-        String url2 = (String)server2.getAttribute(OortConfigServlet.OORT_URL_PARAM);
-        BayeuxServerImpl bayeuxServer2 = (BayeuxServerImpl)server2.getAttribute(BayeuxServer.ATTRIBUTE);
-        bayeuxServer2.setDetailedDump(true);
-        bayeuxServer2.setOption(Server.class.getName(), server2);
-        AtomicBoolean halfNetworkDown = new AtomicBoolean();
-        Oort oort2 = new Oort(bayeuxServer2, url2) {
-            @Override
-            protected OortComet newOortComet(String cometURL, ClientTransport transport, ClientTransport[] otherTransports) {
-                return new OortComet(this, cometURL, getScheduler(), transport, otherTransports) {
-                    {
-                        addTransportListener(new TransportListener() {
-                            @Override
-                            public void onMessages(List<Message.Mutable> messages) {
-                                if (halfNetworkDown.get()) {
-                                    logger.info("Network down for client receive {}", messages);
-                                    messagesFailure(new Exception(), messages);
-                                    messages.clear();
+        String loggerName = "org.cometd";
+        Configurator.setLevel(loggerName, Level.DEBUG);
+        try {
+            Map<String, String> options = new HashMap<>();
+            long timeout = 2000;
+            options.put(AbstractServerTransport.TIMEOUT_OPTION, String.valueOf(timeout));
+            Server server1 = startServer(serverTransport, 0, options);
+            BayeuxServerImpl bayeuxServer1 = (BayeuxServerImpl)server1.getAttribute(BayeuxServer.ATTRIBUTE);
+            bayeuxServer1.setDetailedDump(true);
+            Oort oort1 = startOort(server1);
+            Server server2 = startServer(serverTransport, 0, options);
+            String url2 = (String)server2.getAttribute(OortConfigServlet.OORT_URL_PARAM);
+            BayeuxServerImpl bayeuxServer2 = (BayeuxServerImpl)server2.getAttribute(BayeuxServer.ATTRIBUTE);
+            bayeuxServer2.setDetailedDump(true);
+            bayeuxServer2.setOption(Server.class.getName(), server2);
+            AtomicBoolean halfNetworkDown = new AtomicBoolean();
+            Oort oort2 = new Oort(bayeuxServer2, url2) {
+                @Override
+                protected OortComet newOortComet(String cometURL, ClientTransport transport, ClientTransport[] otherTransports) {
+                    return new OortComet(this, cometURL, getScheduler(), transport, otherTransports) {
+                        {
+                            addTransportListener(new TransportListener() {
+                                @Override
+                                public void onMessages(List<Message.Mutable> messages) {
+                                    if (halfNetworkDown.get()) {
+                                        logger.info("Network down for client receive {}", messages);
+                                        messagesFailure(new Exception(), messages);
+                                        messages.clear();
+                                    }
                                 }
-                            }
-                        });
+                            });
+                        }
+                    };
+                }
+            };
+            bayeuxServer2.addExtension(new HalfNetworkDownExtension(oort2, halfNetworkDown));
+            oort2.start();
+            oorts.add(oort2);
+
+            CountDownLatch latch = new CountDownLatch(1);
+            oort2.addCometListener(new CometJoinedListener(latch));
+            OortComet oortComet12 = oort1.observeComet(oort2.getURL());
+            Assertions.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
+            Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
+            OortComet oortComet21 = oort2.findComet(oort1.getURL());
+            Assertions.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+            Seti seti1 = startSeti(oort1);
+            Seti seti2 = startSeti(oort2);
+
+            new SetiService(seti1);
+            new SetiService(seti2);
+
+            BayeuxClient client1 = startClient(oort1, null);
+            Assertions.assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
+            BayeuxClient client2 = startClient(oort2, null);
+            Assertions.assertTrue(client2.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+            CountDownLatch presenceAddedLatch = new CountDownLatch(4);
+            seti1.addPresenceListener(new UserPresentListener(presenceAddedLatch));
+            seti2.addPresenceListener(new UserPresentListener(presenceAddedLatch));
+
+            // Login user1
+            CountDownLatch loginLatch1 = new CountDownLatch(1);
+            Map<String, Object> login1 = new HashMap<>();
+            String userId1 = "user1";
+            login1.put("user", userId1);
+            ClientSessionChannel loginChannel1 = client1.getChannel("/service/login");
+            loginChannel1.publish(login1, message -> loginLatch1.countDown());
+            Assertions.assertTrue(loginLatch1.await(5, TimeUnit.SECONDS));
+
+            // Login user2
+            CountDownLatch loginLatch2 = new CountDownLatch(1);
+            Map<String, Object> login2 = new HashMap<>();
+            String userId2 = "user2";
+            login2.put("user", userId2);
+            ClientSessionChannel loginChannel2 = client2.getChannel("/service/login");
+            loginChannel2.publish(login2, message -> loginLatch2.countDown());
+            Assertions.assertTrue(loginLatch2.await(5, TimeUnit.SECONDS));
+
+            // Make sure all Setis see all users.
+            Assertions.assertTrue(presenceAddedLatch.await(5, TimeUnit.SECONDS));
+
+            // Disconnect network between the nodes temporarily.
+            halfNetworkDown.set(true);
+
+            // Logout user1 and login user3, node2 won't see these changes.
+            CountDownLatch logoutLatch1 = new CountDownLatch(1);
+            Map<String, Object> logout1 = new HashMap<>();
+            logout1.put("user", userId1);
+            ClientSessionChannel logoutChannel1 = client1.getChannel("/service/logout");
+            logoutChannel1.publish(logout1, message -> logoutLatch1.countDown());
+            Assertions.assertTrue(logoutLatch1.await(5, TimeUnit.SECONDS));
+            CountDownLatch loginLatch3 = new CountDownLatch(1);
+            Map<String, Object> login3 = new HashMap<>();
+            String userId3 = "user3";
+            login3.put("user", userId3);
+            loginChannel1.publish(login3, message -> loginLatch3.countDown());
+            Assertions.assertTrue(loginLatch3.await(5, TimeUnit.SECONDS));
+
+            // Network is down, so nodes are out of sync.
+            Set<String> userIds1 = seti1.getUserIds();
+            Assertions.assertEquals(new HashSet<>(Arrays.asList("user2", "user3")), userIds1, seti1.dump());
+            Set<String> userIds2 = seti2.getUserIds();
+            Assertions.assertEquals(new HashSet<>(Arrays.asList("user1", "user2")), userIds2, seti2.dump());
+
+            CountDownLatch presenceLatch2 = new CountDownLatch(2);
+            seti2.addPresenceListener(new Seti.PresenceListener() {
+                @Override
+                public void presenceAdded(Event event) {
+                    if (!event.isLocal() && "user3".equals(event.getUserId())) {
+                        presenceLatch2.countDown();
                     }
-                };
-            }
-        };
-        bayeuxServer2.addExtension(new HalfNetworkDownExtension(oort2, halfNetworkDown));
-        oort2.start();
-        oorts.add(oort2);
-
-        CountDownLatch latch = new CountDownLatch(1);
-        oort2.addCometListener(new CometJoinedListener(latch));
-        OortComet oortComet12 = oort1.observeComet(oort2.getURL());
-        Assertions.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
-        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
-        OortComet oortComet21 = oort2.findComet(oort1.getURL());
-        Assertions.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
-
-        Seti seti1 = startSeti(oort1);
-        Seti seti2 = startSeti(oort2);
-
-        new SetiService(seti1);
-        new SetiService(seti2);
-
-        BayeuxClient client1 = startClient(oort1, null);
-        Assertions.assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
-        BayeuxClient client2 = startClient(oort2, null);
-        Assertions.assertTrue(client2.waitFor(5000, BayeuxClient.State.CONNECTED));
-
-        CountDownLatch presenceAddedLatch = new CountDownLatch(4);
-        seti1.addPresenceListener(new UserPresentListener(presenceAddedLatch));
-        seti2.addPresenceListener(new UserPresentListener(presenceAddedLatch));
-
-        // Login user1
-        CountDownLatch loginLatch1 = new CountDownLatch(1);
-        Map<String, Object> login1 = new HashMap<>();
-        String userId1 = "user1";
-        login1.put("user", userId1);
-        ClientSessionChannel loginChannel1 = client1.getChannel("/service/login");
-        loginChannel1.publish(login1, message -> loginLatch1.countDown());
-        Assertions.assertTrue(loginLatch1.await(5, TimeUnit.SECONDS));
-
-        // Login user2
-        CountDownLatch loginLatch2 = new CountDownLatch(1);
-        Map<String, Object> login2 = new HashMap<>();
-        String userId2 = "user2";
-        login2.put("user", userId2);
-        ClientSessionChannel loginChannel2 = client2.getChannel("/service/login");
-        loginChannel2.publish(login2, message -> loginLatch2.countDown());
-        Assertions.assertTrue(loginLatch2.await(5, TimeUnit.SECONDS));
-
-        // Make sure all Setis see all users.
-        Assertions.assertTrue(presenceAddedLatch.await(5, TimeUnit.SECONDS));
-
-        // Disconnect network between the nodes temporarily.
-        halfNetworkDown.set(true);
-
-        // Logout user1 and login user3, node2 won't see these changes.
-        CountDownLatch logoutLatch1 = new CountDownLatch(1);
-        Map<String, Object> logout1 = new HashMap<>();
-        logout1.put("user", userId1);
-        ClientSessionChannel logoutChannel1 = client1.getChannel("/service/logout");
-        logoutChannel1.publish(logout1, message -> logoutLatch1.countDown());
-        Assertions.assertTrue(logoutLatch1.await(5, TimeUnit.SECONDS));
-        CountDownLatch loginLatch3 = new CountDownLatch(1);
-        Map<String, Object> login3 = new HashMap<>();
-        String userId3 = "user3";
-        login3.put("user", userId3);
-        loginChannel1.publish(login3, message -> loginLatch3.countDown());
-        Assertions.assertTrue(loginLatch3.await(5, TimeUnit.SECONDS));
-
-        // Network is down, so nodes are out of sync.
-        Set<String> userIds1 = seti1.getUserIds();
-        Assertions.assertEquals(new HashSet<>(Arrays.asList("user2", "user3")), userIds1, seti1.dump());
-        Set<String> userIds2 = seti2.getUserIds();
-        Assertions.assertEquals(new HashSet<>(Arrays.asList("user1", "user2")), userIds2, seti2.dump());
-
-        CountDownLatch presenceLatch2 = new CountDownLatch(2);
-        seti2.addPresenceListener(new Seti.PresenceListener() {
-            @Override
-            public void presenceAdded(Event event) {
-                if (!event.isLocal() && "user3".equals(event.getUserId())) {
-                    presenceLatch2.countDown();
                 }
-            }
 
-            @Override
-            public void presenceRemoved(Event event) {
-                if (!event.isLocal() && "user1".equals(event.getUserId())) {
-                    presenceLatch2.countDown();
+                @Override
+                public void presenceRemoved(Event event) {
+                    if (!event.isLocal() && "user1".equals(event.getUserId())) {
+                        presenceLatch2.countDown();
+                    }
                 }
-            }
-        });
+            });
 
-        // Reconnect network.
-        halfNetworkDown.set(false);
+            // Reconnect network.
+            halfNetworkDown.set(false);
 
-        // Wait until the nodes sync again.
-        Assertions.assertTrue(presenceLatch2.await(3 * timeout, TimeUnit.MILLISECONDS));
+            // Wait until the nodes sync again.
+            Assertions.assertTrue(presenceLatch2.await(3 * timeout, TimeUnit.MILLISECONDS));
 
-        userIds1 = seti1.getUserIds();
-        Assertions.assertEquals(new HashSet<>(Arrays.asList("user2", "user3")), userIds1, seti1.dump());
-        userIds2 = seti2.getUserIds();
-        Assertions.assertEquals(new HashSet<>(Arrays.asList("user2", "user3")), userIds2, seti2.dump());
+            userIds1 = seti1.getUserIds();
+            Assertions.assertEquals(new HashSet<>(Arrays.asList("user2", "user3")), userIds1, seti1.dump());
+            userIds2 = seti2.getUserIds();
+            Assertions.assertEquals(new HashSet<>(Arrays.asList("user2", "user3")), userIds2, seti2.dump());
+        } finally {
+            Configurator.setLevel(loggerName, Level.INFO);
+        }
     }
 
     @ParameterizedTest
