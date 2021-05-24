@@ -322,7 +322,10 @@ public class BayeuxClientTest extends ClientServerWebSocketTest {
         disconnectBayeuxClient(client);
     }
 
-    @Disabled("The test filter is not called because the WSUpgradeFilter is added first")
+    // The test filter is not called because the WebSocketUpgradeFilter is added first.
+    // Also, the WS implementation adds headers directly to HttpFields, and flushes the
+    // response so they cannot be removed/intercepted before they are sent to the client.
+    @Disabled
     @ParameterizedTest
     @MethodSource("wsTypes")
     public void testWebSocketResponseHeadersRemoved(String wsType) throws Exception {
