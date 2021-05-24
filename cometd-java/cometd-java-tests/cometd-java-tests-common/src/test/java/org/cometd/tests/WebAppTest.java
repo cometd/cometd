@@ -140,6 +140,7 @@ public class WebAppTest {
         serverClassPath.add(org.apache.logging.log4j.core.Appender.class.getProtectionDomain().getCodeSource().getLocation());
         serverClassPath.add(javax.servlet.Servlet.class.getProtectionDomain().getCodeSource().getLocation());
         serverClassPath.add(javax.websocket.Session.class.getProtectionDomain().getCodeSource().getLocation());
+        serverClassPath.add(javax.annotation.Resources.class.getProtectionDomain().getCodeSource().getLocation());
         serverClassPath.add(org.eclipse.jetty.annotations.AnnotationConfiguration.class.getProtectionDomain().getCodeSource().getLocation());
         serverClassPath.add(org.eclipse.jetty.client.HttpClient.class.getProtectionDomain().getCodeSource().getLocation());
         serverClassPath.add(org.eclipse.jetty.http.HttpStatus.class.getProtectionDomain().getCodeSource().getLocation());
