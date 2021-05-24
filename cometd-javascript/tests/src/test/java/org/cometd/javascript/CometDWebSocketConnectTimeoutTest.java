@@ -27,6 +27,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.servlet.FilterHolder;
+import org.eclipse.jetty.servlet.FilterMapping;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -35,11 +36,15 @@ public class CometDWebSocketConnectTimeoutTest extends AbstractCometDWebSocketTe
 
     @Test
     public void testConnectTimeout() throws Exception {
-        context.stop();
+
         TimeoutFilter filter = new TimeoutFilter();
         FilterHolder filterHolder = new FilterHolder(filter);
-        context.addFilter(filterHolder, cometdServletPath + "/*", EnumSet.of(DispatcherType.REQUEST));
-        context.start();
+        context.getServletHandler().prependFilter(filterHolder);
+        FilterMapping mapping = new FilterMapping();
+        mapping.setFilterName(filterHolder.getName());
+        mapping.setPathSpec(cometdServletPath + "/*");
+        mapping.setDispatcherTypes(EnumSet.of(DispatcherType.REQUEST));
+        context.getServletHandler().prependFilterMapping(mapping);
 
         evaluateScript("var failureLatch = new Latch(1);");
         Latch failureLatch = javaScript.get("failureLatch");
