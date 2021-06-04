@@ -56,7 +56,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport {
             throw new IllegalArgumentException("Missing '" + COMETD_URL_MAPPING_OPTION + "' parameter");
         }
 
-        JettyWebSocketServerContainer container = JettyWebSocketServerContainer.ensureContainer(context);
+        JettyWebSocketServerContainer container = JettyWebSocketServerContainer.getContainer(context);
         if (container == null) {
             throw new IllegalArgumentException("Missing JettyWebSocketServerContainer");
         }
