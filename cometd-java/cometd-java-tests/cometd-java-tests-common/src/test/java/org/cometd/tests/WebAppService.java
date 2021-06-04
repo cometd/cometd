@@ -15,6 +15,8 @@
  */
 package org.cometd.tests;
 
+import java.util.Map;
+import java.util.Objects;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.websocket.ContainerProvider;
@@ -26,7 +28,10 @@ import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.websocket.javax.WebSocketTransport;
 import org.cometd.client.websocket.jetty.JettyWebSocketTransport;
+import org.cometd.common.JettyJSONContextClient;
+import org.cometd.server.JettyJSONContextServer;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 
 @Service
@@ -34,6 +39,7 @@ public class WebAppService {
     public static final String HTTP_CHANNEL = "/echo_http";
     public static final String JETTY_WS_CHANNEL = "/echo_jetty_ws";
     public static final String JAVAX_WS_CHANNEL = "/echo_javax_ws";
+    public static final String JAVAX_WS_CUSTOM_CHANNEL = "/echo_javax_ws_custom";
     private static final String SERVICE_CHANNEL = "/service/echo";
     private HttpClient httpClient;
     private WebSocketClient wsClient;
@@ -76,6 +82,11 @@ public class WebAppService {
         invokeService(new WebSocketTransport(null, null, wsContainer), caller, data);
     }
 
+    @RemoteCall(JAVAX_WS_CUSTOM_CHANNEL)
+    public void invokeViaJavaxWebSocketCustom(RemoteCall.Caller caller, Custom custom) {
+        invokeServiceCustom(new WebSocketTransport(null, null, wsContainer), caller, custom);
+    }
+
     private void invokeService(ClientTransport transport, RemoteCall.Caller caller, Object data) {
         String uri = (String)data;
         BayeuxClient client = new BayeuxClient(uri, transport);
@@ -96,8 +107,83 @@ public class WebAppService {
         });
     }
 
+    private void invokeServiceCustom(ClientTransport transport, RemoteCall.Caller caller, Object data) {
+        String uri = ((Custom)data).data;
+        BayeuxClient client = new BayeuxClient(uri, transport);
+        client.setOption("jsonContext", new JSONClientConfig());
+        client.handshake(hs -> {
+            if (hs.isSuccessful()) {
+                client.remoteCall(SERVICE_CHANNEL, data, response -> {
+                    if (response.isSuccessful()) {
+                        Object responseData = response.getData();
+                        if (responseData instanceof Custom) {
+                            caller.result(responseData);
+                        } else {
+                            caller.failure("Custom deserialization failed: " + response);
+                        }
+                    } else {
+                        caller.failure("Could not invoke echo service: " + response);
+                    }
+                    client.disconnect();
+                });
+            } else {
+                caller.failure("Could not handshake: " + hs);
+                client.disconnect();
+            }
+        });
+    }
+
     @RemoteCall(SERVICE_CHANNEL)
     public void echo(RemoteCall.Caller caller, Object data) {
         caller.result(data);
+    }
+
+    public static class JSONClientConfig extends JettyJSONContextClient {
+        public JSONClientConfig() {
+            putConvertor(WebAppService.Custom.class.getName(), new WebAppService.CustomConvertor());
+        }
+    }
+
+    public static class JSONServerConfig extends JettyJSONContextServer {
+        public JSONServerConfig() {
+            putConvertor(Custom.class.getName(), new CustomConvertor());
+        }
+    }
+
+    public static class Custom {
+        String data;
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (obj == null || getClass() != obj.getClass()) {
+                return false;
+            }
+            Custom that = (Custom)obj;
+            return Objects.equals(data, that.data);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(data);
+        }
+    }
+
+    public static final class CustomConvertor implements JSON.Convertor {
+        @Override
+        public void toJSON(Object obj, JSON.Output out) {
+            Custom custom = (Custom)obj;
+            out.addClass(custom.getClass());
+            out.add("data", custom.data);
+        }
+
+        @Override
+        public Object fromJSON(Map map) {
+            Custom custom = new Custom();
+            custom.data = (String)map.get("data");
+            return custom;
+        }
     }
 }
