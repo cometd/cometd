@@ -15,6 +15,7 @@
  */
 package org.cometd.tests;
 
+import java.io.Closeable;
 import java.nio.file.Path;
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.plus.webapp.EnvConfiguration;
@@ -24,6 +25,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.FragmentConfiguration;
 import org.eclipse.jetty.webapp.MetaInfConfiguration;
@@ -31,11 +33,13 @@ import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebInfConfiguration;
 import org.eclipse.jetty.webapp.WebXmlConfiguration;
 
-public class WebAppServer implements AutoCloseable {
+public class WebAppServer implements Closeable {
     private Server server;
 
     public String apply(Path contextDir) throws Exception {
-        server = new Server();
+        QueuedThreadPool serverThreads = new QueuedThreadPool();
+        serverThreads.setName("server");
+        server = new Server(serverThreads);
         ServerConnector connector = new ServerConnector(server, 1, 1);
         server.addConnector(connector);
         ContextHandlerCollection contexts = new ContextHandlerCollection();
