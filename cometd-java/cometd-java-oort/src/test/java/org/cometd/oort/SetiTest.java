@@ -1232,6 +1232,9 @@ public class SetiTest extends OortTest {
             BayeuxClient client2 = startClient(oort2, null);
             Assertions.assertTrue(client2.waitFor(5000, BayeuxClient.State.CONNECTED));
 
+            // Wait for the /meta/connects to be held.
+            Thread.sleep(1000);
+
             CountDownLatch presenceAddedLatch = new CountDownLatch(4);
             seti1.addPresenceListener(new UserPresentListener(presenceAddedLatch));
             seti2.addPresenceListener(new UserPresentListener(presenceAddedLatch));
@@ -1256,6 +1259,9 @@ public class SetiTest extends OortTest {
 
             // Make sure all Setis see all users.
             Assertions.assertTrue(presenceAddedLatch.await(5, TimeUnit.SECONDS));
+
+            // Wait for the /meta/connects to be held after logins.
+            Thread.sleep(1000);
 
             // Disconnect network between the nodes temporarily.
             halfNetworkDown.set(true);
@@ -1440,6 +1446,9 @@ public class SetiTest extends OortTest {
 
             // Make sure all Setis see all users.
             Assertions.assertTrue(presenceAddedLatch.await(5, TimeUnit.SECONDS));
+
+            // Wait for the /meta/connects to be held after logins.
+            Thread.sleep(1000);
 
             CountDownLatch leftLatch1 = new CountDownLatch(1);
             oort1.addCometListener(new CometLeftListener(leftLatch1));
