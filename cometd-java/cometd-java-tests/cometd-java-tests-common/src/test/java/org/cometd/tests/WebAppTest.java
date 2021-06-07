@@ -27,8 +27,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
-import java.util.List;
+import java.security.CodeSource;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CountDownLatch;
@@ -142,37 +143,38 @@ public class WebAppTest {
 
         // Setup the server classpath, so that it does not conflict with the test classpath,
         // which has all dependencies that may confuse with the server (e.g. ServiceLoader).
-        List<URL> serverClassPath = new ArrayList<>();
-        serverClassPath.add(javax.servlet.Servlet.class.getProtectionDomain().getCodeSource().getLocation());
-        serverClassPath.add(javax.websocket.Session.class.getProtectionDomain().getCodeSource().getLocation());
-        serverClassPath.add(javax.annotation.Resources.class.getProtectionDomain().getCodeSource().getLocation());
-        serverClassPath.add(org.slf4j.Logger.class.getProtectionDomain().getCodeSource().getLocation());
-        serverClassPath.add(org.apache.logging.slf4j.SLF4JServiceProvider.class.getProtectionDomain().getCodeSource().getLocation());
-        serverClassPath.add(org.apache.logging.log4j.Logger.class.getProtectionDomain().getCodeSource().getLocation());
-        serverClassPath.add(org.apache.logging.log4j.core.Appender.class.getProtectionDomain().getCodeSource().getLocation());
-        serverClassPath.add(org.eclipse.jetty.annotations.AnnotationConfiguration.class.getProtectionDomain().getCodeSource().getLocation());
-        serverClassPath.add(org.eclipse.jetty.client.HttpClient.class.getProtectionDomain().getCodeSource().getLocation());
-        serverClassPath.add(org.eclipse.jetty.http.HttpStatus.class.getProtectionDomain().getCodeSource().getLocation());
-        serverClassPath.add(org.eclipse.jetty.io.EndPoint.class.getProtectionDomain().getCodeSource().getLocation());
-        serverClassPath.add(org.eclipse.jetty.jndi.NamingContext.class.getProtectionDomain().getCodeSource().getLocation());
-        serverClassPath.add(org.eclipse.jetty.plus.webapp.PlusConfiguration.class.getProtectionDomain().getCodeSource().getLocation());
-        serverClassPath.add(org.eclipse.jetty.security.SecurityHandler.class.getProtectionDomain().getCodeSource().getLocation());
-        serverClassPath.add(org.eclipse.jetty.server.Server.class.getProtectionDomain().getCodeSource().getLocation());
-        serverClassPath.add(org.eclipse.jetty.servlet.ServletContextHandler.class.getProtectionDomain().getCodeSource().getLocation());
-        serverClassPath.add(org.eclipse.jetty.util.Callback.class.getProtectionDomain().getCodeSource().getLocation());
-        serverClassPath.add(org.eclipse.jetty.webapp.WebAppContext.class.getProtectionDomain().getCodeSource().getLocation());
-        serverClassPath.add(org.eclipse.jetty.websocket.api.Session.class.getProtectionDomain().getCodeSource().getLocation());
-        serverClassPath.add(org.eclipse.jetty.websocket.common.WebSocketSession.class.getProtectionDomain().getCodeSource().getLocation());
-        serverClassPath.add(org.eclipse.jetty.websocket.core.CoreSession.class.getProtectionDomain().getCodeSource().getLocation());
-        serverClassPath.add(org.eclipse.jetty.websocket.core.client.WebSocketCoreClient.class.getProtectionDomain().getCodeSource().getLocation());
-        serverClassPath.add(org.eclipse.jetty.websocket.core.server.WebSocketServerComponents.class.getProtectionDomain().getCodeSource().getLocation());
-        serverClassPath.add(org.eclipse.jetty.websocket.javax.client.JavaxWebSocketClientContainerProvider.class.getProtectionDomain().getCodeSource().getLocation());
-        serverClassPath.add(org.eclipse.jetty.websocket.javax.common.JavaxWebSocketContainer.class.getProtectionDomain().getCodeSource().getLocation());
-        serverClassPath.add(org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketConfiguration.class.getProtectionDomain().getCodeSource().getLocation());
-        serverClassPath.add(org.eclipse.jetty.websocket.server.config.JettyWebSocketConfiguration.class.getProtectionDomain().getCodeSource().getLocation());
-        serverClassPath.add(org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter.class.getProtectionDomain().getCodeSource().getLocation());
-        serverClassPath.add(org.eclipse.jetty.xml.XmlConfiguration.class.getProtectionDomain().getCodeSource().getLocation());
-        serverClassPath.add(org.objectweb.asm.ClassVisitor.class.getProtectionDomain().getCodeSource().getLocation());
+        Collection<URL> serverClassPath = new HashSet<>();
+        addServerDependency(javax.servlet.Servlet.class, serverClassPath);
+        addServerDependency(javax.websocket.Session.class, serverClassPath);
+        addServerDependency(javax.annotation.Resources.class, serverClassPath);
+        addServerDependency(javax.annotation.security.RunAs.class, serverClassPath);
+        addServerDependency(org.slf4j.Logger.class, serverClassPath);
+        addServerDependency(org.apache.logging.slf4j.SLF4JServiceProvider.class, serverClassPath);
+        addServerDependency(org.apache.logging.log4j.Logger.class, serverClassPath);
+        addServerDependency(org.apache.logging.log4j.core.Appender.class, serverClassPath);
+        addServerDependency(org.eclipse.jetty.annotations.AnnotationConfiguration.class, serverClassPath);
+        addServerDependency(org.eclipse.jetty.client.HttpClient.class, serverClassPath);
+        addServerDependency(org.eclipse.jetty.http.HttpStatus.class, serverClassPath);
+        addServerDependency(org.eclipse.jetty.io.EndPoint.class, serverClassPath);
+        addServerDependency(org.eclipse.jetty.jndi.NamingContext.class, serverClassPath);
+        addServerDependency(org.eclipse.jetty.plus.webapp.PlusConfiguration.class, serverClassPath);
+        addServerDependency(org.eclipse.jetty.security.SecurityHandler.class, serverClassPath);
+        addServerDependency(org.eclipse.jetty.server.Server.class, serverClassPath);
+        addServerDependency(org.eclipse.jetty.servlet.ServletContextHandler.class, serverClassPath);
+        addServerDependency(org.eclipse.jetty.util.Callback.class, serverClassPath);
+        addServerDependency(org.eclipse.jetty.webapp.WebAppContext.class, serverClassPath);
+        addServerDependency(org.eclipse.jetty.websocket.api.Session.class, serverClassPath);
+        addServerDependency(org.eclipse.jetty.websocket.common.WebSocketSession.class, serverClassPath);
+        addServerDependency(org.eclipse.jetty.websocket.core.CoreSession.class, serverClassPath);
+        addServerDependency(org.eclipse.jetty.websocket.core.client.WebSocketCoreClient.class, serverClassPath);
+        addServerDependency(org.eclipse.jetty.websocket.core.server.WebSocketServerComponents.class, serverClassPath);
+        addServerDependency(org.eclipse.jetty.websocket.javax.client.JavaxWebSocketClientContainerProvider.class, serverClassPath);
+        addServerDependency(org.eclipse.jetty.websocket.javax.common.JavaxWebSocketContainer.class, serverClassPath);
+        addServerDependency(org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketConfiguration.class, serverClassPath);
+        addServerDependency(org.eclipse.jetty.websocket.server.config.JettyWebSocketConfiguration.class, serverClassPath);
+        addServerDependency(org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter.class, serverClassPath);
+        addServerDependency(org.eclipse.jetty.xml.XmlConfiguration.class, serverClassPath);
+        addServerDependency(org.objectweb.asm.ClassVisitor.class, serverClassPath);
 
         // The server main class.
         Path serverDir = Files.createDirectory(testDir.resolve("server"));
@@ -182,7 +184,7 @@ public class WebAppTest {
         Files.copy(testClasses.resolve(serverMainClass), serverMainPath);
         serverClassPath.add(serverDir.toUri().toURL());
         URLClassLoader serverClassLoader = new URLClassLoader(serverClassPath.toArray(URL[]::new), getClass().getClassLoader().getParent());
-        try (ThreadClassLoaderScope scope = new ThreadClassLoaderScope(serverClassLoader)) {
+        try (ThreadClassLoaderScope ignored = new ThreadClassLoaderScope(serverClassLoader)) {
             server = (Closeable)serverClassLoader.loadClass(WebAppServer.class.getName()).getConstructor().newInstance();
             cometdURI = (String)server.getClass().getDeclaredMethod("apply", Path.class).invoke(server, contextDir);
         }
@@ -317,16 +319,19 @@ public class WebAppTest {
     }
 
     private void copyWebAppDependency(Class<?> klass, Path target) throws Exception {
-        URL location = klass.getProtectionDomain().getCodeSource().getLocation();
-        Path source = Paths.get(location.toURI());
-        if (Files.isDirectory(source)) {
-            Files.walk(source).forEach(path -> {
-                Path relative = source.relativize(path);
-                Path destination = target.resolve("classes").resolve(relative);
-                copyPath(path, destination);
-            });
-        } else {
-            copyPath(source, target.resolve("lib").resolve(source.getFileName()));
+        CodeSource codeSource = klass.getProtectionDomain().getCodeSource();
+        if (codeSource != null) {
+            URL location = codeSource.getLocation();
+            Path source = Paths.get(location.toURI());
+            if (Files.isDirectory(source)) {
+                Files.walk(source).forEach(path -> {
+                    Path relative = source.relativize(path);
+                    Path destination = target.resolve("classes").resolve(relative);
+                    copyPath(path, destination);
+                });
+            } else {
+                copyPath(source, target.resolve("lib").resolve(source.getFileName()));
+            }
         }
     }
 
@@ -336,6 +341,13 @@ public class WebAppTest {
         } catch (FileAlreadyExistsException ignored) {
         } catch (IOException x) {
             throw new UncheckedIOException(x);
+        }
+    }
+
+    private void addServerDependency(Class<?> klass, Collection<URL> serverClassPath) {
+        CodeSource codeSource = klass.getProtectionDomain().getCodeSource();
+        if (codeSource != null) {
+            serverClassPath.add(codeSource.getLocation());
         }
     }
 }
