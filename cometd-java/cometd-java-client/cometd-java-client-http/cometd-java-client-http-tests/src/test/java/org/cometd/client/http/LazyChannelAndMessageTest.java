@@ -20,6 +20,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.MarkedReference;
 import org.cometd.bayeux.Message;
@@ -316,54 +318,60 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
 
     @Test
     public void testQueueFullOfLazyMessagesIsNotDelivered() throws Exception {
-        long globalLazyTimeout = 1000;
-        start(new HashMap<>() {{
-            put(AbstractServerTransport.MAX_LAZY_TIMEOUT_OPTION, String.valueOf(globalLazyTimeout));
-        }});
+        String loggerName = "org.cometd";
+        Configurator.setLevel(loggerName, Level.DEBUG);
+        try {
+            long globalLazyTimeout = 1000;
+            start(new HashMap<>() {{
+                put(AbstractServerTransport.MAX_LAZY_TIMEOUT_OPTION, String.valueOf(globalLazyTimeout));
+            }});
 
-        String channelName = "/testQueueLazy";
-        MarkedReference<ServerChannel> serverChannel = bayeux.createChannelIfAbsent(channelName, channel -> {
-            channel.setLazy(true);
-            channel.setPersistent(true);
-        });
+            String channelName = "/testQueueLazy";
+            MarkedReference<ServerChannel> serverChannel = bayeux.createChannelIfAbsent(channelName, channel -> {
+                channel.setLazy(true);
+                channel.setPersistent(true);
+            });
 
-        BayeuxClient client = newBayeuxClient();
-        AtomicLong begin = new AtomicLong();
-        CountDownLatch latch = new CountDownLatch(1);
-        client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> client.getChannel(channelName).subscribe((c, m) -> {
-            if (m.getDataAsMap() == null) {
-                return;
-            }
-            long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin.get());
-            // Must be delivered lazily
-            long accuracy = globalLazyTimeout / 10;
-            Assertions.assertTrue(elapsed > globalLazyTimeout - accuracy);
-            latch.countDown();
-        }));
-        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
-            private final AtomicInteger connects = new AtomicInteger();
-
-            @Override
-            public void onMessage(ClientSessionChannel channel, Message message) {
-                int connects = this.connects.incrementAndGet();
-                if (connects == 1) {
-                    // Add a lazy message on the queue while the /meta/connect is on the client
-                    begin.set(System.nanoTime());
-                    serverChannel.getReference().publish(null, new HashMap<>(), Promise.noop());
+            BayeuxClient client = newBayeuxClient();
+            AtomicLong begin = new AtomicLong();
+            CountDownLatch latch = new CountDownLatch(1);
+            client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> client.getChannel(channelName).subscribe((c, m) -> {
+                if (m.getDataAsMap() == null) {
+                    return;
                 }
-            }
-        });
-        CountDownLatch subscribeLatch = new CountDownLatch(1);
-        client.getChannel(Channel.META_SUBSCRIBE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> subscribeLatch.countDown());
+                long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin.get());
+                // Must be delivered lazily
+                long accuracy = globalLazyTimeout / 10;
+                Assertions.assertTrue(elapsed > globalLazyTimeout - accuracy);
+                latch.countDown();
+            }));
+            client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
+                private final AtomicInteger connects = new AtomicInteger();
 
-        client.handshake();
-        client.waitFor(5000, BayeuxClient.State.CONNECTED);
+                @Override
+                public void onMessage(ClientSessionChannel channel, Message message) {
+                    int connects = this.connects.incrementAndGet();
+                    if (connects == 1) {
+                        // Add a lazy message on the queue while the /meta/connect is on the client
+                        begin.set(System.nanoTime());
+                        serverChannel.getReference().publish(null, new HashMap<>(), Promise.noop());
+                    }
+                }
+            });
+            CountDownLatch subscribeLatch = new CountDownLatch(1);
+            client.getChannel(Channel.META_SUBSCRIBE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> subscribeLatch.countDown());
 
-        Assertions.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
+            client.handshake();
+            client.waitFor(5000, BayeuxClient.State.CONNECTED);
 
-        Assertions.assertTrue(latch.await(globalLazyTimeout * 2, TimeUnit.MILLISECONDS));
+            Assertions.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
 
-        disconnectBayeuxClient(client);
+            Assertions.assertTrue(latch.await(globalLazyTimeout * 2, TimeUnit.MILLISECONDS));
+
+            disconnectBayeuxClient(client);
+        } finally {
+            Configurator.setLevel(loggerName, Level.INFO);
+        }
     }
 
     @Test
