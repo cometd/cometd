@@ -20,8 +20,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.core.config.Configurator;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.MarkedReference;
 import org.cometd.bayeux.Message;
@@ -34,6 +32,8 @@ import org.cometd.client.BayeuxClient;
 import org.cometd.server.AbstractServerTransport;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class LazyChannelAndMessageTest extends ClientServerTest {
     @Test
@@ -63,12 +63,12 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
             }
             long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin.get());
             long accuracy = globalLazyTimeout / 10;
-            Assertions.assertTrue(elapsed >= globalLazyTimeout - accuracy, "Expected " + elapsed + " >= " + globalLazyTimeout);
+            assertTrue(elapsed >= globalLazyTimeout - accuracy, "Expected " + elapsed + " >= " + globalLazyTimeout);
             latch.countDown();
         });
         // Make sure we are subscribed so that there are no
         // pending responses that may return the lazy message
-        Assertions.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
 
         // Wait for the /meta/connect to establish
         TimeUnit.MILLISECONDS.sleep(1000);
@@ -78,7 +78,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         // publish response to send, so the lazy message will be sent with it.
         channel.getReference().publish(null, new HashMap<>(), Promise.noop());
 
-        Assertions.assertTrue(latch.await(2 * globalLazyTimeout, TimeUnit.MILLISECONDS));
+        assertTrue(latch.await(2 * globalLazyTimeout, TimeUnit.MILLISECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -110,14 +110,14 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
                 return;
             }
             long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin.get());
-            Assertions.assertTrue(elapsed < globalLazyTimeout / 2);
+            assertTrue(elapsed < globalLazyTimeout / 2);
             long accuracy = channelLazyTimeout / 10;
-            Assertions.assertTrue(elapsed >= channelLazyTimeout - accuracy, "Expected " + elapsed + " >= " + channelLazyTimeout);
+            assertTrue(elapsed >= channelLazyTimeout - accuracy, "Expected " + elapsed + " >= " + channelLazyTimeout);
             latch.countDown();
         });
         // Make sure we are subscribed so that there are no
         // pending responses that may return the lazy message
-        Assertions.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
 
         // Wait for the /meta/connect to establish
         TimeUnit.MILLISECONDS.sleep(1000);
@@ -127,7 +127,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         // publish response to send, so the lazy message will be sent with it.
         channel.getReference().publish(null, new HashMap<>(), Promise.noop());
 
-        Assertions.assertTrue(latch.await(2 * globalLazyTimeout, TimeUnit.MILLISECONDS));
+        assertTrue(latch.await(2 * globalLazyTimeout, TimeUnit.MILLISECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -165,16 +165,16 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
                 return;
             }
             long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin.get());
-            Assertions.assertTrue(elapsed < globalLazyTimeout / 2);
+            assertTrue(elapsed < globalLazyTimeout / 2);
             long accuracy = channelLazyTimeout / 10;
-            Assertions.assertTrue(elapsed >= channelLazyTimeout - accuracy, "Expected " + elapsed + " >= " + channelLazyTimeout);
+            assertTrue(elapsed >= channelLazyTimeout - accuracy, "Expected " + elapsed + " >= " + channelLazyTimeout);
             latch.countDown();
         };
         client.getChannel(shortLazyChannelName).subscribe(messageListener);
         client.getChannel(longLazyChannelName).subscribe(messageListener);
         // Make sure we are subscribed so that there are no
         // pending responses that may return the lazy message
-        Assertions.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
 
         // Wait for the /meta/connect to establish
         TimeUnit.MILLISECONDS.sleep(1000);
@@ -187,7 +187,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         longLazyChannel.getReference().publish(null, new HashMap<>(), Promise.noop());
         shortLazyChannel.getReference().publish(null, new HashMap<>(), Promise.noop());
 
-        Assertions.assertTrue(latch.await(2 * globalLazyTimeout, TimeUnit.MILLISECONDS));
+        assertTrue(latch.await(2 * globalLazyTimeout, TimeUnit.MILLISECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -231,12 +231,12 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
             }
             long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin.get());
             // Must be delivered immediately
-            Assertions.assertTrue(elapsed < globalLazyTimeout / 2);
+            assertTrue(elapsed < globalLazyTimeout / 2);
             latch.countDown();
         });
         // Make sure we are subscribed so that there are no
         // pending responses that may return the lazy message
-        Assertions.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
 
         // Wait for the /meta/connect to establish
         TimeUnit.MILLISECONDS.sleep(1000);
@@ -248,7 +248,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         begin.set(System.nanoTime());
         channel.getReference().publish(null, new HashMap<>(), Promise.noop());
 
-        Assertions.assertTrue(latch.await(globalLazyTimeout * 2, TimeUnit.MILLISECONDS));
+        assertTrue(latch.await(globalLazyTimeout * 2, TimeUnit.MILLISECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -294,12 +294,12 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
             long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin.get());
             // Must be delivered lazily
             long accuracy = globalLazyTimeout / 10;
-            Assertions.assertTrue(elapsed > globalLazyTimeout - accuracy);
+            assertTrue(elapsed > globalLazyTimeout - accuracy);
             latch.countDown();
         });
         // Make sure we are subscribed so that there are no
         // pending responses that may return the lazy message
-        Assertions.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
 
         // Wait for the /meta/connect to establish
         TimeUnit.MILLISECONDS.sleep(1000);
@@ -311,67 +311,60 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         begin.set(System.nanoTime());
         channel.getReference().publish(null, new HashMap<>(), Promise.noop());
 
-        Assertions.assertTrue(latch.await(globalLazyTimeout * 2, TimeUnit.MILLISECONDS));
+        assertTrue(latch.await(globalLazyTimeout * 2, TimeUnit.MILLISECONDS));
 
         disconnectBayeuxClient(client);
     }
 
     @Test
     public void testQueueFullOfLazyMessagesIsNotDelivered() throws Exception {
-        String loggerName = "org.cometd";
-        Configurator.setLevel(loggerName, Level.DEBUG);
-        try {
-            long globalLazyTimeout = 1000;
-            start(new HashMap<String, String>() {{
-                put(AbstractServerTransport.MAX_LAZY_TIMEOUT_OPTION, String.valueOf(globalLazyTimeout));
-            }});
+        long globalLazyTimeout = 1000;
+        start(new HashMap<String, String>() {{
+            put(AbstractServerTransport.MAX_LAZY_TIMEOUT_OPTION, String.valueOf(globalLazyTimeout));
+        }});
 
-            String channelName = "/testQueueLazy";
-            MarkedReference<ServerChannel> serverChannel = bayeux.createChannelIfAbsent(channelName, channel -> {
-                channel.setLazy(true);
-                channel.setPersistent(true);
-            });
+        String channelName = "/testQueueLazy";
+        MarkedReference<ServerChannel> serverChannel = bayeux.createChannelIfAbsent(channelName, channel -> {
+            channel.setLazy(true);
+            channel.setPersistent(true);
+        });
 
-            BayeuxClient client = newBayeuxClient();
-            AtomicLong begin = new AtomicLong();
-            CountDownLatch latch = new CountDownLatch(1);
-            client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> client.getChannel(channelName).subscribe((c, m) -> {
-                if (m.getDataAsMap() == null) {
-                    return;
+        BayeuxClient client = newBayeuxClient();
+        AtomicLong begin = new AtomicLong();
+        CountDownLatch subscribeLatch = new CountDownLatch(1);
+        CountDownLatch messageLatch = new CountDownLatch(1);
+        client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> client.getChannel(channelName).subscribe((c, m) -> {
+            if (m.getDataAsMap() == null) {
+                return;
+            }
+            long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin.get());
+            // Must be delivered lazily.
+            long accuracy = globalLazyTimeout / 10;
+            assertTrue(elapsed > globalLazyTimeout - accuracy);
+            messageLatch.countDown();
+        }, subscribeReply -> subscribeLatch.countDown()));
+        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
+            private final AtomicInteger connects = new AtomicInteger();
+
+            @Override
+            public void onMessage(ClientSessionChannel channel, Message message) {
+                int connects = this.connects.incrementAndGet();
+                if (connects == 1) {
+                    // Make sure the server has processed the subscription.
+                    assertTrue(awaitLatch(subscribeLatch, 2000));
+                    // Then add a lazy message on the queue while the /meta/connect is on the client.
+                    begin.set(System.nanoTime());
+                    serverChannel.getReference().publish(null, new HashMap<>(), Promise.noop());
                 }
-                long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin.get());
-                // Must be delivered lazily
-                long accuracy = globalLazyTimeout / 10;
-                Assertions.assertTrue(elapsed > globalLazyTimeout - accuracy);
-                latch.countDown();
-            }));
-            client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener() {
-                private final AtomicInteger connects = new AtomicInteger();
+            }
+        });
 
-                @Override
-                public void onMessage(ClientSessionChannel channel, Message message) {
-                    int connects = this.connects.incrementAndGet();
-                    if (connects == 1) {
-                        // Add a lazy message on the queue while the /meta/connect is on the client
-                        begin.set(System.nanoTime());
-                        serverChannel.getReference().publish(null, new HashMap<>(), Promise.noop());
-                    }
-                }
-            });
-            CountDownLatch subscribeLatch = new CountDownLatch(1);
-            client.getChannel(Channel.META_SUBSCRIBE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> subscribeLatch.countDown());
+        client.handshake();
+        client.waitFor(5000, BayeuxClient.State.CONNECTED);
 
-            client.handshake();
-            client.waitFor(5000, BayeuxClient.State.CONNECTED);
+        assertTrue(messageLatch.await(globalLazyTimeout * 2, TimeUnit.MILLISECONDS));
 
-            Assertions.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
-
-            Assertions.assertTrue(latch.await(globalLazyTimeout * 2, TimeUnit.MILLISECONDS));
-
-            disconnectBayeuxClient(client);
-        } finally {
-            Configurator.setLevel(loggerName, Level.INFO);
-        }
+        disconnectBayeuxClient(client);
     }
 
     @Test
@@ -402,7 +395,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         });
         childChannel.getReference().publish(null, "data", Promise.noop());
 
-        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -426,7 +419,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
             channel.addListener(new ServerChannel.MessageListener() {
                 @Override
                 public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
-                    Assertions.assertTrue(message.isLazy());
+                    assertTrue(message.isLazy());
                     latch.countDown();
                     return true;
                 }
@@ -434,6 +427,14 @@ public class LazyChannelAndMessageTest extends ClientServerTest {
         });
         childChannel.getReference().publish(null, "data", Promise.noop());
 
-        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    private boolean awaitLatch(CountDownLatch latch, long millis) {
+        try {
+            return latch.await(millis, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException x) {
+            throw new RuntimeException(x);
+        }
     }
 }
