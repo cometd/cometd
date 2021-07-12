@@ -62,7 +62,7 @@
     <!-- end::jetty-version[] -->
     <slf4j-version>1.7.31</slf4j-version>
     <spring-version>5.3.8</spring-version>
-    <jackson-version>2.12.3</jackson-version>
+    <jackson-version>2.12.4</jackson-version>
     <dojo-version>1.16.3</dojo-version>
     <rhino-version>1.7R5</rhino-version>
   </properties>
