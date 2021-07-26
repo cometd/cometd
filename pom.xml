@@ -60,7 +60,7 @@
     <!--<jetty-version>9.3.29.v20201019</jetty-version>-->
     <!--<jetty-version>9.4.43.v20210629</jetty-version>-->
     <!-- end::jetty-version[] -->
-    <slf4j-version>1.7.31</slf4j-version>
+    <slf4j-version>1.7.32</slf4j-version>
     <spring-version>5.3.9</spring-version>
     <jackson-version>2.12.4</jackson-version>
     <dojo-version>1.16.3</dojo-version>
@@ -471,7 +471,7 @@
         <plugin>
           <groupId>org.asciidoctor</groupId>
           <artifactId>asciidoctor-maven-plugin</artifactId>
-          <version>2.1.0</version>
+          <version>2.2.1</version>
         </plugin>
         <plugin>
           <groupId>org.apache.felix</groupId>
