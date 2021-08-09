@@ -3179,35 +3179,53 @@
          * @param data the binary data to publish
          * @param last whether the binary data chunk is the last
          * @param meta an object containing meta data associated to the binary chunk
-         * @param callback a function to be invoked when the publish is acknowledged by the server
+         * @param publishProps an object to be merged with the publish message
+         * @param publishCallback a function to be invoked when the publish is acknowledged by the server
          */
-        this.publishBinary = function(channel, data, last, meta, callback) {
+        this.publishBinary = function(channel, data, last, meta, publishProps, publishCallback) {
             if (_isFunction(data)) {
-                callback = data;
+                publishCallback = data;
                 data = new ArrayBuffer(0);
                 last = true;
                 meta = undefined;
+                publishProps = undefined;
             } else if (_isFunction(last)) {
-                callback = last;
+                publishCallback = last;
                 last = true;
                 meta = undefined;
+                publishProps = undefined;
             } else if (_isFunction(meta)) {
-                callback = meta;
+                publishCallback = meta;
                 meta = undefined;
+                publishProps = undefined;
+            } else if (_isFunction(publishProps)) {
+                publishCallback = publishProps;
+                publishProps = undefined;
             }
             var content = {
                 meta: meta,
                 data: data,
                 last: last
             };
-            var ext = {
+            var ext = this._mixin(false, publishProps, {
                 ext: {
                     binary: {}
                 }
-            };
-            this.publish(channel, content, ext, callback);
+            });
+            this.publish(channel, content, ext, publishCallback);
         };
 
+        /**
+         * Performs a remote call, a request with a response, to the given target with the given data.
+         * The response returned by the server is notified the given callback function.
+         * The invocation may specify a timeout, after which the call is aborted on the client-side,
+         * causing a failed response to be passed to the given callback function.
+         * @param target the remote call target
+         * @param content the remote call content
+         * @param timeout the remote call timeout
+         * @param callProps an object to be merged with the remote call message
+         * @param callback the function to be invoked with the response
+         */
         this.remoteCall = function(target, content, timeout, callProps, callback) {
             if (arguments.length < 1) {
                 throw 'Illegal arguments number: required 1, got ' + arguments.length;
@@ -3275,25 +3293,42 @@
             _queueSend(message);
         };
 
-        this.remoteCallBinary = function(target, data, last, meta, timeout, callback) {
+        /**
+         * Performs a remote call with binary data.
+         * @param target the remote call target
+         * @param data the remote call binary data
+         * @param last whether the binary data chunk is the last
+         * @param meta an object containing meta data associated to the binary chunk
+         * @param timeout the remote call timeout
+         * @param callProps an object to be merged with the remote call message
+         * @param callback the function to be invoked with the response
+         */
+        this.remoteCallBinary = function(target, data, last, meta, timeout, callProps, callback) {
             if (_isFunction(data)) {
                 callback = data;
                 data = new ArrayBuffer(0);
                 last = true;
                 meta = undefined;
                 timeout = _config.maxNetworkDelay;
+                callProps = undefined;
             } else if (_isFunction(last)) {
                 callback = last;
                 last = true;
                 meta = undefined;
                 timeout = _config.maxNetworkDelay;
+                callProps = undefined;
             } else if (_isFunction(meta)) {
                 callback = meta;
                 meta = undefined;
                 timeout = _config.maxNetworkDelay;
+                callProps = undefined;
             } else if (_isFunction(timeout)) {
                 callback = timeout;
                 timeout = _config.maxNetworkDelay;
+                callProps = undefined;
+            } else if (_isFunction(callProps)) {
+                callback = callProps;
+                callProps = undefined;
             }
 
             var content = {
@@ -3301,11 +3336,11 @@
                 data: data,
                 last: last
             };
-            var ext = {
+            var ext = this._mixin(false, callProps, {
                 ext: {
                     binary: {}
                 }
-            };
+            });
 
             this.remoteCall(target, content, timeout, ext, callback);
         };
