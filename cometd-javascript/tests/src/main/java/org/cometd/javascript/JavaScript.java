@@ -25,7 +25,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
@@ -42,7 +41,10 @@ public class JavaScript implements Runnable {
     private volatile boolean running;
 
     public JavaScript() {
-        context = Context.newBuilder("js").allowAllAccess(true).build();
+        context = Context.newBuilder("js")
+                .option("engine.WarnInterpreterOnly", "false")
+                .allowAllAccess(true)
+                .build();
         bindings = context.getBindings("js");
         bindings.putMember("javaScript", this);
     }
