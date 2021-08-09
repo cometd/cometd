@@ -41,7 +41,10 @@ public class JavaScript implements Runnable {
     private volatile boolean running;
 
     public JavaScript() {
-        context = Context.newBuilder("js").allowAllAccess(true).build();
+        context = Context.newBuilder("js")
+                .option("engine.WarnInterpreterOnly", "false")
+                .allowAllAccess(true)
+                .build();
         bindings = context.getBindings("js");
         bindings.putMember("javaScript", this);
     }
