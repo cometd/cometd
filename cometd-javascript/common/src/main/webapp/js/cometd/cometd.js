@@ -3218,11 +3218,11 @@
         /**
          * Performs a remote call, a request with a response, to the given target with the given data.
          * The response returned by the server is notified the given callback function.
-         * The invocation may specify a timeout, after which the call is aborted on the client-side,
-         * causing a failed response to be passed to the given callback function.
+         * The invocation may specify a timeout in milliseconds, after which the call is aborted on
+         * the client-side, causing a failed response to be passed to the given callback function.
          * @param target the remote call target
          * @param content the remote call content
-         * @param timeout the remote call timeout
+         * @param timeout the remote call timeout, or 0 for no timeout
          * @param callProps an object to be merged with the remote call message
          * @param callback the function to be invoked with the response
          */
@@ -3299,7 +3299,7 @@
          * @param data the remote call binary data
          * @param last whether the binary data chunk is the last
          * @param meta an object containing meta data associated to the binary chunk
-         * @param timeout the remote call timeout
+         * @param timeout the remote call timeout, or 0 for no timeout
          * @param callProps an object to be merged with the remote call message
          * @param callback the function to be invoked with the response
          */
@@ -3602,7 +3602,17 @@
         0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x20,
         0x21, 0x22, 0x23, 0x4F, 0x00, 0x50, 0x00, 0x00
     ];
+    /**
+     * Z85 encoding/decoding as specified by https://rfc.zeromq.org/spec/32/.
+     * Z85 encodes binary data to a string that may be sent as JSON payload,
+     * and decodes strings to binary data.
+     */
     var Z85 = {
+        /**
+         * Encodes the given bytes to a string.
+         * @param bytes the bytes to encode, either a number[], or an ArrayBuffer, or a TypedArray.
+         * @return {string} the bytes encoded as a string
+         */
         encode: function(bytes) {
             var buffer = null;
             if (bytes instanceof ArrayBuffer) {
@@ -3640,6 +3650,11 @@
 
             return result;
         },
+        /**
+         * Decodes the given string into an ArrayBuffer.
+         * @param string the string to decode
+         * @return {ArrayBuffer} the decoded bytes
+         */
         decode: function(string) {
             var remainder = string.length % 5;
             var padding = 5 - (remainder === 0 ? 5 : remainder);
