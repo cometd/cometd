@@ -3116,35 +3116,53 @@
          * @param data the binary data to publish
          * @param last whether the binary data chunk is the last
          * @param meta an object containing meta data associated to the binary chunk
-         * @param callback a function to be invoked when the publish is acknowledged by the server
+         * @param publishProps an object to be merged with the publish message
+         * @param publishCallback a function to be invoked when the publish is acknowledged by the server
          */
-        this.publishBinary = function(channel, data, last, meta, callback) {
+        this.publishBinary = function(channel, data, last, meta, publishProps, publishCallback) {
             if (_isFunction(data)) {
-                callback = data;
+                publishCallback = data;
                 data = new ArrayBuffer(0);
                 last = true;
                 meta = undefined;
+                publishProps = undefined;
             } else if (_isFunction(last)) {
-                callback = last;
+                publishCallback = last;
                 last = true;
                 meta = undefined;
+                publishProps = undefined;
             } else if (_isFunction(meta)) {
-                callback = meta;
+                publishCallback = meta;
                 meta = undefined;
+                publishProps = undefined;
+            } else if (_isFunction(publishProps)) {
+                publishCallback = publishProps;
+                publishProps = undefined;
             }
             const content = {
                 meta: meta,
                 data: data,
                 last: last
             };
-            const ext = {
+            const ext = this._mixin(false, publishProps, {
                 ext: {
                     binary: {}
                 }
-            };
-            this.publish(channel, content, ext, callback);
+            });
+            this.publish(channel, content, ext, publishCallback);
         };
 
+        /**
+         * Performs a remote call, a request with a response, to the given target with the given data.
+         * The response returned by the server is notified the given callback function.
+         * The invocation may specify a timeout in milliseconds, after which the call is aborted on
+         * the client-side, causing a failed response to be passed to the given callback function.
+         * @param target the remote call target
+         * @param content the remote call content
+         * @param timeout the remote call timeout, or 0 for no timeout
+         * @param callProps an object to be merged with the remote call message
+         * @param callback the function to be invoked with the response
+         */
         this.remoteCall = function(target, content, timeout, callProps, callback) {
             if (arguments.length < 1) {
                 throw 'Illegal arguments number: required 1, got ' + arguments.length;
@@ -3212,25 +3230,42 @@
             _queueSend(message);
         };
 
-        this.remoteCallBinary = function(target, data, last, meta, timeout, callback) {
+        /**
+         * Performs a remote call with binary data.
+         * @param target the remote call target
+         * @param data the remote call binary data
+         * @param last whether the binary data chunk is the last
+         * @param meta an object containing meta data associated to the binary chunk
+         * @param timeout the remote call timeout, or 0 for no timeout
+         * @param callProps an object to be merged with the remote call message
+         * @param callback the function to be invoked with the response
+         */
+        this.remoteCallBinary = function(target, data, last, meta, timeout, callProps, callback) {
             if (_isFunction(data)) {
                 callback = data;
                 data = new ArrayBuffer(0);
                 last = true;
                 meta = undefined;
                 timeout = _config.maxNetworkDelay;
+                callProps = undefined;
             } else if (_isFunction(last)) {
                 callback = last;
                 last = true;
                 meta = undefined;
                 timeout = _config.maxNetworkDelay;
+                callProps = undefined;
             } else if (_isFunction(meta)) {
                 callback = meta;
                 meta = undefined;
                 timeout = _config.maxNetworkDelay;
+                callProps = undefined;
             } else if (_isFunction(timeout)) {
                 callback = timeout;
                 timeout = _config.maxNetworkDelay;
+                callProps = undefined;
+            } else if (_isFunction(callProps)) {
+                callback = callProps;
+                callProps = undefined;
             }
 
             const content = {
@@ -3238,11 +3273,11 @@
                 data: data,
                 last: last
             };
-            const ext = {
+            const ext = this._mixin(false, callProps, {
                 ext: {
                     binary: {}
                 }
-            };
+            });
 
             this.remoteCall(target, content, timeout, ext, callback);
         };
@@ -3488,7 +3523,17 @@
         0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x20,
         0x21, 0x22, 0x23, 0x4F, 0x00, 0x50, 0x00, 0x00
     ];
+    /**
+     * Z85 encoding/decoding as specified by https://rfc.zeromq.org/spec/32/.
+     * Z85 encodes binary data to a string that may be sent as JSON payload,
+     * and decodes strings to binary data.
+     */
     const Z85 = {
+        /**
+         * Encodes the given bytes to a string.
+         * @param bytes the bytes to encode, either a number[], or an ArrayBuffer, or a TypedArray.
+         * @return {string} the bytes encoded as a string
+         */
         encode: bytes => {
             let buffer = null;
             if (bytes instanceof ArrayBuffer) {
@@ -3526,6 +3571,11 @@
 
             return result;
         },
+        /**
+         * Decodes the given string into an ArrayBuffer.
+         * @param string the string to decode
+         * @return {ArrayBuffer} the decoded bytes
+         */
         decode: string => {
             const remainder = string.length % 5;
             const padding = 5 - (remainder === 0 ? 5 : remainder);

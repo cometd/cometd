@@ -44,6 +44,7 @@ git clone --branch 6.0.x git@github.com:cometd/cometd-javascript.git ${COMETD_JS
 COMETD_JS_SOURCE=${COMETD_DIR}/cometd-javascript/common/target/cometd-javascript-common-${VERSION}/js
 cp -v ${COMETD_JS_SOURCE}/cometd/cometd.js ${COMETD_JS_DIR}
 cp -v ${COMETD_JS_SOURCE}/cometd/*Extension.js ${COMETD_JS_DIR}
+cp -v ${COMETD_JS_SOURCE}/cometd/cometd.d.ts ${COMETD_JS_DIR}
 
 cd ${COMETD_JS_DIR}
 
@@ -59,6 +60,7 @@ cat <<EOF > ${COMETD_JS_DIR}/package.json
   },
   "license": "Apache-2.0",
   "main": "cometd.js",
+  "types": "cometd.d.ts",
   "repository": {
     "type": "git",
     "url": "https://github.com/cometd/cometd.git"
