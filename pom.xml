@@ -59,7 +59,7 @@
     <jetty-version>11.0.6</jetty-version>
     <!-- end::jetty-version[] -->
     <graalvm-version>21.2.0</graalvm-version>
-    <slf4j-version>2.0.0-alpha2</slf4j-version>
+    <slf4j-version>2.0.0-alpha4</slf4j-version>
     <log4j2-version>2.14.1</log4j2-version>
     <spring-version>5.3.9</spring-version>
     <spring-boot-version>2.5.3</spring-boot-version>
@@ -415,7 +415,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-scm-plugin</artifactId>
-          <version>1.11.2</version>
+          <version>1.11.3</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -523,7 +523,7 @@
       <dependency>
         <groupId>com.google.javascript</groupId>
         <artifactId>closure-compiler</artifactId>
-        <version>v20210601</version>
+        <version>v20210808</version>
       </dependency>
 
       <dependency>
