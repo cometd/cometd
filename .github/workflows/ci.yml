@@ -8,7 +8,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        java: [8, 11, 16]
+        java: [8, 11, 17]
       fail-fast: false
 
     runs-on: ${{ matrix.os }}
@@ -16,21 +16,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-
-      - name: Set up cache for ~./m2/repository
-        uses: actions/cache@v2.1.6
-        with:
-          path: ~/.m2/repository
-          key: maven-${{ matrix.os }}-java${{ matrix.java }}-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            maven-${{ matrix.os }}-java${{ matrix.java }}-
-            maven-${{ matrix.os }}-
-      - name: Set up JDK
+      - name: Setup Java
         uses: actions/setup-java@v2
         with:
-          distribution: 'adopt'
+          distribution: 'temurin'
           java-version: ${{ matrix.java }}
-
+          check-latest: true
+          cache: 'maven'
       - name: Build with Maven
         run: mvn clean install -e -B -V
 
