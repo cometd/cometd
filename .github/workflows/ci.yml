@@ -8,7 +8,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        java: [8, 11, 16, 17-ea]
+        java: [8, 11, 17]
       fail-fast: false
 
     runs-on: ${{ matrix.os }}
