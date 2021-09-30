@@ -1,7 +1,7 @@
 node {
   def builds = [:]
   builds['Build JDK 11 - Jetty 9.2.x'] = getBuild('9.2.30.v20200428', true)
-  builds['Build JDK 11 - Jetty 9.3.x'] = getBuild('9.3.30.v20210929', false)
+  builds['Build JDK 11 - Jetty 9.3.x'] = getBuild('9.3.30.v20210930', false)
   builds['Build JDK 11 - Jetty 9.4.x'] = getBuild('9.4.44.v20210927', false)
   parallel builds
 }
