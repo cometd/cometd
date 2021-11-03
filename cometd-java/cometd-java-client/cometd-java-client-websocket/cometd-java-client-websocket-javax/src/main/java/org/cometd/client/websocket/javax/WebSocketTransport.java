@@ -21,6 +21,7 @@ import java.net.HttpCookie;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 import java.nio.channels.UnresolvedAddressException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -99,7 +100,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
             Delegate delegate = connect(_webSocketContainer, config, uri);
             _webSocketConnected = true;
             return delegate;
-        } catch (ConnectException | SocketTimeoutException | UnresolvedAddressException x) {
+        } catch (ConnectException | SocketTimeoutException | UnresolvedAddressException | UnknownHostException x) {
             // Cannot connect, assume the server supports WebSocket until proved otherwise
             listener.onFailure(x, messages);
         } catch (Throwable x) {
