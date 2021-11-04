@@ -20,6 +20,7 @@ import java.net.ConnectException;
 import java.net.HttpCookie;
 import java.net.ProtocolException;
 import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.net.URI;
 import java.nio.channels.UnresolvedAddressException;
 import java.util.LinkedHashMap;
@@ -96,6 +97,7 @@ public class OkHttpWebSocketTransport extends AbstractWebSocketTransport {
                 | SocketTimeoutException
                 | TimeoutException
                 | UnresolvedAddressException
+                | UnknownHostException
                 | ProtocolException e) { // RealWebSocket#checkResponse throws ProtocolException for certain responses
             listener.onFailure(e, messages);
         } catch (InterruptedException e) {
