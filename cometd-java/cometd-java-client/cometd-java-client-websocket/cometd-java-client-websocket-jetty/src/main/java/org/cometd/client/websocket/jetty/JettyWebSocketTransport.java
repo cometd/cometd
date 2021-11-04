@@ -20,6 +20,7 @@ import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 import java.nio.channels.UnresolvedAddressException;
 import java.time.Duration;
 import java.util.HashMap;
@@ -98,7 +99,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
             Delegate delegate = connect(_webSocketClient, request, uri);
             _webSocketConnected = true;
             return delegate;
-        } catch (ConnectException | SocketTimeoutException | UnresolvedAddressException x) {
+        } catch (ConnectException | SocketTimeoutException | UnresolvedAddressException | UnknownHostException x) {
             // Cannot connect, assume the server supports WebSocket until proved otherwise
             listener.onFailure(x, messages);
         } catch (UpgradeException x) {
