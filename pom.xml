@@ -61,7 +61,7 @@
     <!--<jetty-version>9.4.44.v20210927</jetty-version>-->
     <!-- end::jetty-version[] -->
     <slf4j-version>1.7.32</slf4j-version>
-    <spring-version>5.3.11</spring-version>
+    <spring-version>5.3.12</spring-version>
     <jackson-version>2.12.5</jackson-version>
     <dojo-version>1.16.3</dojo-version>
     <rhino-version>1.7R5</rhino-version>
