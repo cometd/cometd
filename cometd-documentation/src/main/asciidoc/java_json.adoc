@@ -4,16 +4,14 @@
 
 CometD allows you to customize the JSON library that it uses to convert incoming JSON into Bayeux messages and generate JSON from Bayeux messages.
 
-Two implementations are available, one based on Jetty's `org.eclipse.jetty.util.ajax.JSON` class, and the other based on the https://github.com/FasterXML/jackson[Jackson] library.
+Two implementations are available, one based on Jetty's `jetty-util-ajax` library, mainly classes `org.eclipse.jetty.util.ajax.JSON` and `org.eclipse.jetty.util.ajax.AsyncJSON`, and the other based on the https://github.com/FasterXML/jackson[Jackson] library.
 The default implementation uses the Jetty library.
 Distinctions between them include:
 
 * The Jetty library allows you to plug in custom serializers and deserializers, to fine control the conversion from object to JSON and vice versa, via a custom API.
 +
-Refer to the `org.eclipse.jetty.util.ajax.JSON` https://eclipse.org/jetty/javadoc/current/org/eclipse/jetty/util/ajax/JSON.html[javadocs] for further information.
+Refer to the `org.eclipse.jetty.util.ajax.JSON` https://eclipse.org/jetty/javadoc/current/org/eclipse/jetty/util/ajax/JSON.html[javadocs] and `org.eclipse.jetty.util.ajax.AsyncJSON` https://eclipse.org/jetty/javadoc/current/org/eclipse/jetty/util/ajax/AsyncJSON.html[javadocs] for further information.
 * The Jackson library offers a rich API based on annotations to customize JSON generation, but less so to customize JSON parsing and obtain objects of custom classes.
-+
-Jackson does not support out-of-the-box collections created with the collection factory methods introduced in Java 9, such as `Map.of()`, `List.of()`, etc.
 +
 Jackson may add additional metadata fields and make the JSON messages larger.
 +
@@ -133,7 +131,7 @@ include::{doc_code}/JSONDocs.java[tags=portability]
 Sometimes it is very useful to be able to obtain objects of application classes instead of just `Map<String, Object>` when calling `message.getData()`.
 
 You can easily achieve this with the Jetty JSON library.
-It is enough that the client formats the JSON object by adding an additional `class` field whose value is the fully qualified class name that you want to convert the JSON to:
+It is enough that the client formats the JSON object by adding a `class` field whose value is the fully qualified class name that you want to convert the JSON to:
 
 [source,javascript]
 ----
@@ -149,6 +147,14 @@ On the server, in the `web.xml` file, you register the `org.cometd.server.JettyJ
 [source,java,indent=0]
 ----
 include::{doc_code}/JSONDocs.java[tags=configureConvertor]
+----
+
+Note also that for historical reasons, Jetty's `JSON` and `AsyncJSON` classes deserialize JSON arrays differently, respectively as `Object[]` and as `List`.
+However, it is possible to configure both classes with a custom function that performs array conversion, so that JSON arrays can be represented in the same way by both classes:
+
+[source,java,indent=0]
+----
+include::{doc_code}/JSONDocs.java[tags=configureArrayConverter]
 ----
 
 Finally, these are the `EchoInfoConvertor` and `EchoInfo` classes:

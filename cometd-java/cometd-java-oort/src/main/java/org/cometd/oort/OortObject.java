@@ -786,8 +786,8 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
                 try {
                     latch.await();
                     return result;
-                } catch (InterruptedException e) {
-                    throw new IllegalStateException();
+                } catch (InterruptedException x) {
+                    throw new IllegalStateException("Interrupted while waiting for deferred result", x);
                 }
             }
         }

@@ -333,7 +333,7 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
             Object existing = _exchanges.put(message.getId(), exchange);
             // Paranoid check
             if (existing != null) {
-                throw new IllegalStateException();
+                throw new IllegalStateException("Could not register exchange " + exchange + ", existing exchange is " + existing + " for message " + message);
             }
         }
 
