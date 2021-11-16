@@ -99,8 +99,24 @@ public class JSONDocs {
     public void configureConvertor(BayeuxServer bayeuxServer) {
         // tag::configureConvertor[]
         JettyJSONContextServer jsonContext = (JettyJSONContextServer)bayeuxServer.getOption(AbstractServerTransport.JSON_CONTEXT_OPTION);
+
+        // Map the EchoInfo class to its JSON.Convertor implementation.
         jsonContext.putConvertor(EchoInfo.class.getName(), new EchoInfoConvertor());
         // end::configureConvertor[]
+    }
+
+    public void configureArrayConverter(BayeuxServer bayeuxServer) {
+        // tag::configureArrayConverter[]
+        JettyJSONContextServer jsonContext = (JettyJSONContextServer)bayeuxServer.getOption(AbstractServerTransport.JSON_CONTEXT_OPTION);
+
+        // The default array converter for the JSON class is: list -> list.toArray().
+        // Here, instead, retain the list as the representation of JSON arrays.
+        jsonContext.getJSON().setArrayConverter(list -> list);
+
+        // The default converter for the AsyncJSON class is already: list -> list.
+        // However, for clarity and consistency, configure it in the same way as above.
+        jsonContext.getAsyncJSONFactory().setArrayConverter(list -> list);
+        // end::configureArrayConverter[]
     }
 
     // tag::convertor[]
