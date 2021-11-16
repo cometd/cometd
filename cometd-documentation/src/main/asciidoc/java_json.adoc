@@ -13,8 +13,6 @@ Distinctions between them include:
 Refer to the `org.eclipse.jetty.util.ajax.JSON` https://eclipse.org/jetty/javadoc/current/org/eclipse/jetty/util/ajax/JSON.html[javadocs] and `org.eclipse.jetty.util.ajax.AsyncJSON` https://eclipse.org/jetty/javadoc/current/org/eclipse/jetty/util/ajax/AsyncJSON.html[javadocs] for further information.
 * The Jackson library offers a rich API based on annotations to customize JSON generation, but less so to customize JSON parsing and obtain objects of custom classes.
 +
-Jackson does not support out-of-the-box collections created with the collection factory methods introduced in Java 9, such as `Map.of()`, `List.of()`, etc.
-+
 Jackson may add additional metadata fields and make the JSON messages larger.
 +
 Refer to the https://github.com/FasterXML/jackson[Jackson] documentation for further details.
