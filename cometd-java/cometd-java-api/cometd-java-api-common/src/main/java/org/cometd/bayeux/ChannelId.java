@@ -300,7 +300,7 @@ public class ChannelId {
                 return true;
             }
             default: {
-                throw new IllegalStateException();
+                throw new IllegalStateException("Invalid wild value " + _wild + " for " + this);
             }
         }
     }

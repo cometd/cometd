@@ -85,7 +85,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
     @Override
     public void handshake(Map<String, Object> template, ClientSession.MessageListener callback) {
         if (_session != null) {
-            throw new IllegalStateException();
+            throw new IllegalStateException("Method handshake() invoke multiple times for local session " + this);
         }
 
         ServerSessionImpl session = new ServerSessionImpl(_bayeux, this, _idHint);

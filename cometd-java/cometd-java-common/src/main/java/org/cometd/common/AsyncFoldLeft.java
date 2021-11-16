@@ -198,7 +198,7 @@ public class AsyncFoldLeft {
                             promise.fail(failure.get());
                             return;
                         default:
-                            throw new IllegalStateException();
+                            throw new IllegalStateException("Could not run loop in state " + current);
                     }
                 }
             }
@@ -224,7 +224,7 @@ public class AsyncFoldLeft {
                         }
                         break;
                     default:
-                        throw new IllegalStateException();
+                        throw new IllegalStateException("Could not proceed loop in state " + current);
                 }
             }
         }
@@ -247,7 +247,7 @@ public class AsyncFoldLeft {
                         }
                         break;
                     default:
-                        throw new IllegalStateException();
+                        throw new IllegalStateException("Could not leave loop in state " + current);
                 }
             }
         }
@@ -270,7 +270,7 @@ public class AsyncFoldLeft {
                         }
                         break;
                     default:
-                        throw new IllegalStateException();
+                        throw new IllegalStateException("Could not fail loop in state " + current);
                 }
             }
         }

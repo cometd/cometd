@@ -320,7 +320,8 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
             }
 
             while (true) {
-                switch (state) {
+                State current = state;
+                switch (current) {
                     case BEGIN: {
                         state = State.HANDSHAKE;
                         if (!writeBegin(output)) {
@@ -362,7 +363,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
                         return;
                     }
                     default: {
-                        throw new IllegalStateException();
+                        throw new IllegalStateException("Could not write in state " + current);
                     }
                 }
             }
