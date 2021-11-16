@@ -24,7 +24,6 @@ import java.util.Base64;
 import java.util.EventListener;
 import java.util.EventObject;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -587,7 +586,7 @@ public class Oort extends ContainerLifeCycle {
     }
 
     public Set<String> getObservedChannels() {
-        return new HashSet<>(_channels.keySet());
+        return Set.copyOf(_channels.keySet());
     }
 
     List<String> knownOortIds() {

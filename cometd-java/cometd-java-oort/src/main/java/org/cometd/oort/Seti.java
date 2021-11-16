@@ -18,7 +18,6 @@ package org.cometd.oort;
 import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.EventListener;
 import java.util.EventObject;
 import java.util.HashMap;
@@ -417,7 +416,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
         if (_logger.isDebugEnabled()) {
             _logger.debug("Broadcasting association removal for users {}", userIds);
         }
-        SetiPresence presence = new SetiPresence(Collections.emptySet());
+        SetiPresence presence = new SetiPresence(Set.of());
         presence.put(SetiPresence.ALIVE_FIELD, false);
         _session.getChannel(SETI_ALL_CHANNEL).publish(presence);
     }
@@ -464,7 +463,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
     @ManagedAttribute(value = "The set of userIds known to this Seti", readonly = true)
     public Set<String> getUserIds() {
         try (AutoLock l = lock.lock()) {
-            return new HashSet<>(_uid2Location.keySet());
+            return Set.copyOf(_uid2Location.keySet());
         }
     }
 
@@ -740,7 +739,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
             return (Set<String>)value;
         }
         if (value instanceof Collection) {
-            return new HashSet<>((Collection<? extends String>)value);
+            return Set.copyOf((Collection<? extends String>)value);
         }
         if (value.getClass().isArray()) {
             Set<String> result = new HashSet<>();

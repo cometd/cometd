@@ -315,10 +315,11 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
 
     @Override
     public void handshake(Map<String, Object> fields, MessageListener callback) {
-        if (getState() == State.DISCONNECTED) {
+        State state = getState();
+        if (state == State.DISCONNECTED) {
             sessionState.submit(() -> sessionState.handshaking(fields, callback));
         } else {
-            throw new IllegalStateException();
+            throw new IllegalStateException("Invalid state " + state);
         }
     }
 
@@ -1131,7 +1132,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
                 case TERMINATING:
                     return newState == DISCONNECTED;
                 default:
-                    throw new IllegalStateException();
+                    throw new IllegalStateException("Could not update state from " + this + " to " + newState);
             }
         }
     }
@@ -1713,7 +1714,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
                         break;
                     }
                     default: {
-                        throw new IllegalStateException();
+                        throw new IllegalStateException("Could not handle transport failure in state " + newState);
                     }
                 }
             });

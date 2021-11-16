@@ -59,7 +59,7 @@ public class BatchArrayQueue<T> implements Queue<T> {
                 int capacity = elements.length;
                 int newCapacity = 2 * capacity;
                 if (newCapacity < 0) {
-                    throw new IllegalStateException();
+                    throw new IllegalStateException("Could not double up capacity " + capacity);
                 }
 
                 @SuppressWarnings("unchecked")
