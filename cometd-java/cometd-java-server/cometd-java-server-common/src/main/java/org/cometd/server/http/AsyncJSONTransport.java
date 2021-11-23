@@ -165,7 +165,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
 
     protected void writeComplete(Context context, List<ServerMessage> messages) {
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Messages/replies {}/{} written for session {}", messages.size(), context.replies.size(), context.session);
+            LOGGER.debug("Messages/replies {}/{} written for {}", messages.size(), context.replies.size(), context.session);
         }
     }
 
@@ -316,7 +316,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
             ServletOutputStream output = context.response.getOutputStream();
 
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Messages/replies {}/{} to write for session {}", messages.size(), context.replies.size(), context.session);
+                LOGGER.debug("Messages/replies {}/{} to write for {}", messages.size(), context.replies.size(), context.session);
             }
 
             while (true) {

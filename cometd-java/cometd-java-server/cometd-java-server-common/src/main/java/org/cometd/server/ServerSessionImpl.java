@@ -156,13 +156,13 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         synchronized (getLock()) {
             if (_expireTime == 0) {
                 if (_maxProcessing > 0 && now > _messageTime + _maxProcessing) {
-                    _logger.info("Sweeping session during processing {}", this);
+                    _logger.info("Sweeping during processing {}", this);
                     remove = true;
                 }
             } else {
                 if (now > _expireTime) {
                     if (_logger.isDebugEnabled()) {
-                        _logger.debug("Sweeping session {}", this);
+                        _logger.debug("Sweeping {}", this);
                     }
                     remove = true;
                 }
@@ -516,6 +516,9 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
             Scheduler oldScheduler;
             synchronized (getLock()) {
                 oldScheduler = _scheduler;
+                if (_logger.isDebugEnabled()) {
+                    _logger.debug("{} disabling scheduler {}", this, oldScheduler);
+                }
             }
             oldScheduler.cancel();
         } else {
@@ -526,6 +529,9 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
                 // Only set the scheduler if it has a greater or equal cycle.
                 if (newScheduler.getMetaConnectCycle() >= oldScheduler.getMetaConnectCycle()) {
                     _scheduler = newScheduler;
+                    if (_logger.isDebugEnabled()) {
+                        _logger.debug("{} replacing scheduler old={} new={}", this, oldScheduler, newScheduler);
+                    }
                     if (shouldSchedule()) {
                         schedule = true;
                     } else {
@@ -537,6 +543,9 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
                     }
                 } else {
                     oldScheduler = newScheduler;
+                    if (_logger.isDebugEnabled()) {
+                        _logger.debug("{} ignoring stale scheduler {}", this, newScheduler);
+                    }
                 }
             }
             oldScheduler.cancel();
@@ -963,7 +972,9 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
             expire = _expireTime == 0 ? 0 : _expireTime - now;
             state = _state;
         }
-        return String.format("%s,%s,cycle=%d,last=%d,expire=%d",
+        return String.format("%s@%x[%s,%s,cycle=%d,last=%d,expire=%d]",
+                getClass().getSimpleName(),
+                hashCode(),
                 _id,
                 state,
                 cycle,

@@ -513,7 +513,7 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
 
     protected void addServerSession(ServerSessionImpl session, ServerMessage message) {
         if (_logger.isDebugEnabled()) {
-            _logger.debug("Adding session {}", session);
+            _logger.debug("Adding {}", session);
         }
         _sessions.put(session.getId(), session);
         for (BayeuxServerListener listener : _listeners) {

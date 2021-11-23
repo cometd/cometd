@@ -32,7 +32,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 public class MetaConnectFailureTest extends AbstractClientServerTest {
     @ParameterizedTest
     @MethodSource("transports")
-    public void testMetaConnectSuspendedTheConnectionClosed(Transport transport) throws Exception {
+    public void testMetaConnectSuspendedThenConnectionClosed(Transport transport) throws Exception {
         Map<String, String> options = serverOptions(transport);
         long timeout = 3000;
         options.put(AbstractServerTransport.TIMEOUT_OPTION, String.valueOf(timeout));

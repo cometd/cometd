@@ -145,7 +145,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
             ServerMessage.Mutable message = messages.get(0);
             ServerSessionImpl session = findSession(sessions, message);
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Processing {} messages for session {}", messages.size(), session);
+                LOGGER.debug("Processing {} messages for {}", messages.size(), session);
             }
             boolean batch = session != null && !Channel.META_CONNECT.equals(message.getChannel());
             if (batch) {
@@ -276,7 +276,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
             // Cancel the previous scheduler to cancel any prior waiting /meta/connect.
             session.setScheduler(null);
         }
-
+        // Remember the connected status before handling the message.
         boolean wasConnected = session != null && session.isConnected();
         handleMessage(context, message, Promise.from(reply -> {
             boolean proceed = true;
@@ -288,7 +288,6 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
                     boolean allowSuspendConnect = incBrowserId(session, isHTTP2(request));
                     if (allowSuspendConnect) {
                         long timeout = session.calculateTimeout(getTimeout());
-
                         // Support old clients that do not send advice:{timeout:0} on the first connect
                         if (timeout > 0 && wasConnected && session.isConnected()) {
                             // Between the last time we checked for messages in the queue

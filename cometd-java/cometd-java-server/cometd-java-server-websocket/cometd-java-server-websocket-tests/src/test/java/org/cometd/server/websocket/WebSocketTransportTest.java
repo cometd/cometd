@@ -50,7 +50,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class WebSocketTransportFailureTest {
+public class WebSocketTransportTest {
     private Server server;
     private ServerConnector connector;
     private HttpClient httpClient;
@@ -139,7 +139,7 @@ public class WebSocketTransportFailureTest {
         String connect = "[{" +
                 "\"id\":\"2\"," +
                 "\"channel\":\"/meta/connect\"," +
-                "\"connectionType\":\"long-polling\"," +
+                "\"connectionType\":\"websocket\"," +
                 "\"clientId\":\"" + clientId + "\"," +
                 "\"advice\": {\"timeout\":0}" +
                 "}]";
@@ -201,7 +201,7 @@ public class WebSocketTransportFailureTest {
         String connect = "[{" +
                 "\"id\":\"2\"," +
                 "\"channel\":\"/meta/connect\"," +
-                "\"connectionType\":\"long-polling\"," +
+                "\"connectionType\":\"websocket\"," +
                 "\"clientId\":\"" + clientId + "\"," +
                 "\"advice\": {\"timeout\":0}" +
                 "}]";

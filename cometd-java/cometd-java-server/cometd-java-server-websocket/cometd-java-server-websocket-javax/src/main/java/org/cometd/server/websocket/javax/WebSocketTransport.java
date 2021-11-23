@@ -190,6 +190,9 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
                 throw new InstantiationException("Could not negotiate WebSocket SubProtocols");
             }
             T instance = (T)newWebSocketEndPoint(holder.bayeuxContext);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Created {}", instance);
+            }
             holder.clear();
             return instance;
         }
@@ -232,7 +235,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
     }
 
     private class EndPoint extends WebSocketEndPoint {
-        public EndPoint(BayeuxContext bayeuxContext) {
+        private EndPoint(BayeuxContext bayeuxContext) {
             super(WebSocketTransport.this, bayeuxContext);
         }
 
