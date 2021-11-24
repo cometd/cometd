@@ -155,12 +155,16 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
             context.messages = messages;
             context.session = session;
             context.bayeuxContext = new HttpContext(context.request);
-            AsyncFoldLeft.run(messages, null, (result, item, loop) -> processMessage(context, (ServerMessageImpl)item, Promise.from(loop::proceed, loop::fail)), Promise.from(y -> {
-                flush(context, promise);
+            AsyncFoldLeft.run(messages, null, (result, item, loop) -> processMessage(context, (ServerMessageImpl)item, Promise.from(loop::proceed, loop::fail)), Promise.complete((r, x) -> {
+                if (x == null) {
+                    flush(context, promise);
+                } else {
+                    promise.fail(x);
+                }
                 if (batch) {
                     session.endBatch();
                 }
-            }, promise::fail));
+            }));
         }
     }
 

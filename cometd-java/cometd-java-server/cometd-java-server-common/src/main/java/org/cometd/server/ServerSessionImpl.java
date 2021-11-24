@@ -783,12 +783,13 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         _transport = transport;
     }
 
-    public boolean updateServerEndPoint(Object endPoint) {
-        if (_endPoint == endPoint) {
+    public boolean updateServerEndPoint(Object newEndPoint) {
+        Object oldEndPoint = _endPoint;
+        if (oldEndPoint == newEndPoint) {
             return false;
         }
-        _endPoint = endPoint;
-        return true;
+        _endPoint = newEndPoint;
+        return oldEndPoint != null;
     }
 
     @Override
