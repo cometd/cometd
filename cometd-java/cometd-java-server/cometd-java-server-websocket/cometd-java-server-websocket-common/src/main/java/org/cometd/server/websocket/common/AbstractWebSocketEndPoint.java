@@ -166,6 +166,11 @@ public abstract class AbstractWebSocketEndPoint {
         ServerSessionImpl session = context.session;
         if (session != null) {
             session.setServerTransport(_transport);
+            // If the endpoint changed, we want to install a scheduler for the current endpoint,
+            // so that server-side messages can be delivered without waiting for a /meta/connect.
+            if (session.updateServerEndPoint(this)) {
+                session.setScheduler(new WebSocketScheduler(context, message, 0));
+            }
         }
 
         String channel = message.getChannel();
@@ -324,7 +329,7 @@ public abstract class AbstractWebSocketEndPoint {
         public WebSocketScheduler(Context context, ServerMessage.Mutable message, long timeout) {
             this.context = context;
             this.message = message;
-            this.taskRef = new AtomicMarkableReference<>(_transport.getBayeux().schedule(this, timeout), true);
+            this.taskRef = new AtomicMarkableReference<>(timeout > 0 ? _transport.getBayeux().schedule(this, timeout) : null, true);
             context.metaConnectCycle = _transport.newMetaConnectCycle();
         }
 

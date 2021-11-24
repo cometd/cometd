@@ -64,6 +64,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
     private AbstractServerTransport.Scheduler _scheduler = new Scheduler.None(0);
     private ServerTransport _transport;
     private ServerTransport _advisedTransport;
+    private Object _endPoint;
     private State _state = State.NEW;
     private int _maxQueue = -1;
     private long _transientTimeout = -1;
@@ -780,6 +781,14 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
 
     public void setServerTransport(ServerTransport transport) {
         _transport = transport;
+    }
+
+    public boolean updateServerEndPoint(Object endPoint) {
+        if (_endPoint == endPoint) {
+            return false;
+        }
+        _endPoint = endPoint;
+        return true;
     }
 
     @Override
