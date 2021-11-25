@@ -789,7 +789,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
             return false;
         }
         _endPoint = newEndPoint;
-        return oldEndPoint != null;
+        return true;
     }
 
     @Override
