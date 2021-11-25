@@ -512,7 +512,7 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
 
     protected void addServerSession(ServerSessionImpl session, ServerMessage message) {
         if (_logger.isDebugEnabled()) {
-            _logger.debug("Adding session {}", session);
+            _logger.debug("Adding {}", session);
         }
         _sessions.put(session.getId(), session);
         for (BayeuxServerListener listener : _listeners) {
@@ -1388,7 +1388,9 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
             reply.put(Message.SUPPORTED_CONNECTION_TYPES_FIELD, getAllowedTransports());
 
             Map<String, Object> adviceOut = session.takeAdvice(message.getServerTransport());
-            reply.put(Message.ADVICE_FIELD, adviceOut);
+            if (adviceOut != null) {
+                reply.put(Message.ADVICE_FIELD, adviceOut);
+            }
 
             promise.succeed(true);
         } else {

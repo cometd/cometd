@@ -132,7 +132,7 @@ public class ActivityExtension implements BayeuxServer.Extension {
         @Override
         public boolean rcv(ServerSession session, ServerMessage.Mutable message) {
             if (logger.isDebugEnabled()) {
-                logger.debug("Marking active session {}, received message {}", session, message);
+                logger.debug("Marking active {}, received message {}", session, message);
             }
             markActive();
             return true;
@@ -143,13 +143,13 @@ public class ActivityExtension implements BayeuxServer.Extension {
             if (Channel.META_CONNECT.equals(message.getChannel())) {
                 if (isInactive()) {
                     if (logger.isDebugEnabled()) {
-                        logger.debug("Inactive session {}, disconnecting", session);
+                        logger.debug("Inactive {}, disconnecting", session);
                     }
                     disconnect(session);
                 }
             } else {
                 if (logger.isDebugEnabled()) {
-                    logger.debug("Marking active session {}, received meta message {}", session, message);
+                    logger.debug("Marking active {}, received meta message {}", session, message);
                 }
                 markActive();
             }
@@ -160,7 +160,7 @@ public class ActivityExtension implements BayeuxServer.Extension {
         public ServerMessage send(ServerSession sender, ServerSession session, ServerMessage message) {
             if (activity == Activity.CLIENT_SERVER) {
                 if (logger.isDebugEnabled()) {
-                    logger.debug("Marking active session {}, sending message {}", session, message);
+                    logger.debug("Marking active {}, sending message {}", session, message);
                 }
                 markActive();
             }
@@ -171,7 +171,7 @@ public class ActivityExtension implements BayeuxServer.Extension {
         public boolean sendMeta(ServerSession sender, ServerSession session, ServerMessage.Mutable message) {
             if (!Channel.META_CONNECT.equals(message.getChannel()) && activity == Activity.CLIENT_SERVER) {
                 if (logger.isDebugEnabled()) {
-                    logger.debug("Marking active session {}, sending meta message {}", session, message);
+                    logger.debug("Marking active {}, sending meta message {}", session, message);
                 }
                 markActive();
             }

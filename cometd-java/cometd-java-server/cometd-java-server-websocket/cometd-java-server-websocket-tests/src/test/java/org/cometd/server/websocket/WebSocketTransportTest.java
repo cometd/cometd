@@ -50,7 +50,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class WebSocketTransportFailureTest {
+public class WebSocketTransportTest {
     private Server server;
     private ServerConnector connector;
     private HttpClient httpClient;
@@ -139,7 +139,7 @@ public class WebSocketTransportFailureTest {
         String connect = "[{" +
                 "\"id\":\"2\"," +
                 "\"channel\":\"/meta/connect\"," +
-                "\"connectionType\":\"long-polling\"," +
+                "\"connectionType\":\"websocket\"," +
                 "\"clientId\":\"" + clientId + "\"," +
                 "\"advice\": {\"timeout\":0}" +
                 "}]";
@@ -201,7 +201,7 @@ public class WebSocketTransportFailureTest {
         String connect = "[{" +
                 "\"id\":\"2\"," +
                 "\"channel\":\"/meta/connect\"," +
-                "\"connectionType\":\"long-polling\"," +
+                "\"connectionType\":\"websocket\"," +
                 "\"clientId\":\"" + clientId + "\"," +
                 "\"advice\": {\"timeout\":0}" +
                 "}]";
@@ -214,6 +214,82 @@ public class WebSocketTransportFailureTest {
         Map<String, Object> advice = message.getAdvice();
         Assertions.assertNotNull(advice);
         Assertions.assertEquals(Message.RECONNECT_HANDSHAKE_VALUE, advice.get(Message.RECONNECT_FIELD));
+    }
+
+    @Test
+    public void testSecondMetaConnectOnDifferentConnectionDoesNotLoseMessages() throws Exception {
+        startServer(null);
+        startClient();
+
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/cometd");
+        BlockingQueue<Message> messages = new LinkedBlockingQueue<>();
+        Session session1 = client.connect(new WebSocketEndPoint(messages), uri).get(5, TimeUnit.SECONDS);
+
+        String handshake = "[{" +
+                "\"id\":\"1\"," +
+                "\"channel\": \"/meta/handshake\"," +
+                "\"version\": \"1.0\"," +
+                "\"minimumVersion\": \"1.0\"," +
+                "\"supportedConnectionTypes\": [\"websocket\"]" +
+                "}]";
+        session1.getRemote().sendString(handshake);
+
+        Message handshakeReply = messages.poll(5, TimeUnit.SECONDS);
+        Assertions.assertNotNull(handshakeReply);
+        Assertions.assertEquals(Channel.META_HANDSHAKE, handshakeReply.getChannel());
+        Assertions.assertTrue(handshakeReply.isSuccessful());
+
+        String testChannel = "/test";
+
+        String clientId = handshakeReply.getClientId();
+        String connect1 = "[{" +
+                "\"id\":\"2\"," +
+                "\"channel\":\"/meta/connect\"," +
+                "\"connectionType\":\"websocket\"," +
+                "\"clientId\":\"" + clientId + "\"," +
+                "\"advice\": {\"timeout\":0}" +
+                "}, {" +
+                "\"id\":\"3\"," +
+                "\"channel\":\"/meta/subscribe\"," +
+                "\"clientId\":\"" + clientId + "\"," +
+                "\"subscription\":[\"" + testChannel + "\"]" +
+                "}]";
+        session1.getRemote().sendString(connect1);
+
+        Message connect1Reply = messages.poll(5, TimeUnit.SECONDS);
+        Assertions.assertNotNull(connect1Reply);
+        Assertions.assertEquals(Channel.META_CONNECT, connect1Reply.getChannel());
+        Assertions.assertTrue(connect1Reply.isSuccessful());
+        Message subscribeReply = messages.poll(5, TimeUnit.SECONDS);
+        Assertions.assertNotNull(subscribeReply);
+        Assertions.assertEquals(Channel.META_SUBSCRIBE, subscribeReply.getChannel());
+        Assertions.assertTrue(subscribeReply.isSuccessful());
+
+        // Disconnect and reconnect.
+        disconnect(session1);
+        Session session2 = client.connect(new WebSocketEndPoint(messages), uri).get(5, TimeUnit.SECONDS);
+        String connect2 = "[{" +
+                "\"id\":\"4\"," +
+                "\"channel\":\"/meta/connect\"," +
+                "\"connectionType\":\"websocket\"," +
+                "\"clientId\":\"" + clientId + "\"," +
+                "\"advice\": {\"timeout\":0}" +
+                "}]";
+        session2.getRemote().sendString(connect2);
+
+        Message connect2Reply = messages.poll(5, TimeUnit.SECONDS);
+        Assertions.assertNotNull(connect2Reply);
+        Assertions.assertEquals(Channel.META_CONNECT, connect2Reply.getChannel());
+        Assertions.assertTrue(connect2Reply.isSuccessful());
+
+        // Emit a server-side message after receiving the second /meta/connect on a different connection.
+        bayeux.getChannel(testChannel).publish(null, "test-data", Promise.noop());
+
+        Message message = messages.poll(5, TimeUnit.SECONDS);
+        Assertions.assertNotNull(message);
+        Assertions.assertEquals(testChannel, message.getChannel());
+
+        disconnect(session2);
     }
 
     private void disconnect(Session session) {

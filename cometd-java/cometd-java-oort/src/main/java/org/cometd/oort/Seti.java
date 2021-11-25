@@ -175,7 +175,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
 
         if (added) {
             if (_logger.isDebugEnabled()) {
-                _logger.debug("Associated session {} to user {}", session, userId);
+                _logger.debug("Associated {} to user {}", session, userId);
             }
 
             session.addListener(location);
@@ -324,7 +324,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
 
         if (removed) {
             if (_logger.isDebugEnabled()) {
-                _logger.debug("Disassociated session {} from user {}", session, userId);
+                _logger.debug("Disassociated {} from user {}", session, userId);
             }
 
             location = (LocalLocation)session.removeAttribute(LocalLocation.class.getName());

@@ -67,6 +67,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
     private AbstractServerTransport.Scheduler _scheduler = new Scheduler.None(0);
     private ServerTransport _transport;
     private ServerTransport _advisedTransport;
+    private Object _endPoint;
     private State _state = State.NEW;
     private int _maxQueue = -1;
     private long _transientTimeout = -1;
@@ -160,13 +161,13 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         try {
             if (_expireTime == 0) {
                 if (_maxProcessing > 0 && now > _messageTime + _maxProcessing) {
-                    _logger.info("Sweeping session during processing {}", this);
+                    _logger.info("Sweeping during processing {}", this);
                     remove = true;
                 }
             } else {
                 if (now > _expireTime) {
                     if (_logger.isDebugEnabled()) {
-                        _logger.debug("Sweeping session {}", this);
+                        _logger.debug("Sweeping {}", this);
                     }
                     remove = true;
                 }
@@ -547,6 +548,9 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
             lock.lock();
             try {
                 oldScheduler = _scheduler;
+                if (_logger.isDebugEnabled()) {
+                    _logger.debug("{} disabling scheduler {}", this, oldScheduler);
+                }
             } finally {
                 lock.unlock();
             }
@@ -560,6 +564,9 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
                 // Only set the scheduler if it has a greater or equal cycle.
                 if (newScheduler.getMetaConnectCycle() >= oldScheduler.getMetaConnectCycle()) {
                     _scheduler = newScheduler;
+                    if (_logger.isDebugEnabled()) {
+                        _logger.debug("{} replacing scheduler old={} new={}", this, oldScheduler, newScheduler);
+                    }
                     if (shouldSchedule()) {
                         schedule = true;
                     } else {
@@ -571,6 +578,9 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
                     }
                 } else {
                     oldScheduler = newScheduler;
+                    if (_logger.isDebugEnabled()) {
+                        _logger.debug("{} ignoring stale scheduler {}", this, newScheduler);
+                    }
                 }
             } finally {
                 lock.unlock();
@@ -842,6 +852,15 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         _transport = transport;
     }
 
+    public boolean updateServerEndPoint(Object newEndPoint) {
+        Object oldEndPoint = _endPoint;
+        if (oldEndPoint == newEndPoint) {
+            return false;
+        }
+        _endPoint = newEndPoint;
+        return true;
+    }
+
     @Override
     public long getTimeout() {
         return _timeout;
@@ -1041,7 +1060,9 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         } finally {
             lock.unlock();
         }
-        return String.format("%s,%s,cycle=%d,last=%d,expire=%d",
+        return String.format("%s@%x[%s,%s,cycle=%d,last=%d,expire=%d]",
+                getClass().getSimpleName(),
+                hashCode(),
                 _id,
                 state,
                 cycle,
