@@ -76,7 +76,7 @@ public class JettyWebSocketEndPoint extends AbstractWebSocketEndPoint implements
     @Override
     protected void send(ServerSession session, String data, Callback callback) {
         if (_logger.isDebugEnabled()) {
-            _logger.debug("Sending {}", data);
+            _logger.debug("Sending {} on {}", data, this);
         }
 
         // Async version.
@@ -96,8 +96,13 @@ public class JettyWebSocketEndPoint extends AbstractWebSocketEndPoint implements
     @Override
     public void close(int code, String reason) {
         if (_logger.isDebugEnabled()) {
-            _logger.debug("Closing {}/{}", code, reason);
+            _logger.debug("Closing {}/{} on {}", code, reason, this);
         }
         _wsSession.close(code, reason);
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%s[%s]", super.toString(), _wsSession);
     }
 }

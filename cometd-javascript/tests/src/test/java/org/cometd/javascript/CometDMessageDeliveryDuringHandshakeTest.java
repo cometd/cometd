@@ -19,10 +19,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import org.cometd.bayeux.Channel;
+import java.util.function.Consumer;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxServer;
-import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractServerTransport;
@@ -72,18 +71,12 @@ public class CometDMessageDeliveryDuringHandshakeTest extends AbstractCometDTran
         });
 
         CountDownLatch serverMessagesLatch = new CountDownLatch(1);
-        ServerChannel metaConnectChannel = bayeuxServer.getChannel(Channel.META_CONNECT);
-        metaConnectChannel.addListener(new ServerChannel.MessageListener() {
-            @Override
-            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
-                // Check the queue when receiving the first /meta/connect.
-                if (((ServerSessionImpl)from).getQueue().isEmpty() == allowHandshakeMessages) {
-                    serverMessagesLatch.countDown();
-                }
-                metaConnectChannel.removeListener(this);
-                return true;
-            }
-        });
+        Consumer<String> checkQueue = clientId -> {
+            ServerSessionImpl serverSession = (ServerSessionImpl)bayeuxServer.getSession(clientId);
+            if (serverSession.getQueue().isEmpty() == allowHandshakeMessages)
+                serverMessagesLatch.countDown();
+        };
+        javaScript.put("checkQueue", checkQueue);
 
         evaluateScript("" +
                 "cometd.configure({" +
@@ -104,7 +97,11 @@ public class CometDMessageDeliveryDuringHandshakeTest extends AbstractCometDTran
         evaluateScript("" +
                 "cometd.addListener('/meta/handshake', listener);" +
                 "cometd.addListener('" + channelName + "', listener);" +
-                "cometd.addListener('/meta/connect', listener);");
+                "cometd.addListener('/meta/connect', listener);" +
+                "" +
+                "cometd.addListener('/meta/handshake', function(m) {" +
+                "    checkQueue.accept(m.clientId);" +
+                "})");
         evaluateScript("" +
                 "cometd.handshake();");
 

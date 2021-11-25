@@ -276,7 +276,7 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
 
     @Override
     public String toString() {
-        return getName();
+        return String.format("%s@%x[%s]", getClass().getSimpleName(), hashCode(), getName());
     }
 
     /**

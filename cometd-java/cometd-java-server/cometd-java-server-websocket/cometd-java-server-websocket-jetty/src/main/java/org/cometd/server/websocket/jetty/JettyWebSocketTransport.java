@@ -94,7 +94,11 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport {
                     List<String> allowedTransports = getBayeux().getAllowedTransports();
                     if (allowedTransports.contains(getName())) {
                         WebSocketContext handshake = new WebSocketContext(context, request);
-                        return newWebSocketEndPoint(handshake);
+                        Object instance = newWebSocketEndPoint(handshake);
+                        if (LOGGER.isDebugEnabled()) {
+                            LOGGER.debug("Created {}", instance);
+                        }
+                        return instance;
                     } else {
                         if (LOGGER.isDebugEnabled()) {
                             LOGGER.debug("Transport not those allowed: {}", allowedTransports);

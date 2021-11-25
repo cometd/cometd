@@ -49,7 +49,7 @@ public abstract class AbstractWebSocketEndPoint {
     private final Logger _logger = LoggerFactory.getLogger(getClass());
     private final AutoLock lock = new AutoLock();
     private final Flusher flusher = new Flusher();
-    private final AtomicBoolean terminate = new AtomicBoolean();
+    private final AtomicBoolean terminated = new AtomicBoolean();
     private final AbstractWebSocketTransport _transport;
     private final BayeuxContext _bayeuxContext;
     private ServerSessionImpl _session;
@@ -75,7 +75,7 @@ public abstract class AbstractWebSocketEndPoint {
         try {
             ServerMessage.Mutable[] messages = _transport.parseMessages(data);
             if (_logger.isDebugEnabled()) {
-                _logger.debug("Parsed {} messages", messages == null ? -1 : messages.length);
+                _logger.debug("Parsed {} messages on {}", messages == null ? -1 : messages.length, this);
             }
             if (messages != null) {
                 processMessages(messages, promise);
@@ -84,7 +84,7 @@ public abstract class AbstractWebSocketEndPoint {
             }
         } catch (ParseException x) {
             close(1011, x.toString());
-            _logger.warn("Error parsing JSON: " + data, x);
+            _logger.warn("Error parsing JSON: {} on {}", data, this, x);
             promise.succeed(null);
         } catch (Throwable x) {
             promise.fail(x);
@@ -92,31 +92,31 @@ public abstract class AbstractWebSocketEndPoint {
     }
 
     public void onClose(int code, String reason) {
-        if (terminate.compareAndSet(false, true)) {
+        if (terminated.compareAndSet(false, true)) {
             // There is no need to call BayeuxServerImpl.removeServerSession(),
             // because the connection may have been closed for a reload.
             ServerSessionImpl session = _session;
             if (_logger.isDebugEnabled()) {
-                _logger.debug("Closing {}/{} - {}", code, reason, session);
+                _logger.debug("Closing {}/{} - {} on {}", code, reason, session, this);
             }
             _transport.onClose(code, reason);
         }
     }
 
     public void onError(Throwable failure) {
-        if (terminate.compareAndSet(false, true)) {
+        if (terminated.compareAndSet(false, true)) {
             if (failure instanceof SocketTimeoutException || failure instanceof TimeoutException) {
                 if (_logger.isDebugEnabled()) {
-                    _logger.debug("WebSocket timeout", failure);
+                    _logger.debug("WebSocket timeout on {}", this, failure);
                 }
             } else {
                 InetSocketAddress address = _bayeuxContext == null ? null : _bayeuxContext.getRemoteAddress();
                 if (failure instanceof QuietException) {
                     if (_logger.isDebugEnabled()) {
-                        _logger.debug("WebSocket failure, address: " + address, failure);
+                        _logger.debug("WebSocket failure, address {} on {}", address, this, failure);
                     }
                 } else {
-                    _logger.info("WebSocket failure, address: " + address, failure);
+                    _logger.info("WebSocket failure, address {} on {}", address, this, failure);
                 }
             }
         }
@@ -158,11 +158,12 @@ public abstract class AbstractWebSocketEndPoint {
 
     private void processMessage(ServerMessage.Mutable[] messages, Context context, ServerMessageImpl message, Promise<Boolean> promise) {
         if (_logger.isDebugEnabled()) {
-            _logger.debug("Processing {}", message);
+            _logger.debug("Processing {} on {}", message, this);
         }
 
         message.setServerTransport(_transport);
         message.setBayeuxContext(_bayeuxContext);
+
         ServerSessionImpl session = context.session;
         if (session != null) {
             session.setServerTransport(_transport);
@@ -173,18 +174,30 @@ public abstract class AbstractWebSocketEndPoint {
             if (messages.length > 1) {
                 promise.fail(new IOException("protocol violation"));
             } else {
+                if (session != null) {
+                    // Always disable the Scheduler, as we don't want
+                    // messages to be sent before the handshake reply.
+                    session.setScheduler(null);
+                }
                 processMetaHandshake(context, message, promise);
             }
-        } else if (Channel.META_CONNECT.equals(channel)) {
-            processMetaConnect(context, message, Promise.from(proceed -> {
-                if (proceed) {
-                    resume(context, message, Promise.from(y -> promise.succeed(true), promise::fail));
-                } else {
-                    promise.succeed(false);
-                }
-            }, promise::fail));
         } else {
-            processMessage(context, message, promise);
+            // If the endpoint changed, we want to install a scheduler for the current endpoint,
+            // so that server-side messages can be delivered without waiting for a /meta/connect.
+            if (session != null && session.updateServerEndPoint(this)) {
+                session.setScheduler(new WebSocketScheduler(context, message, 0));
+            }
+            if (Channel.META_CONNECT.equals(channel)) {
+                processMetaConnect(context, message, Promise.from(proceed -> {
+                    if (proceed) {
+                        resume(context, message, Promise.from(y -> promise.succeed(true), promise::fail));
+                    } else {
+                        promise.succeed(false);
+                    }
+                }, promise::fail));
+            } else {
+                processMessage(context, message, promise);
+            }
         }
     }
 
@@ -206,8 +219,8 @@ public abstract class AbstractWebSocketEndPoint {
     }
 
     private void processMetaConnect(Context context, ServerMessage.Mutable message, Promise<Boolean> promise) {
-        // Remember the connected status before handling the message.
         ServerSessionImpl session = context.session;
+        // Remember the connected status before handling the message.
         boolean wasConnected = session != null && session.isConnected();
         _transport.getBayeux().handle(session, message, Promise.from(reply -> {
             boolean proceed = true;
@@ -251,7 +264,7 @@ public abstract class AbstractWebSocketEndPoint {
 
     private AbstractServerTransport.Scheduler suspend(Context context, ServerMessage.Mutable message, long timeout) {
         if (_logger.isDebugEnabled()) {
-            _logger.debug("Suspended {}", message);
+            _logger.debug("Suspended {} on {}", message, this);
         }
         context.session.notifySuspended(message, timeout);
         return new WebSocketScheduler(context, message, timeout);
@@ -291,7 +304,7 @@ public abstract class AbstractWebSocketEndPoint {
             msgs = session.takeQueue(context.replies);
         }
         if (_logger.isDebugEnabled()) {
-            _logger.debug("Flushing {}, replies={}, messages={}", session, context.replies, msgs);
+            _logger.debug("Flushing {}, replies={}, messages={} on {}", session, context.replies, msgs, this);
         }
         List<ServerMessage> messages = msgs;
         boolean queued = flusher.queue(new Entry(context, messages, Promise.from(y -> {
@@ -310,6 +323,11 @@ public abstract class AbstractWebSocketEndPoint {
         return _transport.toJSON(message);
     }
 
+    @Override
+    public String toString() {
+        return String.format("%s@%x", getClass().getSimpleName(), hashCode());
+    }
+
     private class WebSocketScheduler implements AbstractServerTransport.Scheduler, Runnable, Promise<Void> {
         private final Context context;
         private final ServerMessage.Mutable message;
@@ -319,7 +337,7 @@ public abstract class AbstractWebSocketEndPoint {
         public WebSocketScheduler(Context context, ServerMessage.Mutable message, long timeout) {
             this.context = context;
             this.message = message;
-            this.taskRef = new AtomicMarkableReference<>(_transport.getBayeux().schedule(this, timeout), true);
+            this.taskRef = new AtomicMarkableReference<>(timeout > 0 ? _transport.getBayeux().schedule(this, timeout) : null, true);
             context.metaConnectCycle = _transport.newMetaConnectCycle();
         }
 
@@ -338,13 +356,13 @@ public abstract class AbstractWebSocketEndPoint {
             if (metaConnectDelivery || session.isTerminated()) {
                 if (cancelTimeout(false)) {
                     if (_logger.isDebugEnabled()) {
-                        _logger.debug("Resuming suspended {} for {}", message, session);
+                        _logger.debug("Resuming suspended {} for {} on {}", message, session, AbstractWebSocketEndPoint.this);
                     }
                     session.notifyResumed(message, false);
                     resume(context, message, this);
                 }
             } else {
-                // Avoid to send messages if this scheduler has been disabled, so that the
+                // Avoid sending messages if this scheduler has been disabled, so that the
                 // messages remain in the session queue until the next scheduler is set.
                 if (taskRef.isMarked()) {
                     Context ctx = new Context(session);
@@ -380,7 +398,7 @@ public abstract class AbstractWebSocketEndPoint {
         public void cancel() {
             if (cancelTimeout(true)) {
                 if (_logger.isDebugEnabled()) {
-                    _logger.debug("Cancelling suspended {} for {}", message, context.session);
+                    _logger.debug("Cancelling suspended {} for {} on {}", message, context.session, AbstractWebSocketEndPoint.this);
                 }
                 _transport.scheduleExpiration(context.session, context.metaConnectCycle);
             }
@@ -398,7 +416,7 @@ public abstract class AbstractWebSocketEndPoint {
             // Executed when the /meta/connect timeout expires.
             if (cancelTimeout(false)) {
                 if (_logger.isDebugEnabled()) {
-                    _logger.debug("Timing out suspended {} for {}", message, context.session);
+                    _logger.debug("Timing out suspended {} for {} on {}", message, context.session, AbstractWebSocketEndPoint.this);
                 }
                 context.session.notifyResumed(message, true);
                 resume(context, message, this);
@@ -431,7 +449,12 @@ public abstract class AbstractWebSocketEndPoint {
 
         @Override
         public String toString() {
-            return String.format("%s@%x[cycle=%d]", getClass().getSimpleName(), hashCode(), getMetaConnectCycle());
+            return String.format("%s@%x[cycle=%d,%s@%x]",
+                    getClass().getSimpleName(),
+                    hashCode(),
+                    getMetaConnectCycle(),
+                    AbstractWebSocketEndPoint.this.getClass().getSimpleName(),
+                    AbstractWebSocketEndPoint.this.hashCode());
         }
     }
 
@@ -468,7 +491,7 @@ public abstract class AbstractWebSocketEndPoint {
                             _entry = _entries.poll();
                         }
                         if (_logger.isDebugEnabled()) {
-                            _logger.debug("Processing {}", _entry);
+                            _logger.debug("Processing {} on {}", _entry, AbstractWebSocketEndPoint.this);
                         }
                         if (_entry == null) {
                             return Action.IDLE;

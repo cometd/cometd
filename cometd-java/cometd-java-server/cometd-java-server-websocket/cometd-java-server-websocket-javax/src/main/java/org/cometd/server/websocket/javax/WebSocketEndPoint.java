@@ -50,9 +50,7 @@ public class WebSocketEndPoint extends Endpoint implements MessageHandler.Whole<
     @Override
     public void onMessage(String data) {
         if (_logger.isDebugEnabled()) {
-            _logger.debug("WebSocket Text message on {}@{}",
-                    getClass().getSimpleName(),
-                    Integer.toHexString(hashCode()));
+            _logger.debug("WebSocket Text message on {}", this);
         }
         try {
             try {
@@ -84,6 +82,11 @@ public class WebSocketEndPoint extends Endpoint implements MessageHandler.Whole<
     protected void writeComplete(AbstractWebSocketEndPoint.Context context, List<ServerMessage> messages) {
     }
 
+    @Override
+    public String toString() {
+        return String.format("%s@%x[%s]", getClass().getSimpleName(), hashCode(), _delegate);
+    }
+
     private class Delegate extends AbstractWebSocketEndPoint {
         public Delegate(AbstractWebSocketTransport transport, BayeuxContext bayeuxContext) {
             super(transport, bayeuxContext);
@@ -92,7 +95,7 @@ public class WebSocketEndPoint extends Endpoint implements MessageHandler.Whole<
         @Override
         protected void send(ServerSession session, String data, Callback callback) {
             if (_logger.isDebugEnabled()) {
-                _logger.debug("Sending {}", data);
+                _logger.debug("Sending {} on {}", data, this);
             }
             // Async write.
             _wsSession.getAsyncRemote().sendText(data, result -> {
@@ -111,17 +114,22 @@ public class WebSocketEndPoint extends Endpoint implements MessageHandler.Whole<
                 // Limits of the WebSocket APIs, otherwise an exception is thrown.
                 reason = reason.substring(0, Math.min(reason.length(), 30));
                 if (_logger.isDebugEnabled()) {
-                    _logger.debug("Closing {}/{}", code, reason);
+                    _logger.debug("Closing {}/{} on {}", code, reason, this);
                 }
                 _wsSession.close(new CloseReason(CloseReason.CloseCodes.getCloseCode(code), reason));
             } catch (Throwable x) {
-                _logger.trace("Could not close WebSocket session " + _wsSession, x);
+                _logger.trace("Could not close WebSocket session on {}", this, x);
             }
         }
 
         @Override
         protected void writeComplete(Context context, List<ServerMessage> messages) {
             WebSocketEndPoint.this.writeComplete(context, messages);
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s[%s]", super.toString(), _wsSession);
         }
     }
 }
