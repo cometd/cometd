@@ -166,11 +166,6 @@ public abstract class AbstractWebSocketEndPoint {
         ServerSessionImpl session = context.session;
         if (session != null) {
             session.setServerTransport(_transport);
-            // If the endpoint changed, we want to install a scheduler for the current endpoint,
-            // so that server-side messages can be delivered without waiting for a /meta/connect.
-            if (session.updateServerEndPoint(this)) {
-                session.setScheduler(new WebSocketScheduler(context, message, 0));
-            }
         }
 
         String channel = message.getChannel();
@@ -178,18 +173,30 @@ public abstract class AbstractWebSocketEndPoint {
             if (messages.length > 1) {
                 promise.fail(new IOException("protocol violation"));
             } else {
+                if (session != null) {
+                    // Always disable the Scheduler, as we don't want
+                    // messages to be sent before the handshake reply.
+                    session.setScheduler(null);
+                }
                 processMetaHandshake(context, message, promise);
             }
-        } else if (Channel.META_CONNECT.equals(channel)) {
-            processMetaConnect(context, message, Promise.from(proceed -> {
-                if (proceed) {
-                    resume(context, message, Promise.from(y -> promise.succeed(true), promise::fail));
-                } else {
-                    promise.succeed(false);
-                }
-            }, promise::fail));
         } else {
-            processMessage(context, message, promise);
+            // If the endpoint changed, we want to install a scheduler for the current endpoint,
+            // so that server-side messages can be delivered without waiting for a /meta/connect.
+            if (session != null && session.updateServerEndPoint(this)) {
+                session.setScheduler(new WebSocketScheduler(context, message, 0));
+            }
+            if (Channel.META_CONNECT.equals(channel)) {
+                processMetaConnect(context, message, Promise.from(proceed -> {
+                    if (proceed) {
+                        resume(context, message, Promise.from(y -> promise.succeed(true), promise::fail));
+                    } else {
+                        promise.succeed(false);
+                    }
+                }, promise::fail));
+            } else {
+                processMessage(context, message, promise);
+            }
         }
     }
 
