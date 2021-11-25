@@ -6,7 +6,7 @@
   <artifactId>cometd-project</artifactId>
   <packaging>pom</packaging>
   <name>CometD</name>
-  <version>7.0.5</version>
+  <version>7.0.6-SNAPSHOT</version>
 
   <repositories>
     <repository>
