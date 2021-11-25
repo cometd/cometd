@@ -20,13 +20,11 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
-import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
@@ -161,112 +159,6 @@ public class MessageDeliveryDuringHandshakeTest extends AbstractClientServerTest
         Message message = messages.poll(1, TimeUnit.SECONDS);
         Assertions.assertNotNull(message);
         Assertions.assertEquals(Channel.META_HANDSHAKE, message.getChannel());
-        message = messages.poll(1, TimeUnit.SECONDS);
-        Assertions.assertNotNull(message);
-        Assertions.assertEquals(channelName, message.getChannel());
-        message = messages.poll(1, TimeUnit.SECONDS);
-        Assertions.assertNotNull(message);
-        Assertions.assertEquals(Channel.META_CONNECT, message.getChannel());
-        message = messages.poll(1, TimeUnit.SECONDS);
-        Assertions.assertNull(message);
-
-        disconnectBayeuxClient(client);
-    }
-
-    @ParameterizedTest
-    @MethodSource("transports")
-    public void testSecondHandshakeMessagesNotSentInHandshakeResponse(Transport transport) throws Exception {
-        startServer(transport);
-        BayeuxClient client = newBayeuxClient(transport);
-        testSecondHandshakeMessagesInHandshakeResponse(client, false);
-    }
-
-    @ParameterizedTest
-    @MethodSource("transports")
-    public void testSecondHandshakeMessagesSentInHandshakeResponse(Transport transport) throws Exception {
-        Map<String, String> options = serverOptions(transport);
-        options.put(AbstractServerTransport.ALLOW_MESSAGE_DELIVERY_DURING_HANDSHAKE, String.valueOf(true));
-        startServer(transport, options);
-        BayeuxClient client = newBayeuxClient(transport);
-        testSecondHandshakeMessagesInHandshakeResponse(client, true);
-    }
-
-    private void testSecondHandshakeMessagesInHandshakeResponse(BayeuxClient client, boolean allowHandshakeMessages) throws Exception {
-        String channelName = "/test";
-        bayeux.addListener(new BayeuxServer.SessionListener() {
-            @Override
-            public void sessionAdded(ServerSession session, ServerMessage message) {
-                // Send messages during the handshake processing.
-                session.deliver(null, channelName, "data1", Promise.noop());
-                session.deliver(null, channelName, "data2", Promise.noop());
-            }
-        });
-
-        // Arrange to make the client send a second handshake.
-        AtomicInteger metaConnects = new AtomicInteger();
-        bayeux.getChannel(Channel.META_CONNECT).addListener(new ServerChannel.MessageListener() {
-            @Override
-            public boolean onMessage(ServerSession sender, ServerChannel channel, ServerMessage.Mutable message) {
-                if (metaConnects.incrementAndGet() == 2) {
-                    Map<String, Object> adviceIn = message.getAdvice(true);
-                    adviceIn.put(Message.TIMEOUT_FIELD, 0L);
-                }
-                return true;
-            }
-        });
-        bayeux.addExtension(new BayeuxServer.Extension() {
-            @Override
-            public boolean sendMeta(ServerSession to, ServerMessage.Mutable message) {
-                if (Channel.META_CONNECT.equals(message.getChannel())) {
-                    if (metaConnects.get() == 2) {
-                        message.setSuccessful(false);
-                        Map<String, Object> advice = message.getAdvice(true);
-                        advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_HANDSHAKE_VALUE);
-                    }
-                }
-                return true;
-            }
-        });
-
-        BlockingQueue<Message> messages = new LinkedBlockingQueue<>();
-        ClientSessionChannel.MessageListener listener = (channel, message) -> messages.offer(message);
-        client.getChannel(Channel.META_HANDSHAKE).addListener(listener);
-        client.getChannel(Channel.META_CONNECT).addListener(listener);
-        client.getChannel(channelName).addListener(listener);
-
-        CountDownLatch messagesLatch = new CountDownLatch(2);
-        client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
-            ServerSessionImpl serverSession = (ServerSessionImpl)bayeux.getSession(client.getId());
-            if (serverSession.getQueue().isEmpty() == allowHandshakeMessages)
-                messagesLatch.countDown();
-        });
-
-        client.handshake();
-
-        Assertions.assertTrue(messagesLatch.await(5, TimeUnit.SECONDS));
-
-        // Make sure that the messages arrive in the expected order.
-        Message message = messages.poll(1, TimeUnit.SECONDS);
-        Assertions.assertNotNull(message);
-        Assertions.assertEquals(Channel.META_HANDSHAKE, message.getChannel());
-        message = messages.poll(1, TimeUnit.SECONDS);
-        Assertions.assertNotNull(message);
-        Assertions.assertEquals(channelName, message.getChannel());
-        message = messages.poll(1, TimeUnit.SECONDS);
-        Assertions.assertNotNull(message);
-        Assertions.assertEquals(channelName, message.getChannel());
-        message = messages.poll(1, TimeUnit.SECONDS);
-        Assertions.assertNotNull(message);
-        Assertions.assertEquals(Channel.META_CONNECT, message.getChannel());
-        message = messages.poll(1, TimeUnit.SECONDS);
-        Assertions.assertNotNull(message);
-        Assertions.assertEquals(Channel.META_CONNECT, message.getChannel());
-        message = messages.poll(1, TimeUnit.SECONDS);
-        Assertions.assertNotNull(message);
-        Assertions.assertEquals(Channel.META_HANDSHAKE, message.getChannel());
-        message = messages.poll(1, TimeUnit.SECONDS);
-        Assertions.assertNotNull(message);
-        Assertions.assertEquals(channelName, message.getChannel());
         message = messages.poll(1, TimeUnit.SECONDS);
         Assertions.assertNotNull(message);
         Assertions.assertEquals(channelName, message.getChannel());
