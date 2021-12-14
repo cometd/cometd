@@ -1,6 +1,6 @@
 ---
 name: Question
-about: Asks a question about CometD
+about: Ask a question about CometD.
 title: ''
 labels: question
 assignees: ''

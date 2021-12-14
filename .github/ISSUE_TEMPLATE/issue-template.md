@@ -1,6 +1,6 @@
 ---
 name: Issue
-about: Reports a CometD issue. DO NOT USE FOR SECURITY ISSUES!
+about: Report a CometD issue. DO NOT USE FOR SECURITY ISSUES!
 title: ''
 assignees: ''
 ---
