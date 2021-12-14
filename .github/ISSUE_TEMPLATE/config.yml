@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: CometD Security Reports
+    url: https://cometd.org/support/
+    about: Report a CometD security issue.
