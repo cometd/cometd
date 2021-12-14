@@ -1,0 +1,4 @@
+blank_issues_enabled: true
+contact_links:
+  - name: CometD Security Reports
+    about: For security issues, send an email to security@webtide.com
