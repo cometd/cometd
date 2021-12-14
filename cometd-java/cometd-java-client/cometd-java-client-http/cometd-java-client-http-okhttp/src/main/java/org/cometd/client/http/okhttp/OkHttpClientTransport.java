@@ -49,6 +49,7 @@ public class OkHttpClientTransport extends AbstractHttpClientTransport {
     private static final Logger LOGGER = LoggerFactory.getLogger(OkHttpClientTransport.class);
     private static final MediaType JSON_MEDIA_TYPE = MediaType.get("application/json;charset=UTF-8");
 
+    private final Object _lock = this;
     private final List<Call> _calls = new ArrayList<>();
     private final OkHttpClient _client;
 
@@ -86,7 +87,7 @@ public class OkHttpClientTransport extends AbstractHttpClientTransport {
     @Override
     public void abort(Throwable failure) {
         List<Call> requests;
-        synchronized (this) {
+        synchronized (_lock) {
             super.abort(failure);
             requests = new ArrayList<>(_calls);
             _calls.clear();
@@ -121,7 +122,7 @@ public class OkHttpClientTransport extends AbstractHttpClientTransport {
         promise.succeed(request);
     }
 
-    private void send(TransportListener listener, List<Message.Mutable> messages, URI cookieURI, Request.Builder request) {
+    private void send(TransportListener listener, List<Message.Mutable> messages, URI cookieURI, Request.Builder requestBuilder) {
         long maxNetworkDelay = calculateMaxNetworkDelay(messages);
         OkHttpClient client = _client.newBuilder()
                 // Disable the read timeout.
@@ -129,11 +130,12 @@ public class OkHttpClientTransport extends AbstractHttpClientTransport {
                 // Schedule a task to timeout the request.
                 .build();
 
-        request = request
+        requestBuilder = requestBuilder
                 .tag(TransportListener.class, listener)
                 .tag(List.class, messages);
 
-        Call call = client.newCall(request.build());
+        Request request = requestBuilder.build();
+        Call call = client.newCall(request);
 
         AtomicReference<ScheduledFuture<?>> timeoutRef = new AtomicReference<>();
         ScheduledExecutorService scheduler = getScheduler();
@@ -145,57 +147,64 @@ public class OkHttpClientTransport extends AbstractHttpClientTransport {
             }
         }
 
-        synchronized (this) {
+        synchronized (_lock) {
             if (!isAborted()) {
                 _calls.add(call);
             }
         }
 
+        if (LOGGER.isDebugEnabled())
+            LOGGER.debug("Sending request {}", request);
         call.enqueue(new Callback() {
             @Override
             public void onResponse(Call call, Response response) throws IOException {
+                if (LOGGER.isDebugEnabled())
+                    LOGGER.debug("Received response {}", response);
+                synchronized (_lock) {
+                    _calls.remove(call);
+                }
                 int code = response.code();
                 if (code == 200) {
                     storeCookies(cookieURI, response.headers().toMultimap());
                     // Blocking I/O, unfortunately.
                     try (ResponseBody body = response.body()) {
+                        cancelTimeoutTask(timeoutRef);
                         String content = body == null ? "" : body.string();
-                        ScheduledFuture<?> task = timeoutRef.get();
-                        if (task != null) {
-                            task.cancel(false);
-                            if (LOGGER.isDebugEnabled()) {
-                                LOGGER.debug("Cancelled waiting for message replies (HTTP {}) task@{}", code, Integer.toHexString(task.hashCode()));
-                            }
-                        }
                         processResponseContent(listener, messages, content);
                     }
                 } else {
-                    ScheduledFuture<?> task = timeoutRef.get();
-                    if (task != null) {
-                        task.cancel(false);
-                        if (LOGGER.isDebugEnabled()) {
-                            LOGGER.debug("Cancelled waiting for message replies (HTTP {}) task@{}", code, Integer.toHexString(task.hashCode()));
-                        }
-                    }
+                    cancelTimeoutTask(timeoutRef);
                     processWrongResponseCode(listener, messages, code);
                 }
             }
 
             @Override
             public void onFailure(Call call, IOException e) {
+                if (LOGGER.isDebugEnabled())
+                    LOGGER.debug("Received response failure", e);
+                synchronized (_lock) {
+                    _calls.remove(call);
+                }
+                cancelTimeoutTask(timeoutRef);
+                listener.onFailure(e, messages);
+            }
+
+            private void cancelTimeoutTask(AtomicReference<ScheduledFuture<?>> timeoutRef) {
                 ScheduledFuture<?> task = timeoutRef.get();
                 if (task != null) {
                     task.cancel(false);
                     if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("Cancelled waiting for failed message replies task@{}", Integer.toHexString(task.hashCode()) , e);
+                        LOGGER.debug("Cancelled request timeout task@{}", Integer.toHexString(task.hashCode()));
                     }
                 }
-                listener.onFailure(e, messages);
             }
         });
     }
 
     private void onTimeout(TransportListener listener, List<? extends Message> messages, Call call, long delay, AtomicReference<ScheduledFuture<?>> timeoutRef) {
+        synchronized (_lock) {
+            _calls.remove(call);
+        }
         listener.onTimeout(messages, Promise.from(result -> {
             if (result > 0) {
                 ScheduledExecutorService scheduler = getScheduler();
