@@ -540,7 +540,7 @@
       <dependency>
         <groupId>com.google.javascript</groupId>
         <artifactId>closure-compiler</artifactId>
-        <version>v20211201</version>
+        <version>v20220104</version>
       </dependency>
 
       <dependency>
