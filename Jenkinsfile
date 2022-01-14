@@ -1,57 +1,64 @@
 #!groovy
 
-def oss = ["linux"]
-def jdks = ["jdk11", "jdk17"]
-
-def builds = [:]
-for (def os in oss) {
-  for (def jdk in jdks) {
-    builds[os + "_" + jdk] = newBuild(os, jdk)
+pipeline {
+  agent any
+  // Save some I/O during the build.
+  options { durabilityHint('PERFORMANCE_OPTIMIZED') }
+  stages {
+    stage('CometD Builds') {
+      matrix {
+        axes {
+          axis {
+            name 'JDK'
+            values 'jdk11', 'jdk17'
+          }
+        }
+        stages {
+          stage('Build CometD') {
+            agent { node { label 'linux' } }
+            steps {
+              container('jetty-build') {
+                timeout(time: 1, unit: 'HOURS') {
+                  mavenBuild("${env.JDK}", "clean install", [[parserName: 'Maven'], [parserName: 'Java']])
+                  // Collect the JaCoCo execution results.
+                  jacoco exclusionPattern: '**/org/webtide/**,**/org/cometd/benchmark/**,**/org/cometd/examples/**',
+                          execPattern: '**/target/jacoco.exec',
+                          classPattern: '**/target/classes',
+                          sourcePattern: '**/src/main/java'
+                }
+                timeout(time: 15, unit: 'MINUTES') {
+                  mavenBuild("${env.JDK}", "javadoc:javadoc", null)
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }
-
-parallel builds
-
-def newBuild(os, jdk) {
-  return {
-    node(os) {
-      def mvnName = 'maven3.5'
-      def settingsName = 'oss-settings.xml'
-      def mvnOpts = '-Xms1g -Xmx1g -Djava.awt.headless=true'
-
-      stage("Checkout - ${jdk}") {
-        checkout scm
-      }
-
-      stage("Build - ${jdk}") {
-        timeout(time: 1, unit: 'HOURS') {
-          withMaven(maven: mvnName,
-                  jdk: jdk,
-                  publisherStrategy: 'EXPLICIT',
-                  globalMavenSettingsConfig: settingsName,
-                  mavenOpts: mvnOpts) {
-            sh "mvn -V -B clean install -Dmaven.test.failure.ignore=true -e"
-          }
-
-          junit testResults: '**/target/surefire-reports/TEST-*.xml'
-          // Collect the JaCoCo execution results.
-          jacoco exclusionPattern: '**/org/webtide/**,**/org/cometd/benchmark/**,**/org/cometd/examples/**',
-                  execPattern: '**/target/jacoco.exec',
-                  classPattern: '**/target/classes',
-                  sourcePattern: '**/src/main/java'
+/**
+ * Performs a Maven build.
+ *
+ * @param jdk the jdk tool name (in jenkins) to use for this build
+ * @param cmdline the command line in "<profiles> <goals> <properties>"`format.
+ * @param consoleParsers array of console parsers to run
+ */
+def mavenBuild(jdk, cmdline, consoleParsers) {
+  script {
+    try {
+      withEnv(["JAVA_HOME=${tool "$jdk"}",
+               "PATH+MAVEN=${env.JAVA_HOME}/bin:${tool "maven3.5"}/bin",
+               "MAVEN_OPTS=-Xms2g -Xmx4g -Djava.awt.headless=true"]) {
+        configFileProvider([configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS')]) {
+          sh "mvn -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -V -B -e $cmdline"
         }
       }
-
-      stage("Javadoc - ${jdk}") {
-        timeout(time: 15, unit: 'MINUTES') {
-          withMaven(maven: mvnName,
-                  jdk: jdk,
-                  publisherStrategy: 'EXPLICIT',
-                  globalMavenSettingsConfig: settingsName,
-                  mavenOpts: mvnOpts) {
-            sh "mvn -V -B javadoc:javadoc -e"
-          }
-        }
+    }
+    finally {
+      junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml'
+      if (consoleParsers != null) {
+        warnings consoleParsers: consoleParsers
       }
     }
   }
