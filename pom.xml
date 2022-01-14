@@ -60,8 +60,8 @@
     <!--<jetty-version>9.3.30.v20211001</jetty-version>-->
     <!--<jetty-version>9.4.44.v20210927</jetty-version>-->
     <!-- end::jetty-version[] -->
-    <slf4j-version>1.7.32</slf4j-version>
-    <spring-version>5.3.14</spring-version>
+    <slf4j-version>1.7.33</slf4j-version>
+    <spring-version>5.3.15</spring-version>
     <jackson-version>2.12.5</jackson-version>
     <dojo-version>1.16.3</dojo-version>
     <rhino-version>1.7R5</rhino-version>
@@ -377,7 +377,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.8.1</version>
+          <version>3.9.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -410,7 +410,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jar-plugin</artifactId>
-          <version>3.2.1</version>
+          <version>3.2.2</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
