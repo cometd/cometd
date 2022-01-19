@@ -30,7 +30,7 @@ Annotated service instances are stored in the servlet context under the key that
 
 ===== Dependency Injection Support
 
-The CometD project offers limited support for dependency injection, since normally this is accomplished by other frameworks such ashttps://spring.io/[Spring], https://github.com/google/guice[Guice]or http://cdi-spec.org/[CDI].
+The CometD project offers limited support for dependency injection, since normally this is accomplished by other frameworks such as https://spring.io/[Spring], https://github.com/google/guice[Guice]or http://cdi-spec.org/[CDI].
 
 In particular, it supports only the injection of the BayeuxServer object on fields and methods (not on constructors), and performs the injection only if the injection has not yet been performed.
 
