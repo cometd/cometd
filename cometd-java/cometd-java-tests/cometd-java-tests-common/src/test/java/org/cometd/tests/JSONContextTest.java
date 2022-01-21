@@ -47,13 +47,15 @@ public class JSONContextTest extends AbstractClientServerTest {
         List<Long> userIds = Arrays.asList(1L, 2L);
         CountDownLatch messageLatch = new CountDownLatch(1);
         client.handshake(hsReply -> {
-            ClientSessionChannel channel = client.getChannel("/custom");
-            channel.subscribe((c, m) -> {
-                Users users = (Users)m.getData();
-                Assertions.assertEquals(userIds, users.getUserIds());
-                messageLatch.countDown();
+            client.batch(() -> {
+                ClientSessionChannel channel = client.getChannel("/custom");
+                channel.subscribe((c, m) -> {
+                    Users users = (Users)m.getData();
+                    Assertions.assertEquals(userIds, users.getUserIds());
+                    messageLatch.countDown();
+                });
+                channel.publish(new Users(userIds));
             });
-            channel.publish(new Users(userIds));
         });
 
         Assertions.assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
