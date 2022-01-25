@@ -46,6 +46,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
+import org.eclipse.jetty.websocket.server.NativeWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
@@ -83,6 +84,7 @@ public abstract class OortTest {
         if (serverTransport.equals(WebSocketTransport.class.getName())) {
             WebSocketServerContainerInitializer.configure(context, null);
         } else if (serverTransport.equals(JettyWebSocketTransport.class.getName())) {
+            NativeWebSocketServletContainerInitializer.configure(context, null);
             WebSocketUpgradeFilter.configure(context);
         } else {
             throw new IllegalArgumentException("Unsupported transport " + serverTransport);

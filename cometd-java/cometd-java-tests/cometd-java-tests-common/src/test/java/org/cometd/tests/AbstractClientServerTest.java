@@ -48,6 +48,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
+import org.eclipse.jetty.websocket.server.NativeWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
@@ -95,6 +96,7 @@ public abstract class AbstractClientServerTest {
                 WebSocketServerContainerInitializer.configure(context, null);
                 break;
             case JETTY_WEBSOCKET:
+                NativeWebSocketServletContainerInitializer.configure(context, null);
                 WebSocketUpgradeFilter.configure(context);
                 break;
             default:

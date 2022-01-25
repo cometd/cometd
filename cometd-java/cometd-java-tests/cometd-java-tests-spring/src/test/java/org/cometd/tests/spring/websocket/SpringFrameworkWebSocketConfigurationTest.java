@@ -38,6 +38,7 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
+import org.eclipse.jetty.websocket.server.NativeWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -65,6 +66,7 @@ public class SpringFrameworkWebSocketConfigurationTest {
         if (WebSocketTransport.class.equals(wsTransportClass)) {
             WebSocketServerContainerInitializer.configure(context, null);
         } else if (JettyWebSocketTransport.class.equals(wsTransportClass)) {
+            NativeWebSocketServletContainerInitializer.configure(context, null);
             WebSocketUpgradeFilter.configure(context);
         } else {
             throw new IllegalArgumentException();
