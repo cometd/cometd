@@ -16,12 +16,9 @@
 package org.cometd.tests;
 
 import java.util.Map;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import org.cometd.bayeux.Channel;
-import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -78,39 +75,31 @@ public class MessageDeliveryDuringHandshakeTest extends AbstractClientServerTest
             }
         });
 
-        BlockingQueue<Message> messages = new LinkedBlockingQueue<>();
-        ClientSessionChannel.MessageListener listener = (channel, message) -> messages.offer(message);
-        client.getChannel(Channel.META_HANDSHAKE).addListener(listener);
-        client.getChannel(channelName).addListener(listener);
-        client.getChannel(Channel.META_CONNECT).addListener(listener);
+        CountDownLatch handshakeLatch = new CountDownLatch(1);
+        ClientSessionChannel.MessageListener handshakeListener = (channel, message) -> handshakeLatch.countDown();
+        client.getChannel(Channel.META_HANDSHAKE).addListener(handshakeListener);
+        CountDownLatch channelLatch = new CountDownLatch(2);
+        ClientSessionChannel.MessageListener channelListener = (channel, message) -> channelLatch.countDown();
+        client.getChannel(channelName).addListener(channelListener);
+        CountDownLatch connectLatch = new CountDownLatch(1);
+        ClientSessionChannel.MessageListener connectListener = (channel, message) -> connectLatch.countDown();
+        client.getChannel(Channel.META_CONNECT).addListener(connectListener);
 
-        CountDownLatch messagesLatch = new CountDownLatch(1);
+        CountDownLatch queueLatch = new CountDownLatch(1);
         client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
             ServerSessionImpl serverSession = (ServerSessionImpl)bayeux.getSession(client.getId());
             if (serverSession.getQueue().isEmpty() == allowHandshakeMessages)
-                messagesLatch.countDown();
+                queueLatch.countDown();
         });
 
         client.handshake();
 
-        Assertions.assertTrue(messagesLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(queueLatch.await(5, TimeUnit.SECONDS));
         Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        // Make sure that the messages arrive in the expected order.
-        Message message = messages.poll(1, TimeUnit.SECONDS);
-        Assertions.assertNotNull(message);
-        Assertions.assertEquals(Channel.META_HANDSHAKE, message.getChannel());
-        message = messages.poll(1, TimeUnit.SECONDS);
-        Assertions.assertNotNull(message);
-        Assertions.assertEquals(channelName, message.getChannel());
-        message = messages.poll(1, TimeUnit.SECONDS);
-        Assertions.assertNotNull(message);
-        Assertions.assertEquals(channelName, message.getChannel());
-        message = messages.poll(1, TimeUnit.SECONDS);
-        Assertions.assertNotNull(message);
-        Assertions.assertEquals(Channel.META_CONNECT, message.getChannel());
-        message = messages.poll(1, TimeUnit.SECONDS);
-        Assertions.assertNull(message);
+        Assertions.assertTrue(handshakeLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(channelLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -145,28 +134,23 @@ public class MessageDeliveryDuringHandshakeTest extends AbstractClientServerTest
             }
         });
 
-        BlockingQueue<Message> messages = new LinkedBlockingQueue<>();
-        ClientSessionChannel.MessageListener listener = (channel, message) -> messages.offer(message);
-        client.getChannel(Channel.META_HANDSHAKE).addListener(listener);
-        client.getChannel(channelName).addListener(listener);
-        client.getChannel(Channel.META_CONNECT).addListener(listener);
+        CountDownLatch handshakeLatch = new CountDownLatch(1);
+        ClientSessionChannel.MessageListener handshakeListener = (channel, message) -> handshakeLatch.countDown();
+        client.getChannel(Channel.META_HANDSHAKE).addListener(handshakeListener);
+        CountDownLatch channelLatch = new CountDownLatch(1);
+        ClientSessionChannel.MessageListener channelListener = (channel, message) -> channelLatch.countDown();
+        client.getChannel(channelName).addListener(channelListener);
+        CountDownLatch connectLatch = new CountDownLatch(1);
+        ClientSessionChannel.MessageListener connectListener = (channel, message) -> connectLatch.countDown();
+        client.getChannel(Channel.META_CONNECT).addListener(connectListener);
 
         client.handshake();
 
         Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        // Make sure that the messages arrive in the expected order.
-        Message message = messages.poll(1, TimeUnit.SECONDS);
-        Assertions.assertNotNull(message);
-        Assertions.assertEquals(Channel.META_HANDSHAKE, message.getChannel());
-        message = messages.poll(1, TimeUnit.SECONDS);
-        Assertions.assertNotNull(message);
-        Assertions.assertEquals(channelName, message.getChannel());
-        message = messages.poll(1, TimeUnit.SECONDS);
-        Assertions.assertNotNull(message);
-        Assertions.assertEquals(Channel.META_CONNECT, message.getChannel());
-        message = messages.poll(1, TimeUnit.SECONDS);
-        Assertions.assertNull(message);
+        Assertions.assertTrue(handshakeLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(channelLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
