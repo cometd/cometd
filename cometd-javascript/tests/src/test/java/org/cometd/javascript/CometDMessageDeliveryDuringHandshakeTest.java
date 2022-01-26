@@ -70,11 +70,11 @@ public class CometDMessageDeliveryDuringHandshakeTest extends AbstractCometDTran
             }
         });
 
-        CountDownLatch serverMessagesLatch = new CountDownLatch(1);
+        CountDownLatch queueLatch = new CountDownLatch(1);
         Consumer<String> checkQueue = clientId -> {
             ServerSessionImpl serverSession = (ServerSessionImpl)bayeuxServer.getSession(clientId);
             if (serverSession.getQueue().isEmpty() == allowHandshakeMessages)
-                serverMessagesLatch.countDown();
+                queueLatch.countDown();
         };
         javaScript.put("checkQueue", checkQueue);
 
@@ -84,34 +84,26 @@ public class CometDMessageDeliveryDuringHandshakeTest extends AbstractCometDTran
                 "    logLevel: '" + getLogLevel() + "'" +
                 "});");
 
-        evaluateScript("var clientMessagesLatch = new Latch(1);");
-        Latch clientMessagesLatch = javaScript.get("clientMessagesLatch");
+        evaluateScript("var handshakeLatch = new Latch(1);");
+        Latch handshakeLatch = javaScript.get("handshakeLatch");
+        evaluateScript("var channelLatch = new Latch(2);");
+        Latch channelLatch = javaScript.get("channelLatch");
+        evaluateScript("var connectLatch = new Latch(1);");
+        Latch connectLatch = javaScript.get("connectLatch");
         evaluateScript("" +
-                "var messages = [];" +
-                "var listener = function(message) {" +
-                "    messages.push(message);" +
-                "    if (messages.length === 4) {" +
-                "        clientMessagesLatch.countDown();" +
-                "    }" +
-                "};");
-        evaluateScript("" +
-                "cometd.addListener('/meta/handshake', listener);" +
-                "cometd.addListener('" + channelName + "', listener);" +
-                "cometd.addListener('/meta/connect', listener);" +
-                "" +
-                "cometd.addListener('/meta/handshake', function(m) {" +
-                "    checkQueue.accept(m.clientId);" +
-                "})");
+                "cometd.addListener('/meta/handshake', () => handshakeLatch.countDown());" +
+                "cometd.addListener('" + channelName + "', () => channelLatch.countDown());" +
+                "cometd.addListener('/meta/connect', () => connectLatch.countDown());" +
+                "cometd.addListener('/meta/handshake', m => checkQueue.accept(m.clientId));");
         evaluateScript("" +
                 "cometd.handshake();");
 
-        Assertions.assertTrue(serverMessagesLatch.await(5, TimeUnit.SECONDS));
-        Assertions.assertTrue(clientMessagesLatch.await(5000));
+        Assertions.assertTrue(queueLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(handshakeLatch.await(5000));
+        Assertions.assertTrue(channelLatch.await(5000));
+        Assertions.assertTrue(connectLatch.await(5000));
 
-        evaluateScript("window.assert(messages[0].channel === '/meta/handshake', 'not handshake' + JSON.stringify(messages[0]));");
-        evaluateScript("window.assert(messages[1].channel === '" + channelName + "', 'not message' + JSON.stringify(messages[1]));");
-        evaluateScript("window.assert(messages[2].channel === '" + channelName + "', 'not message' + JSON.stringify(messages[2]));");
-        evaluateScript("window.assert(messages[3].channel === '/meta/connect', 'not connect: ' + JSON.stringify(messages[3]));");
+        disconnect();
     }
 
     @ParameterizedTest
@@ -149,27 +141,23 @@ public class CometDMessageDeliveryDuringHandshakeTest extends AbstractCometDTran
                 "    logLevel: '" + getLogLevel() + "'" +
                 "});");
 
-        evaluateScript("var clientMessagesLatch = new Latch(1);");
-        Latch clientMessagesLatch = javaScript.get("clientMessagesLatch");
+        evaluateScript("var handshakeLatch = new Latch(1);");
+        Latch handshakeLatch = javaScript.get("handshakeLatch");
+        evaluateScript("var channelLatch = new Latch(1);");
+        Latch channelLatch = javaScript.get("channelLatch");
+        evaluateScript("var connectLatch = new Latch(1);");
+        Latch connectLatch = javaScript.get("connectLatch");
         evaluateScript("" +
-                "var messages = [];" +
-                "var listener = function(message) {" +
-                "    messages.push(message);" +
-                "    if (messages.length === 3) {" +
-                "        clientMessagesLatch.countDown();" +
-                "    }" +
-                "};");
-        evaluateScript("" +
-                "cometd.addListener('/meta/handshake', listener);" +
-                "cometd.addListener('" + channelName + "', listener);" +
-                "cometd.addListener('/meta/connect', listener);");
+                "cometd.addListener('/meta/handshake', () => handshakeLatch.countDown());" +
+                "cometd.addListener('" + channelName + "', () => channelLatch.countDown());" +
+                "cometd.addListener('/meta/connect', () => connectLatch.countDown());");
         evaluateScript("" +
                 "cometd.handshake();");
 
-        Assertions.assertTrue(clientMessagesLatch.await(5000));
+        Assertions.assertTrue(handshakeLatch.await(5000));
+        Assertions.assertTrue(channelLatch.await(5000));
+        Assertions.assertTrue(connectLatch.await(5000));
 
-        evaluateScript("window.assert(messages[0].channel === '/meta/handshake', 'not handshake' + JSON.stringify(messages[0]));");
-        evaluateScript("window.assert(messages[1].channel === '" + channelName + "', 'not message' + JSON.stringify(messages[1]));");
-        evaluateScript("window.assert(messages[2].channel === '/meta/connect', 'not connect: ' + JSON.stringify(messages[2]));");
+        disconnect();
     }
 }
