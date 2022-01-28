@@ -31,7 +31,7 @@ public class MetaConnectDeliverOnlyTest extends AbstractClientServerTest {
     @ParameterizedTest
     @MethodSource("transports")
     public void testMetaConnectDeliveryOnly(Transport transport) throws Exception {
-        startServer(transport, serverOptions(transport));
+        start(transport, serverOptions(transport));
 
         BayeuxClient client = newBayeuxClient(transport);
 

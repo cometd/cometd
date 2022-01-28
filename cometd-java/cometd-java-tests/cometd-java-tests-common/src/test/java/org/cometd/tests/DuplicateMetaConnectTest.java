@@ -38,7 +38,7 @@ public class DuplicateMetaConnectTest extends AbstractClientServerTest {
     @ParameterizedTest
     @MethodSource("transports")
     public void testDuplicateMetaConnectWithoutFailingExistingMetaConnect(Transport transport) throws Exception {
-        startServer(transport);
+        start(transport);
 
         long backoff = 500;
         Map<String, Object> clientOptions = new HashMap<>();
@@ -80,7 +80,7 @@ public class DuplicateMetaConnectTest extends AbstractClientServerTest {
         long timeout = 2000;
         Map<String, String> serverOptions = serverOptions(transport);
         serverOptions.put(AbstractServerTransport.TIMEOUT_OPTION, String.valueOf(timeout));
-        startServer(transport, serverOptions);
+        start(transport, serverOptions);
 
         Map<String, Object> clientOptions = new HashMap<>();
         long maxNetworkDelay = 1000;

@@ -365,6 +365,9 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         if (transport != null) {
             _maxQueue = transport.getOption(AbstractServerTransport.MAX_QUEUE_OPTION, -1);
             _maxProcessing = transport.getOption(AbstractServerTransport.MAX_PROCESSING_OPTION, -1);
+            if (_maxProcessing > 0) {
+                _maxProcessing = TimeUnit.MILLISECONDS.toNanos(_maxProcessing);
+            }
             _maxLazy = transport.getMaxLazyTimeout();
         }
 

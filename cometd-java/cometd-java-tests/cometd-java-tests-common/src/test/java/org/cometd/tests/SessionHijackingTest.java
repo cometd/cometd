@@ -30,7 +30,7 @@ public class SessionHijackingTest extends AbstractClientServerTest {
     @ParameterizedTest
     @MethodSource("transports")
     public void testSessionHijacking(Transport transport) throws Exception {
-        startServer(transport);
+        start(transport);
 
         BayeuxClient client1 = newBayeuxClient(transport);
         client1.handshake();
@@ -73,7 +73,7 @@ public class SessionHijackingTest extends AbstractClientServerTest {
     @ParameterizedTest
     @MethodSource("transports")
     public void testSessionHijackingByBatchedSecondMessage(Transport transport) throws Exception {
-        startServer(transport);
+        start(transport);
 
         BayeuxClient client1 = newBayeuxClient(transport);
         client1.handshake();

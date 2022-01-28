@@ -76,11 +76,16 @@ public abstract class AbstractClientServerTest {
     private WebSocketClient wsClient;
     private OkHttpClient okHttpClient;
 
-    public void startServer(Transport transport) throws Exception {
-        startServer(transport, serverOptions(transport));
+    public void start(Transport transport) throws Exception {
+        start(transport, serverOptions(transport));
     }
 
-    public void startServer(Transport transport, Map<String, String> initParams) throws Exception {
+    public void start(Transport transport, Map<String, String> initParams) throws Exception {
+        startServer(transport, initParams);
+        startClient(transport);
+    }
+
+    private void startServer(Transport transport, Map<String, String> initParams) throws Exception {
         server = new Server();
 
         connector = new ServerConnector(server, 1, 1);
@@ -118,8 +123,6 @@ public abstract class AbstractClientServerTest {
         cometdURL = "http://localhost:" + port + cometdServletPath;
 
         bayeux = (BayeuxServer)context.getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
-
-        startClient(transport);
     }
 
     protected void startClient(Transport transport) throws Exception {

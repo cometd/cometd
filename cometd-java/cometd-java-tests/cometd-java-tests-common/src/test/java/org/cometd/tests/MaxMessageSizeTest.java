@@ -40,7 +40,7 @@ public class MaxMessageSizeTest extends AbstractClientServerTest {
         int maxMessageSize = 512;
         Map<String, String> options = serverOptions(transport);
         options.put(AbstractServerTransport.MAX_MESSAGE_SIZE_OPTION, String.valueOf(maxMessageSize));
-        startServer(transport, options);
+        start(transport, options);
 
         char[] chars = new char[maxMessageSize];
         Arrays.fill(chars, 'a');
@@ -72,7 +72,7 @@ public class MaxMessageSizeTest extends AbstractClientServerTest {
         // OkHttp has no way to override the max message size.
         Assumptions.assumeFalse(transport == Transport.OKHTTP_WEBSOCKET || transport == Transport.OKHTTP_HTTP);
 
-        startServer(transport);
+        start(transport);
 
         int maxMessageSize = 512;
         char[] chars = new char[maxMessageSize];
@@ -97,7 +97,7 @@ public class MaxMessageSizeTest extends AbstractClientServerTest {
     @ParameterizedTest
     @MethodSource("transports")
     public void testClientMaxSendBayeuxMessageSize(Transport transport) throws Exception {
-        startServer(transport);
+        start(transport);
 
         int maxMessageSize = 512;
         char[] chars = new char[maxMessageSize];

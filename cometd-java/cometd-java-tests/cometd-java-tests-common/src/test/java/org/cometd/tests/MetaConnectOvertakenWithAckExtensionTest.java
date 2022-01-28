@@ -44,7 +44,7 @@ public class MetaConnectOvertakenWithAckExtensionTest extends AbstractClientServ
         long timeout = 2000;
         Map<String, String> serverOptions = serverOptions(transport);
         serverOptions.put(AbstractServerTransport.TIMEOUT_OPTION, String.valueOf(timeout));
-        startServer(transport, serverOptions);
+        start(transport, serverOptions);
         AtomicReference<ServerMessage.Mutable> messageRef = new AtomicReference<>();
         AtomicReference<Promise<ServerMessage.Mutable>> promiseRef = new AtomicReference<>();
         bayeux.addExtension(new BayeuxServer.Extension() {

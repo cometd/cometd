@@ -31,7 +31,7 @@ public class ServerSendMessageTest extends AbstractClientServerTest {
     @ParameterizedTest
     @MethodSource("transports")
     public void testServerCanSendMessageBeforeFirstMetaConnect(Transport transport) throws Exception {
-        startServer(transport);
+        start(transport);
 
         String channelName = "/service/test";
         String response = "response";
