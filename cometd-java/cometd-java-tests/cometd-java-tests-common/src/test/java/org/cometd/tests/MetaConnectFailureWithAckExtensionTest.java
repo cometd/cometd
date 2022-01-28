@@ -38,7 +38,7 @@ public class MetaConnectFailureWithAckExtensionTest extends AbstractClientServer
     @ParameterizedTest
     @MethodSource("transports")
     public void testMetaConnectFailureWithAckExtension(Transport transport) throws Exception {
-        startServer(transport);
+        start(transport);
         bayeux.addExtension(new AcknowledgedMessagesExtension());
 
         String channelName = "/test";

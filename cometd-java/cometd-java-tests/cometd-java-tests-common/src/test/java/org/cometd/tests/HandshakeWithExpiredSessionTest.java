@@ -33,17 +33,17 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 public class HandshakeWithExpiredSessionTest extends AbstractClientServerTest {
     @Override
-    public void startServer(Transport transport) throws Exception {
+    public void start(Transport transport) throws Exception {
         Map<String, String> options = serverOptions(transport);
         options.put(AbstractServerTransport.MAX_INTERVAL_OPTION, "2000");
         options.put(BayeuxServerImpl.SWEEP_PERIOD_OPTION, "500");
-        startServer(transport, options);
+        start(transport, options);
     }
 
     @ParameterizedTest
     @MethodSource("transports")
     public void testHandshakeWithExpiredSession(Transport transport) throws Exception {
-        startServer(transport);
+        start(transport);
 
         AtomicBoolean connect = new AtomicBoolean(true);
         TestBayeuxClient client = new TestBayeuxClient(transport, connect);

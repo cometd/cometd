@@ -40,7 +40,7 @@ public class MetaConnectFailureTest extends AbstractClientServerTest {
         options.put(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(maxInterval));
         long sweepPeriod = 500;
         options.put(BayeuxServerImpl.SWEEP_PERIOD_OPTION, String.valueOf(sweepPeriod));
-        startServer(transport, options);
+        start(transport, options);
 
         BayeuxClient client = newBayeuxClient(transport);
         client.handshake();

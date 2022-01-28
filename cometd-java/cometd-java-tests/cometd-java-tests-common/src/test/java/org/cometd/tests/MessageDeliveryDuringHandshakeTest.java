@@ -37,7 +37,7 @@ public class MessageDeliveryDuringHandshakeTest extends AbstractClientServerTest
     @ParameterizedTest
     @MethodSource("transports")
     public void testMessagesNotSentInHandshakeResponse(Transport transport) throws Exception {
-        startServer(transport);
+        start(transport);
         BayeuxClient client = newBayeuxClient(transport);
         testMessagesInHandshakeResponse(client, false);
     }
@@ -47,7 +47,7 @@ public class MessageDeliveryDuringHandshakeTest extends AbstractClientServerTest
     public void testMessagesSentInHandshakeResponse(Transport transport) throws Exception {
         Map<String, String> options = serverOptions(transport);
         options.put(AbstractServerTransport.ALLOW_MESSAGE_DELIVERY_DURING_HANDSHAKE, String.valueOf(true));
-        startServer(transport, options);
+        start(transport, options);
         BayeuxClient client = newBayeuxClient(transport);
         testMessagesInHandshakeResponse(client, true);
     }
@@ -57,7 +57,7 @@ public class MessageDeliveryDuringHandshakeTest extends AbstractClientServerTest
     public void testMessagesSentInHandshakeResponseWithAckExtension(Transport transport) throws Exception {
         Map<String, String> options = serverOptions(transport);
         options.put(AbstractServerTransport.ALLOW_MESSAGE_DELIVERY_DURING_HANDSHAKE, String.valueOf(true));
-        startServer(transport, options);
+        start(transport, options);
         bayeux.addExtension(new AcknowledgedMessagesExtension());
         BayeuxClient client = newBayeuxClient(transport);
         client.addExtension(new AckExtension());
@@ -109,7 +109,7 @@ public class MessageDeliveryDuringHandshakeTest extends AbstractClientServerTest
     public void testMessagesSentInHandshakeResponseWithAckExtensionWithDeQueueListener(Transport transport) throws Exception {
         Map<String, String> options = serverOptions(transport);
         options.put(AbstractServerTransport.ALLOW_MESSAGE_DELIVERY_DURING_HANDSHAKE, String.valueOf(true));
-        startServer(transport, options);
+        start(transport, options);
         bayeux.addExtension(new AcknowledgedMessagesExtension());
         bayeux.addListener(new BayeuxServer.SessionListener() {
             @Override

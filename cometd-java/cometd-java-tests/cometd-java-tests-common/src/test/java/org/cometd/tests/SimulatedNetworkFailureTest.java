@@ -38,18 +38,18 @@ public class SimulatedNetworkFailureTest extends AbstractClientServerTest {
     private final long sweepPeriod = 1000;
 
     @Override
-    public void startServer(Transport transport) throws Exception {
+    public void start(Transport transport) throws Exception {
         Map<String, String> options = serverOptions(transport);
         options.put("timeout", String.valueOf(timeout));
         options.put("maxInterval", String.valueOf(maxInterval));
         options.put(BayeuxServerImpl.SWEEP_PERIOD_OPTION, String.valueOf(sweepPeriod));
-        startServer(transport, options);
+        start(transport, options);
     }
 
     @ParameterizedTest
     @MethodSource("transports")
     public void testClientShortNetworkFailure(Transport transport) throws Exception {
-        startServer(transport);
+        start(transport);
 
         CountDownLatch connectLatch = new CountDownLatch(2);
         AtomicReference<CountDownLatch> publishLatch = new AtomicReference<>();
@@ -125,7 +125,7 @@ public class SimulatedNetworkFailureTest extends AbstractClientServerTest {
     @ParameterizedTest
     @MethodSource("transports")
     public void testClientLongNetworkFailure(Transport transport) throws Exception {
-        startServer(transport);
+        start(transport);
 
         CountDownLatch connectLatch = new CountDownLatch(2);
         CountDownLatch handshakeLatch = new CountDownLatch(2);
