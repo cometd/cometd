@@ -474,10 +474,7 @@ public abstract class AbstractWebSocketEndPoint {
                     return _entries.offer(entry);
                 }
             }
-            // If we are terminated, we still need to schedule
-            // the expiration so that the session can be swept.
-            entry.scheduleExpiration();
-            entry._promise.fail(failure);
+            entry.fail(failure);
             return false;
         }
 
@@ -603,15 +600,18 @@ public abstract class AbstractWebSocketEndPoint {
 
         @Override
         protected void onCompleteFailure(Throwable x) {
-            Entry entry;
+            List<Entry> entries;
             synchronized (this) {
                 _failure = x;
-                entry = this._entry;
+                entries = new ArrayList<>(_entries.size() + 1);
+                if (_entry != null) {
+                    entries.add(_entry);
+                    _entry = null;
+                }
+                entries.addAll(_entries);
+                _entries.clear();
             }
-            if (entry != null) {
-                entry.scheduleExpiration();
-                entry._promise.fail(x);
-            }
+            entries.forEach(e -> e.fail(x));
         }
     }
 
@@ -624,6 +624,12 @@ public abstract class AbstractWebSocketEndPoint {
             this._context = context;
             this._queue = queue;
             this._promise = promise;
+        }
+
+        private void fail(Throwable failure) {
+            // Schedule the expiration so that the session can be swept.
+            scheduleExpiration();
+            _promise.fail(failure);
         }
 
         private void scheduleExpiration() {

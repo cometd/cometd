@@ -101,8 +101,8 @@ public class SweepTest {
         BayeuxServerImpl bayeuxServer = new BayeuxServerImpl();
         bayeuxServer.setOption(BayeuxServerImpl.SWEEP_PERIOD_OPTION, -1);
         long maxInterval = 1000;
-        bayeuxServer.setOption("maxInterval", maxInterval);
-        bayeuxServer.setOption("maxProcessing", maxInterval);
+        bayeuxServer.setOption(AbstractServerTransport.MAX_INTERVAL_OPTION, maxInterval);
+        bayeuxServer.setOption(AbstractServerTransport.MAX_PROCESSING_OPTION, maxInterval);
         bayeuxServer.start();
 
         // LocalSessions do not perform heartbeat so we should not sweep them until disconnected
