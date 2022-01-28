@@ -38,7 +38,7 @@ public class JSONContextTest extends AbstractClientServerTest {
     public void testCustomSerialization(Transport transport) throws Exception {
         Map<String, String> serverOptions = serverOptions(transport);
         serverOptions.put(AbstractServerTransport.JSON_CONTEXT_OPTION, CustomJSONContextServer.class.getName());
-        startServer(transport, serverOptions);
+        start(transport, serverOptions);
 
         Map<String, Object> clientOptions = new HashMap<>();
         clientOptions.put(ClientTransport.JSON_CONTEXT_OPTION, new CustomJSONContextClient());

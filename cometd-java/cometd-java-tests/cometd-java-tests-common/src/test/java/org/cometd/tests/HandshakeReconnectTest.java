@@ -39,7 +39,7 @@ public class HandshakeReconnectTest extends AbstractClientServerTest {
         options.put(AbstractServerTransport.HANDSHAKE_RECONNECT_OPTION, String.valueOf(true));
         options.put(AbstractServerTransport.TIMEOUT_OPTION, String.valueOf(timeout));
         options.put(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(maxInterval));
-        startServer(transport, options);
+        start(transport, options);
 
         BayeuxClient client = newBayeuxClient(transport);
         long backOffIncrement = 1000;

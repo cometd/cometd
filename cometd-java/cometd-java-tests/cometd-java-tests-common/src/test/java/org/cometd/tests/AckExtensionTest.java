@@ -35,7 +35,7 @@ public class AckExtensionTest extends AbstractClientServerTest {
     @ParameterizedTest
     @MethodSource("transports")
     public void testAckExtensionListener(Transport transport) throws Exception {
-        startServer(transport);
+        start(transport);
 
         AcknowledgedMessagesExtension extension = new AcknowledgedMessagesExtension();
         CountDownLatch batchReceiveLatch = new CountDownLatch(1);

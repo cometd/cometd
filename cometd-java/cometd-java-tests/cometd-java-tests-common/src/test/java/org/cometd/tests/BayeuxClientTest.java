@@ -37,7 +37,7 @@ public class BayeuxClientTest extends AbstractClientServerTest {
     public void testIPv6Address(Transport transport) throws Exception {
         Assumptions.assumeTrue(ipv6Available());
 
-        startServer(transport);
+        start(transport);
 
         cometdURL = cometdURL.replace("localhost", "[::1]");
 
@@ -55,7 +55,7 @@ public class BayeuxClientTest extends AbstractClientServerTest {
     @ParameterizedTest
     @MethodSource("transports")
     public void testBatchingAfterHandshake(Transport transport) throws Exception {
-        startServer(transport);
+        start(transport);
 
         BayeuxClient client = newBayeuxClient(transport);
         AtomicBoolean connected = new AtomicBoolean();
@@ -86,7 +86,7 @@ public class BayeuxClientTest extends AbstractClientServerTest {
     @ParameterizedTest
     @MethodSource("transports")
     public void testMessageWithoutChannel(Transport transport) throws Exception {
-        startServer(transport);
+        start(transport);
 
         BayeuxClient client = newBayeuxClient(transport);
         client.addExtension(new ClientSession.Extension() {
@@ -106,7 +106,7 @@ public class BayeuxClientTest extends AbstractClientServerTest {
     @ParameterizedTest
     @MethodSource("transports")
     public void loadTest(Transport transport) throws Exception {
-        startServer(transport);
+        start(transport);
 
         try {
             int rooms = 10;

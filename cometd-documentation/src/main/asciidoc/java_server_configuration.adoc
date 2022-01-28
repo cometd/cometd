@@ -117,7 +117,7 @@ Here is the list of configuration init parameters (to be specified in `web.xml`)
 
 | maxProcessing
 | -1
-| The maximum period of time, in milliseconds, that the server waits for the processing of a message before considering the session invalid and removing it.
+| The maximum period of time, in milliseconds, that the server waits for the processing of a `/meta/connect` message before considering the session invalid and removing it.
   A negative value means to wait forever.
 
 | maxLazyTimeout

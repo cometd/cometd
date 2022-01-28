@@ -84,6 +84,10 @@ public abstract class ClientServerWebSocketTest {
         prepareServer(wsType, port, "/cometd", null);
     }
 
+    protected void prepareServer(String wsType, Map<String, String> initParams) throws Exception {
+        prepareServer(wsType, 0, "/cometd", initParams);
+    }
+
     protected void prepareServer(String wsType, int port, String servletPath, Map<String, String> initParams) throws Exception {
         String wsTransportClass;
         switch (wsType) {
