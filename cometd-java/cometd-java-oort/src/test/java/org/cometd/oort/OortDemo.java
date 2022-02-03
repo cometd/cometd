@@ -16,7 +16,6 @@
 package org.cometd.oort;
 
 import java.lang.management.ManagementFactory;
-
 import org.cometd.server.CometDServlet;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.Server;

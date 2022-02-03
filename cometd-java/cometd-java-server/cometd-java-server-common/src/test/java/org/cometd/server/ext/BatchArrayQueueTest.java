@@ -17,7 +17,6 @@ package org.cometd.server.ext;
 
 import java.util.ArrayDeque;
 import java.util.Queue;
-
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 

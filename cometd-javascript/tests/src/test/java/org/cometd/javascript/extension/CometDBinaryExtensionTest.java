@@ -16,7 +16,6 @@
 package org.cometd.javascript.extension;
 
 import java.nio.ByteBuffer;
-
 import org.cometd.bayeux.BinaryData;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxServer;

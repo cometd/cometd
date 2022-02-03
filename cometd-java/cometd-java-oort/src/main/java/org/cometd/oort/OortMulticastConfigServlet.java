@@ -21,7 +21,6 @@ import java.net.NetworkInterface;
 import java.util.ArrayList;
 import java.util.List;
 import javax.servlet.ServletConfig;
-
 import org.cometd.bayeux.server.BayeuxServer;
 
 /**

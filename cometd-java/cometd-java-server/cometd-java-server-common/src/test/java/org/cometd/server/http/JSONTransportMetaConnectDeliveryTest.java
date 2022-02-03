@@ -17,7 +17,6 @@ package org.cometd.server.http;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import org.cometd.bayeux.Message;
 import org.cometd.common.JSONContext;
 import org.cometd.common.JettyJSONContextClient;

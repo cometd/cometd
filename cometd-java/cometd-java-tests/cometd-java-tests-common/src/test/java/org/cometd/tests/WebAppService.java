@@ -21,7 +21,6 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
-
 import org.cometd.annotation.Service;
 import org.cometd.annotation.server.RemoteCall;
 import org.cometd.client.BayeuxClient;

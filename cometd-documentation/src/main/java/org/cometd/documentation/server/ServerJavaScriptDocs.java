@@ -16,7 +16,6 @@
 package org.cometd.documentation.server;
 
 import java.util.Map;
-
 import org.cometd.annotation.Listener;
 import org.cometd.annotation.Service;
 import org.cometd.bayeux.Channel;

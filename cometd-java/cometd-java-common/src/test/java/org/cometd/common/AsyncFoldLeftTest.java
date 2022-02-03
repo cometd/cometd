@@ -20,7 +20,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-
 import org.cometd.bayeux.Promise;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

@@ -16,7 +16,6 @@
 package org.cometd.server.filter;
 
 import java.util.Collections;
-
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;

@@ -17,7 +17,6 @@ package org.cometd.server;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.cometd.bayeux.MarkedReference;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxServer;

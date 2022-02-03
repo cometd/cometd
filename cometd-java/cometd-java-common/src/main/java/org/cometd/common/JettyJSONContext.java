@@ -23,7 +23,6 @@ import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.util.List;
 import java.util.Map;
-
 import org.cometd.bayeux.Message;
 import org.eclipse.jetty.util.ajax.AsyncJSON;
 import org.eclipse.jetty.util.ajax.JSON;

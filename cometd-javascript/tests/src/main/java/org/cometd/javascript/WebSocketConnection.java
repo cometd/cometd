@@ -16,7 +16,6 @@
 package org.cometd.javascript;
 
 import java.net.URI;
-
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;

@@ -16,7 +16,6 @@
 package org.webtide.demo.auction;
 
 import java.util.Map;
-
 import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.ajax.JSON.Output;
 

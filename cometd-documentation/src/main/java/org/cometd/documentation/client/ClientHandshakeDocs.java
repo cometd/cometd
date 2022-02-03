@@ -17,7 +17,6 @@ package org.cometd.documentation.client;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;

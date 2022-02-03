@@ -16,7 +16,6 @@
 package org.cometd.javascript;
 
 import java.util.Map;
-
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.SecurityPolicy;
 import org.cometd.bayeux.server.ServerChannel;

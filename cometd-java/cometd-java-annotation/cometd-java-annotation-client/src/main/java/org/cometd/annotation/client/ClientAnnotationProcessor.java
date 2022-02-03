@@ -26,7 +26,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-
 import org.cometd.annotation.AnnotationProcessor;
 import org.cometd.annotation.Listener;
 import org.cometd.annotation.Service;

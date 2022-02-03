@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.TreeMap;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpSession;
-
 import org.cometd.bayeux.server.BayeuxContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

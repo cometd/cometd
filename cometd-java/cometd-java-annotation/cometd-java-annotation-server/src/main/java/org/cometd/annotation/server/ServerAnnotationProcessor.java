@@ -30,7 +30,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
-
 import org.cometd.annotation.AnnotationProcessor;
 import org.cometd.annotation.Listener;
 import org.cometd.annotation.Service;

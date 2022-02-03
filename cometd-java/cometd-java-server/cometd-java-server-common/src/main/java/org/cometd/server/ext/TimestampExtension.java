@@ -18,7 +18,6 @@ package org.cometd.server.ext;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.TimeZone;
-
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.BayeuxServer.Extension;
 import org.cometd.bayeux.server.ServerMessage.Mutable;

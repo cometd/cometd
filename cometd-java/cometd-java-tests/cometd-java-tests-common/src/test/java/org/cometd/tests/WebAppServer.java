@@ -17,7 +17,6 @@ package org.cometd.tests;
 
 import java.io.Closeable;
 import java.nio.file.Path;
-
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.plus.webapp.EnvConfiguration;
 import org.eclipse.jetty.plus.webapp.PlusConfiguration;

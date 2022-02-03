@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.cometd.bayeux.BinaryData;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.BayeuxServer;
