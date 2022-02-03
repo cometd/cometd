@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2021 the original author or authors.
+ * Copyright (c) 2008-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
+
 import org.cometd.annotation.client.ClientAnnotationProcessor;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
