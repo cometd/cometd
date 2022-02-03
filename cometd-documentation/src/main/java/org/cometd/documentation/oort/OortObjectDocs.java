@@ -17,7 +17,6 @@ package org.cometd.documentation.oort;
 
 import java.util.List;
 import java.util.Map;
-
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.common.JettyJSONContextClient;

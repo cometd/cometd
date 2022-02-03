@@ -17,7 +17,6 @@ package org.cometd.documentation.client;
 
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
-
 import okhttp3.OkHttpClient;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.http.jetty.JettyHttpClientTransport;

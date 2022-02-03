@@ -16,7 +16,6 @@
 package org.cometd.server;
 
 import java.util.List;
-
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.common.JettyJSONContext;
 import org.eclipse.jetty.util.ajax.AsyncJSON;

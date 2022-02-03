@@ -16,7 +16,6 @@
 package org.cometd.server.filter;
 
 import java.util.regex.Pattern;
-
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerSession;
 

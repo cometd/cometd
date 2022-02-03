@@ -17,7 +17,6 @@ package org.cometd.documentation.server;
 
 import java.util.HashSet;
 import java.util.Set;
-
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.BayeuxServer;

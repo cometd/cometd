@@ -18,7 +18,6 @@ package org.cometd.common;
 import java.nio.ByteBuffer;
 import java.text.ParseException;
 import java.util.List;
-
 import org.cometd.bayeux.Message;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 

@@ -19,7 +19,6 @@ import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-
 import org.cometd.annotation.Service;
 import org.cometd.annotation.server.ServerAnnotationProcessor;
 import org.cometd.bayeux.Promise;

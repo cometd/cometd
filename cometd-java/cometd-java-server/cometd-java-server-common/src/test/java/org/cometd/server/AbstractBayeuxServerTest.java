@@ -18,7 +18,6 @@ package org.cometd.server;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.cometd.server.http.AsyncJSONTransport;
 import org.cometd.server.http.JSONTransport;
 import org.eclipse.jetty.server.Server;

@@ -16,7 +16,6 @@
 package org.cometd.demo;
 
 import java.lang.management.ManagementFactory;
-
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.server.CometDServlet;
 import org.eclipse.jetty.jmx.MBeanContainer;

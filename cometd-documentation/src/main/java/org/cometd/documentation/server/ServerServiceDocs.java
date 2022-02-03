@@ -25,7 +25,6 @@ import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.Map;
 import javax.inject.Inject;
-
 import org.cometd.annotation.Listener;
 import org.cometd.annotation.Param;
 import org.cometd.annotation.Service;

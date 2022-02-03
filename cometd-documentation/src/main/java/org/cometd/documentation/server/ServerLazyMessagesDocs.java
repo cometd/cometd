@@ -16,7 +16,6 @@
 package org.cometd.documentation.server;
 
 import javax.inject.Inject;
-
 import org.cometd.annotation.Service;
 import org.cometd.annotation.Session;
 import org.cometd.annotation.server.Configure;

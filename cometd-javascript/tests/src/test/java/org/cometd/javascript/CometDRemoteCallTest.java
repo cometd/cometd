@@ -17,7 +17,6 @@ package org.cometd.javascript;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import org.cometd.annotation.Service;
 import org.cometd.annotation.server.RemoteCall;
 import org.cometd.annotation.server.ServerAnnotationProcessor;

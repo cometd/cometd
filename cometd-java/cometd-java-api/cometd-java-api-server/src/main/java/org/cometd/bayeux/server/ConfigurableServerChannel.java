@@ -16,7 +16,6 @@
 package org.cometd.bayeux.server;
 
 import java.util.List;
-
 import org.cometd.bayeux.Bayeux;
 import org.cometd.bayeux.Channel;
 

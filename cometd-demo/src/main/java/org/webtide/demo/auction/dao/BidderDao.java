@@ -17,7 +17,6 @@ package org.webtide.demo.auction.dao;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-
 import org.webtide.demo.auction.Bidder;
 
 public class BidderDao {

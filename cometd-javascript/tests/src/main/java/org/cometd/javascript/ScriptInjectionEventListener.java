@@ -16,7 +16,6 @@
 package org.cometd.javascript;
 
 import java.util.Map;
-
 import org.w3c.dom.Element;
 import org.w3c.dom.events.Event;
 import org.w3c.dom.events.EventListener;

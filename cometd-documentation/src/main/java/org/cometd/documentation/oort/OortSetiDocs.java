@@ -18,7 +18,6 @@ package org.cometd.documentation.oort;
 import java.util.HashMap;
 import java.util.Map;
 import javax.inject.Inject;
-
 import org.cometd.annotation.Listener;
 import org.cometd.annotation.Service;
 import org.cometd.bayeux.Promise;

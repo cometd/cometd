@@ -20,7 +20,6 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntFunction;
-
 import org.cometd.bayeux.Promise;
 
 /**

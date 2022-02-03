@@ -17,7 +17,6 @@ package org.cometd.documentation.client;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import org.cometd.annotation.Listener;
 import org.cometd.annotation.Service;
 import org.cometd.annotation.Session;

@@ -31,7 +31,6 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
-
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.MarkedReference;
 import org.cometd.bayeux.Message;

@@ -17,7 +17,6 @@ package org.cometd.client.transport;
 
 import java.util.EventListener;
 import java.util.List;
-
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
 import org.cometd.client.BayeuxClient;

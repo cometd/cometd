@@ -23,7 +23,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
 import org.cometd.server.AbstractBayeuxClientServerTest;
 import org.cometd.server.ServerSessionImpl;
 import org.eclipse.jetty.client.api.ContentResponse;

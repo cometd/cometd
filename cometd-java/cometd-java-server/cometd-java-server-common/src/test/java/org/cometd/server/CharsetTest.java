@@ -16,7 +16,6 @@
 package org.cometd.server;
 
 import java.nio.charset.StandardCharsets;
-
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;

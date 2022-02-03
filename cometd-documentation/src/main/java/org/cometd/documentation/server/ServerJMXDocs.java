@@ -21,7 +21,6 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServlet;
-
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.oort.Oort;
 import org.eclipse.jetty.jmx.MBeanContainer;
