@@ -7,9 +7,11 @@ Welcome to the [CometD](https://cometd.org) Project, a scalable comet (server pu
 
 ### CometD Versions
 
-`7.0.x` &#8658; Java 11 - Jetty 11.0.x - `jakarta.servlet.*`  
-`6.0.x` &#8658; Java 11 - Jetty 10.0.x - `javax.servlet.*`  
-`5.0.x` &#8658; Java 8 - Jetty 9.4.x - `javax.servlet.*`
+CometD Version | Min Java Version | Min Jetty Version | Servlet Version
+---- | ---- | ---- | ---- |
+`7.0.x` | Java 11 | Jetty 11.0.x | `jakarta.servlet.*`
+`6.0.x` | Java 11 | Jetty 10.0.x | `javax.servlet.*`
+`5.0.x` | Java 8 | Jetty 9.4.x | `javax.servlet.*`
 
 
 ### CometD License
