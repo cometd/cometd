@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2021 the original author or authors.
+ * Copyright (c) 2008-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package org.cometd.javascript;
 
 import java.util.EnumSet;
 import javax.servlet.DispatcherType;
+
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlets.CrossOriginFilter;

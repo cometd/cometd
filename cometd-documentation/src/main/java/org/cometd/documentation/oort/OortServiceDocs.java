@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2021 the original author or authors.
+ * Copyright (c) 2008-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+
 import org.cometd.annotation.Service;
 import org.cometd.annotation.server.ServerAnnotationProcessor;
 import org.cometd.bayeux.Promise;
