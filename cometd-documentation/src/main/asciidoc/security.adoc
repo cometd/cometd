@@ -71,7 +71,7 @@ For every subsequent message, the browser will send the `BAYEUX_BROWSER` cookie 
 Bob could craft a message with Alice's session id, but the `BAYEUX_BROWSER` cookie that he will send along with the tampered message will be his, not Alice's.
 The CometD implementation will detect this attack and ask Bob to re-handshake.
 
-If the crafted message does not have any cookie, CometD will ask Bob to re-handshake.
+If the crafted message does not have any cookie, CometD will ask Bob to re-handshake, unless the `trustClientSession` parameter has been set to `true`, see xref:_java_server_configuration[].
 
 For transports based on WebSocket (`websocket`), CometD trusts the particular connection that has been established during the handshake.
 The session id is associated to that connection and when a WebSocket message arrives on that connection, and CometD retrieves the session id from the association with the connection, rather than from the message (where it could have been altered).
