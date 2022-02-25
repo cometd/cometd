@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.cometd.java.tests</groupId>
     <artifactId>cometd-java-tests</artifactId>
-    <version>6.0.6</version>
+    <version>6.0.7-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -109,9 +109,4 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
-
-
-  <scm>
-    <tag>6.0.6</tag>
-  </scm>
 </project>
