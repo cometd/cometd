@@ -1553,6 +1553,70 @@ public class SetiTest extends OortTest {
         }
     }
 
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testProtectedSetiChannels(String serverTransport) throws Exception {
+        Server server = startServer(serverTransport, 0);
+        Oort oort = startOort(server);
+        Seti seti = startSeti(oort);
+
+        BayeuxClient client = startClient(oort, null);
+        CountDownLatch setiSubscribeLatch = new CountDownLatch(1);
+        client.getChannel("/seti/*").subscribe((channel, message) -> {}, message -> {
+            // Must not be able to subscribe.
+            if (!message.isSuccessful()) {
+                setiSubscribeLatch.countDown();
+            }
+        });
+        Assertions.assertTrue(setiSubscribeLatch.await(1, TimeUnit.SECONDS));
+
+        CountDownLatch publishLatch1 = new CountDownLatch(1);
+        client.getChannel("/seti/all").publish("data1", message -> {
+            // Must not be able to publish.
+            if (!message.isSuccessful()) {
+                publishLatch1.countDown();
+            }
+        });
+        Assertions.assertTrue(publishLatch1.await(1, TimeUnit.SECONDS));
+
+        CountDownLatch publishLatch2 = new CountDownLatch(1);
+        client.getChannel(seti.generateSetiChannel(seti.getId())).publish("data2", message -> {
+            // Must not be able to publish.
+            if (!message.isSuccessful()) {
+                publishLatch2.countDown();
+            }
+        });
+        Assertions.assertTrue(publishLatch2.await(1, TimeUnit.SECONDS));
+
+        String broadcastChannel = "/broadcast";
+        CountDownLatch allMessageLatch = new CountDownLatch(1);
+        CountDownLatch allSubscribeLatch = new CountDownLatch(1);
+        client.getChannel("/**").subscribe((channel, message) -> {
+            String channelName = message.getChannel();
+            if (channelName.startsWith("/seti") || channelName.equals(broadcastChannel)) {
+                allMessageLatch.countDown();
+            }
+        }, message -> {
+            if (message.isSuccessful()) {
+                allSubscribeLatch.countDown();
+            }
+        });
+
+        Assertions.assertTrue(allSubscribeLatch.await(5, TimeUnit.SECONDS));
+
+        // Cause a Seti message to be broadcast.
+        LocalSession session = oort.getBayeuxServer().newLocalSession("foo");
+        session.handshake();
+        seti.associate("foo", session.getServerSession());
+
+        // Make sure it was not received.
+        Assertions.assertFalse(allMessageLatch.await(1, TimeUnit.SECONDS));
+
+        // Publish a non-Seti message, make sure it's received.
+        client.getChannel(broadcastChannel).publish("hello");
+        Assertions.assertTrue(allMessageLatch.await(5, TimeUnit.SECONDS));
+    }
+
     public static class SetiService extends AbstractService {
         private final Seti seti;
 
