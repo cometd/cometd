@@ -269,8 +269,6 @@ The wildcard mechanism works also for listeners, so it is possible to listen to 
 cometd.addListener("/meta/*", function(message) { ... });
 ----
 
-By default, subscriptions to the global wildcards `+/*+` and `+/**+` result in an error, but you can change this behavior by specifying a custom security policy on the Bayeux server.
-
 [[_javascript_meta_channels]]
 ==== Meta Channel List
 
