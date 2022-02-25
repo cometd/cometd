@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.cometd.javascript</groupId>
     <artifactId>cometd-javascript</artifactId>
-    <version>5.0.11</version>
+    <version>5.0.12-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -137,8 +137,4 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
-
-  <scm>
-    <tag>5.0.11</tag>
-  </scm>
 </project>

@@ -3,16 +3,11 @@
   <parent>
     <groupId>org.cometd.javascript</groupId>
     <artifactId>cometd-javascript-examples</artifactId>
-    <version>5.0.11</version>
+    <version>5.0.12-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>cometd-javascript-examples-dojo</artifactId>
   <packaging>war</packaging>
   <name>CometD :: JavaScript :: Examples :: Dojo</name>
-
-
-  <scm>
-    <tag>5.0.11</tag>
-  </scm>
 </project>
