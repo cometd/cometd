@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.cometd.java</groupId>
     <artifactId>cometd-java-annotation</artifactId>
-    <version>6.0.6-SNAPSHOT</version>
+    <version>6.0.6</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -25,4 +25,8 @@
     </dependency>
   </dependencies>
 
+
+  <scm>
+    <tag>6.0.6</tag>
+  </scm>
 </project>
