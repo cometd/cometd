@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.cometd.java</groupId>
     <artifactId>cometd-java-api</artifactId>
-    <version>5.0.11-SNAPSHOT</version>
+    <version>5.0.11</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -33,4 +33,8 @@
     </dependency>
   </dependencies>
 
+
+  <scm>
+    <tag>5.0.11</tag>
+  </scm>
 </project>

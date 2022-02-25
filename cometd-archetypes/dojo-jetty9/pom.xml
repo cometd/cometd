@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.cometd.archetypes</groupId>
     <artifactId>cometd-archetypes</artifactId>
-    <version>5.0.11-SNAPSHOT</version>
+    <version>5.0.11</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -26,4 +26,8 @@
     </resources>
   </build>
 
+
+  <scm>
+    <tag>5.0.11</tag>
+  </scm>
 </project>
