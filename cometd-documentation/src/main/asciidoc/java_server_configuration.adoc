@@ -150,7 +150,7 @@ Here is the list of configuration init parameters (to be specified in `web.xml`)
 
 | maxSessionsPerBrowser
 | 1
-| The max number of sessions (tabs/frames) allowed to long poll from the same browserusing the HTTP/1.1 protocol; a negative value allows unlimited sessions (see also xref:_java_server_multiple_sessions[this section]).
+| The max number of sessions (tabs/frames) allowed to long poll from the same browser using the HTTP/1.1 protocol; a negative value allows unlimited sessions (see also xref:_java_server_multiple_sessions[this section]).
 
 | http2MaxSessionsPerBrowser
 | -1
@@ -160,6 +160,10 @@ Here is the list of configuration init parameters (to be specified in `web.xml`)
 | 2000
 | The period of time, in milliseconds, that specifies the client normal polling period in case the server detects more sessions (tabs/frames) connected from the same browser than allowed by the `maxSessionsPerBrowser` parameter.
   A non-positive value means that additional sessions are disconnected.
+
+| trustClientSession
+| false
+| Whether to trust the client session identifier sent with the xref:_bayeux_clientid[`clientId` field] in Bayeux messages in absence of the `BAYEUX_BROWSER` cookie. Read carefully the xref:_security[security section] before changing the value of this parameter, as it may expose your application to cross-site scripting (XSS) attacks.
 
 | browserCookieName
 | BAYEUX_BROWSER

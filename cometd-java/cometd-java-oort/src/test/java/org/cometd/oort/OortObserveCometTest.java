@@ -1322,6 +1322,69 @@ public class OortObserveCometTest extends OortTest {
         Assertions.assertEquals(1, joinCount.get());
     }
 
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testProtectedOortChannels(String serverTransport) throws Exception {
+        Server server1 = startServer(serverTransport, 0);
+        Oort oort1 = startOort(server1);
+
+        BayeuxClient client = startClient(oort1, null);
+        CountDownLatch subscribeLatch = new CountDownLatch(1);
+        client.getChannel("/oort/*").subscribe((channel, message) -> {}, message -> {
+            // Must not be able to subscribe.
+            if (!message.isSuccessful()) {
+                subscribeLatch.countDown();
+            }
+        });
+        Assertions.assertTrue(subscribeLatch.await(1, TimeUnit.SECONDS));
+
+        CountDownLatch publishLatch1 = new CountDownLatch(1);
+        client.getChannel("/oort/cloud").publish("data1", message -> {
+            // Must not be able to publish.
+            if (!message.isSuccessful()) {
+                publishLatch1.countDown();
+            }
+        });
+        Assertions.assertTrue(publishLatch1.await(1, TimeUnit.SECONDS));
+
+        CountDownLatch publishLatch2 = new CountDownLatch(1);
+        client.getChannel("/service/oort").publish("data2", message -> {
+            // Must not be able to publish.
+            if (!message.isSuccessful()) {
+                publishLatch2.countDown();
+            }
+        });
+        Assertions.assertTrue(publishLatch2.await(1, TimeUnit.SECONDS));
+
+        String broadcastChannel = "/broadcast";
+        CountDownLatch allMessageLatch = new CountDownLatch(1);
+        CountDownLatch allSubscribeLatch = new CountDownLatch(1);
+        client.getChannel("/**").subscribe((channel, message) -> {
+            String channelName = message.getChannel();
+            if (channelName.startsWith("/oort") || channelName.equals(broadcastChannel)) {
+                allMessageLatch.countDown();
+            }
+        }, message -> {
+            if (message.isSuccessful()) {
+                allSubscribeLatch.countDown();
+            }
+        });
+
+        Assertions.assertTrue(allSubscribeLatch.await(5, TimeUnit.SECONDS));
+
+        // Cause an Oort message to be broadcast.
+        Server server2 = startServer(serverTransport, 0);
+        Oort oort2 = startOort(server2);
+        oort1.observeComet(oort2.getURL());
+
+        // Make sure it was not received.
+        Assertions.assertFalse(allMessageLatch.await(1, TimeUnit.SECONDS));
+
+        // Publish a non-Oort message, make sure it's received.
+        client.getChannel(broadcastChannel).publish("hello");
+        Assertions.assertTrue(allMessageLatch.await(5, TimeUnit.SECONDS));
+    }
+
     private void sleep(long time) {
         try {
             Thread.sleep(time);

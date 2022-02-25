@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.EventListener;
 import java.util.EventObject;
@@ -37,10 +38,12 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSession;
+import org.cometd.bayeux.server.Authorizer;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.BayeuxServer.Extension;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
+import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.ext.AckExtension;
@@ -48,7 +51,6 @@ import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.websocket.javax.WebSocketTransport;
 import org.cometd.common.JSONContext;
-import org.cometd.server.authorizer.GrantAuthorizer;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.cometd.server.ext.BinaryExtension;
 import org.eclipse.jetty.client.HttpClient;
@@ -89,11 +91,14 @@ public class Oort extends ContainerLifeCycle {
     public static final String OORT_CLOUD_CHANNEL = "/oort/cloud";
     public static final String OORT_SERVICE_CHANNEL = "/service/oort";
     static final String COMET_URL_ATTRIBUTE = EXT_OORT_FIELD + "." + EXT_COMET_URL_FIELD;
+    private static final List<String> PROTECTED_CHANNELS = Arrays.asList("/oort/**", "/oort/*", "/service/oort/**", "/service/oort/*", "/service/oort");
 
     private final ConcurrentMap<String, Boolean> _channels = new ConcurrentHashMap<>();
     private final CopyOnWriteArrayList<CometListener> _cometListeners = new CopyOnWriteArrayList<>();
     private final ServerChannel.MessageListener _cloudListener = new CloudListener();
     private final List<ClientTransport.Factory> _transportFactories = new ArrayList<>();
+    private final BayeuxServer.SubscriptionListener _allChannelsFilter = new AllChannelsFilter();
+    private final OortAuthorizer _authorizer = new OortAuthorizer();
     private final BayeuxServer _bayeux;
     private final String _url;
     private final String _id;
@@ -162,11 +167,14 @@ public class Oort extends ContainerLifeCycle {
             }
         }
 
+        _bayeux.addListener(_allChannelsFilter);
+
         ServerChannel oortCloudChannel = _bayeux.createChannelIfAbsent(OORT_CLOUD_CHANNEL).getReference();
-        oortCloudChannel.addAuthorizer(GrantAuthorizer.GRANT_ALL);
         oortCloudChannel.addListener(_cloudListener);
 
         _oortSession.handshake();
+
+        protectOortChannels(_bayeux);
 
         super.doStart();
     }
@@ -175,14 +183,17 @@ public class Oort extends ContainerLifeCycle {
     protected void doStop() throws Exception {
         super.doStop();
 
+        unprotectOortChannels(_bayeux);
+
         _oortSession.disconnect();
         _oortSession.removeExtension(_binaryExtension);
 
         ServerChannel channel = _bayeux.getChannel(OORT_CLOUD_CHANNEL);
         if (channel != null) {
             channel.removeListener(_cloudListener);
-            channel.removeAuthorizer(GrantAuthorizer.GRANT_ALL);
         }
+
+        _bayeux.removeListener(_allChannelsFilter);
 
         Extension binaryExtension = _serverBinaryExtension;
         _serverBinaryExtension = null;
@@ -203,6 +214,19 @@ public class Oort extends ContainerLifeCycle {
         for (ClientTransport.Factory factory : _transportFactories) {
             removeBean(factory);
         }
+    }
+
+    protected void protectOortChannels(BayeuxServer bayeux) {
+        PROTECTED_CHANNELS.forEach(name -> bayeux.createChannelIfAbsent(name, channel -> channel.addAuthorizer(_authorizer)));
+    }
+
+    protected void unprotectOortChannels(BayeuxServer bayeux) {
+        PROTECTED_CHANNELS.forEach(name -> {
+            ServerChannel channel = bayeux.getChannel(name);
+            if (channel != null) {
+                channel.removeAuthorizer(_authorizer);
+            }
+        });
     }
 
     protected ScheduledExecutorService getScheduler() {
@@ -700,6 +724,37 @@ public class Oort extends ContainerLifeCycle {
             public String getCometURL() {
                 return cometURL;
             }
+        }
+    }
+
+    private class AllChannelsFilter implements BayeuxServer.SubscriptionListener, ServerSession.MessageListener {
+        @Override
+        public void subscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
+            if ("/**".equals(channel.getId()) && !session.isLocalSession()) {
+                session.addListener(this);
+            }
+        }
+
+        @Override
+        public boolean onMessage(ServerSession session, ServerSession sender, ServerMessage message) {
+            // Don't send Oort messages to the subscribers of the /** channel.
+            if (message.getChannel().startsWith("/oort/")) {
+                if (_logger.isDebugEnabled()) {
+                    _logger.debug("Dropping Oort message {} to channel '/**' subscriber {}", message, session);
+                }
+                return false;
+            }
+            return true;
+        }
+    }
+
+    private class OortAuthorizer implements Authorizer {
+        @Override
+        public Result authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message) {
+            if (session.isLocalSession() || isOort(session)) {
+                return Result.grant();
+            }
+            return Result.ignore();
         }
     }
 }

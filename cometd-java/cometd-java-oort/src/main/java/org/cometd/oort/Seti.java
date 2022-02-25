@@ -17,6 +17,7 @@ package org.cometd.oort;
 
 import java.io.IOException;
 import java.util.AbstractMap;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.EventListener;
 import java.util.EventObject;
@@ -30,9 +31,11 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
+import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSessionChannel;
+import org.cometd.bayeux.server.Authorizer;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.SecurityPolicy;
@@ -76,12 +79,15 @@ import org.slf4j.LoggerFactory;
 public class Seti extends AbstractLifeCycle implements Dumpable {
     public static final String SETI_ATTRIBUTE = Seti.class.getName();
     private static final String SETI_ALL_CHANNEL = "/seti/all";
+    private static final List<String> PROTECTED_CHANNELS = Arrays.asList("/seti/**", "/seti/*");
 
     private final AutoLock lock = new AutoLock();
     private final Map<String, Set<Location>> _uid2Location = new HashMap<>();
     private final List<PresenceListener> _presenceListeners = new CopyOnWriteArrayList<>();
     private final Oort.CometListener _cometListener = new CometListener();
     private final ServerChannel.SubscriptionListener _initialStateListener = new InitialStateListener();
+    private final BayeuxServer.SubscriptionListener _allChannelsFilter = new AllChannelsFilter();
+    private final Authorizer _authorizer = new SetiAuthorizer();
     private final Oort _oort;
     private final String _setiId;
     private final Logger _logger;
@@ -108,7 +114,11 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
     protected void doStart() {
         BayeuxServer bayeux = _oort.getBayeuxServer();
 
+        bayeux.addListener(_allChannelsFilter);
+
         _session.handshake();
+
+        protectSetiChannels(bayeux);
 
         ServerChannel setiAllChannel = bayeux.createChannelIfAbsent(SETI_ALL_CHANNEL).getReference();
         setiAllChannel.addListener(_initialStateListener);
@@ -128,10 +138,10 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
 
     @Override
     protected void doStop() {
+        BayeuxServer bayeux = _oort.getBayeuxServer();
+
         removeAssociationsAndPresences();
         _presenceListeners.clear();
-
-        _session.disconnect();
 
         _oort.removeCometListener(_cometListener);
 
@@ -139,10 +149,29 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
         _oort.deobserveChannel(setiChannelName);
 
         _oort.deobserveChannel(SETI_ALL_CHANNEL);
-        ServerChannel setiAllChannel = _oort.getBayeuxServer().getChannel(SETI_ALL_CHANNEL);
+        ServerChannel setiAllChannel = bayeux.getChannel(SETI_ALL_CHANNEL);
         if (setiAllChannel != null) {
             setiAllChannel.removeListener(_initialStateListener);
         }
+
+        unprotectSetiChannels(bayeux);
+
+        _session.disconnect();
+
+        bayeux.removeListener(_allChannelsFilter);
+    }
+
+    protected void protectSetiChannels(BayeuxServer bayeux) {
+        PROTECTED_CHANNELS.forEach(name -> bayeux.createChannelIfAbsent(name, channel -> channel.addAuthorizer(_authorizer)));
+    }
+
+    protected void unprotectSetiChannels(BayeuxServer bayeux) {
+        PROTECTED_CHANNELS.forEach(name -> {
+            ServerChannel channel = bayeux.getChannel(name);
+            if (channel != null) {
+                channel.removeAuthorizer(_authorizer);
+            }
+        });
     }
 
     protected String generateSetiId(String oortURL) {
@@ -1044,6 +1073,37 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
                 presence.put(SetiPresence.ALIVE_FIELD, true);
                 session.deliver(_session, SETI_ALL_CHANNEL, presence, Promise.noop());
             }
+        }
+    }
+
+    private class AllChannelsFilter implements BayeuxServer.SubscriptionListener, ServerSession.MessageListener {
+        @Override
+        public void subscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
+            if ("/**".equals(channel.getId()) && !session.isLocalSession()) {
+                session.addListener(this);
+            }
+        }
+
+        @Override
+        public boolean onMessage(ServerSession session, ServerSession sender, ServerMessage message) {
+            // Don't send Seti messages to the subscribers of the /** channel.
+            if (message.getChannel().startsWith("/seti/")) {
+                if (_logger.isDebugEnabled()) {
+                    _logger.debug("Dropping Seti message {} to channel '/**' subscriber {}", message, session);
+                }
+                return false;
+            }
+            return true;
+        }
+    }
+
+    private class SetiAuthorizer implements Authorizer {
+        @Override
+        public Result authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message) {
+            if (session.isLocalSession() || getOort().isOort(session)) {
+                return Result.grant();
+            }
+            return Result.ignore();
         }
     }
 }
