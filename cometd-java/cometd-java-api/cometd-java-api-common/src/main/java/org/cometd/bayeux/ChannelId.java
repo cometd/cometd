@@ -127,7 +127,7 @@ public class ChannelId {
 
                 wilds.add(0, b + "**");
 
-                if (segment.matches(VAR.pattern())) {
+                if (VAR.matcher(segment).matches()) {
                     addShallow = i == size;
                     break;
                 }
