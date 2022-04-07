@@ -61,8 +61,8 @@
     <graalvm-version>22.0.0.2</graalvm-version>
     <slf4j-version>2.0.0-alpha7</slf4j-version>
     <log4j2-version>2.17.2</log4j2-version>
-    <spring-version>5.3.17</spring-version>
-    <spring-boot-version>2.6.5</spring-boot-version>
+    <spring-version>5.3.18</spring-version>
+    <spring-boot-version>2.6.6</spring-boot-version>
     <jackson-version>2.13.2.2</jackson-version>
     <dojo-version>1.16.4</dojo-version>
     <okhttp-version>4.9.3</okhttp-version>
@@ -350,7 +350,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-clean-plugin</artifactId>
-          <version>3.1.0</version>
+          <version>3.2.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -435,7 +435,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>3.0.0-M5</version>
+          <version>3.0.0-M6</version>
           <configuration>
             <argLine>@{argLine} -showversion -Xmx1g -Xms1g -Xlog:gc* -XX:+PrintCommandLineFlags</argLine>
           </configuration>
@@ -480,7 +480,7 @@
         <plugin>
           <groupId>org.jacoco</groupId>
           <artifactId>jacoco-maven-plugin</artifactId>
-          <version>0.8.7</version>
+          <version>0.8.8</version>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -523,7 +523,7 @@
       <dependency>
         <groupId>com.google.javascript</groupId>
         <artifactId>closure-compiler</artifactId>
-        <version>v20220301</version>
+        <version>v20220405</version>
       </dependency>
 
       <dependency>
