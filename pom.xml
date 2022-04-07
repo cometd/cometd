@@ -56,7 +56,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <!-- tag::jetty-version[] -->
-    <jetty-version>9.4.46.v20220330</jetty-version>
+    <jetty-version>9.4.46.v20220331</jetty-version>
     <!-- end::jetty-version[] -->
     <graalvm-version>22.0.0.2</graalvm-version>
     <slf4j-version>1.7.36</slf4j-version>
@@ -540,7 +540,7 @@
       <dependency>
         <groupId>com.google.javascript</groupId>
         <artifactId>closure-compiler</artifactId>
-        <version>v20220301</version>
+        <version>v20220405</version>
       </dependency>
 
       <dependency>
