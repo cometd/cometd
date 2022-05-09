@@ -652,7 +652,9 @@
             return new window.XMLHttpRequest();
         };
 
-        function _copyContext(xhr) {
+        _self.xhrSend = function(packet) {
+            var xhr = _self.newXMLHttpRequest();
+
             try {
                 // Copy external context, to be used in other environments.
                 xhr.context = _self.context;
@@ -661,11 +663,7 @@
                 // Object.freeze(), or Object.preventExtensions().
                 this._debug('Could not copy transport context into XHR', e);
             }
-        }
 
-        _self.xhrSend = function(packet) {
-            var xhr = _self.newXMLHttpRequest();
-            _copyContext(xhr);
             xhr.withCredentials = true;
             xhr.open('POST', packet.url, packet.sync !== true);
             var headers = packet.headers;
