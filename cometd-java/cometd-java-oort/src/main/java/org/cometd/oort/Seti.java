@@ -1078,7 +1078,7 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
     private class AllChannelsFilter implements BayeuxServer.SubscriptionListener, ServerSession.MessageListener {
         @Override
         public void subscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
-            if ("/**".equals(channel.getId()) && !session.isLocalSession()) {
+            if ("/**".equals(channel.getId()) && !session.isLocalSession() && !getOort().isOort(session)) {
                 session.addListener(this);
             }
         }
