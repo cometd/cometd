@@ -97,6 +97,50 @@ public class OortObjectTest extends AbstractOortObjectTest {
 
     @ParameterizedTest
     @MethodSource("transports")
+    public void testShareObjectWithAllChannelsSubscription(String serverTransport) throws Exception {
+        prepare(serverTransport);
+
+        String name = "test";
+        OortObject.Factory<Map<String, Object>> factory = OortObjectFactories.forMap();
+        OortObject<Map<String, Object>> oortObject1 = new OortObject<>(oort1, name, factory);
+        OortObject<Map<String, Object>> oortObject2 = new OortObject<>(oort2, name, factory);
+        startOortObjects(oortObject1, oortObject2);
+
+        // Subscribe to /**, which is treated specially in Oort and Seti.
+        oort1.observeChannel("/**");
+        oort2.observeChannel("/**");
+        // Wait a while to be sure to be subscribed.
+        Thread.sleep(1000);
+
+        String key1 = "key1";
+        String value1 = "value1";
+
+        // The other OortObject listens to receive the object.
+        CountDownLatch objectLatch2 = new CountDownLatch(1);
+        oortObject2.addListener(new OortObject.Listener<Map<String, Object>>() {
+            @Override
+            public void onUpdated(OortObject.Info<Map<String, Object>> oldInfo, OortObject.Info<Map<String, Object>> newInfo) {
+                Assertions.assertEquals(value1, newInfo.getObject().get(key1));
+                objectLatch2.countDown();
+            }
+        });
+
+        // Set the object and share the change.
+        Map<String, Object> object1 = factory.newObject(null);
+        object1.put(key1, value1);
+        oortObject1.setAndShare(object1, null);
+
+        Assertions.assertTrue(objectLatch2.await(5, TimeUnit.SECONDS));
+
+        Assertions.assertTrue(oortObject2.getInfo(oort2.getURL()).getObject().isEmpty());
+        Assertions.assertEquals(object1, oortObject2.getInfo(oort1.getURL()).getObject());
+
+        Map<String, Object> objectAtOort2 = oortObject2.merge(OortObjectMergers.mapUnion());
+        Assertions.assertEquals(object1, objectAtOort2);
+    }
+
+    @ParameterizedTest
+    @MethodSource("transports")
     public void testLocalObjectIsPushedWhenNodeJoins(String serverTransport) throws Exception {
         prepare(serverTransport);
 

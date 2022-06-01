@@ -22,6 +22,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ScheduledExecutorService;
+import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
@@ -60,9 +61,12 @@ public class OortComet extends BayeuxClient {
                 if (logger.isDebugEnabled()) {
                     logger.debug("Republishing message {} from {}", message, _cometURL);
                 }
-                // BayeuxServer may sweep channels, so calling bayeux.getChannel(...)
-                // may return null, and therefore we use the client to send the message.
-                _oort.getOortSession().getChannel(message.getChannel()).publish(message);
+                // Applications may observe /**, but we only want to republish broadcast messages.
+                if (ChannelId.isBroadcast(message.getChannel())) {
+                    // BayeuxServer may sweep channels, so calling bayeux.getChannel(...)
+                    // may return null, and therefore we use the client to send the message.
+                    _oort.getOortSession().getChannel(message.getChannel()).publish(message);
+                }
             };
 
             ClientSessionChannel.MessageListener existing = _subscriptions.putIfAbsent(channel, listener);
