@@ -46,8 +46,9 @@ import org.slf4j.LoggerFactory;
 
 public class OkHttpWebSocketTransport extends AbstractWebSocketTransport {
     private static final Logger LOGGER = LoggerFactory.getLogger(OkHttpWebSocketTransport.class);
-    private static final String SEC_WEB_SOCKET_PROTOCOL_HEADER = "Sec-WebSocket-Protocol";
-    private static final String SEC_WEB_SOCKET_ACCEPT_HEADER = "Sec-WebSocket-Accept";
+    private static final String SEC_WEBSOCKET_EXTENSIONS_HEADER = "Sec-WebSocket-Extensions";
+    private static final String SEC_WEBSOCKET_PROTOCOL_HEADER = "Sec-WebSocket-Protocol";
+    private static final String SEC_WEBSOCKET_ACCEPT_HEADER = "Sec-WebSocket-Accept";
 
     private final OkHttpClient okHttpClient;
     private boolean webSocketSupported;
@@ -124,7 +125,10 @@ public class OkHttpWebSocketTransport extends AbstractWebSocketTransport {
         upgradeRequest.url(uri);
         String protocol = getProtocol();
         if (protocol != null && !protocol.isEmpty()) {
-            upgradeRequest.header(SEC_WEB_SOCKET_PROTOCOL_HEADER, protocol);
+            upgradeRequest.header(SEC_WEBSOCKET_PROTOCOL_HEADER, protocol);
+        }
+        if (isPerMessageDeflateEnabled()) {
+            upgradeRequest.addHeader(SEC_WEBSOCKET_EXTENSIONS_HEADER, "permessage-deflate");
         }
         List<HttpCookie> cookies = getCookies(URI.create(uri));
         for (HttpCookie cookie : cookies) {
@@ -134,7 +138,7 @@ public class OkHttpWebSocketTransport extends AbstractWebSocketTransport {
     }
 
     protected void onHandshakeResponse(Response response) {
-        webSocketSupported = response.header(SEC_WEB_SOCKET_ACCEPT_HEADER) != null;
+        webSocketSupported = response.header(SEC_WEBSOCKET_ACCEPT_HEADER) != null;
         storeCookies(URI.create(getURL()), headersToMap(response.headers()));
     }
 
