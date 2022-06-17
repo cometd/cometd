@@ -43,6 +43,7 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
     public static final String PREFIX = "ws";
     public static final String NAME = "websocket";
     public static final String PROTOCOL_OPTION = "protocol";
+    public static final String PERMESSAGE_DEFLATE_OPTION = "permessageDeflate";
     public static final String CONNECT_TIMEOUT_OPTION = "connectTimeout";
     public static final String IDLE_TIMEOUT_OPTION = "idleTimeout";
     public static final String STICKY_RECONNECT_OPTION = "stickyReconnect";
@@ -54,6 +55,7 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
     private final Object _lock = this;
     private boolean _open;
     private String _protocol;
+    private boolean _perMessageDeflate;
     private long _connectTimeout;
     private long _idleTimeout;
     private boolean _stickyReconnect;
@@ -80,6 +82,7 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
     public void init() {
         super.init();
         _protocol = getOption(PROTOCOL_OPTION, _protocol);
+        _perMessageDeflate = getOption(PERMESSAGE_DEFLATE_OPTION, false);
         setMaxNetworkDelay(15000L);
         _connectTimeout = 30000L;
         _idleTimeout = 60000L;
@@ -105,6 +108,10 @@ public abstract class AbstractWebSocketTransport extends HttpClientTransport imp
 
     public String getProtocol() {
         return _protocol;
+    }
+
+    public boolean isPerMessageDeflateEnabled() {
+        return _perMessageDeflate;
     }
 
     public long getIdleTimeout() {

@@ -92,12 +92,14 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
                 LOGGER.debug("Opening websocket session to {}", uri);
             }
             _webSocketContainer.setDefaultMaxSessionIdleTimeout(getIdleTimeout());
-            ClientEndpointConfig.Configurator configurator = new Configurator();
+            ClientEndpointConfig.Builder config = ClientEndpointConfig.Builder.create();
             String protocol = getProtocol();
-            ClientEndpointConfig config = ClientEndpointConfig.Builder.create()
-                    .preferredSubprotocols(protocol == null ? null : Collections.singletonList(protocol))
-                    .configurator(configurator).build();
-            Delegate delegate = connect(_webSocketContainer, config, uri);
+            if (protocol != null) {
+                config = config.preferredSubprotocols(Collections.singletonList(protocol));
+            }
+            ClientEndpointConfig.Configurator configurator = new Configurator();
+            config = config.configurator(configurator);
+            Delegate delegate = connect(_webSocketContainer, config.build(), uri);
             _webSocketConnected = true;
             return delegate;
         } catch (ConnectException | SocketTimeoutException | UnresolvedAddressException | UnknownHostException x) {
@@ -125,6 +127,16 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
     }
 
     protected void onHandshakeRequest(Map<String, List<String>> headers) {
+        if (isPerMessageDeflateEnabled()) {
+            ArrayList<String> extensions = new ArrayList<>();
+            headers.compute("Sec-WebSocket-Extensions", (k, v) -> {
+                if (v != null) {
+                    extensions.addAll(v);
+                }
+                extensions.add("permessage-deflate");
+                return extensions;
+            });
+        }
         List<HttpCookie> cookies = getCookies(URI.create(getURL()));
         if (!cookies.isEmpty()) {
             List<String> cookieHeader = headers.get(COOKIE_HEADER);
