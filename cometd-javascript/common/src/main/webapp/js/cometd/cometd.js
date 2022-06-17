@@ -618,7 +618,7 @@
             } catch (e) {
                 // May happen if XHR is wrapped by Object.seal(),
                 // Object.freeze(), or Object.preventExtensions().
-                this._debug('Could not copy transport context into XHR', e);
+                _self._debug('Could not copy transport context into XHR', e);
             }
         }
 
