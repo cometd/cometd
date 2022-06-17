@@ -33,6 +33,7 @@ import org.cometd.common.JSONContext;
 import org.cometd.common.JettyJSONContextClient;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.ServerSessionImpl;
+import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.cometd.server.websocket.common.AbstractWebSocketTransport;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.junit.jupiter.api.Assertions;
@@ -43,6 +44,16 @@ public class SlowConnectionTest extends ClientServerWebSocketTest {
     @ParameterizedTest
     @MethodSource("wsTypes")
     public void testLargeMessageOnSlowConnection(String wsType) throws Exception {
+        testLargeMessageOnSlowConnection(wsType, false);
+    }
+
+    @ParameterizedTest
+    @MethodSource("wsTypes")
+    public void testLargeMessageOnSlowConnectionWithAckExtension(String wsType) throws Exception {
+        testLargeMessageOnSlowConnection(wsType, true);
+    }
+
+    private void testLargeMessageOnSlowConnection(String wsType, boolean ackExtension) throws Exception {
         Map<String, String> serverOptions = new HashMap<>();
         long timeout = 2000;
         serverOptions.put(AbstractServerTransport.TIMEOUT_OPTION, String.valueOf(timeout));
@@ -54,6 +65,9 @@ public class SlowConnectionTest extends ClientServerWebSocketTest {
         startServer();
 
         bayeux.setDetailedDump(true);
+        if (ackExtension) {
+            bayeux.addExtension(new AcknowledgedMessagesExtension());
+        }
 
         try (Socket socket = new Socket("localhost", connector.getLocalPort())) {
             OutputStream output = socket.getOutputStream();
@@ -94,6 +108,7 @@ public class SlowConnectionTest extends ClientServerWebSocketTest {
                     "\"channel\":\"/meta/handshake\"," +
                     "\"version\":\"1.0\"," +
                     "\"supportedConnectionTypes\":[\"websocket\"]" +
+                    (ackExtension ? ",\"ext\":{\"ack\":true}" : "") +
                     "}]";
             wsWrite(output, handshake);
             String text = wsRead(input);
@@ -107,7 +122,7 @@ public class SlowConnectionTest extends ClientServerWebSocketTest {
                     "\"id\":\"2\"," +
                     "\"channel\":\"/meta/subscribe\"," +
                     "\"clientId\":\"" + clientId + "\"," +
-                    "\"subscription\": \"" + channelName + "\"" +
+                    "\"subscription\":\"" + channelName + "\"" +
                     "}]";
             wsWrite(output, subscribe);
             text = wsRead(input);
@@ -120,13 +135,19 @@ public class SlowConnectionTest extends ClientServerWebSocketTest {
                     "\"channel\":\"/meta/connect\"," +
                     "\"connectionType\":\"websocket\"," +
                     "\"clientId\":\"" + clientId + "\"," +
-                    "\"advice\": {\"timeout\":0}" +
+                    "\"advice\":{\"timeout\":0}" +
+                    (ackExtension ? ",\"ext\":{\"ack\":0}" : "") +
                     "}]";
             wsWrite(output, connect1);
             text = wsRead(input);
             Message.Mutable connect1Reply = jsonContext.parse(text)[0];
             Assertions.assertEquals(Channel.META_CONNECT, connect1Reply.getChannel());
             Assertions.assertTrue(connect1Reply.isSuccessful());
+            long ack = 0;
+            Map<String, Object> connect1ReplyExt = connect1Reply.getExt();
+            if (connect1ReplyExt != null) {
+                ack = ((Number)connect1ReplyExt.get("ack")).longValue();
+            }
 
             CountDownLatch removeLatch = new CountDownLatch(1);
             ServerSessionImpl session = (ServerSessionImpl)bayeux.getSession(clientId);
@@ -137,6 +158,7 @@ public class SlowConnectionTest extends ClientServerWebSocketTest {
                     "\"channel\":\"/meta/connect\"," +
                     "\"connectionType\":\"websocket\"," +
                     "\"clientId\":\"" + clientId + "\"" +
+                    (ackExtension ? ",\"ext\":{\"ack\":" + ack + "}" : "") +
                     "}]";
             wsWrite(output, connect2);
 
