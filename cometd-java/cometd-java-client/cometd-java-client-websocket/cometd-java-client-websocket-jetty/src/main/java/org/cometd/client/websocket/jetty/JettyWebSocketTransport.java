@@ -96,6 +96,9 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
             if (protocol != null) {
                 request.setSubProtocols(protocol);
             }
+            if (isPerMessageDeflateEnabled()) {
+                request.addExtensions("permessage-deflate");
+            }
             Delegate delegate = connect(_webSocketClient, request, uri);
             _webSocketConnected = true;
             return delegate;

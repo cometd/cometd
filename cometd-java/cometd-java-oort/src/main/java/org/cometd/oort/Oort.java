@@ -730,7 +730,7 @@ public class Oort extends ContainerLifeCycle {
     private class AllChannelsFilter implements BayeuxServer.SubscriptionListener, ServerSession.MessageListener {
         @Override
         public void subscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
-            if ("/**".equals(channel.getId()) && !session.isLocalSession()) {
+            if ("/**".equals(channel.getId()) && !session.isLocalSession() && !isOort(session)) {
                 session.addListener(this);
             }
         }

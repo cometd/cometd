@@ -120,11 +120,12 @@ public class CometDLoadClient implements MeasureConverter {
     private boolean interactive = true;
     private String host = "localhost";
     private int port = 8080;
-    private ClientTransportType transport = ClientTransportType.LONG_POLLING;
-    private boolean http2 = false;
     private boolean tls = false;
     private int selectors = 1;
     private int maxThreads = 256;
+    private ClientTransportType transport = ClientTransportType.LONG_POLLING;
+    private boolean http2 = false;
+    private boolean perMessageDeflate = false;
     private String context = Config.CONTEXT_PATH;
     private String channel = "/a";
     private int rooms = 100;
@@ -153,16 +154,18 @@ public class CometDLoadClient implements MeasureConverter {
                 client.host = arg.substring("--host=".length());
             } else if (arg.startsWith("--port=")) {
                 client.port = Integer.parseInt(arg.substring("--port=".length()));
-            } else if (arg.startsWith("--transport=")) {
-                client.transport = ClientTransportType.valueOf(arg.substring("--transport=".length()));
-            } else if (arg.equals("--http2")) {
-                client.http2 = true;
             } else if (arg.equals("--tls")) {
                 client.tls = true;
             } else if (arg.startsWith("--selectors=")) {
                 client.selectors = Integer.parseInt(arg.substring("--selectors=".length()));
             } else if (arg.startsWith("--maxThreads=")) {
                 client.maxThreads = Integer.parseInt(arg.substring("--maxThreads=".length()));
+            } else if (arg.startsWith("--transport=")) {
+                client.transport = ClientTransportType.valueOf(arg.substring("--transport=".length()));
+            } else if (arg.equals("--http2")) {
+                client.http2 = true;
+            } else if (arg.equals("--permessage-deflate")) {
+                client.perMessageDeflate = true;
             } else if (arg.startsWith("--context=")) {
                 client.context = arg.substring("--context=".length());
             } else if (arg.startsWith("--channel=")) {
@@ -276,6 +279,21 @@ public class CometDLoadClient implements MeasureConverter {
         } else {
             http2 = false;
         }
+
+        boolean perMessageDeflate = this.perMessageDeflate;
+        if (transport == ClientTransportType.JETTY_WEBSOCKET || transport == ClientTransportType.JSR_WEBSOCKET) {
+            if (interactive) {
+                System.err.printf("enable permessage-deflate extension [%b]: ", perMessageDeflate);
+                String value = console.readLine().trim();
+                if (value.length() == 0) {
+                    value = String.valueOf(perMessageDeflate);
+                }
+                perMessageDeflate = Boolean.parseBoolean(value);
+            }
+        } else {
+            perMessageDeflate = false;
+        }
+        this.perMessageDeflate = perMessageDeflate;
 
         String contextPath = this.context;
         if (interactive) {
@@ -667,6 +685,7 @@ public class CometDLoadClient implements MeasureConverter {
                 // Differently from HTTP where the idle timeout is adjusted if it is a /meta/connect
                 // for WebSocket we need an idle timeout that is longer than the /meta/connect timeout.
                 options.put(WebSocketTransport.IDLE_TIMEOUT_OPTION, Config.META_CONNECT_TIMEOUT + httpClient.getIdleTimeout());
+                options.put(WebSocketTransport.PERMESSAGE_DEFLATE_OPTION, perMessageDeflate);
                 return new WebSocketTransport(options, scheduler, webSocketContainer);
             }
             case JETTY_WEBSOCKET: {
@@ -677,6 +696,7 @@ public class CometDLoadClient implements MeasureConverter {
                 // Differently from HTTP where the idle timeout is adjusted if it is a /meta/connect
                 // for WebSocket we need an idle timeout that is longer than the /meta/connect timeout.
                 options.put(JettyWebSocketTransport.IDLE_TIMEOUT_OPTION, Config.META_CONNECT_TIMEOUT + httpClient.getIdleTimeout());
+                options.put(WebSocketTransport.PERMESSAGE_DEFLATE_OPTION, perMessageDeflate);
                 return new JettyWebSocketTransport(options, scheduler, webSocketClient);
             }
             default: {

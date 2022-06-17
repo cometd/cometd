@@ -54,6 +54,7 @@ import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.cometd.server.http.AsyncJSONTransport;
 import org.cometd.server.http.JSONTransport;
 import org.cometd.server.websocket.common.AbstractWebSocketEndPoint;
+import org.cometd.server.websocket.common.AbstractWebSocketTransport;
 import org.cometd.server.websocket.javax.WebSocketTransport;
 import org.cometd.server.websocket.jetty.JettyWebSocketTransport;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
@@ -92,6 +93,7 @@ public class CometDLoadServer {
     private int selectors = Runtime.getRuntime().availableProcessors();
     private int maxThreads = 256;
     private String transports = "jsrws,asynchttp";
+    private boolean perMessageDeflate = false;
     private boolean statistics = true;
     private boolean latencies = true;
     private boolean longRequests = false;
@@ -118,6 +120,8 @@ public class CometDLoadServer {
                 server.maxThreads = Integer.parseInt(arg.substring("--maxThreads=".length()));
             } else if (arg.startsWith("--transports=")) {
                 server.transports = arg.substring("--transports=".length());
+            } else if (arg.equals("--permessage-deflate")) {
+                server.perMessageDeflate = true;
             } else if (arg.equals("--statistics")) {
                 server.statistics = true;
             } else if (arg.equals("--latencies")) {
@@ -187,24 +191,33 @@ public class CometDLoadServer {
             transports = value;
         }
         for (String token : transports.split(",")) {
-            switch (token.trim()) {
-                case "jsrws":
-                    bayeuxServer.addTransport(new WebSocketTransport(bayeuxServer) {
+            String transport = token.trim();
+            switch (transport) {
+                case "jsrws": {
+                    boolean perMessageDeflate = readPerMessageDeflate(transport, console);
+                    WebSocketTransport serverTransport = new WebSocketTransport(bayeuxServer) {
                         @Override
                         protected void writeComplete(AbstractWebSocketEndPoint.Context context, List<ServerMessage> messages) {
                             messageLatencyExtension.complete(messages);
                         }
-                    });
+                    };
+                    serverTransport.setOption(AbstractWebSocketTransport.ENABLE_EXTENSION_PREFIX_OPTION + "permessage-deflate", perMessageDeflate);
+                    bayeuxServer.addTransport(serverTransport);
                     break;
-                case "jettyws":
-                    bayeuxServer.addTransport(new JettyWebSocketTransport(bayeuxServer) {
+                }
+                case "jettyws": {
+                    boolean perMessageDeflate = readPerMessageDeflate(transport, console);
+                    JettyWebSocketTransport serverTransport = new JettyWebSocketTransport(bayeuxServer) {
                         @Override
                         protected void writeComplete(AbstractWebSocketEndPoint.Context context, List<ServerMessage> messages) {
                             messageLatencyExtension.complete(messages);
                         }
-                    });
+                    };
+                    serverTransport.setOption(AbstractWebSocketTransport.ENABLE_EXTENSION_PREFIX_OPTION + "permessage-deflate", perMessageDeflate);
+                    bayeuxServer.addTransport(serverTransport);
                     break;
-                case "http":
+                }
+                case "http": {
                     bayeuxServer.addTransport(new JSONTransport(bayeuxServer) {
                         @Override
                         protected void writeComplete(Context context, List<ServerMessage> messages) {
@@ -212,7 +225,8 @@ public class CometDLoadServer {
                         }
                     });
                     break;
-                case "asynchttp":
+                }
+                case "asynchttp": {
                     bayeuxServer.addTransport(new AsyncJSONTransport(bayeuxServer) {
                         @Override
                         protected void writeComplete(Context context, List<ServerMessage> messages) {
@@ -220,8 +234,10 @@ public class CometDLoadServer {
                         }
                     });
                     break;
-                default:
+                }
+                default: {
                     throw new IllegalArgumentException("Invalid transport: " + token);
+                }
             }
         }
 
@@ -347,6 +363,19 @@ public class CometDLoadServer {
         server.start();
 
         new StatisticsService(this);
+    }
+
+    private boolean readPerMessageDeflate(String transport, BufferedReader console) throws IOException {
+        boolean perMessageDeflate = this.perMessageDeflate;
+        if (interactive) {
+            System.err.printf("enable %s permessage-deflate extension [%b]: ", transport, perMessageDeflate);
+            String value = console.readLine().trim();
+            if (value.length() == 0) {
+                value = String.valueOf(perMessageDeflate);
+            }
+            perMessageDeflate = Boolean.parseBoolean(value);
+        }
+        return perMessageDeflate;
     }
 
     public static class StatisticsService extends AbstractService {
