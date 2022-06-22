@@ -542,7 +542,7 @@
         <groupId>com.google.javascript</groupId>
         <artifactId>closure-compiler</artifactId>
         <!-- Last version to support Java 8 -->
-        <version>v20220502</version>
+        <version>v20220601</version>
       </dependency>
 
       <dependency>
