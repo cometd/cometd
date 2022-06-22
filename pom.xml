@@ -56,9 +56,9 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <!-- tag::jetty-version[] -->
-    <jetty-version>9.4.47.v20220610</jetty-version>
+    <jetty-version>9.4.48.v20220622</jetty-version>
     <!-- end::jetty-version[] -->
-    <!-- GraalVM stays at version 21.x to support Java 8 -->
+    <!-- Last GraalVM version to support Java 8 -->
     <graalvm-version>21.3.2.1</graalvm-version>
     <slf4j-version>1.7.36</slf4j-version>
     <log4j2-version>2.17.2</log4j2-version>
@@ -541,7 +541,8 @@
       <dependency>
         <groupId>com.google.javascript</groupId>
         <artifactId>closure-compiler</artifactId>
-        <version>v20220601</version>
+        <!-- Last version to support Java 8 -->
+        <version>v20220502</version>
       </dependency>
 
       <dependency>
