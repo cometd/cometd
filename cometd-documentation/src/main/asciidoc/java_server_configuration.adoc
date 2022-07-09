@@ -224,6 +224,7 @@ Here is the list of configuration init parameters (to be specified in `web.xml`)
 | ws.requireHandshakePerConnection
 | false
 | Whether every new WebSocket connection requires a handshake, see xref:_security[the security section].
+  When set to `true`, and the communication with the server happens via WebSocket, the xref:_extensions_reload[reload extension] will not work.
 
 | ws.enableExtension.<extension_name>
 | true
