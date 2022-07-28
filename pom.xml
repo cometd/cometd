@@ -61,7 +61,7 @@
     <!-- Last GraalVM version to support Java 8 -->
     <graalvm-version>21.3.2.1</graalvm-version>
     <slf4j-version>1.7.36</slf4j-version>
-    <log4j2-version>2.17.2</log4j2-version>
+    <log4j2-version>2.18.0</log4j2-version>
     <spring-version>5.3.22</spring-version>
     <spring-boot-version>2.7.0</spring-boot-version>
     <jackson-version>2.13.3</jackson-version>
