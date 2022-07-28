@@ -58,7 +58,7 @@
     <!-- tag::jetty-version[] -->
     <jetty-version>10.0.11</jetty-version>
     <!-- end::jetty-version[] -->
-    <graalvm-version>22.1.0.1</graalvm-version>
+    <graalvm-version>22.2.0</graalvm-version>
     <slf4j-version>2.0.0-alpha7</slf4j-version>
     <log4j2-version>2.17.2</log4j2-version>
     <spring-version>5.3.21</spring-version>
@@ -523,7 +523,7 @@
       <dependency>
         <groupId>com.google.javascript</groupId>
         <artifactId>closure-compiler</artifactId>
-        <version>v20220601</version>
+        <version>v20220719</version>
       </dependency>
 
       <dependency>
