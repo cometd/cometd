@@ -61,8 +61,8 @@
     <!-- Last GraalVM version to support Java 8 -->
     <graalvm-version>21.3.2.1</graalvm-version>
     <slf4j-version>1.7.36</slf4j-version>
-    <log4j2-version>2.17.2</log4j2-version>
-    <spring-version>5.3.21</spring-version>
+    <log4j2-version>2.18.0</log4j2-version>
+    <spring-version>5.3.22</spring-version>
     <spring-boot-version>2.7.0</spring-boot-version>
     <jackson-version>2.13.3</jackson-version>
     <dojo-version>1.17.2</dojo-version>
@@ -430,7 +430,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-resources-plugin</artifactId>
-          <version>3.2.0</version>
+          <version>3.3.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -478,7 +478,7 @@
         <plugin>
           <groupId>org.apache.felix</groupId>
           <artifactId>maven-bundle-plugin</artifactId>
-          <version>5.1.6</version>
+          <version>5.1.7</version>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
