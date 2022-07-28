@@ -9,7 +9,7 @@
   <!--  Request that Jetty create an MBean to manage the Bayeux instance -->
   <context-param>
     <param-name>org.eclipse.jetty.server.context.ManagedAttributes</param-name>
-    <param-value>org.cometd.bayeux,org.cometd.oort.Oort</param-value>
+    <param-value>org.cometd.bayeux,org.cometd.oort.Oort,org.cometd.oort.Seti</param-value>
   </context-param>
 
   <!-- Filter to support cross domain requests -->

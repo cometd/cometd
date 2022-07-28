@@ -58,11 +58,11 @@
     <!-- tag::jetty-version[] -->
     <jetty-version>11.0.11</jetty-version>
     <!-- end::jetty-version[] -->
-    <graalvm-version>22.1.0.1</graalvm-version>
+    <graalvm-version>22.2.0</graalvm-version>
     <slf4j-version>2.0.0-alpha7</slf4j-version>
-    <log4j2-version>2.17.2</log4j2-version>
-    <spring-version>5.3.21</spring-version>
-    <spring-boot-version>2.7.0</spring-boot-version>
+    <log4j2-version>2.18.0</log4j2-version>
+    <spring-version>5.3.22</spring-version>
+    <spring-boot-version>2.7.2</spring-boot-version>
     <jackson-version>2.13.3</jackson-version>
     <dojo-version>1.17.2</dojo-version>
     <okhttp-version>4.10.0</okhttp-version>
@@ -345,7 +345,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-assembly-plugin</artifactId>
-          <version>3.3.0</version>
+          <version>3.4.2</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -365,7 +365,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-deploy-plugin</artifactId>
-          <version>3.0.0-M2</version>
+          <version>3.0.0</version>
           <configuration>
             <retryFailedDeploymentCount>8</retryFailedDeploymentCount>
           </configuration>
@@ -383,7 +383,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-install-plugin</artifactId>
-          <version>3.0.0-M1</version>
+          <version>3.0.1</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -410,7 +410,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-resources-plugin</artifactId>
-          <version>3.2.0</version>
+          <version>3.3.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -465,12 +465,12 @@
         <plugin>
           <groupId>org.apache.felix</groupId>
           <artifactId>maven-bundle-plugin</artifactId>
-          <version>5.1.6</version>
+          <version>5.1.7</version>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>exec-maven-plugin</artifactId>
-          <version>3.0.0</version>
+          <version>3.1.0</version>
         </plugin>
         <plugin>
           <groupId>org.eclipse.jetty</groupId>
@@ -523,13 +523,13 @@
       <dependency>
         <groupId>com.google.javascript</groupId>
         <artifactId>closure-compiler</artifactId>
-        <version>v20220601</version>
+        <version>v20220719</version>
       </dependency>
 
       <dependency>
         <groupId>org.junit.jupiter</groupId>
         <artifactId>junit-jupiter</artifactId>
-        <version>5.8.2</version>
+        <version>5.9.0</version>
         <scope>test</scope>
       </dependency>
       <dependency>
