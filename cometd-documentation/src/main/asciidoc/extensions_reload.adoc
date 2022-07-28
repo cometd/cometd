@@ -73,9 +73,9 @@ cometd.reload({
 
 The reload extension is useful to allow users to reload CometD pages, or to navigate to other CometD pages, without going through a disconnect and handshake cycle, thus resuming an existing CometD session on the reloaded or on the new page.
 
-When reloading or navigating away from a page, browsers will destroy the JavaScript context associated to that page, and interrupt the connection to the server too.
-On the reloaded or on the new page, the JavaScript context is recreated anew by the browser, but the CometD JavaScript library has lost all the CometD session details that were established in the previous page.
-In absence of the reload extension, application need to go through another handshake step to recreate the CometD session details needed.
+When reloading or navigating away from a page, the browser destroys the JavaScript context associated to that page, and interrupts the connection(s) to the server.
+On the reloaded or on the new page, the JavaScript context is recreated anew by the browser, new connections are opened to the server, but the CometD JavaScript library has lost all the CometD session details that were established in the previous page.
+In absence of the reload extension, the application needs to go through another handshake step to recreate the CometD session details needed.
 
 The reload extension gives the ability to resume the CometD session in the new page, by re-establishing the previously successful CometD session.
 This is useful especially when the server builds a stateful context for the CometD session that is not to be lost just because the user refreshed the page, or navigated to another part of the same CometD web application.
@@ -90,6 +90,14 @@ When `cometd.reload()` is called, the reload extension saves the CometD session 
 
 When the new page loads up, it will execute the same code executed on the first page load, namely the code that configured CometD, that registered channel listeners, and that finally called `cometd.handshake()`.
 The reload extension is invoked upon the new handshake, will find the CometD session state saved in the `SessionStorage` and will re-establish the CometD session with the information retrieved from the `SessionStorage`.
+
+[CAUTION]
+====
+If the CometD server is configured with xref:_java_server_configuration_transports[`ws.requireHandshakePerConnection`] set to `true`, and the communication with the server happens via WebSocket, then the reload extension will not work.
+
+This is because when the new page loads up, the browser will open a new WebSocket connection and the server will require a new handshake for this new connection.
+The new handshake will create a different CometD session, and the CometD session before the reload is lost because it was associated with the previous handshake.
+====
 
 [NOTE]
 ====

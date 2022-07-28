@@ -160,12 +160,12 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         lock.lock();
         try {
             if (_expireTime == 0) {
-                if (_maxProcessing > 0 && now > _messageTime + _maxProcessing) {
+                if (_maxProcessing > 0 && (now - _messageTime) > _maxProcessing) {
                     _logger.info("Sweeping during processing {}", this);
                     remove = true;
                 }
             } else {
-                if (now > _expireTime) {
+                if (now - _expireTime > 0) {
                     if (_logger.isDebugEnabled()) {
                         _logger.debug("Sweeping {}", this);
                     }
@@ -1053,6 +1053,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         long last;
         long expire;
         State state;
+        int size;
         long now = System.nanoTime();
         lock.lock();
         try {
@@ -1060,27 +1061,29 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
             last = now - _messageTime;
             expire = _expireTime == 0 ? 0 : _expireTime - now;
             state = _state;
+            size = _queue.size();
         } finally {
             lock.unlock();
         }
-        return String.format("%s@%x[%s,%s,cycle=%d,last=%d,expire=%d]",
+        return String.format("%s@%x[%s,%s,q=%d,cycle=%d,last=%d,expire=%d]",
                 getClass().getSimpleName(),
                 hashCode(),
                 _id,
                 state,
+                size,
                 cycle,
                 TimeUnit.NANOSECONDS.toMillis(last),
                 TimeUnit.NANOSECONDS.toMillis(expire));
     }
 
     private class LazyTask implements Runnable {
-        private long _execution;
+        private long _nextExecutionNanos;
         private volatile Task _task;
 
         @Override
         public void run() {
             flush();
-            _execution = 0;
+            _nextExecutionNanos = 0;
             _task = null;
         }
 
@@ -1090,10 +1093,11 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         }
 
         public boolean schedule(long lazyTimeout) {
-            long execution = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(lazyTimeout);
-            if (_task == null || execution < _execution) {
+            long nextExecutionNanos = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(lazyTimeout);
+            // Reschedule if the next execution is earlier than the previous one.
+            if (_task == null || (_nextExecutionNanos - nextExecutionNanos) > 0) {
                 cancel();
-                _execution = execution;
+                _nextExecutionNanos = nextExecutionNanos;
                 _task = _bayeux.schedule(this, lazyTimeout);
                 return true;
             }
