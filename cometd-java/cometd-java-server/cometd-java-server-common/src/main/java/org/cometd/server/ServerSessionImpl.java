@@ -280,6 +280,12 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
 
     private Boolean enqueueMessage(ServerSession sender, ServerMessage.Mutable message) {
         synchronized (getLock()) {
+            if (isTerminated() && !ChannelId.isMeta(message.getChannel())) {
+                if (_logger.isDebugEnabled()) {
+                    _logger.debug("Dropping message {} for terminated {}", message, this);
+                }
+                return null;
+            }
             for (ServerSessionListener listener : _listeners) {
                 if (listener instanceof QueueMaxedListener) {
                     int maxQueueSize = _maxQueue;
