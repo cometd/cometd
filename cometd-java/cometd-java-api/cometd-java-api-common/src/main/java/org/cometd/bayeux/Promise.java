@@ -114,7 +114,7 @@ public interface Promise<C> {
      * <p>Returns a Promise that, when completed,
      * invokes the given {@link BiConsumer} function.</p>
      *
-     * @param fn the function to invoke when the Promise is completed
+     * @param fn  the function to invoke when the Promise is completed
      * @param <T> the type of the result value
      * @return a Promise that invokes the BiConsumer function
      */

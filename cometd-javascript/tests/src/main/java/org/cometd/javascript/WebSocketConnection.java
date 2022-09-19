@@ -37,11 +37,11 @@ public class WebSocketConnection implements WebSocketListener {
      * <p>This constructor is invoked from {@code browser.js},
      * from the {@code window.WebSocket} constructor.</p>
      *
-     * @param javaScript the (java) JavaScript object
+     * @param javaScript  the (java) JavaScript object
      * @param jsWebSocket the (javascript) WebSocket object created in {@code browser.js}
-     * @param connector the (java) WebSocketConnector object
-     * @param url the WebSocket URL passed to the {@code window.WebSocket(url, protocol)} constructor
-     * @param protocol the WebSocket protocol passed to the {@code window.WebSocket(url, protocol)} constructor
+     * @param connector   the (java) WebSocketConnector object
+     * @param url         the WebSocket URL passed to the {@code window.WebSocket(url, protocol)} constructor
+     * @param protocol    the WebSocket protocol passed to the {@code window.WebSocket(url, protocol)} constructor
      */
     public WebSocketConnection(JavaScript javaScript, Object jsWebSocket, Object connector, String url, String protocol) {
         this.javaScript = javaScript;
@@ -90,7 +90,7 @@ public class WebSocketConnection implements WebSocketListener {
      * <p>This method is invoked from {@code browser.js},
      * from the {@code window.WebSocket.close(code, reason)} function.</p>
      *
-     * @param code the close code
+     * @param code   the close code
      * @param reason the close reason
      */
     public void close(int code, String reason) {

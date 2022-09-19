@@ -104,8 +104,8 @@ public interface JSONContext<T extends Message.Mutable> {
          * <p>Parses a JSON string from the given reader.</p>
          *
          * @param reader the reader to parse from
-         * @param type the type to cast the result to
-         * @param <R> the type of the result
+         * @param type   the type to cast the result to
+         * @param <R>    the type of the result
          * @return the result of the JSON parsing
          * @throws ParseException if the JSON is malformed
          */
@@ -117,7 +117,7 @@ public interface JSONContext<T extends Message.Mutable> {
      */
     public interface AsyncParser {
         /**
-         * @param bytes the bytes chunk to parse
+         * @param bytes  the bytes chunk to parse
          * @param offset the offset to start parsing from
          * @param length the number of bytes to parse
          */

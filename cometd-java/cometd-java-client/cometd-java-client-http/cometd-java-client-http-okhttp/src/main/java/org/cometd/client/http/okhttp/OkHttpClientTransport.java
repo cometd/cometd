@@ -153,13 +153,15 @@ public class OkHttpClientTransport extends AbstractHttpClientTransport {
             }
         }
 
-        if (LOGGER.isDebugEnabled())
+        if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("Sending request {}", request);
+        }
         call.enqueue(new Callback() {
             @Override
             public void onResponse(Call call, Response response) throws IOException {
-                if (LOGGER.isDebugEnabled())
+                if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("Received response {}", response);
+                }
                 synchronized (_lock) {
                     _calls.remove(call);
                 }
@@ -180,8 +182,9 @@ public class OkHttpClientTransport extends AbstractHttpClientTransport {
 
             @Override
             public void onFailure(Call call, IOException e) {
-                if (LOGGER.isDebugEnabled())
+                if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("Received response failure", e);
+                }
                 synchronized (_lock) {
                     _calls.remove(call);
                 }

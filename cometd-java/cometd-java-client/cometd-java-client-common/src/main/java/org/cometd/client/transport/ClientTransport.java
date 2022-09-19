@@ -158,8 +158,9 @@ public abstract class ClientTransport extends AbstractTransport {
         return messages.stream()
                 .map(message -> jsonContext.generate(message))
                 .peek(json -> {
-                    if (json.length() > maxSendBayeuxMessageSize)
+                    if (json.length() > maxSendBayeuxMessageSize) {
                         throw new IllegalArgumentException("Max send Bayeux message size " + maxSendBayeuxMessageSize + " exceeded");
+                    }
                 })
                 .collect(Collectors.joining(",", "[", "]"));
     }

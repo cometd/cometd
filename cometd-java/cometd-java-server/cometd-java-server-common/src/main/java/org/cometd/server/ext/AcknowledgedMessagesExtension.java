@@ -90,9 +90,9 @@ public class AcknowledgedMessagesExtension implements Extension {
         /**
          * <p>Callback method invoked when a batch of message is about to be sent to a client session.</p>
          *
-         * @param session the session
+         * @param session  the session
          * @param messages the messages to send, as an immutable list
-         * @param batch the batch number
+         * @param batch    the batch number
          */
         default void onBatchSend(ServerSession session, List<ServerMessage> messages, long batch) {
         }
@@ -101,7 +101,7 @@ public class AcknowledgedMessagesExtension implements Extension {
          * <p>Callback method invoked when a client session confirms it has received the given batch of messages.</p>
          *
          * @param session the session
-         * @param batch the batch number
+         * @param batch   the batch number
          */
         default void onBatchReceive(ServerSession session, long batch) {
         }

@@ -452,7 +452,6 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
      * @param http2   whether the HTTP protocol is HTTP/2
      * @return true if the count is below the max sessions per browser value.
      * If false is returned, the count is not incremented.
-     *
      * @see #decBrowserId(ServerSessionImpl, boolean)
      */
     protected boolean incBrowserId(ServerSessionImpl session, boolean http2) {

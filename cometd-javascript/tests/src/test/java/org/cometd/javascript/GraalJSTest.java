@@ -108,7 +108,7 @@ public class GraalJSTest {
     public void testBinary() {
         try (Context context = Context.newBuilder("js").allowAllAccess(true).build()) {
             withContext(context, () -> {
-                context.eval("js","" +
+                context.eval("js", "" +
                         "var buffer = new ArrayBuffer(16);" +
                         "var view1 = new DataView(buffer);" +
                         "for (var d = 0; d < view1.byteLength; ++d) {" +

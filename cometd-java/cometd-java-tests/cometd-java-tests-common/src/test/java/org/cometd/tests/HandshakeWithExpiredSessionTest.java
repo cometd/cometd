@@ -112,8 +112,9 @@ public class HandshakeWithExpiredSessionTest extends AbstractClientServerTest {
 
         @Override
         public void sendConnect() {
-            if (connect.get())
+            if (connect.get()) {
                 super.sendConnect();
+            }
         }
     }
 }

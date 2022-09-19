@@ -110,7 +110,7 @@ public class OortSetiDocs {
 
         @Listener("/service/forward")
         public void forward(ServerSession session, ServerMessage message) {
-            Map<String,Object> data = message.getDataAsMap();
+            Map<String, Object> data = message.getDataAsMap();
             String targetUserId = (String)data.get("targetUserId");
             seti.sendMessage(targetUserId, message.getChannel(), data);
         }

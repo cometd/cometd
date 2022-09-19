@@ -67,9 +67,9 @@ public class SimulatedNetworkFailureTest extends AbstractClientServerTest {
             connected.set(message.isSuccessful());
 
             if (!wasConnected && connected.get()) {
-                    logger.info("BayeuxClient connected {}", message);
+                logger.info("BayeuxClient connected {}", message);
             } else if (wasConnected && !connected.get()) {
-                    logger.info("BayeuxClient unconnected {}", message);
+                logger.info("BayeuxClient unconnected {}", message);
             }
         });
         String channelName = "/test";
@@ -149,9 +149,9 @@ public class SimulatedNetworkFailureTest extends AbstractClientServerTest {
             connected.set(message.isSuccessful());
 
             if (!wasConnected && connected.get()) {
-                    logger.info("BayeuxClient connected");
+                logger.info("BayeuxClient connected");
             } else if (wasConnected && !connected.get()) {
-                    logger.info("BayeuxClient unconnected");
+                logger.info("BayeuxClient unconnected");
             }
         });
         String channelName = "/test";

@@ -252,8 +252,9 @@ public class OortObserveChannelTest extends OortTest {
         client1.getChannel(channelName).subscribe((channel, message) -> {
             BinaryData data = (BinaryData)message.getData();
             byte[] payload = data.asBytes();
-            if (Arrays.equals(payload, bytes))
+            if (Arrays.equals(payload, bytes)) {
                 messageLatch.countDown();
+            }
         }, message -> subscribeLatch.countDown());
         Assertions.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
 

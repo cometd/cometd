@@ -241,9 +241,9 @@ public class JavaScript implements Runnable {
     /**
      * Invoked from {@code browser.js}.
      *
-     * @param jsThis the JavaScript {@code this} reference
+     * @param jsThis   the JavaScript {@code this} reference
      * @param function the function to invoke after the given delay
-     * @param delay the delay after which the function is invoked, in milliseconds
+     * @param delay    the delay after which the function is invoked, in milliseconds
      * @return a task representing the scheduled execution
      */
     public ScheduledFuture<?> schedule(Object jsThis, Object function, long delay) {
@@ -255,10 +255,10 @@ public class JavaScript implements Runnable {
     /**
      * Invoked from {@code browser.js}.
      *
-     * @param jsThis the JavaScript {@code this} reference
-     * @param function the function to invoke after the given delay
+     * @param jsThis       the JavaScript {@code this} reference
+     * @param function     the function to invoke after the given delay
      * @param initialDelay the delay of the first execution, in milliseconds
-     * @param delay the delay after which the function is invoked, in milliseconds
+     * @param delay        the delay after which the function is invoked, in milliseconds
      * @return a task representing the scheduled execution
      */
     public ScheduledFuture<?> scheduleWithFixedDelay(Object jsThis, Object function, long initialDelay, long delay) {
