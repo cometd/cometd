@@ -61,7 +61,7 @@
     <!-- Last GraalVM version to support Java 8 -->
     <graalvm-version>21.3.2.1</graalvm-version>
     <slf4j-version>2.0.1</slf4j-version>
-    <log4j2-version>2.18.0</log4j2-version>
+    <log4j2-version>2.19.0</log4j2-version>
     <spring-version>5.3.22</spring-version>
     <spring-boot-version>2.7.3</spring-boot-version>
     <jackson-version>2.13.4</jackson-version>
@@ -559,7 +559,13 @@
       </dependency>
       <dependency>
         <groupId>org.apache.logging.log4j</groupId>
-        <artifactId>log4j-slf4j-impl</artifactId>
+        <artifactId>log4j-core</artifactId>
+        <version>${log4j2-version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-slf4j2-impl</artifactId>
         <version>${log4j2-version}</version>
         <scope>test</scope>
       </dependency>
