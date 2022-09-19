@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-(function(root, factory){
+(function(root, factory) {
     if (typeof exports === 'object') {
         module.exports = factory(require('./cometd'));
     } else if (typeof define === 'function' && define.amd) {

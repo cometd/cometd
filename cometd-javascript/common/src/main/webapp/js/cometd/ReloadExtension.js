@@ -97,8 +97,7 @@
 
         this.outgoing = function(message) {
             switch (message.channel) {
-                case '/meta/handshake':
-                {
+                case '/meta/handshake': {
                     _state = {};
                     _state.url = _cometd.getURL();
 
@@ -164,8 +163,7 @@
                     }
                     break;
                 }
-                case '/meta/connect':
-                {
+                case '/meta/connect': {
                     if (_reloading === true) {
                         // The reload causes the failure of the outstanding /meta/connect,
                         // which CometD will react to by sending another. Here we avoid
@@ -183,13 +181,11 @@
                     }
                     break;
                 }
-                case '/meta/disconnect':
-                {
+                case '/meta/disconnect': {
                     _state = {};
                     break;
                 }
-                default:
-                {
+                default: {
                     break;
                 }
             }
@@ -198,8 +194,7 @@
 
         this.incoming = function(message) {
             switch (message.channel) {
-                case '/meta/handshake':
-                {
+                case '/meta/handshake': {
                     // Only record the handshake response if it's successful.
                     if (message.successful) {
                         // If the handshake response is already present, then we're replaying it.
@@ -212,16 +207,14 @@
                     }
                     break;
                 }
-                case '/meta/connect':
-                {
+                case '/meta/connect': {
                     if (_batch) {
                         _batch = false;
                         _cometd.endBatch();
                     }
                     break;
                 }
-                case '/meta/disconnect':
-                {
+                case '/meta/disconnect': {
                     if (_batch) {
                         _batch = false;
                         _cometd.endBatch();
@@ -229,8 +222,7 @@
                     _state = {};
                     break;
                 }
-                default:
-                {
+                default: {
                     break;
                 }
             }
