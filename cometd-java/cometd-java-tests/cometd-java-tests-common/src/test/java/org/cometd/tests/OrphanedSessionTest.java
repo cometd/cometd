@@ -42,9 +42,9 @@ public class OrphanedSessionTest extends AbstractClientServerTest {
         CountDownLatch removedLatch = new CountDownLatch(1);
         bayeux.addListener(new BayeuxServer.SessionListener() {
             @Override
-            public void sessionRemoved(ServerSession session, ServerMessage message, boolean timeout) {
+            public void sessionAdded(ServerSession session, ServerMessage message) {
                 serverSessionRef.set(session);
-                removedLatch.countDown();
+                session.addListener((ServerSession.RemovedListener)(s, m, t) -> removedLatch.countDown());
             }
         });
 
