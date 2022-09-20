@@ -95,8 +95,7 @@ public class CometDWebSocketMaxNetworkDelayMetaConnectTest extends AbstractComet
 
         AtomicInteger opened = new AtomicInteger();
         AtomicInteger closed = new AtomicInteger();
-        connector.addBean(new Connection.Listener()
-        {
+        connector.addBean(new Connection.Listener() {
             @Override
             public void onOpened(Connection connection) {
                 opened.incrementAndGet();

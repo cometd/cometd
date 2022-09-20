@@ -112,7 +112,7 @@ public abstract class OortConfigServlet extends HttpServlet {
      * <p>Configures the Oort instance with servlet init parameters.</p>
      *
      * @param config the Servlet configuration
-     * @param oort the Oort instance to configure
+     * @param oort   the Oort instance to configure
      * @throws Exception if the Oort instance cannot be configured
      */
     protected void configureOort(ServletConfig config, Oort oort) throws Exception {

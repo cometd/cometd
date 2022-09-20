@@ -44,8 +44,8 @@ public abstract class OortPrimaryService<R, C> extends OortService<R, C> {
     private final OortObject<Boolean> nodes;
 
     /**
-     * @param oort   the oort this instance is associated to
-     * @param name   the name of this service
+     * @param oort    the oort this instance is associated to
+     * @param name    the name of this service
      * @param primary whether this service lives on the "primary" node
      */
     public OortPrimaryService(Oort oort, String name, boolean primary) {

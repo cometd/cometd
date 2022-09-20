@@ -253,8 +253,9 @@ public class NetworkDelayListenerTest extends AbstractClientServerTest {
         Parser.ParsedFrame frame;
         while (true) {
             frame = parser.parse(buffer);
-            if (frame != null)
+            if (frame != null) {
                 break;
+            }
             buffer.clear();
             socket.read(buffer);
             buffer.flip();
@@ -266,8 +267,9 @@ public class NetworkDelayListenerTest extends AbstractClientServerTest {
         HttpTester.Request request = new HttpTester.Request();
         HttpParser parser = new HttpParser(request);
         while (true) {
-            if (parser.parseNext(buffer))
+            if (parser.parseNext(buffer)) {
                 break;
+            }
             buffer.clear();
             socket.read(buffer);
             buffer.flip();

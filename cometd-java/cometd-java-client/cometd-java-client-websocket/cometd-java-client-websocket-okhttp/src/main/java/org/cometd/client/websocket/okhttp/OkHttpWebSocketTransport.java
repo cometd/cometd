@@ -95,11 +95,11 @@ public class OkHttpWebSocketTransport extends AbstractWebSocketTransport {
             this.webSocketConnected = true;
             return delegate;
         } catch (ConnectException
-                | SocketTimeoutException
-                | TimeoutException
-                | UnresolvedAddressException
-                | UnknownHostException
-                | ProtocolException e) { // RealWebSocket#checkResponse throws ProtocolException for certain responses
+                 | SocketTimeoutException
+                 | TimeoutException
+                 | UnresolvedAddressException
+                 | UnknownHostException
+                 | ProtocolException e) { // RealWebSocket#checkResponse throws ProtocolException for certain responses
             listener.onFailure(e, messages);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();

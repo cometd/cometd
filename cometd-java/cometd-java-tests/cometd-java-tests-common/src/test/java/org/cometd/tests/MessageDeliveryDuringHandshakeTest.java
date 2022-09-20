@@ -88,8 +88,9 @@ public class MessageDeliveryDuringHandshakeTest extends AbstractClientServerTest
         CountDownLatch queueLatch = new CountDownLatch(1);
         client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
             ServerSessionImpl serverSession = (ServerSessionImpl)bayeux.getSession(client.getId());
-            if (serverSession.getQueue().isEmpty() == allowHandshakeMessages)
+            if (serverSession.getQueue().isEmpty() == allowHandshakeMessages) {
                 queueLatch.countDown();
+            }
         });
 
         client.handshake();
