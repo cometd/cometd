@@ -33,7 +33,7 @@
      * Browsers may throttle the Window scheduler,
      * so we may replace it with a Worker scheduler.
      */
-     function Scheduler() {
+    function Scheduler() {
         let _ids = 0;
         const _tasks = {};
         this.register = funktion => {
@@ -189,7 +189,7 @@
     /**
      * Base object with the common functionality for transports.
      */
-     function Transport() {
+    function Transport() {
         let _type;
         let _cometd;
         let _url;
@@ -342,6 +342,7 @@
     Transport.derive = baseObject => {
         function F() {
         }
+
         F.prototype = baseObject;
         return new F();
     };
@@ -354,7 +355,7 @@
      * To achieve this, we have one reserved request for the long poll, and all other
      * requests are serialized one after the other.
      */
-     function RequestTransport() {
+    function RequestTransport() {
         const _super = new Transport();
         const _self = Transport.derive(_super);
         let _requestIds = 0;
@@ -1283,7 +1284,7 @@
      * The default name is the string 'default'.
      * @param name the optional name of this cometd object
      */
-     function CometD(name) {
+    function CometD(name) {
         const _scheduler = new Scheduler();
         const _cometd = this;
         const _name = name || 'default';

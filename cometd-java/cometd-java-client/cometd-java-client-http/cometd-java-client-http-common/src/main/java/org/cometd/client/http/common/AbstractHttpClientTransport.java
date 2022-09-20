@@ -41,7 +41,7 @@ public abstract class AbstractHttpClientTransport extends HttpClientTransport {
     private Map<String, Object> _advice;
 
     /**
-     * @param url the CometD server URL
+     * @param url     the CometD server URL
      * @param options the transport options
      * @deprecated use {@link #AbstractHttpClientTransport(String, Map, ScheduledExecutorService)} instead
      */

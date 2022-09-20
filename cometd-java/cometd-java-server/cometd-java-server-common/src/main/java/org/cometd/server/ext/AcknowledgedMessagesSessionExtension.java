@@ -106,7 +106,7 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
             }
             _lastBatch = batch;
             _queue.clearToBatch(batch);
-            notifyBatchReceive(_session,  batch);
+            notifyBatchReceive(_session, batch);
         } finally {
             _session.getLock().unlock();
         }

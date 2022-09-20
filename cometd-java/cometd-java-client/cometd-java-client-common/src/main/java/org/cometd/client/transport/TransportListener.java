@@ -65,7 +65,7 @@ public interface TransportListener extends EventListener {
      * with a {@link java.util.concurrent.TimeoutException}.</p>
      *
      * @param messages the batch of messages sent
-     * @param promise the promise to complete
+     * @param promise  the promise to complete
      */
     default void onTimeout(List<? extends Message> messages, Promise<Long> promise) {
         promise.succeed(0L);

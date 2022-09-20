@@ -73,8 +73,9 @@ public class CometDMessageDeliveryDuringHandshakeTest extends AbstractCometDTran
         CountDownLatch queueLatch = new CountDownLatch(1);
         Consumer<String> checkQueue = clientId -> {
             ServerSessionImpl serverSession = (ServerSessionImpl)bayeuxServer.getSession(clientId);
-            if (serverSession.getQueue().isEmpty() == allowHandshakeMessages)
+            if (serverSession.getQueue().isEmpty() == allowHandshakeMessages) {
                 queueLatch.countDown();
+            }
         };
         javaScript.put("checkQueue", checkQueue);
 
