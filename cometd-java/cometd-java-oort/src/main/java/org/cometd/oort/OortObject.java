@@ -172,6 +172,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
         channel.addListener(broadcastListener);
         channel.addListener(initialStateListener);
         oort.observeChannel(broadcastChannel);
+        oort.addExactSubscriptions(broadcastChannel);
         bayeuxServer.createChannelIfAbsent(serviceChannel, this).getReference().addListener(serviceListener);
 
         if (logger.isDebugEnabled()) {
@@ -181,6 +182,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
 
     @Override
     protected void doStop() {
+        oort.removeExactSubscriptions(broadcastChannel);
         oort.deobserveChannel(broadcastChannel);
         BayeuxServer bayeuxServer = oort.getBayeuxServer();
         ServerChannel channel = bayeuxServer.getChannel(broadcastChannel);

@@ -128,6 +128,8 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
         _session.getChannel(setiChannelName).subscribe((channel, message) -> receiveDirect(message));
         _oort.observeChannel(setiChannelName);
 
+        _oort.addExactSubscriptions(SETI_ALL_CHANNEL, setiChannelName);
+
         _oort.addCometListener(_cometListener);
 
         if (_logger.isDebugEnabled()) {
@@ -145,6 +147,8 @@ public class Seti extends AbstractLifeCycle implements Dumpable {
         _oort.removeCometListener(_cometListener);
 
         String setiChannelName = generateSetiChannel(_setiId);
+        _oort.removeExactSubscriptions(SETI_ALL_CHANNEL, setiChannelName);
+
         _oort.deobserveChannel(setiChannelName);
 
         _oort.deobserveChannel(SETI_ALL_CHANNEL);

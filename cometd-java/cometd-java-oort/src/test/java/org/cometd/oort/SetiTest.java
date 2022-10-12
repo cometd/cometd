@@ -194,6 +194,20 @@ public class SetiTest extends OortTest {
         Assertions.assertTrue(publishLatch.await(5, TimeUnit.SECONDS));
 
         Assertions.assertTrue(presenceLatch.await(5, TimeUnit.SECONDS));
+
+        String forwardChannelName = "/service/forward";
+        AtomicInteger forwardCount = new AtomicInteger();
+        client2.getChannel(forwardChannelName).addListener((ClientSessionChannel.MessageListener)(c, m) -> forwardCount.incrementAndGet());
+        Map<String, Object> data1 = new HashMap<>();
+        data1.put("peer", "user2");
+        data1.put("payload", "hello");
+        client1.getChannel(forwardChannelName).publish(data1);
+
+        // Wait for the message(s) to arrive.
+        Thread.sleep(1000);
+
+        // Check that only one message arrived.
+        Assertions.assertEquals(1, forwardCount.get());
     }
 
     @ParameterizedTest

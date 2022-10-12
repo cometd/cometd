@@ -22,6 +22,7 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Collection;
 import java.util.EventListener;
 import java.util.EventObject;
 import java.util.HashMap;
@@ -114,6 +115,7 @@ public class Oort extends ContainerLifeCycle {
     private Extension _serverBinaryExtension;
     private ClientSession.Extension _binaryExtension;
     private JSONContext.Client _jsonContext;
+    private Collection<String> _exactSubscriptions;
 
     public Oort(BayeuxServer bayeux, String url) {
         _bayeux = bayeux;
@@ -637,6 +639,28 @@ public class Oort extends ContainerLifeCycle {
         String replaced = source.replaceAll("[^\\p{Alnum}]", String.valueOf(replacement));
         // Compact multiple consecutive replacement chars
         return replaced.replaceAll("(" + replacement + ")\\1+", "$1");
+    }
+
+    /**
+     * <p>Messages with the given channels are notified to subscribers
+     * only if the subscription is for the exact channel and not notified
+     * if the subscription is a wild channel.</p>
+     */
+    void addExactSubscriptions(String... channels) {
+        if (_exactSubscriptions == null) {
+            _exactSubscriptions = new HashSet<>();
+        }
+        _exactSubscriptions.addAll(Arrays.asList(channels));
+    }
+
+    boolean isExactSubscription(String channel) {
+        return _exactSubscriptions != null && _exactSubscriptions.contains(channel);
+    }
+
+    void removeExactSubscriptions(String... channels) {
+        if (_exactSubscriptions != null) {
+            _exactSubscriptions.removeAll(Arrays.asList(channels));
+        }
     }
 
     @Override
