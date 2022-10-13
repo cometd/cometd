@@ -58,12 +58,12 @@
     <!-- tag::jetty-version[] -->
     <jetty-version>11.0.12</jetty-version>
     <!-- end::jetty-version[] -->
-    <graalvm-version>22.2.0</graalvm-version>
-    <slf4j-version>2.0.1</slf4j-version>
+    <graalvm-version>22.2.0.1</graalvm-version>
+    <slf4j-version>2.0.3</slf4j-version>
     <log4j2-version>2.19.0</log4j2-version>
-    <spring-version>5.3.22</spring-version>
-    <spring-boot-version>2.7.3</spring-boot-version>
-    <jackson-version>2.13.4</jackson-version>
+    <spring-version>5.3.23</spring-version>
+    <spring-boot-version>2.7.4</spring-boot-version>
+    <jackson-version>2.13.4.1</jackson-version>
     <dojo-version>1.17.2</dojo-version>
     <okhttp-version>4.10.0</okhttp-version>
   </properties>
@@ -388,7 +388,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jar-plugin</artifactId>
-          <version>3.2.2</version>
+          <version>3.3.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -508,6 +508,7 @@
       <dependency>
         <groupId>jakarta.annotation</groupId>
         <artifactId>jakarta.annotation-api</artifactId>
+        <!-- Must stay at 2.0.x for Jakarta EE 9 -->
         <version>2.0.0</version>
       </dependency>
       <dependency>
@@ -523,13 +524,13 @@
       <dependency>
         <groupId>com.google.javascript</groupId>
         <artifactId>closure-compiler</artifactId>
-        <version>v20220905</version>
+        <version>v20221004</version>
       </dependency>
 
       <dependency>
         <groupId>org.junit.jupiter</groupId>
         <artifactId>junit-jupiter</artifactId>
-        <version>5.9.0</version>
+        <version>5.9.1</version>
         <scope>test</scope>
       </dependency>
       <dependency>
