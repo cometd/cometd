@@ -42,7 +42,7 @@ public class ChannelId {
     private static final Pattern VAR = Pattern.compile("\\{(\\w+)\\}");
 
     private final String _id;
-    private String[] _segments;
+    private volatile String[] _segments;
     private int _wild;
     private List<String> _wilds;
     private List<String> _all;
@@ -68,11 +68,12 @@ public class ChannelId {
     }
 
     private void resolve() {
-        synchronized (this) {
-            if (_segments != null) {
-                return;
+        if (_segments == null) {
+            synchronized (this) {
+                if (_segments == null) {
+                    resolve(_id);
+                }
             }
-            resolve(_id);
         }
     }
 
