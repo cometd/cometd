@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -80,7 +79,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
     public final static String DUPLICATE_META_CONNECT_HTTP_RESPONSE_CODE_OPTION = "duplicateMetaConnectHttpResponseCode";
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractHttpTransport.class);
 
-    private final Map<String, Collection<ServerSessionImpl>> _sessions = new HashMap<>();
+    private final ConcurrentMap<String, Collection<ServerSessionImpl>> _sessions = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, AtomicInteger> _browserMap = new ConcurrentHashMap<>();
     private final Map<String, AtomicInteger> _browserSweep = new ConcurrentHashMap<>();
     private String _browserCookieName;
@@ -226,9 +225,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         if (cookies != null) {
             for (Cookie cookie : cookies) {
                 if (_browserCookieName.equals(cookie.getName())) {
-                    synchronized (_sessions) {
-                        return _sessions.get(cookie.getValue());
-                    }
+                    return _sessions.get(cookie.getValue());
                 }
             }
         }
@@ -246,21 +243,14 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
                 String browserId = id;
                 session.setBrowserId(browserId);
 
-                synchronized (_sessions) {
-                    // The list is modified inside sync blocks, but
-                    // iterated outside, so it must be concurrent.
-                    Collection<ServerSessionImpl> sessions = _sessions.computeIfAbsent(browserId, k -> new CopyOnWriteArrayList<>());
-                    sessions.add(session);
-                }
+                Collection<ServerSessionImpl> sessions = _sessions.computeIfAbsent(browserId, k -> new CopyOnWriteArrayList<>());
+                sessions.add(session);
 
                 session.addListener((ServerSession.RemovedListener)(s, m, t) -> {
-                    synchronized (_sessions) {
-                        Collection<ServerSessionImpl> sessions = _sessions.get(browserId);
-                        sessions.remove(session);
-                        if (sessions.isEmpty()) {
-                            _sessions.remove(browserId);
-                        }
-                    }
+                    _sessions.computeIfPresent(browserId, (k, v) -> {
+                        v.remove(session);
+                        return v.isEmpty() ? null : v;
+                    });
                 });
             }
             processReply(session, reply, Promise.from(r -> {
@@ -463,14 +453,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         }
 
         String browserId = session.getBrowserId();
-        AtomicInteger count = _browserMap.get(browserId);
-        if (count == null) {
-            AtomicInteger newCount = new AtomicInteger();
-            count = _browserMap.putIfAbsent(browserId, newCount);
-            if (count == null) {
-                count = newCount;
-            }
-        }
+        AtomicInteger count = _browserMap.computeIfAbsent(browserId, k -> new AtomicInteger());
 
         // Increment
         int sessions = count.incrementAndGet();
@@ -507,7 +490,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         }
 
         if (sessions == 0) {
-            _browserSweep.put(browserId, new AtomicInteger(0));
+            _browserSweep.put(browserId, new AtomicInteger());
         }
 
         if (LOGGER.isDebugEnabled()) {
@@ -548,15 +531,18 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
             int maxSweeps = (int)(2 * getMaxInterval() / elapsed);
             for (Map.Entry<String, AtomicInteger> entry : _browserSweep.entrySet()) {
                 AtomicInteger count = entry.getValue();
-                // if the ID has been in the sweep map for 3 sweeps
                 if (count != null && count.incrementAndGet() > maxSweeps) {
                     String key = entry.getKey();
-                    // remove it from both browser Maps
-                    if (_browserSweep.remove(key) == count && _browserMap.get(key).get() == 0) {
-                        _browserMap.remove(key);
-                        if (LOGGER.isDebugEnabled()) {
-                            LOGGER.debug("Swept browserId {}", key);
-                        }
+                    if (_browserSweep.remove(key, count)) {
+                        _browserMap.computeIfPresent(key, (k, v) -> {
+                            if (v.get() == 0) {
+                                if (LOGGER.isDebugEnabled()) {
+                                    LOGGER.debug("Swept browserId {}", key);
+                                }
+                                return null;
+                            }
+                            return v;
+                        });
                     }
                 }
             }
