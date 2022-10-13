@@ -25,7 +25,7 @@ The CometD libraries provide these latter characteristics.
 JavaEE 8 +
 `javax.servlet.*` | Stable
 
-| CometD 5.0.x | Java 8 | Jetty 9.4.x | JavaEE 7 | Stable
+| CometD 5.0.x | Java 8 | Jetty 9.4.x | JavaEE 7 | End-Of-Community-Support (see https://github.com/cometd/cometd/issues/1179[#1179])
 
 | CometD 4.0.x | Java 8 | Jetty 9.4.x | JavaEE 7 | End-Of-Life
 
