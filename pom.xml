@@ -542,13 +542,13 @@
         <groupId>com.google.javascript</groupId>
         <artifactId>closure-compiler</artifactId>
         <!-- Last version to support Java 8 -->
-        <version>v20220502</version>
+        <version>v20221004</version>
       </dependency>
 
       <dependency>
         <groupId>org.junit.jupiter</groupId>
         <artifactId>junit-jupiter</artifactId>
-        <version>5.9.0</version>
+        <version>5.9.1</version>
         <scope>test</scope>
       </dependency>
       <dependency>
