@@ -162,6 +162,7 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
         bayeuxServer.createChannelIfAbsent(broadcastChannelName).getReference().addListener(this);
         bayeuxServer.createChannelIfAbsent(resultChannelName).getReference().addListener(this);
         oort.observeChannel(broadcastChannelName);
+        oort.addExactSubscriptions(broadcastChannelName);
         if (logger.isDebugEnabled()) {
             logger.debug("Started {}", this);
         }
@@ -169,6 +170,7 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
 
     @Override
     protected void doStop() throws Exception {
+        oort.removeExactSubscriptions(broadcastChannelName);
         oort.deobserveChannel(broadcastChannelName);
         BayeuxServer bayeuxServer = oort.getBayeuxServer();
         ServerChannel channel = bayeuxServer.getChannel(resultChannelName);

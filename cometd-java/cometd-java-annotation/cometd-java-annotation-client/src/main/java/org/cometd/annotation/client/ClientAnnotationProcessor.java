@@ -257,7 +257,7 @@ public class ClientAnnotationProcessor extends AnnotationProcessor {
 
                     ChannelId channelId = new ChannelId(channel);
                     if (channelId.isTemplate()) {
-                        channel = channelId.getWilds().get(0);
+                        channel = channelId.getWildIds().get(0);
                     }
 
                     ListenerCallback listenerCallback = new ListenerCallback(bean, method, paramNames, channelId, channel);
@@ -322,7 +322,7 @@ public class ClientAnnotationProcessor extends AnnotationProcessor {
 
                     ChannelId channelId = new ChannelId(channel);
                     if (channelId.isTemplate()) {
-                        channel = channelId.getWilds().get(0);
+                        channel = channelId.getWildIds().get(0);
                     }
 
                     SubscriptionCallback subscriptionCallback = new SubscriptionCallback(clientSession, bean, method, paramNames, channelId, channel);

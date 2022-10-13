@@ -16,8 +16,6 @@
 package org.cometd.common;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -79,9 +77,7 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
     }
 
     protected void extendOutgoing(Message.Mutable message, Promise<Boolean> promise) {
-        List<Extension> extensions = new ArrayList<>(_extensions);
-        Collections.reverse(extensions);
-        AsyncFoldLeft.run(extensions, true, (result, extension, loop) -> {
+        AsyncFoldLeft.reverseRun(_extensions, true, (result, extension, loop) -> {
             if (result) {
                 try {
                     extension.outgoing(this, message, Promise.from(loop::proceed, failure -> {
@@ -304,20 +300,13 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
             }
         }
 
-        MarkedReference<AbstractSessionChannel> channelRef = getReleasableChannel(message.getChannel());
-        AbstractSessionChannel channel = channelRef.getReference();
-        channel.notifyMessageListeners(message);
-        if (channelRef.isMarked()) {
-            channel.release();
-        }
-
-        ChannelId channelId = channel.getChannelId();
-        for (String wildChannelName : channelId.getWilds()) {
-            MarkedReference<AbstractSessionChannel> wildChannelRef = getReleasableChannel(wildChannelName);
-            AbstractSessionChannel wildChannel = wildChannelRef.getReference();
-            wildChannel.notifyMessageListeners(message);
-            if (wildChannelRef.isMarked()) {
-                wildChannel.release();
+        ChannelId channelId = newChannelId(message.getChannel());
+        for (String channelName : channelId.getAllIds()) {
+            MarkedReference<AbstractSessionChannel> channelRef = getReleasableChannel(channelName);
+            AbstractSessionChannel channel = channelRef.getReference();
+            channel.notifyMessageListeners(message);
+            if (channelRef.isMarked()) {
+                channel.release();
             }
         }
     }
@@ -598,11 +587,9 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
                     notifyOnMessage((MessageListener)listener, message);
                 }
             }
-            for (ClientSessionChannelListener listener : _subscriptions) {
-                if (listener instanceof ClientSessionChannel.MessageListener) {
-                    if (!message.isPublishReply()) {
-                        notifyOnMessage((MessageListener)listener, message);
-                    }
+            for (MessageListener listener : _subscriptions) {
+                if (!message.isPublishReply()) {
+                    notifyOnMessage(listener, message);
                 }
             }
         }

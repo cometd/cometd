@@ -171,25 +171,41 @@ public class ChannelIdTest {
 
     @Test
     public void testWilds() {
-        ChannelId id = new ChannelId("/foo/bar/*");
-        List<String> wilds = id.getWilds();
+        ChannelId id = new ChannelId("/**");
+        List<String> wilds = id.getWildIds();
         Assertions.assertEquals(0, wilds.size());
 
+        id = new ChannelId("/*");
+        wilds = id.getWildIds();
+        Assertions.assertEquals(1, wilds.size());
+        Assertions.assertEquals("/**", wilds.get(0));
+
+        id = new ChannelId("/foo/*");
+        wilds = id.getWildIds();
+        Assertions.assertEquals(2, wilds.size());
+        Assertions.assertEquals("/foo/**", wilds.get(0));
+        Assertions.assertEquals("/**", wilds.get(1));
+
+        id = new ChannelId("/foo/**");
+        wilds = id.getWildIds();
+        Assertions.assertEquals(1, wilds.size());
+        Assertions.assertEquals("/**", wilds.get(0));
+
         id = new ChannelId("/foo");
-        wilds = id.getWilds();
+        wilds = id.getWildIds();
         Assertions.assertEquals(2, wilds.size());
         Assertions.assertEquals("/*", wilds.get(0));
         Assertions.assertEquals("/**", wilds.get(1));
 
         id = new ChannelId("/foo/bar");
-        wilds = id.getWilds();
+        wilds = id.getWildIds();
         Assertions.assertEquals(3, wilds.size());
         Assertions.assertEquals("/foo/*", wilds.get(0));
         Assertions.assertEquals("/foo/**", wilds.get(1));
         Assertions.assertEquals("/**", wilds.get(2));
 
         id = new ChannelId("/foo/bar/bob");
-        wilds = id.getWilds();
+        wilds = id.getWildIds();
         Assertions.assertEquals(4, wilds.size());
         Assertions.assertEquals("/foo/bar/*", wilds.get(0));
         Assertions.assertEquals("/foo/bar/**", wilds.get(1));
@@ -197,14 +213,14 @@ public class ChannelIdTest {
         Assertions.assertEquals("/**", wilds.get(3));
 
         id = new ChannelId("/foo/{bar}");
-        wilds = id.getWilds();
+        wilds = id.getWildIds();
         Assertions.assertEquals(3, wilds.size());
         Assertions.assertEquals("/foo/*", wilds.get(0));
         Assertions.assertEquals("/foo/**", wilds.get(1));
         Assertions.assertEquals("/**", wilds.get(2));
 
         id = new ChannelId("/foo/{bar}/baz");
-        wilds = id.getWilds();
+        wilds = id.getWildIds();
         Assertions.assertEquals(2, wilds.size());
         Assertions.assertEquals("/foo/**", wilds.get(0));
         Assertions.assertEquals("/**", wilds.get(1));
