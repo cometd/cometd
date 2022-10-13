@@ -508,7 +508,8 @@
       <dependency>
         <groupId>jakarta.annotation</groupId>
         <artifactId>jakarta.annotation-api</artifactId>
-        <version>1.3.4</version>
+        <!-- Must stay at 1.3.x for Jakarta EE 8 -->
+        <version>1.3.5</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
