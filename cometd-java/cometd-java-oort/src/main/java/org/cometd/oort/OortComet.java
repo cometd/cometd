@@ -57,15 +57,25 @@ public class OortComet extends BayeuxClient {
                 continue;
             }
 
-            ClientSessionChannel.MessageListener listener = (c, message) -> {
-                if (logger.isDebugEnabled()) {
-                    logger.debug("Republishing message {} from {}", message, _cometURL);
+            ClientSessionChannel.MessageListener listener = (subscription, message) -> {
+                String messageChannel = message.getChannel();
+                if (_oort.isExactSubscription(messageChannel)) {
+                    if (!subscription.getId().equals(messageChannel)) {
+                        if (logger.isDebugEnabled()) {
+                            logger.debug("Skipping message for non-exact subscription {} {}", subscription, message);
+                        }
+                        return;
+                    }
                 }
                 // Applications may observe /**, but we only want to republish broadcast messages.
-                if (ChannelId.isBroadcast(message.getChannel())) {
+                boolean republish = ChannelId.isBroadcast(messageChannel);
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Received (republish={}) message {} from comet {}", republish, message, _cometURL);
+                }
+                if (republish) {
                     // BayeuxServer may sweep channels, so calling bayeux.getChannel(...)
                     // may return null, and therefore we use the client to send the message.
-                    _oort.getOortSession().getChannel(message.getChannel()).publish(message);
+                    _oort.getOortSession().getChannel(messageChannel).publish(message);
                 }
             };
 

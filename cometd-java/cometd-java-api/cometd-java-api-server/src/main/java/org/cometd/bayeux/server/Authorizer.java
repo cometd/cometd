@@ -31,7 +31,7 @@ import org.cometd.bayeux.Promise;
  * <p>For an operation on a channel, the authorizers on the wildcard channels that match the channel and the
  * authorizers on the channel itself (together known at the <em>authorizers set</em> for that channel) will be
  * consulted to check if the the operation is granted, denied or ignored.</p>
- * <p>The list of wildcard channels that match the channel is obtained from {@link ChannelId#getWilds()}.</p>
+ * <p>The list of wildcard channels that match the channel is obtained from {@link ChannelId#getWildIds()}.</p>
  * <p>The following is the authorization algorithm:</p>
  * <ul>
  * <li>If there is a security policy, and the security policy denies the request, then the request is denied.</li>
