@@ -826,9 +826,7 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
     }
 
     private void isChannelOperationAuthorized(Authorizer.Operation operation, ServerSession session, ServerMessage message, ChannelId channelId, Promise<Authorizer.Result> promise) {
-        List<String> channels = new ArrayList<>(channelId.getWilds());
-        channels.add(channelId.getId());
-        AsyncFoldLeft.run(channels, null, (result, channelName, loop) -> {
+        AsyncFoldLeft.reverseRun(channelId.getAllIds(), null, (result, channelName, loop) -> {
             ServerChannelImpl channel = _channels.get(channelName);
             if (channel != null) {
                 isChannelOperationAuthorized(channel, operation, session, message, channelId, Promise.from(authz -> {
@@ -934,53 +932,48 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
         }
     }
 
-    private void notifySubscribers(ServerSessionImpl session, ServerChannelImpl channel, Mutable message, Promise<Boolean> promise) {
-        Set<String> wildSubscribers = new HashSet<>();
-        AsyncFoldLeft.run(channel.getChannelId().getWilds(), true, (result, wildName, wildLoop) -> {
-                    ServerChannelImpl wildChannel = _channels.get(wildName);
-                    if (wildChannel == null) {
-                        wildLoop.proceed(result);
+    private void notifySubscribers(ServerSessionImpl session, ServerChannelImpl serverChannel, Mutable message, Promise<Boolean> promise) {
+        // Both the client and the server know their subscriptions, say to /chat/* and /chat/news.
+        // The server wants to avoid to send the same message multiple times to the same subscriber,
+        // if that subscriber is subscribed to both /chat/* and /chat/news; that's why a Set is used
+        // to avoid sending the same message multiple times to the same subscriber.
+        // When the client receives the message, it can fan out the message to its subscriptions.
+        Set<String> subscriberIds = new HashSet<>();
+        // The notification flows from the root of the channel tree,
+        // i.e. from the /** channel to the exact message channel.
+        List<String> channels = serverChannel.getChannelId().getAllIds();
+        AsyncFoldLeft.reverseRun(channels, false, (result, channelName, channelLoop) -> {
+            ServerChannelImpl channel = _channels.get(channelName);
+            if (channel == null) {
+                channelLoop.proceed(result);
+            } else {
+                Set<ServerSession> subscribers = channel.subscribers();
+                if (_logger.isDebugEnabled()) {
+                    _logger.debug("Notifying {} subscribers on {}", subscribers.size(), channel);
+                }
+                AsyncFoldLeft.run(subscribers, false, (r, subscriber, loop) -> {
+                    String subscriberId = subscriber.getId();
+                    if (subscriberIds.contains(subscriberId)) {
+                        loop.proceed(r);
                     } else {
-                        Set<ServerSession> subscribers = wildChannel.subscribers();
-                        if (_logger.isDebugEnabled()) {
-                            _logger.debug("Notifying {} subscribers on {}", subscribers.size(), wildChannel);
-                        }
-                        AsyncFoldLeft.run(subscribers, true, (r, subscriber, loop) -> {
-                            if (wildSubscribers.add(subscriber.getId())) {
-                                if (subscriber == session && !channel.isBroadcastToPublisher()) {
-                                    loop.proceed(true);
-                                } else {
-                                    ((ServerSessionImpl)subscriber).deliver1(session, message, Promise.from(b -> loop.proceed(true), loop::fail));
-                                }
-                            } else {
-                                loop.proceed(r);
-                            }
-                        }, Promise.from(y -> wildLoop.proceed(true), wildLoop::fail));
-                    }
-                }, Promise.from(b -> {
-                    Set<ServerSession> subscribers = channel.subscribers();
-                    if (_logger.isDebugEnabled()) {
-                        _logger.debug("Notifying {} subscribers on {}", subscribers.size(), channel);
-                    }
-                    AsyncFoldLeft.run(subscribers, true, (result, subscriber, loop) -> {
-                        if (!wildSubscribers.contains(subscriber.getId())) {
-                            if (subscriber == session && !channel.isBroadcastToPublisher()) {
-                                loop.proceed(true);
-                            } else {
-                                ((ServerSessionImpl)subscriber).deliver1(session, message, Promise.from(y -> loop.proceed(true), loop::fail));
-                            }
+                        if (subscriber == session && !channel.isBroadcastToPublisher()) {
+                            loop.proceed(r);
                         } else {
-                            loop.proceed(true);
+                            ((ServerSessionImpl)subscriber).deliver1(session, message, Promise.from(delivered -> {
+                                if (delivered) {
+                                    subscriberIds.add(subscriberId);
+                                }
+                                loop.proceed(r || delivered);
+                            }, loop::fail));
                         }
-                    }, promise);
-                }, promise::fail)
-        );
+                    }
+                }, Promise.from(delivered -> channelLoop.proceed(result || delivered), channelLoop::fail));
+            }
+        }, promise);
     }
 
     private void notifyListeners(ServerSessionImpl session, ServerChannelImpl channel, Mutable message, Promise<Boolean> promise) {
-        List<String> channels = new ArrayList<>(channel.getChannelId().getWilds());
-        channels.add(channel.getId());
-        AsyncFoldLeft.run(channels, true, (channelResult, channelName, channelLoop) -> {
+        AsyncFoldLeft.reverseRun(channel.getChannelId().getAllIds(), true, (channelResult, channelName, channelLoop) -> {
             ServerChannelImpl target = _channels.get(channelName);
             if (target == null) {
                 channelLoop.proceed(channelResult);
@@ -1083,9 +1076,7 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
     }
 
     protected void extendOutgoing(ServerSession sender, ServerSession session, Mutable message, Promise<Boolean> promise) {
-        List<Extension> extensions = new ArrayList<>(_extensions);
-        Collections.reverse(extensions);
-        AsyncFoldLeft.run(extensions, true, (result, extension, loop) -> {
+        AsyncFoldLeft.reverseRun(_extensions, true, (result, extension, loop) -> {
             if (result) {
                 try {
                     extension.outgoing(sender, session, message, Promise.from(r -> loop.proceed(r == null || r), failure -> {

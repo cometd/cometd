@@ -307,9 +307,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
     }
 
     protected void extendOutgoing(ServerSession sender, ServerMessage.Mutable message, Promise<ServerMessage.Mutable> promise) {
-        List<Extension> extensions = new ArrayList<>(_extensions);
-        Collections.reverse(extensions);
-        AsyncFoldLeft.run(extensions, message, (result, extension, loop) -> {
+        AsyncFoldLeft.reverseRun(_extensions, message, (result, extension, loop) -> {
             try {
                 extension.outgoing(sender, this, result, Promise.from(m -> {
                     if (m != null) {

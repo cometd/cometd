@@ -15,8 +15,9 @@
  */
 package org.cometd.common;
 
-import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
+import java.util.ListIterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntFunction;
@@ -27,7 +28,7 @@ import org.cometd.bayeux.Promise;
  * is the reduction of the results produced by the processing of each element.</p>
  * <p>This class implements the asynchronous version of the following synchronous
  * {@code for} loop, but where the processing of each element may be asynchronous.</p>
- * <pre>
+ * <pre>{@code
  * R result;
  * for (T element : list) {
  *     (result, proceed) = operation.apply(result, element);
@@ -35,13 +36,13 @@ import org.cometd.bayeux.Promise;
  *         break;
  *     }
  * }
- * </pre>
+ * }</pre>
  * <p>Using this class, the loop above becomes:</p>
- * <pre>
+ * <pre>{@code
  * R zero;
- * AsyncFoldLeft.run(list, zero, (result, element, loop) -&gt; {
- *     CompletableFuture&lt;R&gt; future = processAsync(element);
- *     future.whenComplete((r, x) -&gt; {
+ * AsyncFoldLeft.run(list, zero, (result, element, loop) -> {
+ *     CompletableFuture<R> future = processAsync(element);
+ *     future.whenComplete((r, x) -> {
  *         if (x == null) {
  *             R reduced = reduce(result, r);
  *             if (shouldIterate(r)) {
@@ -53,12 +54,23 @@ import org.cometd.bayeux.Promise;
  *             loop.fail(x);
  *         }
  *     })
- * }, Promise.complete((r, x) -&gt; {
+ * }, Promise.complete((r, x) -> {
  *     // Process final result or failure.
  * });
- * </pre>
+ * }</pre>
  */
 public class AsyncFoldLeft {
+    /**
+     * <p>Processes the given array of elements.</p>
+     *
+     * @param array     the elements to process
+     * @param zero      the initial result
+     * @param operation the operation to invoke for each element
+     * @param promise   the promise to notify of the final result
+     * @param <T>       the type of element
+     * @param <R>       the type of the result
+     * @see #run(Iterable, Object, Operation, Promise)
+     */
     public static <T, R> void run(T[] array, R zero, Operation<T, R> operation, Promise<R> promise) {
         int size = array.length;
         if (size == 0) {
@@ -70,29 +82,44 @@ public class AsyncFoldLeft {
     }
 
     /**
-     * <p>Processes the given {@code collection} of elements.</p>
-     * <p>The initial result {@code zero} is returned if the collection is empty.</p>
+     * <p>Processes the given sequence of elements.</p>
+     * <p>The initial result {@code zero} is returned if the sequence is empty.</p>
      * <p>For each element the {@link Operation#apply(Object, Object, Loop) operation}
      * function is invoked.</p>
-     * <p>The {@code collection} should have a "stable" iterator, i.e. it should not be
-     * affected if the collection is modified concurrently by another thread, or by the
-     * same thread in th {@code operation} during the iteration.</p>
+     * <p>The sequence should have a "stable" iterator, i.e. it should not be
+     * affected if the sequence is modified  during the iteration, either concurrently
+     * by another thread, or by the same thread in the {@code operation} function.</p>
      *
-     * @param collection the elements to process
-     * @param zero       the initial result
-     * @param operation  the operation to invoke for each element
-     * @param promise    the promise to notify of the final result
-     * @param <T>        the type of element
-     * @param <R>        the type of the result
+     * @param iterable  the elements to process
+     * @param zero      the initial result
+     * @param operation the operation to invoke for each element
+     * @param promise   the promise to notify of the final result
+     * @param <T>       the type of element
+     * @param <R>       the type of the result
      */
-    public static <T, R> void run(Collection<T> collection, R zero, Operation<T, R> operation, Promise<R> promise) {
-        Iterator<T> iterator = collection.iterator();
+    public static <T, R> void run(Iterable<T> iterable, R zero, Operation<T, R> operation, Promise<R> promise) {
+        Iterator<T> iterator = iterable.iterator();
         if (!iterator.hasNext()) {
             promise.succeed(zero);
         } else {
             IteratorLoop<T, R> loop = new IteratorLoop<>(iterator, zero, operation, promise);
             loop.run();
         }
+    }
+
+    /**
+     * <p>Processes, in reverse order, the given sequence of elements.</p>
+     *
+     * @param list      the elements to process
+     * @param zero      the initial result
+     * @param operation the operation to invoke for each element
+     * @param promise   the promise to notify of the final result
+     * @param <T>       the type of element
+     * @param <R>       the type of the result
+     * @see #run(Iterable, Object, Operation, Promise)
+     */
+    public static <T, R> void reverseRun(List<T> list, R zero, Operation<T, R> operation, Promise<R> promise) {
+        run(new ReverseIterable<>(list), zero, operation, promise);
     }
 
     /**
@@ -332,6 +359,29 @@ public class AsyncFoldLeft {
         void next() {
             hasCurrent = iterator.hasNext();
             current = hasCurrent ? iterator.next() : null;
+        }
+    }
+
+    private static class ReverseIterable<T> implements Iterable<T>, Iterator<T> {
+        private final ListIterator<T> iterator;
+
+        private ReverseIterable(List<T> list) {
+            this.iterator = list.listIterator(list.size());
+        }
+
+        @Override
+        public Iterator<T> iterator() {
+            return this;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return iterator.hasPrevious();
+        }
+
+        @Override
+        public T next() {
+            return iterator.previous();
         }
     }
 }

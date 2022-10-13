@@ -45,6 +45,7 @@ public class ChannelId {
     private String[] _segments;
     private int _wild;
     private List<String> _wilds;
+    private List<String> _all;
     private String _parent;
     private List<String> _vars;
 
@@ -110,37 +111,45 @@ public class ChannelId {
             if (!_vars.isEmpty()) {
                 throw new IllegalArgumentException("Invalid channel id: " + this);
             }
-            _wilds = Collections.emptyList();
-        } else {
-            boolean addShallow = true;
-            List<String> wilds = new ArrayList<>(segments.length + 1);
-            StringBuilder b = new StringBuilder(name.length()).append("/");
-            for (int i = 1, size = segments.length; i <= size; ++i) {
-                String segment = segments[i - 1];
-                if (segment.trim().length() == 0) {
-                    throw new IllegalArgumentException("Invalid channel id: " + this);
-                }
-
-                wilds.add(0, b + "**");
-
-                if (VAR.matcher(segment).matches()) {
-                    addShallow = i == size;
-                    break;
-                }
-
-                if (i < size) {
-                    b.append(segment).append('/');
-                }
-            }
-            if (addShallow) {
-                wilds.add(0, b + "*");
-            }
-            _wilds = Collections.unmodifiableList(wilds);
         }
+        _wilds = Collections.unmodifiableList(resolveWilds(segments));
+
+        List<String> all = new ArrayList<>();
+        all.add(_id);
+        all.addAll(_wilds);
+        _all = Collections.unmodifiableList(all);
 
         _parent = segments.length == 1 ? null : name.substring(0, name.length() - segments[segments.length - 1].length() - 1);
 
         _segments = segments;
+    }
+
+    private List<String> resolveWilds(String[] segments) {
+        boolean addShallow = _wild == 0;
+        int length = _wild > 1 ? segments.length - 1 : segments.length;
+        List<String> wilds = new ArrayList<>(length + 1);
+        StringBuilder b = new StringBuilder("/");
+        for (int i = 1; i <= length; ++i) {
+            String segment = segments[i - 1];
+            if (segment.trim().length() == 0) {
+                throw new IllegalArgumentException("Invalid channel id: " + this);
+            }
+
+            wilds.add(0, b + "**");
+
+            if (VAR.matcher(segment).matches()) {
+                addShallow = i == length;
+                break;
+            }
+
+            if (i < length) {
+                b.append(segment).append('/');
+            }
+        }
+        if (addShallow) {
+            wilds.add(0, b + "*");
+        }
+        return wilds;
     }
 
     /**
@@ -436,10 +445,37 @@ public class ChannelId {
     /**
      * @return The list of wilds channels that match this channel, or
      * the empty list if this channel is already wild.
+     * @deprecated use {@link #getWildIds()} instead
      */
+    @Deprecated
     public List<String> getWilds() {
         resolve();
+        return isWild() ? Collections.emptyList() : _wilds;
+    }
+
+    /**
+     * <p>Returns the list of wild channels that match this channel.</p>
+     * <p>For channel {@code /foo/bar/baz}, returns {@code [/foo/bar/*, /foo/bar/**, /foo/**, /**]}.</p>
+     * <p>For channel {@code /foo/bar/*}, returns {@code [/foo/bar/**, /foo/**, /**]}.</p>
+     * <p>For channel {@code /foo/bar/**}, returns {@code [/foo/**, /**]}.</p>
+     * <p>For channel {@code /*}, returns {@code [/**]}.</p>
+     * <p>For channel {@code /**}, returns {@code []}, an empty list.</p>
+     *
+     * @return The list of wilds channels that match this channel.
+     */
+    public List<String> getWildIds() {
+        resolve();
         return _wilds;
+    }
+
+    /**
+     * @return a list with this channel id and its wild channel ids.
+     * @see #getId()
+     * @see #getWildIds()
+     */
+    public List<String> getAllIds() {
+        resolve();
+        return _all;
     }
 
     /**
@@ -505,11 +541,11 @@ public class ChannelId {
         if (regular <= 0) {
             return null;
         }
-        String result = "";
+        StringBuilder result = new StringBuilder();
         for (int i = 0; i < regular; ++i) {
-            result += "/" + getSegment(i);
+            result.append("/").append(getSegment(i));
         }
-        return result;
+        return result.toString();
     }
 
     /**
