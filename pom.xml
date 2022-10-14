@@ -63,7 +63,7 @@
     <log4j2-version>2.19.0</log4j2-version>
     <spring-version>5.3.23</spring-version>
     <spring-boot-version>2.7.4</spring-boot-version>
-    <jackson-version>2.13.4.1</jackson-version>
+    <jackson-version>2.13.4.2</jackson-version>
     <dojo-version>1.17.2</dojo-version>
     <okhttp-version>4.10.0</okhttp-version>
   </properties>
