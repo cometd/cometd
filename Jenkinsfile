@@ -3,7 +3,11 @@
 pipeline {
   agent any
   // Save some I/O during the build.
-  options { durabilityHint('PERFORMANCE_OPTIMIZED') }
+  options { 
+    durabilityHint('PERFORMANCE_OPTIMIZED') 
+    buildDiscarder logRotator( numToKeepStr: '50' )
+  }
+
   stages {
     stage('CometD Builds') {
       matrix {
