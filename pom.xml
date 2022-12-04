@@ -56,16 +56,16 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <!-- tag::jetty-version[] -->
-    <jetty-version>9.4.49.v20220914</jetty-version>
+    <jetty-version>9.4.50.v20221201</jetty-version>
     <!-- end::jetty-version[] -->
     <!-- Last GraalVM version to support Java 8 -->
     <graalvm-version>21.3.2.1</graalvm-version>
     <slf4j-version>2.0.3</slf4j-version>
     <log4j2-version>2.19.0</log4j2-version>
-    <spring-version>5.3.23</spring-version>
-    <spring-boot-version>2.7.4</spring-boot-version>
-    <jackson-version>2.13.4.1</jackson-version>
-    <dojo-version>1.17.2</dojo-version>
+    <spring-version>5.3.24</spring-version>
+    <spring-boot-version>2.7.6</spring-boot-version>
+    <jackson-version>2.13.4.2</jackson-version>
+    <dojo-version>1.17.3</dojo-version>
     <okhttp-version>4.10.0</okhttp-version>
   </properties>
 
