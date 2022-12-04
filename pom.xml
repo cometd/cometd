@@ -56,15 +56,15 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <!-- tag::jetty-version[] -->
-    <jetty-version>11.0.12</jetty-version>
+    <jetty-version>11.0.13</jetty-version>
     <!-- end::jetty-version[] -->
     <graalvm-version>22.2.0.1</graalvm-version>
-    <slf4j-version>2.0.3</slf4j-version>
+    <slf4j-version>2.0.5</slf4j-version>
     <log4j2-version>2.19.0</log4j2-version>
-    <spring-version>5.3.23</spring-version>
-    <spring-boot-version>2.7.4</spring-boot-version>
-    <jackson-version>2.13.4.1</jackson-version>
-    <dojo-version>1.17.2</dojo-version>
+    <spring-version>5.3.24</spring-version>
+    <spring-boot-version>2.7.6</spring-boot-version>
+    <jackson-version>2.14.1</jackson-version>
+    <dojo-version>1.17.3</dojo-version>
     <okhttp-version>4.10.0</okhttp-version>
   </properties>
 
@@ -383,7 +383,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-install-plugin</artifactId>
-          <version>3.0.1</version>
+          <version>3.1.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -405,7 +405,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-release-plugin</artifactId>
-          <version>3.0.0-M6</version>
+          <version>3.0.0-M7</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -420,7 +420,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
-          <version>3.4.0</version>
+          <version>3.4.1</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>

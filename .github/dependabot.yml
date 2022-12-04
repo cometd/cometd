@@ -2,8 +2,15 @@ version: 2
 updates:
   - package-ecosystem: "maven"
     directory: "/"
+    open-pull-requests-limit: 50
+    target-branch: "6.0.x"
     schedule:
       interval: "daily"
+    ignore:
+      - dependency-name: "org.springframework:*"
+        version: [ ">=6.0.0" ]
+      - dependency-name: "org.springframework.boot:*"
+        version: [ ">=3.0.0" ]
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
