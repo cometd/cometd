@@ -21,18 +21,16 @@ pipeline {
           stage('Build CometD') {
             agent { node { label 'linux' } }
             steps {
-              container('jetty-build') {
-                timeout(time: 1, unit: 'HOURS') {
-                  mavenBuild("${env.JDK}", "clean install", [[parserName: 'Maven'], [parserName: 'Java']])
-                  // Collect the JaCoCo execution results.
-                  jacoco exclusionPattern: '**/org/webtide/**,**/org/cometd/benchmark/**,**/org/cometd/examples/**',
-                          execPattern: '**/target/jacoco.exec',
-                          classPattern: '**/target/classes',
-                          sourcePattern: '**/src/main/java'
-                }
-                timeout(time: 15, unit: 'MINUTES') {
-                  mavenBuild("${env.JDK}", "javadoc:javadoc", null)
-                }
+              timeout(time: 1, unit: 'HOURS') {
+                mavenBuild("${env.JDK}", "clean install", [[parserName: 'Maven'], [parserName: 'Java']])
+                // Collect the JaCoCo execution results.
+                jacoco exclusionPattern: '**/org/webtide/**,**/org/cometd/benchmark/**,**/org/cometd/examples/**',
+                        execPattern: '**/target/jacoco.exec',
+                        classPattern: '**/target/classes',
+                        sourcePattern: '**/src/main/java'
+              }
+              timeout(time: 15, unit: 'MINUTES') {
+                mavenBuild("${env.JDK}", "javadoc:javadoc", null)
               }
             }
           }
