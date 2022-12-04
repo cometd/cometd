@@ -4,6 +4,13 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+    ignore:
+      - dependency-name: "com.google.javascript:closure-compiler"
+        version: [ ">=v20220502" ]
+      - dependency-name: "org.graalvm.js:js"
+        version: [ ">=21.3.2.1" ]
+      - dependency-name: "org.springframework.boot:*"
+        version: [ ">=3.0.0" ]
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
