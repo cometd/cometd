@@ -15,13 +15,13 @@
  */
 package org.cometd.server.websocket.jetty;
 
-import java.util.concurrent.ExecutionException;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.websocket.common.AbstractWebSocketEndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.slf4j.Logger;
@@ -47,19 +47,10 @@ public class JettyWebSocketEndPoint extends AbstractWebSocketEndPoint implements
     @Override
     public void onWebSocketText(String data) {
         try {
-            try {
-                Promise.Completable<Void> completable = new Promise.Completable<>();
-                onMessage(data, completable);
-                // Wait, to apply backpressure to the client.
-                completable.get();
-            } catch (ExecutionException x) {
-                throw x.getCause();
-            }
+            SuspendToken suspendToken = _wsSession.suspend();
+            onMessage(data, Promise.from(v -> suspendToken.resume(), this::handleFailure));
         } catch (Throwable failure) {
-            if (_logger.isDebugEnabled()) {
-                _logger.debug("", failure);
-            }
-            close(1011, failure.toString());
+            handleFailure(failure);
         }
     }
 
@@ -99,6 +90,14 @@ public class JettyWebSocketEndPoint extends AbstractWebSocketEndPoint implements
             _logger.debug("Closing {}/{} on {}", code, reason, this);
         }
         _wsSession.close(code, reason);
+    }
+
+    private void handleFailure(Throwable t)
+    {
+        if (_logger.isDebugEnabled()) {
+            _logger.debug("", t);
+        }
+        close(1011, t.toString());
     }
 
     @Override
