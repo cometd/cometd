@@ -491,7 +491,7 @@
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-servlet-api</artifactId>
-        <version>4.0.5</version>
+        <version>4.0.6</version>
         <scope>provided</scope>
       </dependency>
       <dependency>
