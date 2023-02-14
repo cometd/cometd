@@ -1302,6 +1302,7 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
 
     @Override
     public void dump(Appendable out, String indent) throws IOException {
+        long before = System.nanoTime();
         List<Object> children = new ArrayList<>();
 
         SecurityPolicy securityPolicy = getSecurityPolicy();
@@ -1339,6 +1340,7 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
         }
 
         Dumpable.dumpObjects(out, indent, this, children.toArray());
+        Dumpable.dumpObjects(out, indent, "total dump duration=" + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - before) + "ms");
     }
 
     private void handleMetaHandshake(ServerSessionImpl session, Mutable message, Promise<Boolean> promise) {

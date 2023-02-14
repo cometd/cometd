@@ -55,6 +55,22 @@ public class BayeuxServerTest {
     }
 
     @Test
+    public void testDumpDuration() {
+        _bayeux.setDetailedDump(true);
+        for (int i = 0; i < 10_000; i++) {
+            newServerSession();
+        }
+
+        String prefix = "total dump duration=";
+        String suffix = "ms";
+        String dump = _bayeux.dump();
+        int idx = dump.indexOf(prefix);
+        Assertions.assertNotEquals(-1, idx);
+        String ms = dump.substring(idx + prefix.length(), dump.indexOf(suffix, idx));
+        Assertions.assertTrue(Integer.parseInt(ms) > 1);
+    }
+
+    @Test
     public void testListeners() {
         _bayeux.addListener(new SubListener());
         _bayeux.addListener(new SessListener());
