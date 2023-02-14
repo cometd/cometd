@@ -18,13 +18,16 @@ package org.cometd.server;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.security.SecureRandom;
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.Spliterator;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,8 +36,10 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletRequest;
+
 import org.cometd.bayeux.Bayeux;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
@@ -55,7 +60,6 @@ import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.common.AsyncFoldLeft;
-import org.cometd.common.JobSplitter;
 import org.cometd.server.http.AbstractHttpTransport;
 import org.cometd.server.http.AsyncJSONTransport;
 import org.cometd.server.http.JSONPTransport;
@@ -94,6 +98,7 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
     private final Map<String, ServerTransport> _transports = new LinkedHashMap<>(); // Order is important
     private final List<String> _allowedTransports = new ArrayList<>();
     private final Map<String, Object> _options = new TreeMap<>();
+    private final Sweeper _sweeper = new Sweeper();
     private MarkedReference<Scheduler> _scheduler;
     private MarkedReference<Executor> _executor;
     private SecurityPolicy _policy = new DefaultSecurityPolicy();
@@ -126,9 +131,9 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
         _validation = getOption(VALIDATE_MESSAGE_FIELDS_OPTION, true);
         _broadcastToPublisher = getOption(BROADCAST_TO_PUBLISHER_OPTION, true);
 
-        long sweepThreads = getOption(SWEEP_THREADS_OPTION, 1);
-        if (sweepThreads < 1)
-            sweepThreads = 1;
+        long sweepThreads = getOption(SWEEP_THREADS_OPTION, 2);
+        if (sweepThreads < 2)
+            sweepThreads = 2;
         _sweepThreads = (int)Math.min(sweepThreads, Runtime.getRuntime().availableProcessors());
 
         super.doStart();
@@ -142,7 +147,7 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
         schedule(new Runnable() {
             @Override
             public void run() {
-                asyncSweep().whenComplete((r, x) -> schedule(this, sweepPeriod));
+                _sweeper.asyncSweep().whenComplete((r, x) -> schedule(this, sweepPeriod));
             }
         }, sweepPeriod);
     }
@@ -1266,23 +1271,16 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
 
     @ManagedOperation(value = "Sweeps channels and sessions of this CometD server", impact = "ACTION")
     public void sweep() {
-        _channels.values().forEach(ServerChannelImpl::sweep);
         sweepTransports();
+        _channels.values().forEach(ServerChannelImpl::sweep);
         long now = System.nanoTime();
         for (ServerSessionImpl session : _sessions.values()) {
             session.sweep(now);
         }
     }
 
-    private CompletableFuture<Void> asyncSweep() {
-        int sweepThreads = _sweepThreads;
-        Executor executor = getExecutor();
-        long now = System.nanoTime();
-
-        CompletableFuture<Void> sweepChannels = JobSplitter.runAsync(_channels.values(), ServerChannelImpl::sweep, sweepThreads, executor);
-        CompletableFuture<Void> sweepTransports = CompletableFuture.runAsync(this::sweepTransports, executor);
-        CompletableFuture<Void> sweepSessions = JobSplitter.runAsync(_sessions.values(), serverSession -> serverSession.sweep(now), sweepThreads, executor);
-        return CompletableFuture.allOf(sweepChannels, sweepTransports, sweepSessions);
+    CompletableFuture<Void> asyncSweep() {
+        return _sweeper.asyncSweep();
     }
 
     private void sweepTransports() {
@@ -1561,4 +1559,85 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
 
         return null;
     }
+
+    class Sweeper {
+        private final Logger _logger = LoggerFactory.getLogger(Sweeper.class.getName() + "@" + Integer.toHexString(System.identityHashCode(BayeuxServerImpl.this)));
+
+        private CompletableFuture<Void> asyncSweep() {
+            long before = System.nanoTime();
+            if (_logger.isDebugEnabled()) {
+                _logger.debug("Starting async sweep at {}", Instant.now());
+            }
+
+            CompletableFuture<Void> completableFuture = CompletableFuture.runAsync(BayeuxServerImpl.this::sweepTransports)
+                .thenCompose(unused -> runAsync(_channels.values(), ServerChannelImpl::sweep))
+                .thenCompose(unused -> {
+                    long now = System.nanoTime();
+                    return runAsync(_sessions.values(), serverSession -> serverSession.sweep(now));
+                });
+
+            if (_logger.isDebugEnabled()) {
+                completableFuture = completableFuture.thenRun(() -> _logger.debug("End of async sweep, took {}ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - before)));
+            }
+
+            return completableFuture;
+        }
+
+        /**
+         * <p>Asynchronously run an action on every element of a collection.</p>
+         * <p>This is equivalent to {@code CompletableFuture.runAsync(() -> elements.forEach(action), getExecutor())} but parallelized
+         * up to {@code _sweepThreads} threads. </p>
+         * @param elements the collection of elements to act upon
+         * @param action the action to run on each entry of the collection
+         * @return a CompletableFuture that completes when all the actions returned
+         * @param <T> the type of the collection's elements
+         */
+        private <T> CompletableFuture<Void> runAsync(Collection<T> elements, Consumer<T> action) {
+            int threadCount = _sweepThreads;
+            Executor executor = getExecutor();
+
+            if (threadCount > 1) {
+                return splitWork(elements, action, threadCount, executor);
+            } else {
+                return CompletableFuture.runAsync(() -> elements.forEach(action), executor);
+            }
+        }
+
+        private <T> CompletableFuture<Void> splitWork(Collection<T> elements, Consumer<T> action, int threads, Executor executor) {
+            List<Spliterator<T>> spliteratorList = buildSpliteratorList(elements, threads);
+
+            @SuppressWarnings("unchecked")
+            CompletableFuture<Void>[] completableFutures = new CompletableFuture[spliteratorList.size()];
+            for (int i = 0; i < spliteratorList.size(); i++) {
+                Spliterator<T> spliterator = spliteratorList.get(i);
+                completableFutures[i] = CompletableFuture.runAsync(() -> spliterator.forEachRemaining(action), executor);
+            }
+            return CompletableFuture.allOf(completableFutures);
+        }
+
+        private <T> List<Spliterator<T>> buildSpliteratorList(Collection<T> elements, int threads) {
+            List<Spliterator<T>> resultSpliterators = new ArrayList<>();
+            resultSpliterators.add(elements.stream().spliterator());
+
+            List<Spliterator<T>> newSpliterators = new ArrayList<>();
+            while (resultSpliterators.size() < threads) {
+                for (Spliterator<T> spliterator : resultSpliterators) {
+                    Spliterator<T> newSpliterator = spliterator.trySplit();
+                    if (newSpliterator != null) {
+                        newSpliterators.add(newSpliterator);
+                        if (resultSpliterators.size() + newSpliterators.size() == threads) {
+                            break;
+                        }
+                    }
+                }
+                if (newSpliterators.isEmpty()) {
+                    break;
+                }
+                resultSpliterators.addAll(newSpliterators);
+                newSpliterators.clear();
+            }
+            return resultSpliterators;
+        }
+    }
+
 }
