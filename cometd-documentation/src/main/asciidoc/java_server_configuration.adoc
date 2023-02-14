@@ -75,6 +75,10 @@ Here is the list of configuration init parameters that the `BayeuxServer` implem
 | 997
 | The period, in milliseconds, of the sweeping activity performed by the server.
 
+| sweepThreads
+| 2
+| The maximum number of threads that can be used by the sweeping activity performed by the server.
+
 | schedulerThreads
 | 1
 | The number of scheduler threads that execute scheduled tasks.
@@ -376,7 +380,7 @@ With the default security policy, server channels may be created simply by publi
 This may open up for creation of a large number of server channel, for example when messages are published to channels created with a random name, such as `/topic/atyd9834o329`, and for race conditions during channel creation (since the same server channel may be created concurrently by two remote clients publishing to that channel at the same time).
 
 To avoid that these transient server channels grow indefinitely and occupy a lot of memory, the CometD server aggressively sweeps server channels removing all channels that are not in use by the application anymore.
-The sweep period can be controlled by the `sweepPeriod` parameter, see xref:_java_server_configuration_bayeux[this section].
+The sweep period can be controlled by the `sweepPeriod` parameter while the number of threads can be controlled by the `sweepThreads` parameter, see xref:_java_server_configuration_bayeux[this section].
 
 Given the above, you need to solve two problems:
 
