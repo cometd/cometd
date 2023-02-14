@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.security.SecureRandom;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -56,6 +55,7 @@ import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.common.AsyncFoldLeft;
+import org.cometd.common.JobSplitter;
 import org.cometd.server.http.AbstractHttpTransport;
 import org.cometd.server.http.AsyncJSONTransport;
 import org.cometd.server.http.JSONPTransport;
@@ -77,6 +77,7 @@ import org.slf4j.LoggerFactory;
 public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer, Dumpable {
     public static final String ALLOWED_TRANSPORTS_OPTION = "allowedTransports";
     public static final String SWEEP_PERIOD_OPTION = "sweepPeriod";
+    public static final String SWEEP_THREADS_OPTION = "sweepThreads";
     public static final String TRANSPORTS_OPTION = "transports";
     public static final String VALIDATE_MESSAGE_FIELDS_OPTION = "validateMessageFields";
     public static final String BROADCAST_TO_PUBLISHER_OPTION = "broadcastToPublisher";
@@ -100,6 +101,7 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
     private boolean _validation;
     private boolean _broadcastToPublisher;
     private boolean _detailedDump;
+    private int _sweepThreads;
 
     public String getName() {
         return _name;
@@ -123,6 +125,11 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
 
         _validation = getOption(VALIDATE_MESSAGE_FIELDS_OPTION, true);
         _broadcastToPublisher = getOption(BROADCAST_TO_PUBLISHER_OPTION, true);
+
+        long sweepThreads = getOption(SWEEP_THREADS_OPTION, 1);
+        if (sweepThreads < 1)
+            sweepThreads = 1;
+        _sweepThreads = (int)Math.min(sweepThreads, Runtime.getRuntime().availableProcessors());
 
         super.doStart();
 
@@ -1259,21 +1266,23 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
 
     @ManagedOperation(value = "Sweeps channels and sessions of this CometD server", impact = "ACTION")
     public void sweep() {
-        sweepChannels();
+        _channels.values().forEach(ServerChannelImpl::sweep);
         sweepTransports();
-        sweepSessions();
+        long now = System.nanoTime();
+        for (ServerSessionImpl session : _sessions.values()) {
+            session.sweep(now);
+        }
     }
 
     private CompletableFuture<Void> asyncSweep() {
+        int sweepThreads = _sweepThreads;
         Executor executor = getExecutor();
-        CompletableFuture<Void> sweepChannels = CompletableFuture.runAsync(this::sweepChannels, executor);
-        CompletableFuture<Void> sweepTransports = CompletableFuture.runAsync(this::sweepTransports, executor);
-        CompletableFuture<Void> sweepSessions = CompletableFuture.runAsync(this::sweepSessions, executor);
-        return CompletableFuture.allOf(sweepChannels, sweepTransports, sweepSessions);
-    }
+        long now = System.nanoTime();
 
-    private void sweepChannels() {
-        _channels.values().forEach(ServerChannelImpl::sweep);
+        CompletableFuture<Void> sweepChannels = JobSplitter.runAsync(_channels.values(), ServerChannelImpl::sweep, sweepThreads, executor);
+        CompletableFuture<Void> sweepTransports = CompletableFuture.runAsync(this::sweepTransports, executor);
+        CompletableFuture<Void> sweepSessions = JobSplitter.runAsync(_sessions.values(), serverSession -> serverSession.sweep(now), sweepThreads, executor);
+        return CompletableFuture.allOf(sweepChannels, sweepTransports, sweepSessions);
     }
 
     private void sweepTransports() {
@@ -1284,13 +1293,6 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
         }
     }
 
-    private void sweepSessions() {
-        long now = System.nanoTime();
-        for (ServerSessionImpl session : _sessions.values()) {
-            session.sweep(now);
-        }
-    }
-
     @ManagedAttribute("Reports additional details in the dump() operation")
     public boolean isDetailedDump() {
         return _detailedDump;
@@ -1298,6 +1300,17 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
 
     public void setDetailedDump(boolean detailedDump) {
         _detailedDump = detailedDump;
+    }
+
+    @ManagedAttribute("The number of parallel threads used to perform sweeping")
+    public int getSweepThreads()
+    {
+        return _sweepThreads;
+    }
+
+    public void setSweepThreads(int sweepThreads)
+    {
+        _sweepThreads = sweepThreads;
     }
 
     @Override
