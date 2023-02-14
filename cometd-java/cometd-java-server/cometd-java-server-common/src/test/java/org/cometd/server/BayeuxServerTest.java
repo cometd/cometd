@@ -78,6 +78,18 @@ public class BayeuxServerTest {
         Assertions.assertTrue(Integer.parseInt(ms) > 1);
     }
 
+    @Test
+    public void testDumpDateTime() {
+        String prefix = "dump datetime=";
+        String suffix = "\n";
+        String dump = _bayeux.dump();
+        int idx = dump.indexOf(prefix);
+        Assertions.assertNotEquals(-1, idx);
+        String dateTimeZulu = dump.substring(idx + prefix.length(), dump.indexOf(suffix, idx));
+        assertTrue(dateTimeZulu.contains("T"));
+        assertTrue(dateTimeZulu.endsWith("Z"));
+    }
+
     @ParameterizedTest
     @ValueSource(ints = {0, 1, 2, 3, 4, 10, 16, 100, 10_000})
     public void testAsyncSweep(int count) throws Exception {

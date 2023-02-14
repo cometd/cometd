@@ -1316,6 +1316,8 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
         long before = System.nanoTime();
         List<Object> children = new ArrayList<>();
 
+        children.add("dump datetime=" + Instant.now());
+
         SecurityPolicy securityPolicy = getSecurityPolicy();
         if (securityPolicy != null) {
             children.add(securityPolicy);
