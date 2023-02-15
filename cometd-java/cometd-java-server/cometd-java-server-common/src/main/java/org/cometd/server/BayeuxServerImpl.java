@@ -1571,7 +1571,7 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
                 _logger.debug("Starting async sweep at {}", Instant.now());
             }
 
-            CompletableFuture<Void> completableFuture = CompletableFuture.runAsync(BayeuxServerImpl.this::sweepTransports)
+            CompletableFuture<Void> completableFuture = CompletableFuture.runAsync(BayeuxServerImpl.this::sweepTransports, getExecutor())
                 .thenCompose(unused -> runAsync(_channels.values(), ServerChannelImpl::sweep))
                 .thenCompose(unused -> {
                     long now = System.nanoTime();
@@ -1641,5 +1641,4 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
             return resultSpliterators;
         }
     }
-
 }
