@@ -78,6 +78,7 @@ Here is the list of configuration init parameters that the `BayeuxServer` implem
 | sweepThreads
 | 2
 | The maximum number of threads that can be used by the sweeping activity performed by the server.
+  This value is capped to the number of available processors as reported by the JVM.
 
 | schedulerThreads
 | 1
