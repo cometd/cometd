@@ -18,14 +18,16 @@ package org.cometd.server;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.security.SecureRandom;
+import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.Spliterator;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,8 +36,10 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletRequest;
+
 import org.cometd.bayeux.Bayeux;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
@@ -77,11 +81,14 @@ import org.slf4j.LoggerFactory;
 public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer, Dumpable {
     public static final String ALLOWED_TRANSPORTS_OPTION = "allowedTransports";
     public static final String SWEEP_PERIOD_OPTION = "sweepPeriod";
+    public static final String SWEEP_THREADS_OPTION = "sweepThreads";
     public static final String TRANSPORTS_OPTION = "transports";
     public static final String VALIDATE_MESSAGE_FIELDS_OPTION = "validateMessageFields";
     public static final String BROADCAST_TO_PUBLISHER_OPTION = "broadcastToPublisher";
     public static final String SCHEDULER_THREADS = "schedulerThreads";
     public static final String EXECUTOR_MAX_THREADS = "executorMaxThreads";
+    private static final long DEFAULT_SWEEP_PERIOD = 997;
+    private static final int DEFAULT_SWEEP_THREADS = 2;
 
     private final String _name = getClass().getSimpleName() + "@" + Integer.toHexString(System.identityHashCode(this));
     private final Logger _logger = LoggerFactory.getLogger(getClass().getPackage().getName() + "." + _name);
@@ -93,6 +100,7 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
     private final Map<String, ServerTransport> _transports = new LinkedHashMap<>(); // Order is important
     private final List<String> _allowedTransports = new ArrayList<>();
     private final Map<String, Object> _options = new TreeMap<>();
+    private final Sweeper _sweeper = new Sweeper();
     private MarkedReference<Scheduler> _scheduler;
     private MarkedReference<Executor> _executor;
     private SecurityPolicy _policy = new DefaultSecurityPolicy();
@@ -100,6 +108,8 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
     private boolean _validation;
     private boolean _broadcastToPublisher;
     private boolean _detailedDump;
+    private long _sweepPeriod;
+    private int _sweepThreads;
 
     public String getName() {
         return _name;
@@ -121,23 +131,29 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
         }
         addBean(_scheduler.getReference());
 
+        long sweepPeriodOption = getOption(SWEEP_PERIOD_OPTION, DEFAULT_SWEEP_PERIOD);
+        if (sweepPeriodOption < 0) {
+            sweepPeriodOption = DEFAULT_SWEEP_PERIOD;
+        }
+        _sweepPeriod = sweepPeriodOption;
+
+        long sweepThreads = getOption(SWEEP_THREADS_OPTION, DEFAULT_SWEEP_THREADS);
+        if (sweepThreads < DEFAULT_SWEEP_THREADS) {
+            sweepThreads = DEFAULT_SWEEP_THREADS;
+        }
+        _sweepThreads = (int)Math.min(sweepThreads, Runtime.getRuntime().availableProcessors());
+
         _validation = getOption(VALIDATE_MESSAGE_FIELDS_OPTION, true);
         _broadcastToPublisher = getOption(BROADCAST_TO_PUBLISHER_OPTION, true);
 
         super.doStart();
 
-        long defaultSweepPeriod = 997;
-        long sweepPeriodOption = getOption(SWEEP_PERIOD_OPTION, defaultSweepPeriod);
-        if (sweepPeriodOption < 0) {
-            sweepPeriodOption = defaultSweepPeriod;
-        }
-        long sweepPeriod = sweepPeriodOption;
         schedule(new Runnable() {
             @Override
             public void run() {
-                asyncSweep().whenComplete((r, x) -> schedule(this, sweepPeriod));
+                _sweeper.asyncSweep().whenComplete((r, x) -> schedule(this, getSweepPeriod()));
             }
-        }, sweepPeriod);
+        }, getSweepPeriod());
     }
 
     @Override
@@ -1259,21 +1275,16 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
 
     @ManagedOperation(value = "Sweeps channels and sessions of this CometD server", impact = "ACTION")
     public void sweep() {
-        sweepChannels();
         sweepTransports();
-        sweepSessions();
-    }
-
-    private CompletableFuture<Void> asyncSweep() {
-        Executor executor = getExecutor();
-        CompletableFuture<Void> sweepChannels = CompletableFuture.runAsync(this::sweepChannels, executor);
-        CompletableFuture<Void> sweepTransports = CompletableFuture.runAsync(this::sweepTransports, executor);
-        CompletableFuture<Void> sweepSessions = CompletableFuture.runAsync(this::sweepSessions, executor);
-        return CompletableFuture.allOf(sweepChannels, sweepTransports, sweepSessions);
-    }
-
-    private void sweepChannels() {
         _channels.values().forEach(ServerChannelImpl::sweep);
+        long now = System.nanoTime();
+        for (ServerSessionImpl session : _sessions.values()) {
+            session.sweep(now);
+        }
+    }
+
+    CompletableFuture<Void> asyncSweep() {
+        return _sweeper.asyncSweep();
     }
 
     private void sweepTransports() {
@@ -1281,13 +1292,6 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
             if (transport instanceof AbstractServerTransport) {
                 ((AbstractServerTransport)transport).sweep();
             }
-        }
-    }
-
-    private void sweepSessions() {
-        long now = System.nanoTime();
-        for (ServerSessionImpl session : _sessions.values()) {
-            session.sweep(now);
         }
     }
 
@@ -1300,9 +1304,40 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
         _detailedDump = detailedDump;
     }
 
+    @ManagedAttribute("The period, in milliseconds, of the sweeping activity performed by the server")
+    public long getSweepPeriod()
+    {
+        return _sweepPeriod;
+    }
+
+    public void setSweepPeriod(long sweepPeriod)
+    {
+        if (sweepPeriod < 0) {
+            sweepPeriod = DEFAULT_SWEEP_PERIOD;
+        }
+        _sweepPeriod = sweepPeriod;
+    }
+
+    @ManagedAttribute("The maximum number of threads that can be used by the sweeping activity performed by the server")
+    public int getSweepThreads()
+    {
+        return _sweepThreads;
+    }
+
+    public void setSweepThreads(int sweepThreads)
+    {
+        if (sweepThreads < 1) {
+            sweepThreads = DEFAULT_SWEEP_THREADS;
+        }
+        _sweepThreads = sweepThreads;
+    }
+
     @Override
     public void dump(Appendable out, String indent) throws IOException {
+        long before = System.nanoTime();
         List<Object> children = new ArrayList<>();
+
+        children.add("dump datetime=" + Instant.now());
 
         SecurityPolicy securityPolicy = getSecurityPolicy();
         if (securityPolicy != null) {
@@ -1339,6 +1374,7 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
         }
 
         Dumpable.dumpObjects(out, indent, this, children.toArray());
+        Dumpable.dumpObjects(out, indent, "total dump duration=" + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - before) + "ms");
     }
 
     private void handleMetaHandshake(ServerSessionImpl session, Mutable message, Promise<Boolean> promise) {
@@ -1545,5 +1581,83 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
         }
 
         return null;
+    }
+
+    class Sweeper {
+        private final Logger _logger = LoggerFactory.getLogger(Sweeper.class.getName() + "@" + Integer.toHexString(System.identityHashCode(BayeuxServerImpl.this)));
+
+        private CompletableFuture<Void> asyncSweep() {
+            long before = System.nanoTime();
+            if (_logger.isDebugEnabled()) {
+                _logger.debug("Starting async sweep at {}", Instant.now());
+            }
+
+            CompletableFuture<Void> completableFuture = CompletableFuture.runAsync(BayeuxServerImpl.this::sweepTransports, getExecutor())
+                .thenCompose(unused -> runAsync(_channels.values(), ServerChannelImpl::sweep))
+                .thenCompose(unused -> {
+                    long now = System.nanoTime();
+                    return runAsync(_sessions.values(), serverSession -> serverSession.sweep(now));
+                });
+
+            if (_logger.isDebugEnabled()) {
+                completableFuture = completableFuture.thenRun(() -> _logger.debug("End of async sweep, took {}ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - before)));
+            }
+
+            return completableFuture;
+        }
+
+        /**
+         * <p>Asynchronously run an action on every element of a collection.</p>
+         * <p>This is equivalent to {@code CompletableFuture.runAsync(() -> elements.forEach(action), getExecutor())} but parallelized
+         * up to {@link #getSweepThreads()} threads. </p>
+         * @param elements the collection of elements to act upon
+         * @param action the action to run on each entry of the collection
+         * @return a CompletableFuture that completes when all the actions returned
+         * @param <T> the type of the collection's elements
+         */
+        private <T> CompletableFuture<Void> runAsync(Collection<T> elements, Consumer<T> action) {
+            int threadCount = getSweepThreads();
+            Executor executor = getExecutor();
+            if (threadCount > 1) {
+                return splitWork(elements, action, threadCount, executor);
+            } else {
+                return CompletableFuture.runAsync(() -> elements.forEach(action), executor);
+            }
+        }
+
+        private <T> CompletableFuture<Void> splitWork(Collection<T> elements, Consumer<T> action, int threads, Executor executor) {
+            List<Spliterator<T>> spliteratorList = buildSpliteratorList(elements, threads);
+            @SuppressWarnings("unchecked")
+            CompletableFuture<Void>[] completableFutures = new CompletableFuture[spliteratorList.size()];
+            for (int i = 0; i < spliteratorList.size(); i++) {
+                Spliterator<T> spliterator = spliteratorList.get(i);
+                completableFutures[i] = CompletableFuture.runAsync(() -> spliterator.forEachRemaining(action), executor);
+            }
+            return CompletableFuture.allOf(completableFutures);
+        }
+
+        private <T> List<Spliterator<T>> buildSpliteratorList(Collection<T> elements, int threads) {
+            List<Spliterator<T>> resultSpliterators = new ArrayList<>();
+            resultSpliterators.add(elements.stream().spliterator());
+
+            List<Spliterator<T>> newSpliterators = new ArrayList<>();
+            while (resultSpliterators.size() < threads) {
+                for (Spliterator<T> spliterator : resultSpliterators) {
+                    Spliterator<T> newSpliterator = spliterator.trySplit();
+                    if (newSpliterator != null) {
+                        newSpliterators.add(newSpliterator);
+                        if (resultSpliterators.size() + newSpliterators.size() == threads) {
+                            break;
+                        }
+                    }
+                }
+                if (newSpliterators.isEmpty()) {
+                    break;
+                }
+                resultSpliterators.addAll(newSpliterators);
+                newSpliterators.clear();
+            }
+            return resultSpliterators;
+        }
     }
 }

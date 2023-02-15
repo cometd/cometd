@@ -18,7 +18,10 @@ package org.cometd.server;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
@@ -30,6 +33,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class BayeuxServerTest {
     private final Queue<Object> _events = new ConcurrentLinkedQueue<>();
@@ -52,6 +60,77 @@ public class BayeuxServerTest {
     public void destroy() throws Exception {
         _bayeux.stop();
         _events.clear();
+    }
+
+    @Test
+    public void testDumpDuration() {
+        _bayeux.setDetailedDump(true);
+        for (int i = 0; i < 10_000; i++) {
+            newServerSession();
+        }
+
+        String prefix = "total dump duration=";
+        String suffix = "ms";
+        String dump = _bayeux.dump();
+        int idx = dump.indexOf(prefix);
+        Assertions.assertNotEquals(-1, idx);
+        String ms = dump.substring(idx + prefix.length(), dump.indexOf(suffix, idx));
+        Assertions.assertTrue(Integer.parseInt(ms) > 1);
+    }
+
+    @Test
+    public void testDumpDateTime() {
+        String prefix = "dump datetime=";
+        String suffix = "\n";
+        String dump = _bayeux.dump();
+        int idx = dump.indexOf(prefix);
+        Assertions.assertNotEquals(-1, idx);
+        String dateTimeZulu = dump.substring(idx + prefix.length(), dump.indexOf(suffix, idx));
+        assertTrue(dateTimeZulu.contains("T"));
+        assertTrue(dateTimeZulu.endsWith("Z"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 1, 2, 3, 4, 10, 16, 100, 1000})
+    public void testAsyncSweep(int count) throws Exception {
+        Set<String> sessionIds = ConcurrentHashMap.newKeySet();
+        Set<Thread> threads = ConcurrentHashMap.newKeySet();
+        Set<String> removedSessionIds = ConcurrentHashMap.newKeySet();
+        _bayeux.addListener(new BayeuxServer.SessionListener() {
+            @Override
+            public void sessionAdded(ServerSession session, ServerMessage message)
+            {
+                sessionIds.add(session.getId());
+            }
+            @Override
+            public void sessionRemoved(ServerSession session, ServerMessage message, boolean timeout)
+            {
+                try
+                {
+                    Thread.sleep(1);
+                }
+                catch (InterruptedException e)
+                {
+                    throw new RuntimeException(e);
+                }
+                threads.add(Thread.currentThread());
+                removedSessionIds.add(session.getId());
+            }
+        });
+
+        for (int i = 0; i < count; i++) {
+            newServerSession().scheduleExpiration(0, 0, 0);
+        }
+
+        _bayeux.asyncSweep().get();
+
+        assertEquals(count, removedSessionIds.size());
+        for (String sessionId : sessionIds) {
+            assertTrue(removedSessionIds.contains(sessionId));
+        }
+
+        if (count >= 100)
+            assertTrue(threads.size() >= 2);
     }
 
     @Test
