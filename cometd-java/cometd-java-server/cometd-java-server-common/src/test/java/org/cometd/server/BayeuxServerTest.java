@@ -91,7 +91,7 @@ public class BayeuxServerTest {
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {0, 1, 2, 3, 4, 10, 16, 100, 10_000})
+    @ValueSource(ints = {0, 1, 2, 3, 4, 10, 16, 100, 1000})
     public void testAsyncSweep(int count) throws Exception {
         Set<String> sessionIds = ConcurrentHashMap.newKeySet();
         Set<Thread> threads = ConcurrentHashMap.newKeySet();
@@ -105,6 +105,14 @@ public class BayeuxServerTest {
             @Override
             public void sessionRemoved(ServerSession session, ServerMessage message, boolean timeout)
             {
+                try
+                {
+                    Thread.sleep(1);
+                }
+                catch (InterruptedException e)
+                {
+                    throw new RuntimeException(e);
+                }
                 threads.add(Thread.currentThread());
                 removedSessionIds.add(session.getId());
             }
