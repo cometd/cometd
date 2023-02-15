@@ -87,6 +87,8 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
     public static final String BROADCAST_TO_PUBLISHER_OPTION = "broadcastToPublisher";
     public static final String SCHEDULER_THREADS = "schedulerThreads";
     public static final String EXECUTOR_MAX_THREADS = "executorMaxThreads";
+    private static final long DEFAULT_SWEEP_PERIOD = 997;
+    private static final int DEFAULT_SWEEP_THREADS = 2;
 
     private final String _name = getClass().getSimpleName() + "@" + Integer.toHexString(System.identityHashCode(this));
     private final Logger _logger = LoggerFactory.getLogger(getClass().getPackage().getName() + "." + _name);
@@ -106,6 +108,7 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
     private boolean _validation;
     private boolean _broadcastToPublisher;
     private boolean _detailedDump;
+    private long _sweepPeriod;
     private int _sweepThreads;
 
     public String getName() {
@@ -128,28 +131,29 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
         }
         addBean(_scheduler.getReference());
 
+        long sweepPeriodOption = getOption(SWEEP_PERIOD_OPTION, DEFAULT_SWEEP_PERIOD);
+        if (sweepPeriodOption < 0) {
+            sweepPeriodOption = DEFAULT_SWEEP_PERIOD;
+        }
+        _sweepPeriod = sweepPeriodOption;
+
+        long sweepThreads = getOption(SWEEP_THREADS_OPTION, DEFAULT_SWEEP_THREADS);
+        if (sweepThreads < DEFAULT_SWEEP_THREADS) {
+            sweepThreads = DEFAULT_SWEEP_THREADS;
+        }
+        _sweepThreads = (int)Math.min(sweepThreads, Runtime.getRuntime().availableProcessors());
+
         _validation = getOption(VALIDATE_MESSAGE_FIELDS_OPTION, true);
         _broadcastToPublisher = getOption(BROADCAST_TO_PUBLISHER_OPTION, true);
 
-        long sweepThreads = getOption(SWEEP_THREADS_OPTION, 2);
-        if (sweepThreads < 2)
-            sweepThreads = 2;
-        _sweepThreads = (int)Math.min(sweepThreads, Runtime.getRuntime().availableProcessors());
-
         super.doStart();
 
-        long defaultSweepPeriod = 997;
-        long sweepPeriodOption = getOption(SWEEP_PERIOD_OPTION, defaultSweepPeriod);
-        if (sweepPeriodOption < 0) {
-            sweepPeriodOption = defaultSweepPeriod;
-        }
-        long sweepPeriod = sweepPeriodOption;
         schedule(new Runnable() {
             @Override
             public void run() {
-                _sweeper.asyncSweep().whenComplete((r, x) -> schedule(this, sweepPeriod));
+                _sweeper.asyncSweep().whenComplete((r, x) -> schedule(this, getSweepPeriod()));
             }
-        }, sweepPeriod);
+        }, getSweepPeriod());
     }
 
     @Override
@@ -1300,7 +1304,21 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
         _detailedDump = detailedDump;
     }
 
-    @ManagedAttribute("The number of parallel threads used to perform sweeping")
+    @ManagedAttribute("The period, in milliseconds, of the sweeping activity performed by the server")
+    public long getSweepPeriod()
+    {
+        return _sweepPeriod;
+    }
+
+    public void setSweepPeriod(long sweepPeriod)
+    {
+        if (sweepPeriod < 0) {
+            sweepPeriod = DEFAULT_SWEEP_PERIOD;
+        }
+        _sweepPeriod = sweepPeriod;
+    }
+
+    @ManagedAttribute("The maximum number of threads that can be used by the sweeping activity performed by the server")
     public int getSweepThreads()
     {
         return _sweepThreads;
@@ -1308,6 +1326,9 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
 
     public void setSweepThreads(int sweepThreads)
     {
+        if (sweepThreads < 1) {
+            sweepThreads = DEFAULT_SWEEP_THREADS;
+        }
         _sweepThreads = sweepThreads;
     }
 
@@ -1588,16 +1609,15 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
         /**
          * <p>Asynchronously run an action on every element of a collection.</p>
          * <p>This is equivalent to {@code CompletableFuture.runAsync(() -> elements.forEach(action), getExecutor())} but parallelized
-         * up to {@code _sweepThreads} threads. </p>
+         * up to {@link #getSweepThreads()} threads. </p>
          * @param elements the collection of elements to act upon
          * @param action the action to run on each entry of the collection
          * @return a CompletableFuture that completes when all the actions returned
          * @param <T> the type of the collection's elements
          */
         private <T> CompletableFuture<Void> runAsync(Collection<T> elements, Consumer<T> action) {
-            int threadCount = _sweepThreads;
+            int threadCount = getSweepThreads();
             Executor executor = getExecutor();
-
             if (threadCount > 1) {
                 return splitWork(elements, action, threadCount, executor);
             } else {
@@ -1607,7 +1627,6 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
 
         private <T> CompletableFuture<Void> splitWork(Collection<T> elements, Consumer<T> action, int threads, Executor executor) {
             List<Spliterator<T>> spliteratorList = buildSpliteratorList(elements, threads);
-
             @SuppressWarnings("unchecked")
             CompletableFuture<Void>[] completableFutures = new CompletableFuture[spliteratorList.size()];
             for (int i = 0; i < spliteratorList.size(); i++) {
