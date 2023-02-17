@@ -3,6 +3,22 @@ updates:
   - package-ecosystem: "maven"
     directory: "/"
     open-pull-requests-limit: 50
+    target-branch: "5.0.x"
+    schedule:
+      interval: "daily"
+    ignore:
+      - dependency-name: "com.google.javascript:closure-compiler"
+        versions: [ ">=v20220502" ]
+      - dependency-name: "org.graalvm.js:js"
+        versions: [ ">=21.3.2.1" ]
+      - dependency-name: "org.springframework:*"
+        versions: [ ">=6.0.0" ]
+      - dependency-name: "org.springframework.boot:*"
+        versions: [ ">=3.0.0" ]
+
+  - package-ecosystem: "maven"
+    directory: "/"
+    open-pull-requests-limit: 50
     target-branch: "6.0.x"
     schedule:
       interval: "daily"
@@ -11,6 +27,7 @@ updates:
         versions: [ ">=6.0.0" ]
       - dependency-name: "org.springframework.boot:*"
         versions: [ ">=3.0.0" ]
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
