@@ -17,6 +17,6 @@ module org.cometd.client.websocket.jetty {
     exports org.cometd.client.websocket.jetty;
 
     requires transitive org.cometd.client.websocket.common;
-    requires transitive org.eclipse.jetty.websocket.jetty.client;
+    requires transitive org.eclipse.jetty.ee10.websocket.jetty.client;
     requires org.slf4j;
 }

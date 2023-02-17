@@ -21,6 +21,7 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.websocket.ContainerProvider;
 import jakarta.websocket.WebSocketContainer;
+
 import org.cometd.annotation.Service;
 import org.cometd.annotation.server.RemoteCall;
 import org.cometd.client.BayeuxClient;
@@ -31,8 +32,8 @@ import org.cometd.client.websocket.jetty.JettyWebSocketTransport;
 import org.cometd.common.JettyJSONContextClient;
 import org.cometd.server.JettyJSONContextServer;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.ee10.websocket.client.WebSocketClient;
 import org.eclipse.jetty.util.ajax.JSON;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
 
 @Service
 public class WebAppService {

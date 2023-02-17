@@ -23,9 +23,6 @@ import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
@@ -35,9 +32,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import jakarta.servlet.ServletContext;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.Recorder;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -58,28 +53,31 @@ import org.cometd.server.websocket.common.AbstractWebSocketTransport;
 import org.cometd.server.websocket.javax.WebSocketTransport;
 import org.cometd.server.websocket.jetty.JettyWebSocketTransport;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
+import org.eclipse.jetty.ee10.servlet.DefaultServlet;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
 import org.eclipse.jetty.server.ConnectionFactory;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
-import org.eclipse.jetty.servlet.DefaultServlet;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.perf.HistogramSnapshot;
 import org.eclipse.jetty.toolchain.perf.MeasureConverter;
 import org.eclipse.jetty.toolchain.perf.PlatformMonitor;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.AutoLock;
-import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 
 public class CometDLoadServer {
     private final MonitoringQueuedThreadPool jettyThreadPool = new MonitoringQueuedThreadPool(0);
@@ -306,7 +304,7 @@ public class CometDLoadServer {
         connector.setPort(port);
         server.addConnector(connector);
 
-        HandlerWrapper handler = server;
+        Handler.Wrapper handler = server;
 
         if (latencies) {
             requestLatencyHandler = new RequestLatencyHandler();
@@ -404,7 +402,7 @@ public class CometDLoadServer {
                     server.cometdThreadPool.reset();
 
                     if (server.statisticsHandler != null) {
-                        server.statisticsHandler.statsReset();
+                        server.statisticsHandler.reset();
                     }
 
                     if (server.requestLatencyHandler != null) {
@@ -428,18 +426,19 @@ public class CometDLoadServer {
                     }
 
                     if (server.statisticsHandler != null) {
-                        int dispatched = server.statisticsHandler.getDispatched();
+                        int dispatched = server.statisticsHandler.getRequests();
                         if (dispatched > 0) {
                             System.err.printf("Requests times (total/avg/max - stddev): %d/%d/%d ms - %d%n",
-                                    server.statisticsHandler.getDispatchedTimeTotal(),
-                                    ((Double)server.statisticsHandler.getDispatchedTimeMean()).longValue(),
-                                    server.statisticsHandler.getDispatchedTimeMax(),
-                                    ((Double)server.statisticsHandler.getDispatchedTimeStdDev()).longValue());
+                                    server.statisticsHandler.getRequestTimeTotal(),
+                                    ((Double)server.statisticsHandler.getRequestTimeMean()).longValue(),
+                                    server.statisticsHandler.getRequestTimeMax(),
+                                    ((Double)server.statisticsHandler.getRequestTimeStdDev()).longValue());
                             System.err.printf("Requests (total/failed/max - rate): %d/%d/%d - %d requests/s%n",
                                     dispatched,
                                     server.statisticsHandler.getResponses4xx() + server.statisticsHandler.getResponses5xx(),
-                                    server.statisticsHandler.getDispatchedActiveMax(),
-                                    server.statisticsHandler.getStatsOnMs() == 0 ? -1 : server.statisticsHandler.getDispatched() * 1000L / server.statisticsHandler.getStatsOnMs());
+                                    server.statisticsHandler.getRequestsActiveMax(),
+//                                    server.statisticsHandler.getStatsOnMs() == 0 ? -1 : server.statisticsHandler.getRequests() * 1000L / server.statisticsHandler.getStatsOnMs());
+                                    0); // TODO: restore the line above.
                         }
                     }
 
@@ -469,7 +468,7 @@ public class CometDLoadServer {
         }
     }
 
-    private static class RequestQoSHandler extends HandlerWrapper {
+    private static class RequestQoSHandler extends Handler.Wrapper {
         private final long maxRequestTime = 500;
         private final AtomicLong requestIds = new AtomicLong();
         private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(50);
@@ -481,17 +480,17 @@ public class CometDLoadServer {
         }
 
         @Override
-        public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException {
+        public boolean handle(Request request, Response response, Callback callback) throws Exception {
             long requestId = requestIds.incrementAndGet();
             AtomicBoolean longRequest = new AtomicBoolean(false);
             Thread thread = Thread.currentThread();
             ScheduledFuture<?> task = scheduler.scheduleWithFixedDelay(() -> {
                 longRequest.set(true);
-                onLongRequestDetected(requestId, httpRequest, thread);
+                onLongRequestDetected(requestId, request, thread);
             }, maxRequestTime, maxRequestTime, TimeUnit.MILLISECONDS);
             long start = System.nanoTime();
             try {
-                super.handle(target, request, httpRequest, httpResponse);
+                return super.handle(request, response, callback);
             } finally {
                 long end = System.nanoTime();
                 task.cancel(false);
@@ -501,7 +500,7 @@ public class CometDLoadServer {
             }
         }
 
-        private void onLongRequestDetected(long requestId, HttpServletRequest request, Thread thread) {
+        private void onLongRequestDetected(long requestId, Request request, Thread thread) {
             try {
                 long begin = System.nanoTime();
                 StackTraceElement[] stackFrames = thread.getStackTrace();
@@ -517,14 +516,14 @@ public class CometDLoadServer {
             }
         }
 
-        private void formatRequest(HttpServletRequest request, StringBuilder builder) {
-            builder.append(request.getRequestURI()).append("\n");
-            for (Enumeration<String> headers = request.getHeaderNames(); headers.hasMoreElements(); ) {
-                String name = headers.nextElement();
-                builder.append(name).append("=").append(Collections.list(request.getHeaders(name))).append("\n");
+        private void formatRequest(Request request, StringBuilder builder) {
+            builder.append(request.getHttpURI()).append("\n");
+            for (HttpField field : request.getHeaders()) {
+                String name = field.getName();
+                builder.append(name).append("=").append(field.getValueList()).append("\n");
             }
-            builder.append(request.getRemoteAddr()).append(":").append(request.getRemotePort()).append(" => ");
-            builder.append(request.getLocalAddr()).append(":").append(request.getLocalPort()).append("\n");
+            builder.append(Request.getRemoteAddr(request)).append(":").append(Request.getRemotePort(request)).append(" => ");
+            builder.append(Request.getLocalAddr(request)).append(":").append(Request.getLocalPort(request)).append("\n");
         }
 
         private void onLongRequestEnded(long requestId, long time) {
@@ -540,8 +539,8 @@ public class CometDLoadServer {
         }
     }
 
-    private static class RequestLatencyHandler extends HandlerWrapper implements MeasureConverter {
-        private final Collection<Histogram> allHistograms = new CopyOnWriteArrayList<>();
+    private static class RequestLatencyHandler extends Handler.Wrapper implements MeasureConverter {
+        private final java.util.Collection<Histogram> allHistograms = new CopyOnWriteArrayList<>();
         private final ThreadLocal<Histogram> histogram = ThreadLocal.withInitial(() -> {
             Histogram histogram = new Histogram(TimeUnit.MINUTES.toNanos(1), 3);
             allHistograms.add(histogram);
@@ -550,14 +549,14 @@ public class CometDLoadServer {
         private final ThreadLocal<Boolean> currentEnabled = ThreadLocal.withInitial(() -> Boolean.TRUE);
 
         @Override
-        public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException {
+        public boolean handle(Request request, Response response, Callback callback) throws Exception {
             long begin = System.nanoTime();
             try {
-                super.handle(target, request, httpRequest, httpResponse);
+                return super.handle(request, response, callback);
             } finally {
                 long end = System.nanoTime();
                 if (currentEnabled.get()) {
-                    if (!request.getHttpFields().contains(HttpHeader.UPGRADE)) {
+                    if (!request.getHeaders().contains(HttpHeader.UPGRADE)) {
                         updateLatencies(begin, end);
                     }
                 } else {

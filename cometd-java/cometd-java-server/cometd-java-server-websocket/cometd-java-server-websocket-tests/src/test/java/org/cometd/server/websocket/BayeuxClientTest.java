@@ -31,6 +31,7 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.MarkedReference;
 import org.cometd.bayeux.Message;
@@ -47,7 +48,7 @@ import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.common.HashMapMessage;
 import org.cometd.server.DefaultSecurityPolicy;
-import org.eclipse.jetty.servlet.FilterHolder;
+import org.eclipse.jetty.ee10.servlet.FilterHolder;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;

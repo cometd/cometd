@@ -6,7 +6,7 @@
   <artifactId>cometd-project</artifactId>
   <packaging>pom</packaging>
   <name>CometD</name>
-  <version>7.0.10-SNAPSHOT</version>
+  <version>8.0.0-SNAPSHOT</version>
 
   <repositories>
     <repository>
@@ -56,7 +56,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <!-- tag::jetty-version[] -->
-    <jetty-version>11.0.14</jetty-version>
+    <jetty-version>12.0.0-SNAPSHOT</jetty-version>
     <!-- end::jetty-version[] -->
     <graalvm-version>22.3.1</graalvm-version>
     <slf4j-version>2.0.6</slf4j-version>
@@ -200,9 +200,9 @@
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
-          <source>11</source>
-          <target>11</target>
-          <release>11</release>
+          <source>17</source>
+          <target>17</target>
+          <release>17</release>
           <showDeprecation>true</showDeprecation>
           <showWarnings>true</showWarnings>
           <compilerArgument>-Xlint:all,-serial</compilerArgument>
@@ -473,8 +473,8 @@
           <version>3.1.0</version>
         </plugin>
         <plugin>
-          <groupId>org.eclipse.jetty</groupId>
-          <artifactId>jetty-maven-plugin</artifactId>
+          <groupId>org.eclipse.jetty.ee10</groupId>
+          <artifactId>jetty-ee10-maven-plugin</artifactId>
           <version>${jetty-version}</version>
         </plugin>
         <plugin>
@@ -489,15 +489,21 @@
   <dependencyManagement>
     <dependencies>
       <dependency>
-        <groupId>org.eclipse.jetty.toolchain</groupId>
-        <artifactId>jetty-jakarta-servlet-api</artifactId>
-        <version>5.0.2</version>
+        <groupId>jakarta.servlet</groupId>
+        <artifactId>jakarta.servlet-api</artifactId>
+        <version>6.0.0</version>
         <scope>provided</scope>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.toolchain</groupId>
-        <artifactId>jetty-jakarta-websocket-api</artifactId>
-        <version>2.0.0</version>
+        <groupId>jakarta.websocket</groupId>
+        <artifactId>jakarta.websocket-api</artifactId>
+        <version>2.1.0</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.websocket</groupId>
+        <artifactId>jakarta.websocket-client-api</artifactId>
+        <version>2.1.0</version>
         <scope>provided</scope>
       </dependency>
       <dependency>

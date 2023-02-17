@@ -20,6 +20,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
@@ -27,14 +28,14 @@ import org.cometd.client.BayeuxClient;
 import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpProxy;
-import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.ee10.proxy.ProxyServlet;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.io.ClientConnector;
-import org.eclipse.jetty.proxy.ConnectHandler;
-import org.eclipse.jetty.proxy.ProxyServlet;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.server.handler.ConnectHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -59,7 +60,7 @@ public class BayeuxClientUsageTest extends ClientServerTest {
         context.addServlet(proxyServlet, "/*");
 
         proxy.start();
-        httpClient.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyConnector.getLocalPort()));
+        httpClient.getProxyConfiguration().addProxy(new HttpProxy("localhost", proxyConnector.getLocalPort()));
 
         testClient(newBayeuxClient());
     }
@@ -92,7 +93,7 @@ public class BayeuxClientUsageTest extends ClientServerTest {
         sslServer.setKeyStorePassword("storepwd");
         clientConnector.setSslContextFactory(sslClient);
         httpClient = new HttpClient(new HttpClientTransportOverHTTP(clientConnector));
-        httpClient.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyConnector.getLocalPort()));
+        httpClient.getProxyConfiguration().addProxy(new HttpProxy("localhost", proxyConnector.getLocalPort()));
         httpClient.start();
 
         String url = "https://localhost:" + sslConnector.getLocalPort() + cometdServletPath;

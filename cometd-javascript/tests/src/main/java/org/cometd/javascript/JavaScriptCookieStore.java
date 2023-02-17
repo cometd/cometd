@@ -15,8 +15,6 @@
  */
 package org.cometd.javascript;
 
-import java.net.CookieStore;
-import java.net.HttpCookie;
 import java.net.URI;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -25,30 +23,33 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Locale;
 
+import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpCookieStore;
+
 /**
  * <p>Representation of the cookies in the JavaScript environment.</p>
  * <p>The actual store must survive page reloads.</p>
  */
 public class JavaScriptCookieStore {
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss 'GMT'", Locale.US).withZone(ZoneId.of("GMT"));
-    private final CookieStore store;
+    private final HttpCookieStore store;
 
-    public JavaScriptCookieStore(CookieStore store) {
+    public JavaScriptCookieStore(HttpCookieStore store) {
         this.store = store;
     }
 
-    public CookieStore getStore() {
+    public HttpCookieStore getStore() {
         return store;
     }
 
     public String get(String scheme, String host, String path) {
         try {
             URI uri = URI.create(scheme + "://" + host + path);
-            List<HttpCookie> uriCookies = store.get(uri);
+            List<HttpCookie> uriCookies = store.match(uri);
             StringBuilder buffer = new StringBuilder();
             if (uriCookies != null) {
                 for (HttpCookie cookie : uriCookies) {
-                    if (cookie.isHttpOnly() || cookie.hasExpired()) {
+                    if (cookie.isHttpOnly() || cookie.isExpired()) {
                         continue;
                     }
                     if (buffer.length() > 0) {
@@ -109,7 +110,7 @@ public class JavaScriptCookieStore {
             }
 
             URI uri = URI.create(scheme + "://" + host + uriPath);
-            List<HttpCookie> uriCookies = store.get(uri);
+            List<HttpCookie> uriCookies = store.match(uri);
 
             if (value == null || value.isEmpty()) {
                 if (uriCookies != null) {
@@ -121,14 +122,13 @@ public class JavaScriptCookieStore {
                     }
                 }
             } else {
-                HttpCookie cookie = new HttpCookie(name, value);
-                cookie.setSecure(secure);
-                cookie.setHttpOnly(httpOnly);
-                cookie.setDomain(domain);
-                cookie.setPath(path);
-                if (maxAge != null) {
-                    cookie.setMaxAge(maxAge);
-                }
+                HttpCookie cookie = HttpCookie.build(name, value)
+                        .secure(secure)
+                        .httpOnly(httpOnly)
+                        .domain(domain)
+                        .path(path)
+                        .maxAge(maxAge == null ? -1 : maxAge)
+                        .build();
                 store.add(uri, cookie);
             }
         } catch (Exception x) {

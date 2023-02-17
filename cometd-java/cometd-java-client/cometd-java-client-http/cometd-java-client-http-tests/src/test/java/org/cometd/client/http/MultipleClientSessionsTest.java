@@ -15,7 +15,6 @@
  */
 package org.cometd.client.http;
 
-import java.net.HttpCookie;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -24,6 +23,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
@@ -31,8 +31,9 @@ import org.cometd.client.BayeuxClient;
 import org.cometd.common.JSONContext;
 import org.cometd.common.JettyJSONContextClient;
 import org.cometd.server.http.AbstractHttpTransport;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.util.StringRequestContent;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.StringRequestContent;
+import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.Assertions;
@@ -329,7 +330,7 @@ public class MultipleClientSessionsTest extends ClientServerTest {
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
         Assertions.assertEquals(200, handshake.getStatus());
-        List<HttpCookie> cookies = httpClient.getCookieStore().get(URI.create(cometdURL));
+        List<HttpCookie> cookies = httpClient.getHttpCookieStore().match(URI.create(cometdURL));
         Assertions.assertEquals(1, cookies.size());
         HttpCookie browserCookie = cookies.get(0);
         Assertions.assertEquals("BAYEUX_BROWSER", browserCookie.getName());

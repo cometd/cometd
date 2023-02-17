@@ -16,7 +16,6 @@
 package org.cometd.server.websocket;
 
 import java.io.OutputStream;
-import java.net.HttpCookie;
 import java.net.Socket;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -32,6 +31,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.websocket.HandshakeResponse;
 import jakarta.websocket.server.HandshakeRequest;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -42,10 +42,11 @@ import org.cometd.client.BayeuxClient;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.websocket.javax.WebSocketTransport;
 import org.cometd.server.websocket.jetty.JettyWebSocketTransport;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest;
-import org.eclipse.jetty.websocket.server.JettyServerUpgradeResponse;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.websocket.server.JettyServerUpgradeRequest;
+import org.eclipse.jetty.ee10.websocket.server.JettyServerUpgradeResponse;
+import org.eclipse.jetty.http.HttpCookie;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -95,7 +96,7 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
         });
 
         BayeuxClient client = newBayeuxClient(wsType);
-        client.putCookie(new HttpCookie(cookieName, cookieValue));
+        client.putCookie(HttpCookie.from(cookieName, cookieValue));
         client.handshake();
 
         Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -232,7 +233,7 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
                 .send();
         Assertions.assertEquals(200, response.getStatus());
 
-        List<HttpCookie> cookies = httpClient.getCookieStore().get(uri);
+        List<HttpCookie> cookies = httpClient.getHttpCookieStore().match(uri);
         Assertions.assertNotNull(cookies);
         HttpCookie sessionCookie = null;
         for (HttpCookie cookie : cookies) {
@@ -253,7 +254,7 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
         });
 
         BayeuxClient client = newBayeuxClient(wsType);
-        client.getCookieStore().add(uri, sessionCookie);
+        client.getHttpCookieStore().add(uri, sessionCookie);
         client.handshake();
 
         Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));

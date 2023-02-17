@@ -15,7 +15,6 @@
  */
 package org.cometd.client.http.jetty;
 
-import java.net.HttpCookie;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -28,6 +27,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
+
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
 import org.cometd.client.http.common.AbstractHttpClientTransport;
@@ -36,10 +36,11 @@ import org.cometd.client.transport.TransportListener;
 import org.cometd.common.BufferingJSONAsyncParser;
 import org.cometd.common.JSONContext;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.util.StringRequestContent;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.client.StringRequestContent;
+import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;

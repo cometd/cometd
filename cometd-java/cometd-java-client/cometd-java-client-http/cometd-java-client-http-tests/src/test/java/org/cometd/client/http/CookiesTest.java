@@ -15,11 +15,11 @@
  */
 package org.cometd.client.http;
 
-import java.net.HttpCookie;
 import java.util.HashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxContext;
@@ -28,6 +28,7 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
 import org.cometd.server.AbstractService;
+import org.eclipse.jetty.http.HttpCookie;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -57,8 +58,7 @@ public class CookiesTest extends ClientServerTest {
         Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         long maxAge = 1;
-        HttpCookie cookie = new HttpCookie("foo", "bar");
-        cookie.setMaxAge(maxAge);
+        HttpCookie cookie = HttpCookie.build("foo", "bar").maxAge(maxAge).build();
         client.putCookie(cookie);
         Assertions.assertNotNull(client.getCookie(cookie.getName()));
 
@@ -67,7 +67,7 @@ public class CookiesTest extends ClientServerTest {
 
         Assertions.assertNull(client.getCookie(cookie.getName()));
 
-        cookie = new HttpCookie("foo", "bar");
+        cookie = HttpCookie.from("foo", "bar");
         client.putCookie(cookie);
         Assertions.assertNotNull(client.getCookie(cookie.getName()));
 
@@ -92,8 +92,8 @@ public class CookiesTest extends ClientServerTest {
 
         BayeuxClient client = newBayeuxClient();
 
-        client.putCookie(new HttpCookie(cookie1, "value1"));
-        client.putCookie(new HttpCookie(cookie2, "value2"));
+        client.putCookie(HttpCookie.from(cookie1, "value1"));
+        client.putCookie(HttpCookie.from(cookie2, "value2"));
 
         client.handshake();
 

@@ -21,7 +21,7 @@ module org.cometd.server {
     exports org.cometd.server.http;
     exports org.cometd.server.jmx;
 
-    requires transitive jetty.servlet.api;
+    requires transitive jakarta.servlet;
     requires transitive org.cometd.api.server;
     requires transitive org.cometd.common;
     requires org.slf4j;

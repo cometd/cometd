@@ -15,20 +15,22 @@
  */
 package org.cometd.examples;
 
+import java.net.URI;
+import java.util.List;
+
 import org.cometd.annotation.server.AnnotationCometDServlet;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.DefaultSecurityPolicy;
+import org.eclipse.jetty.ee10.servlet.DefaultServlet;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.servlet.DefaultServlet;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
@@ -62,16 +64,16 @@ public class CometDDemo {
         server.setHandler(contexts);
 
         ServletContextHandler context = new ServletContextHandler(contexts, "/", ServletContextHandler.SESSIONS);
-        context.setBaseResource(new ResourceCollection(
-                Resource.newResource("../../../cometd-demo/src/main/webapp/"),
-                Resource.newResource("../../../cometd-javascript/common/src/main/webapp/"),
-                Resource.newResource("../../../cometd-javascript/jquery/src/main/webapp/"),
-                Resource.newResource("../../../cometd-javascript/examples-jquery/src/main/webapp/"),
-                Resource.newResource("../../../cometd-javascript/dojo/src/main/webapp/"),
-                Resource.newResource("../../../cometd-javascript/examples-dojo/src/main/webapp/"),
-                Resource.newResource("../../../cometd-demo/target/war/work/org.cometd.javascript/cometd-javascript-dojo/"),
-                Resource.newResource("../../../cometd-demo/target/war/work/org.cometd.javascript/cometd-javascript-jquery/"))
-        );
+        context.setBaseResource(ResourceFactory.of(server).newResource(List.of(
+                URI.create("../../../cometd-demo/src/main/webapp/"),
+                URI.create("../../../cometd-javascript/common/src/main/webapp/"),
+                URI.create("../../../cometd-javascript/jquery/src/main/webapp/"),
+                URI.create("../../../cometd-javascript/examples-jquery/src/main/webapp/"),
+                URI.create("../../../cometd-javascript/dojo/src/main/webapp/"),
+                URI.create("../../../cometd-javascript/examples-dojo/src/main/webapp/"),
+                URI.create("../../../cometd-demo/target/war/work/org.cometd.javascript/cometd-javascript-dojo/"),
+                URI.create("../../../cometd-demo/target/war/work/org.cometd.javascript/cometd-javascript-jquery/")
+        )));
 
         ServletHolder dftServlet = context.addServlet(DefaultServlet.class, "/");
         dftServlet.setInitOrder(1);

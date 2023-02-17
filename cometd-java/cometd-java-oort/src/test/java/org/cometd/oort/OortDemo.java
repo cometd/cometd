@@ -16,15 +16,17 @@
 package org.cometd.oort;
 
 import java.lang.management.ManagementFactory;
+import java.net.URI;
+import java.util.List;
+
 import org.cometd.server.CometDServlet;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 /**
@@ -64,10 +66,10 @@ public class OortDemo {
         ServletContextHandler context = new ServletContextHandler(contexts, "/", ServletContextHandler.SESSIONS);
         context.addServlet("org.eclipse.jetty.servlet.DefaultServlet", "/");
 
-        context.setBaseResource(new ResourceCollection(
-                Resource.newResource(base + "/../../cometd-demo/src/main/webapp/"),
-                Resource.newResource(base + "/../../cometd-demo/target/cometd-demo-2.4.0-SNAPSHOT/"))
-        );
+        context.setBaseResource(ResourceFactory.of(_server).newResource(List.of(
+                URI.create(base + "/../../cometd-demo/src/main/webapp/"),
+                URI.create(base + "/../../cometd-demo/target/cometd-demo-2.4.0-SNAPSHOT/")
+        )));
 
         // CometD servlet
         ServletHolder cometd_holder = new ServletHolder(CometDServlet.class);

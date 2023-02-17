@@ -17,13 +17,14 @@ package org.cometd.tests;
 
 import java.io.Closeable;
 import java.nio.file.Path;
+
+import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.webapp.WebAppContext;
 
 public class WebAppServer implements Closeable {
     private Server server;
@@ -40,7 +41,7 @@ public class WebAppServer implements Closeable {
         WebAppContext webApp = new WebAppContext();
         String contextPath = "/ctx";
         webApp.setContextPath(contextPath);
-        webApp.setBaseResource(Resource.newResource(contextDir.toUri()));
+        webApp.setBaseResource(ResourceFactory.of(server).newResource(contextDir.toUri()));
         contexts.addHandler(webApp);
         server.start();
 

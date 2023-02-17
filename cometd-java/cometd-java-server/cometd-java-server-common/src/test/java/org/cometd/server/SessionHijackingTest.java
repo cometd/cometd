@@ -16,17 +16,18 @@
 package org.cometd.server;
 
 import java.io.UnsupportedEncodingException;
-import java.net.HttpCookie;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
+
 import org.cometd.bayeux.Message;
 import org.cometd.common.JSONContext;
 import org.cometd.common.JettyJSONContextClient;
 import org.cometd.server.http.AbstractHttpTransport;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.http.HttpCookie;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -59,7 +60,7 @@ public class SessionHijackingTest extends AbstractBayeuxClientServerTest {
 
         String cookie1 = extractCookie(cookieName);
         // Reset cookies to control what cookies this test sends.
-        httpClient.getCookieStore().removeAll();
+        httpClient.getHttpCookieStore().clear();
 
         Request handshake2 = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
@@ -71,7 +72,7 @@ public class SessionHijackingTest extends AbstractBayeuxClientServerTest {
 
         String clientId2 = extractClientId(response2);
         // Reset cookies to control what cookies this test sends.
-        httpClient.getCookieStore().removeAll();
+        httpClient.getHttpCookieStore().clear();
 
         // Client1 tries to impersonate Client2.
         Request publish1 = newBayeuxRequest("[{" +
@@ -79,7 +80,7 @@ public class SessionHijackingTest extends AbstractBayeuxClientServerTest {
                 "\"data\": \"publish_data\"," +
                 "\"clientId\": \"" + clientId2 + "\"" +
                 "}]");
-        publish1.cookie(new HttpCookie(cookieName, cookie1));
+        publish1.cookie(HttpCookie.from(cookieName, cookie1));
         response1 = publish1.send();
         Assertions.assertEquals(200, response1.getStatus());
 

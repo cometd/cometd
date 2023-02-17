@@ -17,7 +17,6 @@ package org.cometd.client.websocket.okhttp;
 
 import java.io.IOException;
 import java.net.ConnectException;
-import java.net.HttpCookie;
 import java.net.ProtocolException;
 import java.net.SocketTimeoutException;
 import java.net.URI;
@@ -30,6 +29,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+
 import okhttp3.Headers;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -40,6 +40,7 @@ import org.cometd.bayeux.Message;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.TransportListener;
 import org.cometd.client.websocket.common.AbstractWebSocketTransport;
+import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

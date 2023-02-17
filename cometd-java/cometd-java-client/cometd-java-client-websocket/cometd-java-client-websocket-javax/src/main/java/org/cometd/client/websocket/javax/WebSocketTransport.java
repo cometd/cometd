@@ -17,7 +17,6 @@ package org.cometd.client.websocket.javax;
 
 import java.io.IOException;
 import java.net.ConnectException;
-import java.net.HttpCookie;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -41,10 +40,12 @@ import jakarta.websocket.HandshakeResponse;
 import jakarta.websocket.MessageHandler;
 import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
+
 import org.cometd.bayeux.Message.Mutable;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.TransportListener;
 import org.cometd.client.websocket.common.AbstractWebSocketTransport;
+import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

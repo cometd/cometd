@@ -16,9 +16,6 @@
 package org.cometd.client;
 
 import java.io.IOException;
-import java.net.CookieManager;
-import java.net.CookieStore;
-import java.net.HttpCookie;
 import java.net.URI;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -37,6 +34,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+
 import org.cometd.bayeux.Bayeux;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
@@ -52,6 +50,8 @@ import org.cometd.client.transport.TransportRegistry;
 import org.cometd.common.AbstractClientSession;
 import org.cometd.common.AsyncFoldLeft;
 import org.cometd.common.TransportException;
+import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpCookieStore;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -107,7 +107,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
     private final TransportRegistry transportRegistry = new TransportRegistry();
     private final Map<String, Object> options = new ConcurrentHashMap<>();
     private final List<Message.Mutable> messageQueue = new ArrayList<>(32);
-    private final CookieStore cookieStore = new CookieManager().getCookieStore();
+    private final HttpCookieStore cookieStore = new HttpCookieStore.Default();
     private final TransportListener messageListener = new MessageTransportListener();
     private final SessionState sessionState = new SessionState();
     private final String url;
@@ -156,7 +156,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
             }
             if (clientTransport instanceof HttpClientTransport) {
                 HttpClientTransport httpTransport = (HttpClientTransport)clientTransport;
-                httpTransport.setCookieStore(cookieStore);
+                httpTransport.setHttpCookieStore(cookieStore);
             }
         }
     }
@@ -176,7 +176,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         this.backOffStrategy = backOffStrategy;
     }
 
-    public CookieStore getCookieStore() {
+    public HttpCookieStore getHttpCookieStore() {
         return cookieStore;
     }
 
@@ -189,7 +189,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
      * @see #putCookie(HttpCookie)
      */
     public HttpCookie getCookie(String name) {
-        for (HttpCookie cookie : getCookieStore().get(URI.create(getURL()))) {
+        for (HttpCookie cookie : getHttpCookieStore().match(URI.create(getURL()))) {
             if (name.equals(cookie.getName())) {
                 return cookie;
             }
@@ -199,19 +199,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
 
     public void putCookie(HttpCookie cookie) {
         URI uri = URI.create(getURL());
-        if (cookie.getPath() == null) {
-            String path = uri.getPath();
-            if (path == null || !path.contains("/")) {
-                path = "/";
-            } else {
-                path = path.substring(0, path.lastIndexOf("/") + 1);
-            }
-            cookie.setPath(path);
-        }
-        if (cookie.getDomain() == null) {
-            cookie.setDomain(uri.getHost());
-        }
-        getCookieStore().add(uri, cookie);
+        getHttpCookieStore().add(uri, cookie);
     }
 
     @Override
@@ -914,7 +902,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         List<Message.Mutable> messages = takeMessages();
         messagesFailure(failure, messages);
 
-        cookieStore.removeAll();
+        cookieStore.clear();
 
         if (ownScheduler) {
             scheduler.shutdown();

@@ -15,17 +15,18 @@
  */
 package org.cometd.client.http;
 
-import java.net.HttpCookie;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.http.AbstractHttpTransport;
+import org.eclipse.jetty.http.HttpCookie;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 

@@ -23,10 +23,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
 import org.cometd.server.AbstractBayeuxClientServerTest;
 import org.cometd.server.ServerSessionImpl;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.junit.jupiter.api.Assertions;
@@ -121,7 +122,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
         Assertions.assertTrue(isSuccessful(response));
 
         // Remove cookie.
-        httpClient.getCookieStore().removeAll();
+        httpClient.getHttpCookieStore().clear();
 
         long begin = System.nanoTime();
         Request connect2 = newBayeuxRequest("[{" +
@@ -167,7 +168,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
         Assertions.assertTrue(isSuccessful(response));
 
         // Remove cookie.
-        httpClient.getCookieStore().removeAll();
+        httpClient.getHttpCookieStore().clear();
 
         long begin = System.nanoTime();
         Request connect2 = newBayeuxRequest("[{" +
@@ -203,7 +204,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
         String clientId = extractClientId(response);
 
         // Remove cookie.
-        httpClient.getCookieStore().removeAll();
+        httpClient.getHttpCookieStore().clear();
 
         // First connect always returns immediately
         Request connect1 = newBayeuxRequest("[{" +

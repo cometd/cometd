@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import jakarta.websocket.WebSocketContainer;
+
 import okhttp3.OkHttpClient;
 import org.cometd.bayeux.Message;
 import org.cometd.client.BayeuxClient;
@@ -29,7 +30,7 @@ import org.cometd.client.transport.TransportListener;
 import org.cometd.client.websocket.javax.WebSocketTransport;
 import org.cometd.client.websocket.jetty.JettyWebSocketTransport;
 import org.cometd.client.websocket.okhttp.OkHttpWebSocketTransport;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.ee10.websocket.client.WebSocketClient;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;

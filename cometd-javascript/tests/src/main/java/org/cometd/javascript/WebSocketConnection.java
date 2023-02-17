@@ -16,10 +16,11 @@
 package org.cometd.javascript;
 
 import java.net.URI;
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketListener;
-import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
+
+import org.eclipse.jetty.ee10.websocket.api.Session;
+import org.eclipse.jetty.ee10.websocket.api.WebSocketListener;
+import org.eclipse.jetty.ee10.websocket.client.ClientUpgradeRequest;
+import org.eclipse.jetty.ee10.websocket.client.WebSocketClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

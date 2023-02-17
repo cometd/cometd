@@ -16,9 +16,10 @@
 package org.cometd.server;
 
 import java.util.concurrent.TimeUnit;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.util.FutureResponseListener;
+
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.FutureResponseListener;
+import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;

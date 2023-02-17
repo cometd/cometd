@@ -210,7 +210,7 @@ The final content, equivalent to that produced by the Maven way, should be like 
 |   |   |-- jetty-http-<version>.jar
 |   |   |-- jetty-io-<version>.jar
 |   |   |-- jetty-jmx-<version>.jar
-|   |   |-- jetty-servlets-<version>.jar
+|   |   |-- jetty-ee10-servlets-<version>.jar
 |   |   |-- jetty-util-<version>.jar
 |   |   |-- jetty-util-ajax-<version>.jar
 |   |   |-- slf4j-api-<version>.jar

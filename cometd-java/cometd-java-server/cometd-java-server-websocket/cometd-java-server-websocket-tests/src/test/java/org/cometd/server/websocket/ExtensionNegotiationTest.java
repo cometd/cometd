@@ -23,19 +23,18 @@ import java.util.concurrent.TimeUnit;
 import jakarta.websocket.HandshakeResponse;
 import jakarta.websocket.WebSocketContainer;
 import jakarta.websocket.server.HandshakeRequest;
+
 import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.websocket.javax.WebSocketTransport;
 import org.cometd.client.websocket.jetty.JettyWebSocketTransport;
 import org.cometd.client.websocket.okhttp.OkHttpWebSocketTransport;
 import org.cometd.server.websocket.common.AbstractWebSocketTransport;
-import org.eclipse.jetty.client.HttpRequest;
-import org.eclipse.jetty.client.HttpResponse;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.ee10.websocket.client.WebSocketClient;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -65,13 +64,13 @@ public class ExtensionNegotiationTest extends ClientServerWebSocketTest {
     protected ClientTransport newJettyWebSocketTransport(String url, Map<String, Object> options, WebSocketClient wsClient) {
         return new JettyWebSocketTransport(url, options, null, wsClient) {
             @Override
-            public void onHandshakeRequest(HttpRequest request) {
+            public void onHandshakeRequest(Request request) {
                 super.onHandshakeRequest(request);
                 request.headers(headers -> headers.put(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, "identity, fragment"));
             }
 
             @Override
-            public void onHandshakeResponse(HttpRequest request, HttpResponse response) {
+            public void onHandshakeResponse(Request request, Response response) {
                 super.onHandshakeResponse(request, response);
                 responseHeaders.putAll(headersToMap(response.getHeaders()));
             }
@@ -82,13 +81,13 @@ public class ExtensionNegotiationTest extends ClientServerWebSocketTest {
     protected ClientTransport newOkHttpWebSocketTransport(String url, Map<String, Object> options, OkHttpClient okHttpClient) {
         return new OkHttpWebSocketTransport(url, options, null, okHttpClient) {
             @Override
-            protected void onHandshakeRequest(String uri, Request.Builder upgradeRequest) {
+            protected void onHandshakeRequest(String uri, okhttp3.Request.Builder upgradeRequest) {
                 super.onHandshakeRequest(uri, upgradeRequest);
                 upgradeRequest.header(HandshakeRequest.SEC_WEBSOCKET_EXTENSIONS, "identity, fragment");
             }
 
             @Override
-            protected void onHandshakeResponse(Response response) {
+            protected void onHandshakeResponse(okhttp3.Response response) {
                 super.onHandshakeResponse(response);
                 responseHeaders.putAll(OkHttpWebSocketTransport.headersToMap(response.headers()));
             }

@@ -19,5 +19,6 @@ module org.cometd.client {
     exports org.cometd.client.transport;
 
     requires transitive org.cometd.common;
+    requires transitive org.eclipse.jetty.http;
     requires org.slf4j;
 }

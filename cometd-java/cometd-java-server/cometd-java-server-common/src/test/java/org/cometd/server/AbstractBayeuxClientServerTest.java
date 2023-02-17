@@ -16,17 +16,18 @@
 package org.cometd.server;
 
 import java.io.UnsupportedEncodingException;
-import java.net.HttpCookie;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.util.StringRequestContent;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.StringRequestContent;
+import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpMethod;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -56,7 +57,7 @@ public abstract class AbstractBayeuxClientServerTest extends AbstractBayeuxServe
     }
 
     protected String extractCookie(String name) {
-        List<HttpCookie> cookies = httpClient.getCookieStore().get(URI.create(cometdURL));
+        List<HttpCookie> cookies = httpClient.getHttpCookieStore().match(URI.create(cometdURL));
         for (HttpCookie cookie : cookies) {
             if (cookie.getName().equals(name)) {
                 return cookie.getValue();

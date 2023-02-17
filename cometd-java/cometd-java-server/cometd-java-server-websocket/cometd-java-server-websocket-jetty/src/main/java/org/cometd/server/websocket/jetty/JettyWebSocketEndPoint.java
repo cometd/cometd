@@ -19,11 +19,11 @@ import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.websocket.common.AbstractWebSocketEndPoint;
+import org.eclipse.jetty.ee10.websocket.api.Session;
+import org.eclipse.jetty.ee10.websocket.api.SuspendToken;
+import org.eclipse.jetty.ee10.websocket.api.WebSocketListener;
+import org.eclipse.jetty.ee10.websocket.api.WriteCallback;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.SuspendToken;
-import org.eclipse.jetty.websocket.api.WebSocketListener;
-import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

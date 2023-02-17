@@ -23,6 +23,7 @@ import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
@@ -30,12 +31,13 @@ import org.cometd.client.BayeuxClient;
 import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.server.BayeuxServerImpl;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.security.ConstraintMapping;
-import org.eclipse.jetty.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.security.HashLoginService;
-import org.eclipse.jetty.security.authentication.BasicAuthenticator;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
+import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.ee10.servlet.security.HashLoginService;
+import org.eclipse.jetty.ee10.servlet.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.security.Constraint;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -55,7 +57,7 @@ public class HandshakeWithAuthenticationTest extends ClientServerTest {
             writer.write(String.format("%s:%s,%s", userName, password, role));
         }
         HashLoginService loginService = new HashLoginService("CometD-Realm");
-        loginService.setConfig(authProps.toString());
+        loginService.setConfig(ResourceFactory.of(server).newResource(authProps));
         server.addBean(loginService);
 
         Handler handler = server.getHandler();

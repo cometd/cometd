@@ -23,6 +23,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
@@ -41,8 +42,8 @@ import org.cometd.server.JacksonJSONContextServer;
 import org.cometd.server.JettyJSONContextServer;
 import org.cometd.server.ServerMessageImpl;
 import org.cometd.server.http.AsyncJSONTransport;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.util.StringContentProvider;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.Assertions;
@@ -114,7 +115,7 @@ public class JSONContextTest extends ClientServerTest {
 
         ContentResponse response = httpClient.newRequest(cometdURL)
                 .method(HttpMethod.POST)
-                .content(new StringContentProvider(handshake))
+                .body(new StringRequestContent(handshake))
                 .send();
 
         Assertions.assertEquals(HttpStatus.OK_200, response.getStatus());

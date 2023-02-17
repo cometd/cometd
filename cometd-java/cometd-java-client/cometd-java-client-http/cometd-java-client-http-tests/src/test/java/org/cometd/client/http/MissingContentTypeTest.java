@@ -17,7 +17,7 @@ package org.cometd.client.http;
 
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.http.jetty.JettyHttpClientTransport;
-import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.http.HttpHeader;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

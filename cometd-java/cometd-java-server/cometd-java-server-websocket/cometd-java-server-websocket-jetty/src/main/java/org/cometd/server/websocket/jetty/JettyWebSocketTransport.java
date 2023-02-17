@@ -23,15 +23,16 @@ import java.util.List;
 import java.util.Map;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpSession;
+
 import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.websocket.common.AbstractBayeuxContext;
 import org.cometd.server.websocket.common.AbstractWebSocketTransport;
-import org.eclipse.jetty.websocket.api.ExtensionConfig;
-import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest;
-import org.eclipse.jetty.websocket.server.JettyServerUpgradeResponse;
-import org.eclipse.jetty.websocket.server.JettyWebSocketServerContainer;
+import org.eclipse.jetty.ee10.websocket.api.ExtensionConfig;
+import org.eclipse.jetty.ee10.websocket.server.JettyServerUpgradeRequest;
+import org.eclipse.jetty.ee10.websocket.server.JettyServerUpgradeResponse;
+import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServerContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
