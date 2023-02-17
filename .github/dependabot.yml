@@ -7,6 +7,12 @@ updates:
     schedule:
       interval: "daily"
     ignore:
+      - dependency-name: "javax.servlet:javax.servlet-api"
+        versions: [ ">=4.0.0" ]
+      - dependency-name: "javax.websocket:javax.websocket-client-api"
+        versions: [ ">=1.1" ]
+      - dependency-name: "javax.websocket:javax.websocket-api"
+        versions: [ ">=1.1" ]
       - dependency-name: "com.google.javascript:closure-compiler"
         versions: [ ">=v20220502" ]
       - dependency-name: "org.graalvm.js:js"

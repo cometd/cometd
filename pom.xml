@@ -56,14 +56,14 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <!-- tag::jetty-version[] -->
-    <jetty-version>11.0.13</jetty-version>
+    <jetty-version>11.0.14</jetty-version>
     <!-- end::jetty-version[] -->
-    <graalvm-version>22.3.0</graalvm-version>
-    <slf4j-version>2.0.5</slf4j-version>
+    <graalvm-version>22.3.1</graalvm-version>
+    <slf4j-version>2.0.6</slf4j-version>
     <log4j2-version>2.19.0</log4j2-version>
-    <spring-version>5.3.24</spring-version>
-    <spring-boot-version>2.7.6</spring-boot-version>
-    <jackson-version>2.14.1</jackson-version>
+    <spring-version>5.3.25</spring-version>
+    <spring-boot-version>2.7.8</spring-boot-version>
+    <jackson-version>2.14.2</jackson-version>
     <dojo-version>1.17.3</dojo-version>
     <okhttp-version>4.10.0</okhttp-version>
   </properties>
@@ -360,12 +360,12 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-dependency-plugin</artifactId>
-          <version>3.4.0</version>
+          <version>3.5.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-deploy-plugin</artifactId>
-          <version>3.0.0</version>
+          <version>3.1.0</version>
           <configuration>
             <retryFailedDeploymentCount>8</retryFailedDeploymentCount>
           </configuration>
@@ -373,7 +373,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-enforcer-plugin</artifactId>
-          <version>3.1.0</version>
+          <version>3.2.1</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -393,7 +393,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
-          <version>3.4.1</version>
+          <version>3.5.0</version>
           <configuration>
             <source>8</source>
             <additionalOptions>
@@ -491,7 +491,7 @@
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-jakarta-servlet-api</artifactId>
-        <version>5.0.1</version>
+        <version>5.0.2</version>
         <scope>provided</scope>
       </dependency>
       <dependency>
@@ -524,13 +524,13 @@
       <dependency>
         <groupId>com.google.javascript</groupId>
         <artifactId>closure-compiler</artifactId>
-        <version>v20221102</version>
+        <version>v20230206</version>
       </dependency>
 
       <dependency>
         <groupId>org.junit.jupiter</groupId>
         <artifactId>junit-jupiter</artifactId>
-        <version>5.9.1</version>
+        <version>5.9.2</version>
         <scope>test</scope>
       </dependency>
       <dependency>
