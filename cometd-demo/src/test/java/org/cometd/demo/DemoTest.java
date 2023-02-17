@@ -27,7 +27,7 @@ import jakarta.websocket.WebSocketContainer;
 
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.http.jetty.JettyHttpClientTransport;
-import org.cometd.client.websocket.javax.WebSocketTransport;
+import org.cometd.client.websocket.jakarta.WebSocketTransport;
 import org.cometd.client.websocket.jetty.JettyWebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
@@ -62,8 +62,8 @@ public class DemoTest {
         httpClient.start();
 
         // Starts the WebSocket client.
-        // NOTE: due to limitations of the JSR specification, this client only works over clear-text.
-        WebSocketContainer jsrWebSocketClient = ContainerProvider.getWebSocketContainer();
+        // NOTE: due to limitations of the specification, this client only works over clear-text.
+        WebSocketContainer jakartaWebSocketClient = ContainerProvider.getWebSocketContainer();
 
         // Jetty's WebSocket client works also over TLS.
         WebSocketClient jettyWebSocketClient = new WebSocketClient(httpClient);
@@ -72,7 +72,7 @@ public class DemoTest {
         try {
             // Test clear-text communication.
             String clearTextURL = "http://localhost:" + httpPort + contextPath + "/cometd";
-            BayeuxClient client = new BayeuxClient(clearTextURL, new WebSocketTransport(null, null, jsrWebSocketClient));
+            BayeuxClient client = new BayeuxClient(clearTextURL, new WebSocketTransport(null, null, jakartaWebSocketClient));
             client.handshake();
             Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
@@ -101,8 +101,8 @@ public class DemoTest {
             Assertions.assertFalse(objectInstances.isEmpty());
         } finally {
             jettyWebSocketClient.stop();
-            if (jsrWebSocketClient instanceof LifeCycle) {
-                ((LifeCycle)jsrWebSocketClient).stop();
+            if (jakartaWebSocketClient instanceof LifeCycle) {
+                ((LifeCycle)jakartaWebSocketClient).stop();
             }
             httpClient.stop();
             server.stop();

@@ -15,8 +15,8 @@ Maven artifact coordinates: `org.cometd.java:cometd-java-client-http-okhttp`.
 
 These are the choices of transports for `websocket`:
 
-* `org.cometd.client.websocket.javax.WebSocketTransport`, based on https://jcp.org/en/jsr/detail?id=356[JSR 356], the standard Java WebSocket APIs.
-Maven artifact coordinates: `org.cometd.java:cometd-java-client-websocket-javax`.
+* `org.cometd.client.websocket.jakarta.WebSocketTransport`, based on the standard Jakarta WebSocket APIs.
+Maven artifact coordinates: `org.cometd.java:cometd-java-client-websocket-jakarta`.
 * `org.cometd.client.websocket.jetty.JettyWebSocketTransport`, based on Jetty's asynchronous https://www.eclipse.org/jetty/documentation/current/websocket-java.html[WebSocketClient]
 Maven artifact coordinates: `org.cometd.java:cometd-java-client-websocket-jetty`.
 * `org.cometd.client.websocket.okhttp.OkHttpWebSocketTransport`, based on https://square.github.io/okhttp[OkHttp] WebSocket implementation

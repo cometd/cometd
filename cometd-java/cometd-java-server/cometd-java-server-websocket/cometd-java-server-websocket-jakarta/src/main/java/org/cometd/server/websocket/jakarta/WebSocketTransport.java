@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.cometd.server.websocket.javax;
+package org.cometd.server.websocket.jakarta;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -30,6 +30,7 @@ import jakarta.websocket.HandshakeResponse;
 import jakarta.websocket.server.HandshakeRequest;
 import jakarta.websocket.server.ServerContainer;
 import jakarta.websocket.server.ServerEndpointConfig;
+
 import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.BayeuxServerImpl;
@@ -65,7 +66,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
             throw new IllegalArgumentException("Missing WebSocket ServerContainer");
         }
 
-        // JSR 356 does not support a input buffer size option
+        // Jakarta APIs do not support an input buffer size option.
         long maxMessageSize = getMaxMessageSize();
         if (maxMessageSize < 0) {
             maxMessageSize = container.getDefaultMaxTextMessageBufferSize();

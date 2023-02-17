@@ -22,7 +22,7 @@ By annotating methods with `@Listener` or `@Subscription` you obtain the same fu
 
 Services might depend on other services (for example, a data source to access the database), and might require lifecycle management (that is, the services have `start()`/`stop()` methods that must be invoked at appropriate times).
 In services extending `org.cometd.server.AbstractService`, dependency injection and lifecycle management had to be written by hand in a configuration servlet or configuration listeners.
-By annotating fields with the standard JSR 330 `@Inject` annotation, or the standard JSR 250 `@PostConstruct` and `@PreDestroy` annotations you obtain the same functionality.
+By annotating fields with the standard `@Inject` annotation, or the standard `@PostConstruct` and `@PreDestroy` annotations you obtain the same functionality.
 
 Server-side annotated services offer full support for CometD features, and limited support for dependency injection and lifecycle management via the `org.cometd.annotation.server.ServerAnnotationProcessor` class.
 
@@ -55,12 +55,12 @@ include::{doc_code}/server/ServerServiceDocs.java[tags=inheritedService]
 |===
 
 The service class is annotated with `@Service` and specifies the (optional) service name "echoService".
-The BayeuxServer field is annotated with the standard https://jcp.org/en/jsr/detail?id=330[JSR 330] `@Inject` annotation.
-The `@Inject` annotation is supported (for example, by Spring 3 or greater) for standard dependency injection as specified by JSR 330.
+The BayeuxServer field is annotated with the Jakarta `@Inject` annotation.
+The Jakarta `@Inject` annotation is supported also by other dependency injection frameworks (such as Spring).
 
 ===== Lifecycle Management Support
 
-The CometD project provides lifecycle management via the standard https://jcp.org/en/jsr/detail?id=250[JSR 250] `@PostConstruct` and `@PreDestroy` annotations.
+The CometD project provides lifecycle management via the Jakarta `@PostConstruct` and `@PreDestroy` annotations.
 CometD offers this support for those that do not use a dependency injection container with lifecycle management such as https://spring.io[Spring].
 
 ===== Channel Configuration Support
@@ -263,7 +263,7 @@ include::{doc_code}/client/ClientServiceDocs.java[tag=traditional]
 
 ===== Dependency Injection and Lifecycle Management Support
 
-The CometD project does not offer dependency injection for client-side services, but supports lifecycle management via the standard https://jcp.org/en/jsr/detail?id=250[JSR 250] `@PostConstruct` and `@PreDestroy` annotations.
+The CometD project does not offer dependency injection for client-side services, but supports lifecycle management via the Jakarta `@PostConstruct` and `@PreDestroy` annotations.
 Client-side services usually have a shorter lifecycle than server-side services and their dependencies are usually injected directly while creating the client-side service instance.
 
 ===== Session Configuration Support

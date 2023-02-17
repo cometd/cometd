@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
@@ -39,7 +40,7 @@ public class BatchedRepliesWebSocketTest extends ClientServerWebSocketTest {
         CountDownLatch repliesLatch = new CountDownLatch(1);
         ClientTransport transport;
         switch (wsType) {
-            case WEBSOCKET_JSR356:
+            case WEBSOCKET_JAKARTA:
                 transport = new WSTransport(batch, repliesLatch);
                 break;
             case WEBSOCKET_JETTY:
@@ -77,7 +78,7 @@ public class BatchedRepliesWebSocketTest extends ClientServerWebSocketTest {
         disconnectBayeuxClient(client);
     }
 
-    public class WSTransport extends org.cometd.client.websocket.javax.WebSocketTransport {
+    public class WSTransport extends org.cometd.client.websocket.jakarta.WebSocketTransport {
         private final AtomicReference<List<Message.Mutable>> batch;
         private final CountDownLatch repliesLatch;
 

@@ -90,7 +90,7 @@ The following is the list of common configuration parameters the automatic disco
 
 | clientTransportFactories
 | no
-| The JSR WebSocket and the Jetty HTTP `ClientTransport.Factory` implementations
+| The Jakarta WebSocket and the Jetty HTTP `ClientTransport.Factory` implementations
 | A comma-separated list of fully qualified class names of `ClientTransport.Factory` implementations used to create `OortComet` transports
 |===
 

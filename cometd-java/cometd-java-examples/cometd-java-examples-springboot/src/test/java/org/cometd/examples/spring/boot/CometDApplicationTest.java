@@ -22,7 +22,7 @@ import jakarta.websocket.WebSocketContainer;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.client.transport.ClientTransport;
-import org.cometd.client.websocket.javax.WebSocketTransport;
+import org.cometd.client.websocket.jakarta.WebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;

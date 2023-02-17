@@ -37,11 +37,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 public class MultipleURLMappingsTest {
-    private static final String JSR_WS_TRANSPORT = "org.cometd.server.websocket.javax.WebSocketTransport";
+    private static final String JAKARTA_WS_TRANSPORT = "org.cometd.server.websocket.jakarta.WebSocketTransport";
     private static final String JETTY_WS_TRANSPORT = "org.cometd.server.websocket.jetty.JettyWebSocketTransport";
 
     public static List<String> wsTransports() {
-        return List.of(JSR_WS_TRANSPORT, JETTY_WS_TRANSPORT);
+        return List.of(JAKARTA_WS_TRANSPORT, JETTY_WS_TRANSPORT);
     }
 
     private Server server;
@@ -60,7 +60,7 @@ public class MultipleURLMappingsTest {
         ServletContextHandler context = new ServletContextHandler(server, "/", true, false);
 
         switch (wsTransportClass) {
-            case JSR_WS_TRANSPORT:
+            case JAKARTA_WS_TRANSPORT:
                 JakartaWebSocketServletContainerInitializer.configure(context, null);
                 break;
             case JETTY_WS_TRANSPORT:
@@ -79,7 +79,7 @@ public class MultipleURLMappingsTest {
         context.addServlet(cometdServletHolder, servletPath2 + "/*");
 
         switch (wsTransportClass) {
-            case JSR_WS_TRANSPORT:
+            case JAKARTA_WS_TRANSPORT:
                 wsClientContainer = ContainerProvider.getWebSocketContainer();
                 server.addBean(wsClientContainer);
                 break;
@@ -100,8 +100,8 @@ public class MultipleURLMappingsTest {
 
     private ClientTransport newWebSocketTransport(String wsTransportClass) {
         switch (wsTransportClass) {
-            case JSR_WS_TRANSPORT:
-                return new org.cometd.client.websocket.javax.WebSocketTransport(null, null, wsClientContainer);
+            case JAKARTA_WS_TRANSPORT:
+                return new org.cometd.client.websocket.jakarta.WebSocketTransport(null, null, wsClientContainer);
             case JETTY_WS_TRANSPORT:
                 return new org.cometd.client.websocket.jetty.JettyWebSocketTransport(null, null, wsClient);
             default:

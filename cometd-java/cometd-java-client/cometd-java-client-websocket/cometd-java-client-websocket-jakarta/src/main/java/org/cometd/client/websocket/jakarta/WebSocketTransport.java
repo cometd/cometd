@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.cometd.client.websocket.javax;
+package org.cometd.client.websocket.jakarta;
 
 import java.io.IOException;
 import java.net.ConnectException;
@@ -76,7 +76,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
     public void init() {
         super.init();
 
-        // JSR 356 does not expose a way to set the connect timeout - ignored
+        // Jakarta APIs do not expose a way to set the connect timeout - ignored
         _webSocketContainer.setDefaultMaxSessionIdleTimeout(getIdleTimeout());
         int maxMessageSize = getOption(MAX_MESSAGE_SIZE_OPTION, _webSocketContainer.getDefaultMaxTextMessageBufferSize());
         _webSocketContainer.setDefaultMaxTextMessageBufferSize(maxMessageSize);

@@ -13,7 +13,7 @@
     </property>
     <property name="transports">
       <list>
-        <bean id="ws" class="org.cometd.server.websocket.javax.WebSocketTransport">
+        <bean id="ws" class="org.cometd.server.websocket.jakarta.WebSocketTransport">
           <constructor-arg ref="bayeux" />
         </bean>
         <bean id="json" class="org.cometd.server.http.JSONTransport">

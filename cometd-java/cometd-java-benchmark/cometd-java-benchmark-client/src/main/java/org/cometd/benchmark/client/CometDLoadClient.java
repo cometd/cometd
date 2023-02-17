@@ -59,7 +59,7 @@ import org.cometd.client.ext.AckExtension;
 import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.TransportListener;
-import org.cometd.client.websocket.javax.WebSocketTransport;
+import org.cometd.client.websocket.jakarta.WebSocketTransport;
 import org.cometd.client.websocket.jetty.JettyWebSocketTransport;
 import org.cometd.common.JacksonJSONContextClient;
 import org.eclipse.jetty.client.HttpClient;
@@ -282,7 +282,7 @@ public class CometDLoadClient implements MeasureConverter {
         }
 
         boolean perMessageDeflate = this.perMessageDeflate;
-        if (transport == ClientTransportType.JETTY_WEBSOCKET || transport == ClientTransportType.JSR_WEBSOCKET) {
+        if (transport == ClientTransportType.JETTY_WEBSOCKET || transport == ClientTransportType.JAKARTA_WEBSOCKET) {
             if (interactive) {
                 System.err.printf("enable permessage-deflate extension [%b]: ", perMessageDeflate);
                 String value = console.readLine().trim();
@@ -678,7 +678,7 @@ public class CometDLoadClient implements MeasureConverter {
                     }
                 };
             }
-            case JSR_WEBSOCKET: {
+            case JAKARTA_WEBSOCKET: {
                 Map<String, Object> options = new HashMap<>();
                 options.put(ClientTransport.JSON_CONTEXT_OPTION, new JacksonJSONContextClient());
                 options.put(ClientTransport.MAX_NETWORK_DELAY_OPTION, Config.MAX_NETWORK_DELAY);
@@ -1027,7 +1027,7 @@ public class CometDLoadClient implements MeasureConverter {
     }
 
     private enum ClientTransportType {
-        LONG_POLLING("long-polling"), JSR_WEBSOCKET("jsr-websocket"), JETTY_WEBSOCKET("jetty-websocket");
+        LONG_POLLING("long-polling"), JAKARTA_WEBSOCKET("jakarta-websocket"), JETTY_WEBSOCKET("jetty-websocket");
 
         private final String name;
 

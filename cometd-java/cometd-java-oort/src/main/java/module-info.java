@@ -17,7 +17,7 @@ module org.cometd.oort {
     exports org.cometd.oort;
     exports org.cometd.oort.jmx;
 
-    requires transitive org.cometd.client.websocket.javax;
+    requires transitive org.cometd.client.websocket.jakarta;
     requires transitive org.cometd.client.http.jetty;
     requires transitive org.cometd.server;
     requires org.slf4j;

@@ -335,7 +335,7 @@ public class NetworkDelayListenerTest extends AbstractClientServerTest {
     }
 
     private static boolean isWebSocket(Transport transport) {
-        return transport == Transport.JAVAX_WEBSOCKET || transport == Transport.JETTY_WEBSOCKET || transport == Transport.OKHTTP_WEBSOCKET;
+        return transport == Transport.JAKARTA_WEBSOCKET || transport == Transport.JETTY_WEBSOCKET || transport == Transport.OKHTTP_WEBSOCKET;
     }
 
     // TODO: remove this class once jetty-http-tools is deployed to Central.

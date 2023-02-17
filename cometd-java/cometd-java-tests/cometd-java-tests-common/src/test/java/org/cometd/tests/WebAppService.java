@@ -27,7 +27,7 @@ import org.cometd.annotation.server.RemoteCall;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.client.transport.ClientTransport;
-import org.cometd.client.websocket.javax.WebSocketTransport;
+import org.cometd.client.websocket.jakarta.WebSocketTransport;
 import org.cometd.client.websocket.jetty.JettyWebSocketTransport;
 import org.cometd.common.JettyJSONContextClient;
 import org.cometd.server.JettyJSONContextServer;
@@ -39,8 +39,8 @@ import org.eclipse.jetty.util.ajax.JSON;
 public class WebAppService {
     public static final String HTTP_CHANNEL = "/echo_http";
     public static final String JETTY_WS_CHANNEL = "/echo_jetty_ws";
-    public static final String JAVAX_WS_CHANNEL = "/echo_javax_ws";
-    public static final String JAVAX_WS_CUSTOM_CHANNEL = "/echo_javax_ws_custom";
+    public static final String JAKARTA_WS_CHANNEL = "/echo_jakarta_ws";
+    public static final String JAKARTA_WS_CUSTOM_CHANNEL = "/echo_jakarta_ws_custom";
     private static final String SERVICE_CHANNEL = "/service/echo";
     private HttpClient httpClient;
     private WebSocketClient wsClient;
@@ -78,13 +78,13 @@ public class WebAppService {
         invokeService(new JettyWebSocketTransport(null, null, wsClient), caller, data);
     }
 
-    @RemoteCall(JAVAX_WS_CHANNEL)
-    public void invokeViaJavaxWebSocket(RemoteCall.Caller caller, Object data) {
+    @RemoteCall(JAKARTA_WS_CHANNEL)
+    public void invokeViaJakartaWebSocket(RemoteCall.Caller caller, Object data) {
         invokeService(new WebSocketTransport(null, null, wsContainer), caller, data);
     }
 
-    @RemoteCall(JAVAX_WS_CUSTOM_CHANNEL)
-    public void invokeViaJavaxWebSocketCustom(RemoteCall.Caller caller, Custom custom) {
+    @RemoteCall(JAKARTA_WS_CUSTOM_CHANNEL)
+    public void invokeViaJakartaWebSocketCustom(RemoteCall.Caller caller, Custom custom) {
         invokeServiceCustom(new WebSocketTransport(null, null, wsContainer), caller, custom);
     }
 

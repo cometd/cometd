@@ -34,7 +34,7 @@ import org.cometd.client.BayeuxClient;
 import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.client.http.okhttp.OkHttpClientTransport;
 import org.cometd.client.transport.ClientTransport;
-import org.cometd.client.websocket.javax.WebSocketTransport;
+import org.cometd.client.websocket.jakarta.WebSocketTransport;
 import org.cometd.client.websocket.jetty.JettyWebSocketTransport;
 import org.cometd.client.websocket.okhttp.OkHttpWebSocketTransport;
 import org.cometd.server.BayeuxServerImpl;
@@ -96,7 +96,7 @@ public abstract class AbstractClientServerTest {
         context = new ServletContextHandler(server, "/");
 
         switch (transport) {
-            case JAVAX_WEBSOCKET:
+            case JAKARTA_WEBSOCKET:
             case OKHTTP_WEBSOCKET:
                 JakartaWebSocketServletContainerInitializer.configure(context, null);
                 break;
@@ -134,7 +134,7 @@ public abstract class AbstractClientServerTest {
                 httpClient = new HttpClient();
                 httpClient.start();
                 break;
-            case JAVAX_WEBSOCKET:
+            case JAKARTA_WEBSOCKET:
                 wsContainer = ContainerProvider.getWebSocketContainer();
                 break;
             case JETTY_WEBSOCKET:
@@ -167,9 +167,9 @@ public abstract class AbstractClientServerTest {
             case ASYNC_HTTP:
             case OKHTTP_HTTP:
                 return AsyncJSONTransport.class.getName();
-            case JAVAX_WEBSOCKET:
+            case JAKARTA_WEBSOCKET:
             case OKHTTP_WEBSOCKET:
-                return org.cometd.server.websocket.javax.WebSocketTransport.class.getName();
+                return org.cometd.server.websocket.jakarta.WebSocketTransport.class.getName();
             case JETTY_WEBSOCKET:
                 return org.cometd.server.websocket.jetty.JettyWebSocketTransport.class.getName();
             default:
@@ -188,7 +188,7 @@ public abstract class AbstractClientServerTest {
                 return new JettyHttpClientTransport(options, httpClient);
             case OKHTTP_HTTP:
                 return new OkHttpClientTransport(options, okHttpClient);
-            case JAVAX_WEBSOCKET:
+            case JAKARTA_WEBSOCKET:
                 return new WebSocketTransport(options, scheduler, wsContainer);
             case JETTY_WEBSOCKET:
                 return new JettyWebSocketTransport(options, scheduler, wsClient);
@@ -245,6 +245,6 @@ public abstract class AbstractClientServerTest {
     }
 
     public enum Transport {
-        JETTY_HTTP, ASYNC_HTTP, OKHTTP_HTTP, JAVAX_WEBSOCKET, JETTY_WEBSOCKET, OKHTTP_WEBSOCKET
+        JETTY_HTTP, ASYNC_HTTP, OKHTTP_HTTP, JAKARTA_WEBSOCKET, JETTY_WEBSOCKET, OKHTTP_WEBSOCKET
     }
 }

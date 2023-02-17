@@ -17,12 +17,13 @@ package org.cometd.documentation.client;
 
 import jakarta.websocket.ContainerProvider;
 import jakarta.websocket.WebSocketContainer;
+
 import okhttp3.OkHttpClient;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.client.http.okhttp.OkHttpClientTransport;
 import org.cometd.client.transport.ClientTransport;
-import org.cometd.client.websocket.javax.WebSocketTransport;
+import org.cometd.client.websocket.jakarta.WebSocketTransport;
 import org.cometd.client.websocket.okhttp.OkHttpWebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;
 
@@ -30,10 +31,10 @@ import org.eclipse.jetty.client.HttpClient;
 public class ClientTransportDocs {
     public void transports() throws Exception {
         // tag::transports[]
-        // Prepare the JSR 356 WebSocket transport.
-        // Create a JSR 356 WebSocketContainer using the standard APIs.
+        // Prepare the Jakarta WebSocket transport.
+        // Create a Jakarta WebSocketContainer using the standard APIs.
         WebSocketContainer webSocketContainer = ContainerProvider.getWebSocketContainer();
-        // Create the CometD JSR 356 websocket transport.
+        // Create the CometD Jakarta WebSocket transport.
         ClientTransport wsTransport = new WebSocketTransport(null, null, webSocketContainer);
 
         // Prepare the HTTP transport.

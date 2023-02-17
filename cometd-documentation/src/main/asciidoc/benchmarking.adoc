@@ -107,7 +107,7 @@ use ssl [false]:
 selectors [8]:
 max threads [256]:
 2015-05-18 11:01:13,529 main [ INFO][util.log] Logging initialized @112655ms
-transports (jsrws,jettyws,http,asynchttp) [jsrws,http]:
+transports (jakartaws,jettyws,http,asynchttp) [jakartaws,http]:
 record statistics [true]:
 record latencies [true]:
 detect long requests [false]:
@@ -144,7 +144,7 @@ server [localhost]:
 port [8080]:
 transports:
   0 - long-polling
-  1 - jsr-websocket
+  1 - jakarta-websocket
   2 - jetty-websocket
 transport [0]:
 use ssl [false]:

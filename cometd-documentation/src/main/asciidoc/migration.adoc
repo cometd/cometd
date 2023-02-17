@@ -17,7 +17,7 @@
 [cols="1a,1a", options="header"]
 |===
 | CometD 2.x | CometD 3.0.x
-| Servlet 2.5 | Servlet 3.0 (recommended Servlet 3.1 with JSR 356's `javax.websocket` support)
+| Servlet 2.5 | Servlet 3.0 (recommended Servlet 3.1 with `javax.websocket` support)
 |===
 
 ==== Class Names Changes
@@ -43,9 +43,9 @@ Only the WebSocket artifacts have changed.
 | CometD 3.0.x
 
 | `org.cometd.java:cometd-websocket-jetty`
-| `org.cometd.java:cometd-java-websocket-javax-server` (JSR 356 WebSocket Server)
+| `org.cometd.java:cometd-java-websocket-javax-server` (Javax WebSocket Server)
 | `org.cometd.java:cometd-java-websocket-jetty-server` (Jetty WebSocket Server)
-| `org.cometd.java:cometd-java-websocket-javax-client` (JSR 356 WebSocket Client)
+| `org.cometd.java:cometd-java-websocket-javax-client` (Javax WebSocket Client)
 | `org.cometd.java:cometd-java-websocket-jetty-client` (Jetty WebSocket Client)
 |===
 
@@ -364,7 +364,7 @@ Server side applications that want to make use of the Jetty WebSocket server tra
 * `9.3.15.v20161220` or later in the 9.3.x series (requires Java 8)
 * `9.4.0.v20161208` or later in the 9.4.x series (requires Java 8)
 
-Application that use the default JSR 356 transport or that do not use WebSocket can work with any Jetty version.
+Application that use the default WebSocket transport or that do not use WebSocket can work with any Jetty version.
 
 [[_migration_31_to_40]]
 === Migrating from CometD 3.1.x to CometD 4.0.x

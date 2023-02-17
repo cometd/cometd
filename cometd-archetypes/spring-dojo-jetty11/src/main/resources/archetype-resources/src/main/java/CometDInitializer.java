@@ -9,7 +9,7 @@ import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.http.JSONPTransport;
 import org.cometd.server.http.JSONTransport;
-import org.cometd.server.websocket.javax.WebSocketTransport;
+import org.cometd.server.websocket.jakarta.WebSocketTransport;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.DestructionAwareBeanPostProcessor;
 import org.springframework.context.annotation.Bean;

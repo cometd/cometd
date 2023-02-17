@@ -50,7 +50,7 @@ import org.cometd.server.http.AsyncJSONTransport;
 import org.cometd.server.http.JSONTransport;
 import org.cometd.server.websocket.common.AbstractWebSocketEndPoint;
 import org.cometd.server.websocket.common.AbstractWebSocketTransport;
-import org.cometd.server.websocket.javax.WebSocketTransport;
+import org.cometd.server.websocket.jakarta.WebSocketTransport;
 import org.cometd.server.websocket.jetty.JettyWebSocketTransport;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.ee10.servlet.DefaultServlet;
@@ -90,7 +90,7 @@ public class CometDLoadServer {
     private boolean tls = false;
     private int selectors = Runtime.getRuntime().availableProcessors();
     private int maxThreads = 256;
-    private String transports = "jsrws,asynchttp";
+    private String transports = "jakartaws,asynchttp";
     private boolean perMessageDeflate = false;
     private boolean statistics = true;
     private boolean latencies = true;
@@ -178,7 +178,7 @@ public class CometDLoadServer {
         // The BayeuxServer executor uses PEC mode only.
         cometdThreadPool.setReservedThreads(0);
 
-        String availableTransports = "jsrws,jettyws,http,asynchttp";
+        String availableTransports = "jakartaws,jettyws,http,asynchttp";
         String transports = this.transports;
         if (interactive) {
             System.err.printf("transports (%s) [%s]: ", availableTransports, transports);
@@ -191,7 +191,7 @@ public class CometDLoadServer {
         for (String token : transports.split(",")) {
             String transport = token.trim();
             switch (transport) {
-                case "jsrws": {
+                case "jakartaws": {
                     boolean perMessageDeflate = readPerMessageDeflate(transport, console);
                     WebSocketTransport serverTransport = new WebSocketTransport(bayeuxServer) {
                         @Override

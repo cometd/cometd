@@ -81,7 +81,7 @@
     </dependency>
     <dependency>
       <groupId>org.cometd.java</groupId>
-      <artifactId>cometd-java-client-websocket-javax</artifactId>
+      <artifactId>cometd-java-client-websocket-jakarta</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

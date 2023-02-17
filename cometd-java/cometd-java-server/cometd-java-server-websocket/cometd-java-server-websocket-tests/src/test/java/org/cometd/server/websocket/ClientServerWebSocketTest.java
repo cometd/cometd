@@ -29,7 +29,7 @@ import org.cometd.client.websocket.okhttp.OkHttpWebSocketTransport;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometDServlet;
 import org.cometd.server.http.JSONTransport;
-import org.cometd.server.websocket.javax.WebSocketTransport;
+import org.cometd.server.websocket.jakarta.WebSocketTransport;
 import org.cometd.server.websocket.jetty.JettyWebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
@@ -47,12 +47,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class ClientServerWebSocketTest {
-    protected static final String WEBSOCKET_JSR356 = "JSR356";
+    protected static final String WEBSOCKET_JAKARTA = "JAKARTA";
     protected static final String WEBSOCKET_JETTY = "JETTY";
     protected static final String WEBSOCKET_OKHTTP = "OKHTTP";
 
     public static List<String> wsTypes() {
-        return List.of(WEBSOCKET_JSR356, WEBSOCKET_JETTY, WEBSOCKET_OKHTTP);
+        return List.of(WEBSOCKET_JAKARTA, WEBSOCKET_JETTY, WEBSOCKET_OKHTTP);
     }
 
     @RegisterExtension
@@ -92,7 +92,7 @@ public abstract class ClientServerWebSocketTest {
     protected void prepareServer(String wsType, int port, String servletPath, Map<String, String> initParams) throws Exception {
         String wsTransportClass;
         switch (wsType) {
-            case WEBSOCKET_JSR356:
+            case WEBSOCKET_JAKARTA:
             case WEBSOCKET_OKHTTP:
                 wsTransportClass = WebSocketTransport.class.getName();
                 break;
@@ -117,7 +117,7 @@ public abstract class ClientServerWebSocketTest {
         context = new ServletContextHandler(server, "/", true, false);
 
         switch (wsType) {
-            case WEBSOCKET_JSR356:
+            case WEBSOCKET_JAKARTA:
             case WEBSOCKET_OKHTTP:
                 JakartaWebSocketServletContainerInitializer.configure(context, null);
                 break;
@@ -157,7 +157,7 @@ public abstract class ClientServerWebSocketTest {
         httpClient = new HttpClient();
         httpClient.setExecutor(clientThreads);
         switch (wsType) {
-            case WEBSOCKET_JSR356:
+            case WEBSOCKET_JAKARTA:
                 wsClientContainer = ContainerProvider.getWebSocketContainer();
                 httpClient.addBean(wsClientContainer, true);
                 break;
@@ -199,7 +199,7 @@ public abstract class ClientServerWebSocketTest {
     protected ClientTransport newWebSocketTransport(String wsType, String url, Map<String, Object> options) {
         ClientTransport result;
         switch (wsType) {
-            case WEBSOCKET_JSR356:
+            case WEBSOCKET_JAKARTA:
                 result = newWebSocketTransport(url, options, wsClientContainer);
                 break;
             case WEBSOCKET_JETTY:
@@ -215,7 +215,7 @@ public abstract class ClientServerWebSocketTest {
     }
 
     protected ClientTransport newWebSocketTransport(String url, Map<String, Object> options, WebSocketContainer wsContainer) {
-        return new org.cometd.client.websocket.javax.WebSocketTransport(url, options, null, wsContainer);
+        return new org.cometd.client.websocket.jakarta.WebSocketTransport(url, options, null, wsContainer);
     }
 
     protected ClientTransport newJettyWebSocketTransport(String url, Map<String, Object> options, WebSocketClient wsClient) {

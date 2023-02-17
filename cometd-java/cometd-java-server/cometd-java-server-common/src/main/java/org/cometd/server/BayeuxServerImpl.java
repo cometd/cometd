@@ -39,6 +39,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import jakarta.servlet.http.HttpServletRequest;
+
 import org.cometd.bayeux.Bayeux;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
@@ -273,11 +274,11 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
         try {
             ClassLoader loader = Thread.currentThread().getContextClassLoader();
             loader.loadClass("jakarta.websocket.server.ServerContainer");
-            String transportClass = "org.cometd.server.websocket.javax.WebSocketTransport";
+            String transportClass = "org.cometd.server.websocket.jakarta.WebSocketTransport";
             ServerTransport transport = newServerTransport(transportClass);
             if (transport == null) {
-                _logger.info("JSR 356 WebSocket classes available, but " + transportClass +
-                        " unavailable: JSR 356 WebSocket transport disabled");
+                _logger.info("Jakarta WebSocket classes available, but " + transportClass +
+                        " unavailable: Jakarta WebSocket transport disabled");
             }
             return transport;
         } catch (Exception x) {

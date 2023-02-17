@@ -41,7 +41,7 @@ import jakarta.websocket.WebSocketContainer;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.http.jetty.JettyHttpClientTransport;
-import org.cometd.client.websocket.javax.WebSocketTransport;
+import org.cometd.client.websocket.jakarta.WebSocketTransport;
 import org.cometd.client.websocket.jetty.JettyWebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee10.websocket.client.WebSocketClient;
@@ -101,13 +101,13 @@ public class WebAppTest {
         copyWebAppDependency(org.cometd.common.JSONContext.class, webINF);
         copyWebAppDependency(org.cometd.server.BayeuxServerImpl.class, webINF);
         copyWebAppDependency(org.cometd.server.websocket.common.AbstractWebSocketTransport.class, webINF);
-        copyWebAppDependency(org.cometd.server.websocket.javax.WebSocketTransport.class, webINF);
+        copyWebAppDependency(org.cometd.server.websocket.jakarta.WebSocketTransport.class, webINF);
         copyWebAppDependency(org.cometd.server.websocket.jetty.JettyWebSocketTransport.class, webINF);
         copyWebAppDependency(org.cometd.client.BayeuxClient.class, webINF);
         copyWebAppDependency(org.cometd.client.http.common.AbstractHttpClientTransport.class, webINF);
         copyWebAppDependency(org.cometd.client.http.jetty.JettyHttpClientTransport.class, webINF);
         copyWebAppDependency(org.cometd.client.websocket.common.AbstractWebSocketTransport.class, webINF);
-        copyWebAppDependency(org.cometd.client.websocket.javax.WebSocketTransport.class, webINF);
+        copyWebAppDependency(org.cometd.client.websocket.jakarta.WebSocketTransport.class, webINF);
         copyWebAppDependency(org.cometd.client.websocket.jetty.JettyWebSocketTransport.class, webINF);
         // Jetty dependencies in a CometD web application.
         copyWebAppDependency(org.eclipse.jetty.client.HttpClient.class, webINF);
@@ -222,7 +222,7 @@ public class WebAppTest {
 
     @Test
     public void testWebAppWithWebSocketTransport() throws Exception {
-        start(baseDir.resolve("src/test/resources/jsr-ws-web.xml"));
+        start(baseDir.resolve("src/test/resources/jakarta-ws-web.xml"));
 
         BayeuxClient client = new BayeuxClient(cometdURI, new WebSocketTransport(null, null, wsContainer));
         subscribePublishReceive(client);
@@ -246,7 +246,7 @@ public class WebAppTest {
         client.handshake();
         Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        Stream.of(WebAppService.HTTP_CHANNEL, WebAppService.JAVAX_WS_CHANNEL, WebAppService.JETTY_WS_CHANNEL)
+        Stream.of(WebAppService.HTTP_CHANNEL, WebAppService.JAKARTA_WS_CHANNEL, WebAppService.JETTY_WS_CHANNEL)
                 .map(channel -> remoteCall(client, channel, cometdURI))
                 .reduce(CompletableFuture::allOf)
                 .get()
@@ -266,7 +266,7 @@ public class WebAppTest {
 
         WebAppService.Custom custom = new WebAppService.Custom();
         custom.data = cometdURI;
-        Stream.of(WebAppService.JAVAX_WS_CUSTOM_CHANNEL)
+        Stream.of(WebAppService.JAKARTA_WS_CUSTOM_CHANNEL)
                 .map(channel -> remoteCall(client, channel, custom))
                 .reduce(CompletableFuture::allOf)
                 .get()

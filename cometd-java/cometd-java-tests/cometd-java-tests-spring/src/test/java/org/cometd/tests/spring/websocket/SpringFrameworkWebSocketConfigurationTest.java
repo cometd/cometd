@@ -17,8 +17,8 @@ package org.cometd.tests.spring.websocket;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import javax.websocket.ContainerProvider;
-import javax.websocket.WebSocketContainer;
+import jakarta.websocket.ContainerProvider;
+import jakarta.websocket.WebSocketContainer;
 import okhttp3.OkHttpClient;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerTransport;
@@ -28,7 +28,7 @@ import org.cometd.client.websocket.okhttp.OkHttpWebSocketTransport;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometDServlet;
 import org.cometd.server.http.AsyncJSONTransport;
-import org.cometd.server.websocket.javax.WebSocketTransport;
+import org.cometd.server.websocket.jakarta.WebSocketTransport;
 import org.cometd.server.websocket.jetty.JettyWebSocketTransport;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -95,17 +95,17 @@ public class SpringFrameworkWebSocketConfigurationTest {
     }
 
     @Test
-    public void testXMLSpringConfigurationWithJSRWebSocket() throws Exception {
-        String url = startServer(WebSocketTransport.class, "applicationContext-javax-websocket.xml");
+    public void testXMLSpringConfigurationWithJakartaWebSocket() throws Exception {
+        String url = startServer(WebSocketTransport.class, "applicationContext-jakarta-websocket.xml");
         WebSocketContainer webSocketContainer = ContainerProvider.getWebSocketContainer();
-        ClientTransport clientTransport = new org.cometd.client.websocket.javax.WebSocketTransport(null, null, webSocketContainer);
+        ClientTransport clientTransport = new org.cometd.client.websocket.jakarta.WebSocketTransport(null, null, webSocketContainer);
         testXMLSpringConfigurationWithWebSocket(url, clientTransport);
         LifeCycle.stop(webSocketContainer);
     }
 
     @Test
     public void testXMLSpringConfigurationWithOkHttpWebSocket() throws Exception {
-        String url = startServer(WebSocketTransport.class, "applicationContext-javax-websocket.xml");
+        String url = startServer(WebSocketTransport.class, "applicationContext-jakarta-websocket.xml");
         OkHttpClient okHttp = new OkHttpClient();
         ClientTransport clientTransport = new OkHttpWebSocketTransport(null, okHttp);
         testXMLSpringConfigurationWithWebSocket(url, clientTransport);

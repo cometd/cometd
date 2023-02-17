@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-module org.cometd.client.websocket.javax {
-    exports org.cometd.client.websocket.javax;
+module org.cometd.client.websocket.jakarta {
+    exports org.cometd.client.websocket.jakarta;
 
     requires transitive jakarta.websocket;
     requires transitive org.cometd.client.websocket.common;

@@ -100,7 +100,7 @@ Below you can find a Spring's `applicationContext.xml` that configures the `Baye
   <bean id="bayeux" class="org.cometd.server.BayeuxServerImpl" init-method="start" destroy-method="stop">
     <property name="transports">
       <list>
-        <bean id="websocketTransport" class="org.cometd.server.websocket.javax.WebSocketTransport">
+        <bean id="websocketTransport" class="org.cometd.server.websocket.jakarta.WebSocketTransport">
           <constructor-arg ref="bayeux" />
         </bean>
         <bean id="jsonTransport" class="org.cometd.server.http.JSONTransport">
@@ -126,13 +126,12 @@ The order of the transports is important, and you want the `WebSocketTransport` 
 
 ===== Annotation Based Spring Configuration
 
-Spring 3 or greater supports annotation-based configuration, and xref:_java_server_services_annotated[the annotated services section] integrate nicely with Spring, version 3 or greater.
-Spring 3 or greater is required because it supports injection via https://jcp.org/en/jsr/detail?id=330[JSR 330].
-Prerequisite to making Spring work with CometD annotated services is to have JSR 330's `javax.inject` classes in the classpath along with https://jcp.org/en/jsr/detail?id=250[JSR 250's] `javax.annotation` classes.
+Spring supports annotation-based configuration, and xref:_java_server_services_annotated[the annotated services section] integrate nicely with Spring.
+Prerequisite to making Spring work with CometD annotated services is to have `jakarta.inject` classes in the classpath along with `jakarta.annotation` classes.
 
 [NOTE]
 ====
-Do not forget that Spring 3 or greater requires CGLIB classes in the classpath as well.
+Do not forget that Spring requires CGLIB classes in the classpath as well.
 ====
 
 The `web.xml` file is exactly the same as the one given as an example in the xref:_java_server_services_integration_spring_xml_based_spring_configuration[XML based configuration above], and the same important notes apply.

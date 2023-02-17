@@ -40,7 +40,7 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
 import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.websocket.javax.WebSocketTransport;
+import org.cometd.server.websocket.jakarta.WebSocketTransport;
 import org.cometd.server.websocket.jetty.JettyWebSocketTransport;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
@@ -109,7 +109,7 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
     public void testCookiesSentToClient(String wsType) throws Exception {
         String wsTransportClass;
         switch (wsType) {
-            case WEBSOCKET_JSR356:
+            case WEBSOCKET_JAKARTA:
             case WEBSOCKET_OKHTTP:
                 wsTransportClass = CookieWebSocketTransport.class.getName();
                 break;
@@ -202,7 +202,7 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
     public void testSessionAttribute(String wsType) throws Exception {
         String wsTransportClass;
         switch (wsType) {
-            case WEBSOCKET_JSR356:
+            case WEBSOCKET_JAKARTA:
             case WEBSOCKET_OKHTTP:
                 wsTransportClass = SessionWebSocketTransport.class.getName();
                 break;
@@ -291,7 +291,7 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
     public void testConcurrentClientsHaveDifferentBayeuxContexts(String wsType) throws Exception {
         String wsTransportClass;
         switch (wsType) {
-            case WEBSOCKET_JSR356:
+            case WEBSOCKET_JAKARTA:
             case WEBSOCKET_OKHTTP:
                 wsTransportClass = ConcurrentBayeuxContextWebSocketTransport.class.getName();
                 break;
@@ -313,7 +313,7 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
 
         // Wait for the first client to arrive at the concurrency point.
         switch (wsType) {
-            case WEBSOCKET_JSR356:
+            case WEBSOCKET_JAKARTA:
             case WEBSOCKET_OKHTTP: {
                 CountDownLatch enterLatch = ((ConcurrentBayeuxContextWebSocketTransport)bayeux.getTransport("websocket")).enterLatch;
                 Assertions.assertTrue(enterLatch.await(5, TimeUnit.SECONDS));
@@ -335,7 +335,7 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
 
         // Release the first client.
         switch (wsType) {
-            case WEBSOCKET_JSR356:
+            case WEBSOCKET_JAKARTA:
             case WEBSOCKET_OKHTTP:
                 ((ConcurrentBayeuxContextWebSocketTransport)bayeux.getTransport("websocket")).proceedLatch.countDown();
                 break;

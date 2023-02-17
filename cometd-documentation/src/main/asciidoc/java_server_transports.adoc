@@ -35,8 +35,8 @@ HTTP transports may require a more advanced configuration described in xref:_jav
 
 For the `websocket` transport there exist two implementations:
 
-* one based on the standard Java APIs provided by https://jcp.org/en/jsr/detail?id=356[JSR 356].
-  If these APIs are available, CometD will use a `websocket` transport based on the standard WebSocket APIs, whose implementation class is named `org.cometd.server.websocket.javax.WebSocketTransport`
+* one based on the standard Jakarta APIs.
+  If these APIs are available, CometD will use a `websocket` transport based on the standard WebSocket APIs, whose implementation class is named `org.cometd.server.websocket.jakarta.WebSocketTransport`
 * one based on the Jetty WebSocket APIs, whose implementation class is named `org.cometd.server.websocket.jetty.JettyWebSocketTransport`.
   CometD will _not_ attempt to use this transport automatically; applications that want to make use of the extra features provided by this transport must explicitly configure it (typically along with a HTTP transport such as `long-polling`) using the `transports` parameter as described in xref:_java_server_configuration[the server configuration section].
 
@@ -44,21 +44,21 @@ The order of preference for the server transport is: `[websocket, long-polling, 
 
 [IMPORTANT]
 ====
-The `websocket` _server_ transport will be enabled _only_ if your Servlet Container supports JSR 356 and if that supports is enabled (some container may make it optional).
+The `websocket` _server_ transport will be enabled _only_ if your Servlet Container the Jakarta WebSocket APIs and if that supports is enabled (some container may make it optional).
 
 It is possible to use the `websocket` _client_ transport on the server (for example to communicate with another WebSocket CometD server) without any problem because it is fully portable (provided you ship all the dependencies in your web application).
 For example, it is possible to have a client communicating via HTTP to a CometD web application running in Tomcat, which communicates via WebSocket to another CometD web application running in Jetty.
 ====
 
-The CometD server tries to lookup the JSR 356 APIs via reflection on startup; if they are available, then it creates the `websocket` transport based on the JSR 356 APIs.
+The CometD server tries to lookup the Jakarta WebSocket APIs via reflection on startup; if they are available, then it creates the `websocket` transport based on the Jakarta WebSocket APIs.
 
 [IMPORTANT]
 ====
-Remember that the availability of the JSR 356 APIs is not enough, you need to make sure that your web application contains the required CometD WebSocket dependencies.
+Remember that the availability of the Jakarta WebSocket APIs is not enough, you need to make sure that your web application contains the required CometD WebSocket dependencies.
 
-The JSR 356 `websocket` transport requires the dependency `org.cometd.java:cometd-java-websocket-javax-server` (and transitive dependencies).
+The Jakarta `websocket` transport requires the dependency `org.cometd.java:cometd-java-server-websocket-jakarta` (and transitive dependencies).
 
-The Jetty `websocket` transport requires the dependency `org.cometd.java:cometd-java-websocket-jetty-server` (and transitive dependencies).
+The Jetty `websocket` transport requires the dependency `org.cometd.java:cometd-java-server-websocket-jetty` (and transitive dependencies).
 ====
 
 Including the right dependencies in your web application is very easy if you use Maven: just declare the above dependency in your web application's `pom.xml` file.

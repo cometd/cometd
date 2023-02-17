@@ -7,7 +7,7 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>cometd-java-server-websocket-javax</artifactId>
+  <artifactId>cometd-java-server-websocket-jakarta</artifactId>
   <name>CometD :: Java :: Server :: WebSocket :: EE10</name>
 
   <dependencies>

@@ -13,7 +13,7 @@
 
   <modules>
     <module>cometd-java-client-websocket-common</module>
-    <module>cometd-java-client-websocket-javax</module>
+    <module>cometd-java-client-websocket-jakarta</module>
     <module>cometd-java-client-websocket-jetty</module>
     <module>cometd-java-client-websocket-okhttp</module>
   </modules>
