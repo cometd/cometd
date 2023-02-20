@@ -77,6 +77,9 @@ public abstract class JettyJSONContext<M extends Message.Mutable> {
         if (object.getClass().isArray()) {
             return (M[])object;
         }
+        if (object instanceof List list) {
+            return (M[])list.toArray(this::newRootArray);
+        }
         M[] result = newRootArray(1);
         result[0] = (M)object;
         return result;
@@ -143,7 +146,7 @@ public abstract class JettyJSONContext<M extends Message.Mutable> {
 
     private class MessagesJSON extends FieldJSON {
         public MessagesJSON() {
-            setArrayConverter(list -> newRootArray(list.size()));
+            setArrayConverter(list -> list);
         }
 
         @Override
