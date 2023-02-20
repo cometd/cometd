@@ -36,7 +36,6 @@ import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee10.servlet.security.HashLoginService;
 import org.eclipse.jetty.ee10.servlet.security.authentication.BasicAuthenticator;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.security.Constraint;
 import org.junit.jupiter.api.Assertions;
@@ -60,10 +59,8 @@ public class HandshakeWithAuthenticationTest extends ClientServerTest {
         loginService.setConfig(ResourceFactory.of(server).newResource(authProps));
         server.addBean(loginService);
 
-        Handler handler = server.getHandler();
         ConstraintSecurityHandler security = new ConstraintSecurityHandler();
-        server.setHandler(security);
-        security.setHandler(handler);
+        context.setSecurityHandler(security);
 
         Constraint constraint = new Constraint();
         constraint.setAuthenticate(true);
