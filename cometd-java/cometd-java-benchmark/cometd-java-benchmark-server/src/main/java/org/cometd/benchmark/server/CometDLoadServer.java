@@ -191,7 +191,7 @@ public class CometDLoadServer {
         for (String token : transports.split(",")) {
             String transport = token.trim();
             switch (transport) {
-                case "jakartaws": {
+                case "jakartaws" -> {
                     boolean perMessageDeflate = readPerMessageDeflate(transport, console);
                     WebSocketTransport serverTransport = new WebSocketTransport(bayeuxServer) {
                         @Override
@@ -201,9 +201,8 @@ public class CometDLoadServer {
                     };
                     serverTransport.setOption(AbstractWebSocketTransport.ENABLE_EXTENSION_PREFIX_OPTION + "permessage-deflate", perMessageDeflate);
                     bayeuxServer.addTransport(serverTransport);
-                    break;
                 }
-                case "jettyws": {
+                case "jettyws" -> {
                     boolean perMessageDeflate = readPerMessageDeflate(transport, console);
                     JettyWebSocketTransport serverTransport = new JettyWebSocketTransport(bayeuxServer) {
                         @Override
@@ -213,27 +212,24 @@ public class CometDLoadServer {
                     };
                     serverTransport.setOption(AbstractWebSocketTransport.ENABLE_EXTENSION_PREFIX_OPTION + "permessage-deflate", perMessageDeflate);
                     bayeuxServer.addTransport(serverTransport);
-                    break;
                 }
-                case "http": {
+                case "http" -> {
                     bayeuxServer.addTransport(new JSONTransport(bayeuxServer) {
                         @Override
                         protected void writeComplete(Context context, List<ServerMessage> messages) {
                             messageLatencyExtension.complete(messages);
                         }
                     });
-                    break;
                 }
-                case "asynchttp": {
+                case "asynchttp" -> {
                     bayeuxServer.addTransport(new AsyncJSONTransport(bayeuxServer) {
                         @Override
                         protected void writeComplete(Context context, List<ServerMessage> messages) {
                             messageLatencyExtension.complete(messages);
                         }
                     });
-                    break;
                 }
-                default: {
+                default -> {
                     throw new IllegalArgumentException("Invalid transport: " + token);
                 }
             }

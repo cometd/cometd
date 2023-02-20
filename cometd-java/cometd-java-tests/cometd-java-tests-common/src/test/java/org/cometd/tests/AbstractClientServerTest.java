@@ -96,15 +96,11 @@ public abstract class AbstractClientServerTest {
         context = new ServletContextHandler(server, "/");
 
         switch (transport) {
-            case JAKARTA_WEBSOCKET:
-            case OKHTTP_WEBSOCKET:
-                JakartaWebSocketServletContainerInitializer.configure(context, null);
-                break;
-            case JETTY_WEBSOCKET:
-                JettyWebSocketServletContainerInitializer.configure(context, null);
-                break;
-            default:
-                break;
+            case JAKARTA_WEBSOCKET, OKHTTP_WEBSOCKET ->
+                    JakartaWebSocketServletContainerInitializer.configure(context, null);
+            case JETTY_WEBSOCKET -> JettyWebSocketServletContainerInitializer.configure(context, null);
+            default -> {
+            }
         }
 
         // CometD servlet
@@ -129,27 +125,21 @@ public abstract class AbstractClientServerTest {
     protected void startClient(Transport transport) throws Exception {
         scheduler = Executors.newSingleThreadScheduledExecutor();
         switch (transport) {
-            case JETTY_HTTP:
-            case ASYNC_HTTP:
+            case JETTY_HTTP, ASYNC_HTTP -> {
                 httpClient = new HttpClient();
                 httpClient.start();
-                break;
-            case JAKARTA_WEBSOCKET:
-                wsContainer = ContainerProvider.getWebSocketContainer();
-                break;
-            case JETTY_WEBSOCKET:
+            }
+            case JAKARTA_WEBSOCKET -> wsContainer = ContainerProvider.getWebSocketContainer();
+            case JETTY_WEBSOCKET -> {
                 httpClient = new HttpClient();
                 httpClient.start();
                 wsClient = new WebSocketClient(httpClient);
                 wsClient.start();
-                break;
-            case OKHTTP_HTTP:
-            case OKHTTP_WEBSOCKET:
+            }
+            case OKHTTP_HTTP, OKHTTP_WEBSOCKET ->
                 // There's no lifecycle of OkHttp client.
-                okHttpClient = new OkHttpClient();
-                break;
-            default:
-                throw new IllegalArgumentException();
+                    okHttpClient = new OkHttpClient();
+            default -> throw new IllegalArgumentException();
         }
     }
 
@@ -161,20 +151,13 @@ public abstract class AbstractClientServerTest {
     }
 
     protected String serverTransport(Transport transport) {
-        switch (transport) {
-            case JETTY_HTTP:
-                return JSONTransport.class.getName();
-            case ASYNC_HTTP:
-            case OKHTTP_HTTP:
-                return AsyncJSONTransport.class.getName();
-            case JAKARTA_WEBSOCKET:
-            case OKHTTP_WEBSOCKET:
-                return org.cometd.server.websocket.jakarta.WebSocketTransport.class.getName();
-            case JETTY_WEBSOCKET:
-                return org.cometd.server.websocket.jetty.JettyWebSocketTransport.class.getName();
-            default:
-                throw new IllegalArgumentException();
-        }
+        return switch (transport) {
+            case JETTY_HTTP -> JSONTransport.class.getName();
+            case ASYNC_HTTP, OKHTTP_HTTP -> AsyncJSONTransport.class.getName();
+            case JAKARTA_WEBSOCKET, OKHTTP_WEBSOCKET ->
+                    org.cometd.server.websocket.jakarta.WebSocketTransport.class.getName();
+            case JETTY_WEBSOCKET -> org.cometd.server.websocket.jetty.JettyWebSocketTransport.class.getName();
+        };
     }
 
     protected BayeuxClient newBayeuxClient(Transport transport) {
@@ -182,21 +165,13 @@ public abstract class AbstractClientServerTest {
     }
 
     protected ClientTransport newClientTransport(Transport transport, Map<String, Object> options) {
-        switch (transport) {
-            case JETTY_HTTP:
-            case ASYNC_HTTP:
-                return new JettyHttpClientTransport(options, httpClient);
-            case OKHTTP_HTTP:
-                return new OkHttpClientTransport(options, okHttpClient);
-            case JAKARTA_WEBSOCKET:
-                return new WebSocketTransport(options, scheduler, wsContainer);
-            case JETTY_WEBSOCKET:
-                return new JettyWebSocketTransport(options, scheduler, wsClient);
-            case OKHTTP_WEBSOCKET:
-                return new OkHttpWebSocketTransport(options, okHttpClient);
-            default:
-                throw new IllegalArgumentException();
-        }
+        return switch (transport) {
+            case JETTY_HTTP, ASYNC_HTTP -> new JettyHttpClientTransport(options, httpClient);
+            case OKHTTP_HTTP -> new OkHttpClientTransport(options, okHttpClient);
+            case JAKARTA_WEBSOCKET -> new WebSocketTransport(options, scheduler, wsContainer);
+            case JETTY_WEBSOCKET -> new JettyWebSocketTransport(options, scheduler, wsClient);
+            case OKHTTP_WEBSOCKET -> new OkHttpWebSocketTransport(options, okHttpClient);
+        };
     }
 
     protected void disconnectBayeuxClient(BayeuxClient client) {

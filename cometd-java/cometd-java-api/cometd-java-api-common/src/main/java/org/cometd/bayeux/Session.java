@@ -82,7 +82,7 @@ public interface Session {
     Object getAttribute(String name);
 
     /**
-     * @return the list of session attribute names.
+     * @return the session attribute names.
      */
     Set<String> getAttributeNames();
 

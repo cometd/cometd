@@ -167,6 +167,6 @@ public class ConcurrentAbortPublishTest extends ClientServerWebSocketTest {
                     super.shutdown(reason);
                 }
             }
-        };
+        }
     }
 }

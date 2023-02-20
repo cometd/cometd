@@ -26,6 +26,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.Session;
@@ -35,7 +36,7 @@ import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.eclipse.jetty.util.AttributesMap;
+import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.slf4j.Logger;
@@ -45,7 +46,7 @@ public class ServerChannelImpl implements ServerChannel, Dumpable {
     private static final Logger _logger = LoggerFactory.getLogger(ServerChannel.class);
     private final BayeuxServerImpl _bayeux;
     private final ChannelId _id;
-    private final AttributesMap _attributes = new AttributesMap();
+    private final Attributes _attributes = new Attributes.Lazy();
     private final Set<ServerSession> _subscribers = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final List<ServerChannelListener> _listeners = new CopyOnWriteArrayList<>();
     private final List<Authorizer> _authorizers = new CopyOnWriteArrayList<>();

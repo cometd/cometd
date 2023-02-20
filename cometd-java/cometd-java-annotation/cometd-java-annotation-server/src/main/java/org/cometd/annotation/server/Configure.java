@@ -20,6 +20,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+
 import org.cometd.bayeux.server.ConfigurableServerChannel;
 
 /**
@@ -33,7 +34,7 @@ import org.cometd.bayeux.server.ConfigurableServerChannel;
 @Documented
 public @interface Configure {
     /**
-     * @return the list of channels which are initialised
+     * @return the channels which are initialised
      */
     String[] value();
 

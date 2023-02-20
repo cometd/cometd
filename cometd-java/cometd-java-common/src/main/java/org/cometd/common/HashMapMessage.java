@@ -15,13 +15,16 @@
  */
 package org.cometd.common;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
 
 public class HashMapMessage extends HashMap<String, Object> implements Message.Mutable, Serializable {
+    @Serial
     private static final long serialVersionUID = 4318697940670212190L;
 
     public HashMapMessage() {
@@ -88,7 +91,6 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
 
     @Override
     public Map<String, Object> getDataAsMap(boolean create) {
-        @SuppressWarnings("unchecked")
         Map<String, Object> data = getDataAsMap();
         if (create && data == null) {
             data = new HashMap<>();

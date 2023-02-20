@@ -663,7 +663,7 @@ public class CometDLoadClient implements MeasureConverter {
 
     private ClientTransport newClientTransport(ClientTransportType clientTransportType) {
         switch (clientTransportType) {
-            case LONG_POLLING: {
+            case LONG_POLLING -> {
                 Map<String, Object> options = new HashMap<>();
                 options.put(ClientTransport.JSON_CONTEXT_OPTION, new JacksonJSONContextClient());
                 options.put(ClientTransport.MAX_NETWORK_DELAY_OPTION, Config.MAX_NETWORK_DELAY);
@@ -678,7 +678,7 @@ public class CometDLoadClient implements MeasureConverter {
                     }
                 };
             }
-            case JAKARTA_WEBSOCKET: {
+            case JAKARTA_WEBSOCKET -> {
                 Map<String, Object> options = new HashMap<>();
                 options.put(ClientTransport.JSON_CONTEXT_OPTION, new JacksonJSONContextClient());
                 options.put(ClientTransport.MAX_NETWORK_DELAY_OPTION, Config.MAX_NETWORK_DELAY);
@@ -689,7 +689,7 @@ public class CometDLoadClient implements MeasureConverter {
                 options.put(WebSocketTransport.PERMESSAGE_DEFLATE_OPTION, perMessageDeflate);
                 return new WebSocketTransport(options, scheduler, webSocketContainer);
             }
-            case JETTY_WEBSOCKET: {
+            case JETTY_WEBSOCKET -> {
                 Map<String, Object> options = new HashMap<>();
                 options.put(ClientTransport.JSON_CONTEXT_OPTION, new JacksonJSONContextClient());
                 options.put(ClientTransport.MAX_NETWORK_DELAY_OPTION, Config.MAX_NETWORK_DELAY);
@@ -700,7 +700,7 @@ public class CometDLoadClient implements MeasureConverter {
                 options.put(WebSocketTransport.PERMESSAGE_DEFLATE_OPTION, perMessageDeflate);
                 return new JettyWebSocketTransport(options, scheduler, webSocketClient);
             }
-            default: {
+            default -> {
                 throw new IllegalArgumentException();
             }
         }

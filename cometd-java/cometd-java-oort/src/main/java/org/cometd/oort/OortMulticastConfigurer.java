@@ -30,6 +30,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import org.cometd.client.BayeuxClient;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.slf4j.Logger;
@@ -242,7 +243,7 @@ public class OortMulticastConfigurer extends AbstractLifeCycle {
     }
 
     @Override
-    protected void doStop() throws Exception {
+    protected void doStop() {
         active = false;
         senderThread.interrupt();
         receiverThread.interrupt();

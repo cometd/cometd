@@ -16,12 +16,13 @@
 package org.cometd.server.filter;
 
 import java.util.regex.Pattern;
+
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerSession;
 
 public class NoMarkupFilter extends JSONDataFilter {
-    private static Pattern __open = Pattern.compile("<");
-    private static Pattern __close = Pattern.compile(">");
+    private static final Pattern __open = Pattern.compile("<");
+    private static final Pattern __close = Pattern.compile(">");
 
     @Override
     protected Object filterString(ServerSession session, ServerChannel channel, String string) {

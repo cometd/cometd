@@ -18,11 +18,12 @@ package org.cometd.common;
 import java.nio.ByteBuffer;
 
 /**
- * <p>An implementation of Z85, a format for representing binary data
- * as printable text defined at https://rfc.zeromq.org/spec:32/Z85/.</p>
+ * <p>An implementation of Z85, a format for representing
+ * binary data as printable text defined at
+ * <a href="https://rfc.zeromq.org/spec:32/Z85/">Z85</a>.</p>
  */
 public class Z85 {
-    private static char[] encodeTable = new char[]{
+    private static final char[] encodeTable = new char[]{
             '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
             'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j',
             'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',

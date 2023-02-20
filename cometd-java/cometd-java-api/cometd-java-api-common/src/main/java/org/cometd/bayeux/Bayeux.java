@@ -123,27 +123,10 @@ public interface Bayeux {
         }
 
         private static boolean isAllowed(char c) {
-            switch (c) {
-                case ' ':
-                case '!':
-                case '#':
-                case '$':
-                case '(':
-                case ')':
-                case '*':
-                case '+':
-                case '-':
-                case '.':
-                case '/':
-                case '@':
-                case '_':
-                case '{':
-                case '~':
-                case '}':
-                    return true;
-                default:
-                    return false;
-            }
+            return switch (c) {
+                case ' ', '!', '#', '$', '(', ')', '*', '+', '-', '.', '/', '@', '_', '{', '~', '}' -> true;
+                default -> false;
+            };
         }
     }
 }

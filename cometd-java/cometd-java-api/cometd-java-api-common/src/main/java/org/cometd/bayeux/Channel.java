@@ -138,7 +138,7 @@ public interface Channel {
     Object getAttribute(String name);
 
     /**
-     * @return the list of channel attribute names.
+     * @return the channel attribute names.
      */
     Set<String> getAttributeNames();
 

@@ -20,6 +20,7 @@ import java.util.EventListener;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.slf4j.Logger;
@@ -163,18 +164,12 @@ public class OortList<E> extends OortContainer<List<E>> {
 
         // Perform the action.
         List<E> list = info.getObject();
-        boolean result;
         String action = (String)data.get(Info.ACTION_FIELD);
-        switch (action) {
-            case ACTION_FIELD_ADD_VALUE:
-                result = list.addAll(elements);
-                break;
-            case ACTION_FIELD_REMOVE_VALUE:
-                result = list.removeAll(elements);
-                break;
-            default:
-                throw new IllegalArgumentException(action);
-        }
+        boolean result = switch (action) {
+            case ACTION_FIELD_ADD_VALUE -> list.addAll(elements);
+            case ACTION_FIELD_REMOVE_VALUE -> list.removeAll(elements);
+            default -> throw new IllegalArgumentException(action);
+        };
 
         // Update the version.
         info.put(Info.VERSION_FIELD, data.get(Info.VERSION_FIELD));
@@ -184,12 +179,8 @@ public class OortList<E> extends OortContainer<List<E>> {
             logger.debug("{} list {} of {}", info.isLocal() ? "Local" : "Remote", action, elements);
         }
         switch (action) {
-            case ACTION_FIELD_ADD_VALUE:
-                notifyElementsAdded(info, elements);
-                break;
-            case ACTION_FIELD_REMOVE_VALUE:
-                notifyElementsRemoved(info, elements);
-                break;
+            case ACTION_FIELD_ADD_VALUE -> notifyElementsAdded(info, elements);
+            case ACTION_FIELD_REMOVE_VALUE -> notifyElementsRemoved(info, elements);
         }
 
         if (data instanceof Data) {

@@ -16,6 +16,7 @@
 package org.cometd.oort;
 
 import jakarta.servlet.ServletConfig;
+
 import org.cometd.bayeux.server.BayeuxServer;
 
 /**
@@ -37,7 +38,7 @@ public class OortStaticConfigServlet extends OortConfigServlet {
     public final static String OORT_CLOUD_PARAM = "oort.cloud";
 
     @Override
-    protected void configureCloud(ServletConfig config, Oort oort) throws Exception {
+    protected void configureCloud(ServletConfig config, Oort oort) {
         String cloud = config.getInitParameter(OORT_CLOUD_PARAM);
         if (cloud != null && cloud.length() > 0) {
             String[] urls = cloud.split(",");

@@ -39,7 +39,7 @@ public class CookieParser {
         for (int end = 0; end < header.length(); ++end) {
             char ch = header.charAt(end);
             switch (state) {
-                case NAME: {
+                case NAME -> {
                     if (ch == '$') {
                         state = State.SEPARATOR;
                     } else if (ch == '=') {
@@ -50,9 +50,8 @@ public class CookieParser {
                         state = State.VALUE;
                         begin = end + 1;
                     }
-                    break;
                 }
-                case VALUE: {
+                case VALUE -> {
                     // Skip initial whitespace.
                     if (Character.isWhitespace(ch) && begin == end) {
                         begin = end + 1;
@@ -60,7 +59,7 @@ public class CookieParser {
                     }
 
                     switch (ch) {
-                        case '"': {
+                        case '"' -> {
                             if (quoted) {
                                 String value = header.substring(begin, end).trim();
                                 cookies.add(new HttpCookie(name, value));
@@ -71,9 +70,8 @@ public class CookieParser {
                                 quoted = true;
                                 begin = end + 1;
                             }
-                            break;
                         }
-                        case ';': {
+                        case ';' -> {
                             if (!quoted) {
                                 String value = header.substring(begin, end).trim();
                                 cookies.add(new HttpCookie(name, value));
@@ -81,9 +79,8 @@ public class CookieParser {
                                 name = null;
                                 begin = end + 1;
                             }
-                            break;
                         }
-                        default: {
+                        default -> {
                             if (end + 1 == header.length()) {
                                 if (quoted) {
                                     throw new ParseException(header, begin);
@@ -91,18 +88,15 @@ public class CookieParser {
                                 String value = header.substring(begin, end + 1).trim();
                                 cookies.add(new HttpCookie(name, value));
                             }
-                            break;
                         }
                     }
-                    break;
                 }
-                case SEPARATOR: {
+                case SEPARATOR -> {
                     if (ch == ';') {
                         state = State.NAME;
                         name = null;
                         begin = end + 1;
                     }
-                    break;
                 }
             }
         }

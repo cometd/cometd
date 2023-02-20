@@ -15,17 +15,20 @@
  */
 package org.cometd.server;
 
+import java.io.Serial;
 import java.nio.charset.StandardCharsets;
 import java.util.AbstractSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+
 import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.common.HashMapMessage;
 
 public class ServerMessageImpl extends HashMapMessage implements ServerMessage.Mutable {
+    @Serial
     private static final long serialVersionUID = 6412048662640296067L;
 
     private boolean _lazy;

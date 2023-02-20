@@ -33,6 +33,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -58,7 +59,7 @@ import org.slf4j.LoggerFactory;
  * where N is the number of active nodes. A part is represented by {@link Info} instances.
  * Each {@link Info} instance represents the contribution of that node to the whole {@link OortObject}
  * and stores the Oort URL of the node it represents along with the entity in that node.</p>
- * <pre>
+ * <pre>{@code
  *     +------------+
  *     | user_count |
  * +---+---+----+---+--------------------+
@@ -68,7 +69,7 @@ import org.slf4j.LoggerFactory;
  * +-------+----+------------------------+
  * | part3 | 29 | remote - http://oort3/ |
  * +-------+----+------------------------+
- * </pre>
+ * }</pre>
  * <p>An {@link OortObject} must be created and then {@link #start() started}:</p>
  * <pre>
  * Oort oort1 = ...;
@@ -809,13 +810,13 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
         private Info<T> info;
 
         private Info<T> getInfo() {
-            try (AutoLock l = lock.lock()) {
+            try (AutoLock ignored = lock.lock()) {
                 return info;
             }
         }
 
         private Info<T> update(Info<T> newInfo) {
-            try (AutoLock l = lock.lock()) {
+            try (AutoLock ignored = lock.lock()) {
                 Info<T> oldInfo = info;
                 info = newInfo;
                 return oldInfo;
@@ -823,7 +824,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
         }
 
         private void enqueue(Map<String, Object> data) {
-            try (AutoLock l = lock.lock()) {
+            try (AutoLock ignored = lock.lock()) {
                 boolean local = oort.getURL().equals(data.get(Info.OORT_URL_FIELD));
                 if (local) {
                     long version = ++versions;
@@ -837,7 +838,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
         }
 
         private void process() {
-            try (AutoLock l = lock.lock()) {
+            try (AutoLock ignored = lock.lock()) {
                 if (active) {
                     return;
                 }
@@ -847,7 +848,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
             while (true) {
                 Map<String, Object> data;
                 long current;
-                try (AutoLock l = lock.lock()) {
+                try (AutoLock ignored = lock.lock()) {
                     data = updates.poll();
                     if (data == null) {
                         active = false;
@@ -890,7 +891,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
             boolean active;
             int size;
             Info<T> info;
-            try (AutoLock l = lock.lock()) {
+            try (AutoLock ignored = lock.lock()) {
                 active = this.active;
                 size = this.updates.size();
                 info = this.info;

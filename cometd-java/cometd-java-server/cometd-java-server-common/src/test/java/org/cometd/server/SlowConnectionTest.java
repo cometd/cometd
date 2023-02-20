@@ -307,33 +307,34 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest {
         String data = new String(chars);
         bayeux.getChannel(channelName).publish(null, data, Promise.noop());
 
-        Socket socket = new Socket("localhost", port);
-        OutputStream output = socket.getOutputStream();
-        byte[] content = ("[{" +
-                "\"channel\": \"/meta/connect\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"connectionType\": \"long-polling\"" +
-                "}]").getBytes(StandardCharsets.UTF_8);
-        String request = "" +
-                "POST " + new URI(cometdURL).getPath() + "/connect HTTP/1.1\r\n" +
-                "Host: localhost:" + port + "\r\n" +
-                "Content-Type: application/json;charset=UTF-8\r\n" +
-                "Content-Length: " + content.length + "\r\n" +
-                "Cookie: " + cookieName + "=" + browserId + "\r\n" +
-                "\r\n";
-        output.write(request.getBytes(StandardCharsets.UTF_8));
-        output.write(content);
-        output.flush();
+        try (Socket socket = new Socket("localhost", port)) {
+            OutputStream output = socket.getOutputStream();
+            byte[] content = ("[{" +
+                    "\"channel\": \"/meta/connect\"," +
+                    "\"clientId\": \"" + clientId + "\"," +
+                    "\"connectionType\": \"long-polling\"" +
+                    "}]").getBytes(StandardCharsets.UTF_8);
+            String request = "" +
+                    "POST " + new URI(cometdURL).getPath() + "/connect HTTP/1.1\r\n" +
+                    "Host: localhost:" + port + "\r\n" +
+                    "Content-Type: application/json;charset=UTF-8\r\n" +
+                    "Content-Length: " + content.length + "\r\n" +
+                    "Cookie: " + cookieName + "=" + browserId + "\r\n" +
+                    "\r\n";
+            output.write(request.getBytes(StandardCharsets.UTF_8));
+            output.write(content);
+            output.flush();
 
-        CountDownLatch removeLatch = new CountDownLatch(1);
-        ServerSession session = bayeux.getSession(clientId);
-        session.addListener((ServerSession.RemovedListener)(s, m, t) -> removeLatch.countDown());
+            CountDownLatch removeLatch = new CountDownLatch(1);
+            ServerSession session = bayeux.getSession(clientId);
+            session.addListener((ServerSession.RemovedListener)(s, m, t) -> removeLatch.countDown());
 
-        // Do not read, the server should idle timeout and close the connection.
+            // Do not read, the server should idle timeout and close the connection.
 
-        // The session must be swept even if the server could not write a response
-        // to the connect because of the exception.
-        Assertions.assertTrue(removeLatch.await(2 * maxInterval, TimeUnit.MILLISECONDS));
+            // The session must be swept even if the server could not write a response
+            // to the connect because of the exception.
+            Assertions.assertTrue(removeLatch.await(2 * maxInterval, TimeUnit.MILLISECONDS));
+        }
     }
 
     private void await(CountDownLatch latch) {

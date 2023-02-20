@@ -22,6 +22,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import jakarta.inject.Inject;
+
 import org.cometd.annotation.Listener;
 import org.cometd.annotation.Service;
 import org.cometd.annotation.Session;
@@ -147,7 +148,7 @@ public class ChatService {
         }
     }
 
-    class BadWordFilter extends JSONDataFilter {
+    private static class BadWordFilter extends JSONDataFilter {
         @Override
         protected Object filterString(ServerSession session, ServerChannel channel, String string) {
             if (string.contains("dang")) {

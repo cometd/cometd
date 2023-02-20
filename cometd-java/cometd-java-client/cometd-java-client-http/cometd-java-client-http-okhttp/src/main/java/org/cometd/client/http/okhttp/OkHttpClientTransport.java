@@ -25,6 +25,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
+
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.CookieJar;
@@ -88,7 +89,7 @@ public class OkHttpClientTransport extends AbstractHttpClientTransport {
     @Override
     public void abort(Throwable failure) {
         List<Call> requests;
-        try (AutoLock l = lock.lock()) {
+        try (AutoLock ignored = lock.lock()) {
             super.abort(failure);
             requests = new ArrayList<>(calls);
             calls.clear();
@@ -148,7 +149,7 @@ public class OkHttpClientTransport extends AbstractHttpClientTransport {
             }
         }
 
-        try (AutoLock l = lock.lock()) {
+        try (AutoLock ignored = lock.lock()) {
             if (!isAborted()) {
                 calls.add(call);
             }
@@ -163,7 +164,7 @@ public class OkHttpClientTransport extends AbstractHttpClientTransport {
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("Received response {}", response);
                 }
-                try (AutoLock l = lock.lock()) {
+                try (AutoLock ignored = lock.lock()) {
                     calls.remove(call);
                 }
                 int code = response.code();
@@ -186,7 +187,7 @@ public class OkHttpClientTransport extends AbstractHttpClientTransport {
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("Received response failure", e);
                 }
-                try (AutoLock l = lock.lock()) {
+                try (AutoLock ignored = lock.lock()) {
                     calls.remove(call);
                 }
                 cancelTimeoutTask(timeoutRef);
@@ -206,7 +207,7 @@ public class OkHttpClientTransport extends AbstractHttpClientTransport {
     }
 
     private void onTimeout(TransportListener listener, List<? extends Message> messages, Call call, long delay, AtomicReference<ScheduledFuture<?>> timeoutRef) {
-        try (AutoLock l = lock.lock()) {
+        try (AutoLock ignored = lock.lock()) {
             calls.remove(call);
         }
         listener.onTimeout(messages, Promise.from(result -> {

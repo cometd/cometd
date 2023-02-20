@@ -19,6 +19,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.Session;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -173,9 +174,9 @@ public abstract class AbstractService {
      * <p>The channel name may be a {@link ServerChannel#isWild() wildcard channel name}.</p>
      * <p>The method must have a unique name and the following signature:</p>
      * <ul>
-     * <li><code>myMethod(ServerSession from, ServerMessage message)</code></li>
+     * <li>{@code myMethod(ServerSession from, ServerMessage message)}</li>
      * </ul>
-     * <p>Typically a service will be used to a channel in the <code>/service/**</code>
+     * <p>Typically a service will be used to a channel in the {@code /service/**}
      * space which is not a broadcast channel.</p>
      * <p>Any object returned by a mapped method is delivered back to the
      * client that sent the message and not broadcast. If the method returns void or null,

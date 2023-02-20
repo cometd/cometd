@@ -1023,30 +1023,17 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
 
     private void notifyMetaHandlers(ServerSessionImpl session, ServerChannelImpl channel, Mutable message, Promise<Boolean> promise) {
         switch (channel.getId()) {
-            case Channel.META_HANDSHAKE:
-                handleMetaHandshake(session, message, promise);
-                break;
-            case Channel.META_CONNECT:
-                handleMetaConnect(session, message, promise);
-                break;
-            case Channel.META_SUBSCRIBE:
-                handleMetaSubscribe(session, message, promise);
-                break;
-            case Channel.META_UNSUBSCRIBE:
-                handleMetaUnsubscribe(session, message, promise);
-                break;
-            case Channel.META_DISCONNECT:
-                handleMetaDisconnect(session, message, promise);
-                break;
-            default:
-                promise.fail(new IllegalStateException("Invalid channel " + channel));
-                break;
+            case Channel.META_HANDSHAKE -> handleMetaHandshake(session, message, promise);
+            case Channel.META_CONNECT -> handleMetaConnect(session, message, promise);
+            case Channel.META_SUBSCRIBE -> handleMetaSubscribe(session, message, promise);
+            case Channel.META_UNSUBSCRIBE -> handleMetaUnsubscribe(session, message, promise);
+            case Channel.META_DISCONNECT -> handleMetaDisconnect(session, message, promise);
+            default -> promise.fail(new IllegalStateException("Invalid channel " + channel));
         }
     }
 
     public void freeze(Mutable mutable) {
-        if (mutable instanceof ServerMessageImpl) {
-            ServerMessageImpl message = (ServerMessageImpl)mutable;
+        if (mutable instanceof ServerMessageImpl message) {
             if (message.isFrozen()) {
                 return;
             }
@@ -1188,8 +1175,7 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
     protected AbstractHttpTransport findHttpTransport(HttpServletRequest request) {
         for (String transportName : _allowedTransports) {
             ServerTransport serverTransport = getTransport(transportName);
-            if (serverTransport instanceof AbstractHttpTransport) {
-                AbstractHttpTransport transport = (AbstractHttpTransport)serverTransport;
+            if (serverTransport instanceof AbstractHttpTransport transport) {
                 if (transport.accept(request)) {
                     return transport;
                 }
@@ -1562,8 +1548,7 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
             return List.of((String)channels);
         }
 
-        if (channels instanceof Object[]) {
-            Object[] array = (Object[])channels;
+        if (channels instanceof Object[] array) {
             List<String> channelList = new ArrayList<>();
             for (Object o : array) {
                 channelList.add(String.valueOf(o));
@@ -1571,8 +1556,7 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
             return channelList;
         }
 
-        if (channels instanceof List) {
-            List<?> list = (List<?>)channels;
+        if (channels instanceof List<?> list) {
             List<String> channelList = new ArrayList<>();
             for (Object o : list) {
                 channelList.add(String.valueOf(o));

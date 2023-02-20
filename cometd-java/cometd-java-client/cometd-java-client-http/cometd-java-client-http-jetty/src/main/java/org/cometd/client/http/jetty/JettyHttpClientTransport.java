@@ -87,7 +87,7 @@ public class JettyHttpClientTransport extends AbstractHttpClientTransport {
     @Override
     public void abort(Throwable failure) {
         List<Request> requests;
-        try (AutoLock l = lock.lock()) {
+        try (AutoLock ignored = lock.lock()) {
             super.abort(failure);
             requests = new ArrayList<>(this.requests);
             this.requests.clear();
@@ -159,7 +159,7 @@ public class JettyHttpClientTransport extends AbstractHttpClientTransport {
             }
         });
 
-        try (AutoLock l = lock.lock()) {
+        try (AutoLock ignored = lock.lock()) {
             if (!isAborted()) {
                 requests.add(request);
             }
@@ -271,7 +271,7 @@ public class JettyHttpClientTransport extends AbstractHttpClientTransport {
 
         @Override
         public void onComplete(Result result) {
-            try (AutoLock l = lock.lock()) {
+            try (AutoLock ignored = lock.lock()) {
                 requests.remove(result.getRequest());
             }
 

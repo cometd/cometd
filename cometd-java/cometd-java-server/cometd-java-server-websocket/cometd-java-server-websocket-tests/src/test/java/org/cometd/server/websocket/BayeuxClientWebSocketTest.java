@@ -185,61 +185,54 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         // ConnectException is a recoverable exception that does not disable the transport.
         // Convert it to a fatal exception so the transport would be disabled.
         // However, since it connected before this fatal exception, the transport is not disabled.
-        ClientTransport webSocketTransport;
-        switch (wsType) {
-            case WEBSOCKET_JAKARTA:
-                webSocketTransport = new org.cometd.client.websocket.jakarta.WebSocketTransport(null, null, wsClientContainer) {
-                    @Override
-                    protected Delegate connect(WebSocketContainer container, ClientEndpointConfig configuration, String uri) throws IOException {
-                        try {
-                            return super.connect(container, configuration, uri);
-                        } catch (ConnectException x) {
-                            // Convert recoverable exception to unrecoverable.
-                            throw new IOException(x);
-                        }
-                    }
-                };
-                break;
-            case WEBSOCKET_JETTY:
-                webSocketTransport = new JettyWebSocketTransport(null, null, wsClient) {
-                    @Override
-                    protected Delegate connect(WebSocketClient client, ClientUpgradeRequest request, String uri) throws IOException, InterruptedException {
-                        try {
-                            return super.connect(client, request, uri);
-                        } catch (ConnectException x) {
-                            // Convert recoverable exception to unrecoverable.
-                            throw new IOException(x);
-                        }
-                    }
-                };
-                break;
-            case WEBSOCKET_OKHTTP:
-                webSocketTransport = new OkHttpWebSocketTransport(null, okHttpClient) {
-                    @Override
-                    protected Delegate connect(String uri, TransportListener listener, List<Message.Mutable> messages) {
-                        return super.connect(uri, new TransportListener() {
-                            @Override
-                            public void onSending(List<? extends Message> messages) {
-                                listener.onSending(messages);
-                            }
-
-                            @Override
-                            public void onMessages(List<Message.Mutable> messages) {
-                                listener.onMessages(messages);
-                            }
-
-                            @Override
-                            public void onFailure(Throwable failure, List<? extends Message> messages) {
+        ClientTransport webSocketTransport = switch (wsType) {
+            case WEBSOCKET_JAKARTA ->
+                    new org.cometd.client.websocket.jakarta.WebSocketTransport(null, null, wsClientContainer) {
+                        @Override
+                        protected Delegate connect(WebSocketContainer container, ClientEndpointConfig configuration, String uri) throws IOException {
+                            try {
+                                return super.connect(container, configuration, uri);
+                            } catch (ConnectException x) {
                                 // Convert recoverable exception to unrecoverable.
-                                listener.onFailure(new IOException(failure), messages);
+                                throw new IOException(x);
                             }
-                        }, messages);
+                        }
+                    };
+            case WEBSOCKET_JETTY -> new JettyWebSocketTransport(null, null, wsClient) {
+                @Override
+                protected Delegate connect(WebSocketClient client, ClientUpgradeRequest request, String uri) throws IOException, InterruptedException {
+                    try {
+                        return super.connect(client, request, uri);
+                    } catch (ConnectException x) {
+                        // Convert recoverable exception to unrecoverable.
+                        throw new IOException(x);
                     }
-                };
-                break;
-            default:
-                throw new IllegalArgumentException();
-        }
+                }
+            };
+            case WEBSOCKET_OKHTTP -> new OkHttpWebSocketTransport(null, okHttpClient) {
+                @Override
+                protected Delegate connect(String uri, TransportListener listener, List<Message.Mutable> messages) {
+                    return super.connect(uri, new TransportListener() {
+                        @Override
+                        public void onSending(List<? extends Message> messages) {
+                            listener.onSending(messages);
+                        }
+
+                        @Override
+                        public void onMessages(List<Message.Mutable> messages) {
+                            listener.onMessages(messages);
+                        }
+
+                        @Override
+                        public void onFailure(Throwable failure, List<? extends Message> messages) {
+                            // Convert recoverable exception to unrecoverable.
+                            listener.onFailure(new IOException(failure), messages);
+                        }
+                    }, messages);
+                }
+            };
+            default -> throw new IllegalArgumentException();
+        };
 
         BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport);
 
@@ -627,15 +620,11 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         long timeout = 5000;
         initParams.put("timeout", String.valueOf(timeout));
         switch (wsType) {
-            case WEBSOCKET_JAKARTA:
-            case WEBSOCKET_OKHTTP:
-                initParams.put("transports", CloseLatchWebSocketTransport.class.getName() + "," + JSONTransport.class.getName());
-                break;
-            case WEBSOCKET_JETTY:
-                initParams.put("transports", CloseLatchJettyWebSocketTransport.class.getName() + "," + JSONTransport.class.getName());
-                break;
-            default:
-                throw new IllegalArgumentException();
+            case WEBSOCKET_JAKARTA, WEBSOCKET_OKHTTP ->
+                    initParams.put("transports", CloseLatchWebSocketTransport.class.getName() + "," + JSONTransport.class.getName());
+            case WEBSOCKET_JETTY ->
+                    initParams.put("transports", CloseLatchJettyWebSocketTransport.class.getName() + "," + JSONTransport.class.getName());
+            default -> throw new IllegalArgumentException();
         }
         prepareAndStart(wsType, initParams);
 
@@ -727,15 +716,11 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
     public void testClientDisconnectingClosesTheConnection(String wsType) throws Exception {
         Map<String, String> initParams = new HashMap<>();
         switch (wsType) {
-            case WEBSOCKET_JAKARTA:
-            case WEBSOCKET_OKHTTP:
-                initParams.put("transports", CloseLatchWebSocketTransport.class.getName() + "," + JSONTransport.class.getName());
-                break;
-            case WEBSOCKET_JETTY:
-                initParams.put("transports", CloseLatchJettyWebSocketTransport.class.getName() + "," + JSONTransport.class.getName());
-                break;
-            default:
-                throw new IllegalArgumentException();
+            case WEBSOCKET_JAKARTA, WEBSOCKET_OKHTTP ->
+                    initParams.put("transports", CloseLatchWebSocketTransport.class.getName() + "," + JSONTransport.class.getName());
+            case WEBSOCKET_JETTY ->
+                    initParams.put("transports", CloseLatchJettyWebSocketTransport.class.getName() + "," + JSONTransport.class.getName());
+            default -> throw new IllegalArgumentException();
         }
         prepareAndStart(wsType, initParams);
 
@@ -747,17 +732,15 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         client.disconnect();
 
         switch (wsType) {
-            case WEBSOCKET_JAKARTA:
-            case WEBSOCKET_OKHTTP:
+            case WEBSOCKET_JAKARTA, WEBSOCKET_OKHTTP -> {
                 CloseLatchWebSocketTransport jakartaTransport = (CloseLatchWebSocketTransport)bayeux.getTransport("websocket");
                 Assertions.assertTrue(jakartaTransport.latch.await(5, TimeUnit.SECONDS));
-                break;
-            case WEBSOCKET_JETTY:
+            }
+            case WEBSOCKET_JETTY -> {
                 CloseLatchJettyWebSocketTransport jettyTransport = (CloseLatchJettyWebSocketTransport)bayeux.getTransport("websocket");
                 Assertions.assertTrue(jettyTransport.latch.await(5, TimeUnit.SECONDS));
-                break;
-            default:
-                throw new IllegalArgumentException();
+            }
+            default -> throw new IllegalArgumentException();
         }
     }
 
@@ -766,15 +749,11 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
     public void testClientDisconnectingSynchronouslyClosesTheConnection(String wsType) throws Exception {
         Map<String, String> initParams = new HashMap<>();
         switch (wsType) {
-            case WEBSOCKET_JAKARTA:
-            case WEBSOCKET_OKHTTP:
-                initParams.put("transports", CloseLatchWebSocketTransport.class.getName() + "," + JSONTransport.class.getName());
-                break;
-            case WEBSOCKET_JETTY:
-                initParams.put("transports", CloseLatchJettyWebSocketTransport.class.getName() + "," + JSONTransport.class.getName());
-                break;
-            default:
-                throw new IllegalArgumentException();
+            case WEBSOCKET_JAKARTA, WEBSOCKET_OKHTTP ->
+                    initParams.put("transports", CloseLatchWebSocketTransport.class.getName() + "," + JSONTransport.class.getName());
+            case WEBSOCKET_JETTY ->
+                    initParams.put("transports", CloseLatchJettyWebSocketTransport.class.getName() + "," + JSONTransport.class.getName());
+            default -> throw new IllegalArgumentException();
         }
         prepareAndStart(wsType, initParams);
 
@@ -786,17 +765,15 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         client.disconnect(1000);
 
         switch (wsType) {
-            case WEBSOCKET_JAKARTA:
-            case WEBSOCKET_OKHTTP:
+            case WEBSOCKET_JAKARTA, WEBSOCKET_OKHTTP -> {
                 CloseLatchWebSocketTransport jakartaTransport = (CloseLatchWebSocketTransport)bayeux.getTransport("websocket");
                 Assertions.assertTrue(jakartaTransport.latch.await(5, TimeUnit.SECONDS));
-                break;
-            case WEBSOCKET_JETTY:
+            }
+            case WEBSOCKET_JETTY -> {
                 CloseLatchJettyWebSocketTransport jettyTransport = (CloseLatchJettyWebSocketTransport)bayeux.getTransport("websocket");
                 Assertions.assertTrue(jettyTransport.latch.await(5, TimeUnit.SECONDS));
-                break;
-            default:
-                throw new IllegalArgumentException();
+            }
+            default -> throw new IllegalArgumentException();
         }
     }
 

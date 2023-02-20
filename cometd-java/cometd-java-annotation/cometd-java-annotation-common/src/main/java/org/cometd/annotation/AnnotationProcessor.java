@@ -26,6 +26,7 @@ import java.util.List;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.inject.Inject;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -172,16 +173,15 @@ public class AnnotationProcessor {
     }
 
     protected Object invokePrivate(Object bean, Method method, Object... args) {
-        boolean accessible = method.isAccessible();
         try {
-            method.setAccessible(true);
+            if (!method.canAccess(bean)) {
+                method.setAccessible(true);
+            }
             return method.invoke(bean, args);
         } catch (InvocationTargetException x) {
             throw new RuntimeException(x.getCause());
         } catch (Exception x) {
             throw new RuntimeException(x);
-        } finally {
-            method.setAccessible(accessible);
         }
     }
 
@@ -205,26 +205,24 @@ public class AnnotationProcessor {
     }
 
     protected Object getField(Object bean, Field field) {
-        boolean accessible = field.isAccessible();
         try {
-            field.setAccessible(true);
+            if (field.canAccess(bean)) {
+                field.setAccessible(true);
+            }
             return field.get(bean);
         } catch (IllegalAccessException x) {
             throw new RuntimeException(x);
-        } finally {
-            field.setAccessible(accessible);
         }
     }
 
     protected void setField(Object bean, Field field, Object value) {
-        boolean accessible = field.isAccessible();
         try {
-            field.setAccessible(true);
+            if (!field.canAccess(bean)) {
+                field.setAccessible(true);
+            }
             field.set(bean, value);
         } catch (IllegalAccessException x) {
             throw new RuntimeException(x);
-        } finally {
-            field.setAccessible(accessible);
         }
     }
 

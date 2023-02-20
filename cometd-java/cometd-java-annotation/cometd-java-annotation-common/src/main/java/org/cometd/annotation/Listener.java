@@ -34,7 +34,7 @@ import java.lang.annotation.Target;
 @Documented
 public @interface Listener {
     /**
-     * @return the list of channels to which the callback method listens to
+     * @return the channels to which the callback method listens to
      */
     String[] value();
 

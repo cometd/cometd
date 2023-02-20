@@ -81,27 +81,20 @@ public abstract class ClientServerWebSocketTest {
         startClient();
     }
 
-    protected void prepareServer(String wsType, int port) throws Exception {
+    protected void prepareServer(String wsType, int port) {
         prepareServer(wsType, port, "/cometd", null);
     }
 
-    protected void prepareServer(String wsType, Map<String, String> initParams) throws Exception {
+    protected void prepareServer(String wsType, Map<String, String> initParams) {
         prepareServer(wsType, 0, "/cometd", initParams);
     }
 
-    protected void prepareServer(String wsType, int port, String servletPath, Map<String, String> initParams) throws Exception {
-        String wsTransportClass;
-        switch (wsType) {
-            case WEBSOCKET_JAKARTA:
-            case WEBSOCKET_OKHTTP:
-                wsTransportClass = WebSocketTransport.class.getName();
-                break;
-            case WEBSOCKET_JETTY:
-                wsTransportClass = JettyWebSocketTransport.class.getName();
-                break;
-            default:
-                throw new IllegalArgumentException();
-        }
+    protected void prepareServer(String wsType, int port, String servletPath, Map<String, String> initParams) {
+        String wsTransportClass = switch (wsType) {
+            case WEBSOCKET_JAKARTA, WEBSOCKET_OKHTTP -> WebSocketTransport.class.getName();
+            case WEBSOCKET_JETTY -> JettyWebSocketTransport.class.getName();
+            default -> throw new IllegalArgumentException();
+        };
         prepareServer(wsType, port, servletPath, initParams, wsTransportClass);
     }
 
@@ -117,15 +110,10 @@ public abstract class ClientServerWebSocketTest {
         context = new ServletContextHandler(server, "/", true, false);
 
         switch (wsType) {
-            case WEBSOCKET_JAKARTA:
-            case WEBSOCKET_OKHTTP:
-                JakartaWebSocketServletContainerInitializer.configure(context, null);
-                break;
-            case WEBSOCKET_JETTY:
-                JettyWebSocketServletContainerInitializer.configure(context, null);
-                break;
-            default:
-                throw new IllegalArgumentException("Unsupported transport " + wsType);
+            case WEBSOCKET_JAKARTA, WEBSOCKET_OKHTTP ->
+                    JakartaWebSocketServletContainerInitializer.configure(context, null);
+            case WEBSOCKET_JETTY -> JettyWebSocketServletContainerInitializer.configure(context, null);
+            default -> throw new IllegalArgumentException("Unsupported transport " + wsType);
         }
 
         // CometD servlet
@@ -157,19 +145,16 @@ public abstract class ClientServerWebSocketTest {
         httpClient = new HttpClient();
         httpClient.setExecutor(clientThreads);
         switch (wsType) {
-            case WEBSOCKET_JAKARTA:
+            case WEBSOCKET_JAKARTA -> {
                 wsClientContainer = ContainerProvider.getWebSocketContainer();
                 httpClient.addBean(wsClientContainer, true);
-                break;
-            case WEBSOCKET_JETTY:
+            }
+            case WEBSOCKET_JETTY -> {
                 wsClient = new WebSocketClient(httpClient);
                 httpClient.addBean(wsClient, true);
-                break;
-            case WEBSOCKET_OKHTTP:
-                okHttpClient = new OkHttpClient();
-                break;
-            default:
-                throw new IllegalArgumentException();
+            }
+            case WEBSOCKET_OKHTTP -> okHttpClient = new OkHttpClient();
+            default -> throw new IllegalArgumentException();
         }
     }
 
@@ -197,21 +182,12 @@ public abstract class ClientServerWebSocketTest {
     }
 
     protected ClientTransport newWebSocketTransport(String wsType, String url, Map<String, Object> options) {
-        ClientTransport result;
-        switch (wsType) {
-            case WEBSOCKET_JAKARTA:
-                result = newWebSocketTransport(url, options, wsClientContainer);
-                break;
-            case WEBSOCKET_JETTY:
-                result = newJettyWebSocketTransport(url, options, wsClient);
-                break;
-            case WEBSOCKET_OKHTTP:
-                result = newOkHttpWebSocketTransport(url, options, okHttpClient);
-                break;
-            default:
-                throw new IllegalArgumentException();
-        }
-        return result;
+        return switch (wsType) {
+            case WEBSOCKET_JAKARTA -> newWebSocketTransport(url, options, wsClientContainer);
+            case WEBSOCKET_JETTY -> newJettyWebSocketTransport(url, options, wsClient);
+            case WEBSOCKET_OKHTTP -> newOkHttpWebSocketTransport(url, options, okHttpClient);
+            default -> throw new IllegalArgumentException();
+        };
     }
 
     protected ClientTransport newWebSocketTransport(String url, Map<String, Object> options, WebSocketContainer wsContainer) {

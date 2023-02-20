@@ -306,11 +306,14 @@ public class NetworkDelayListenerTest extends AbstractClientServerTest {
 
     private void sendMessageChunkBegin(Transport transport, SocketChannel socket) throws IOException {
         if (!isWebSocket(transport)) {
-            ByteBuffer response = BufferUtil.toBuffer("HTTP/1.1 200 OK\r\n" +
-                    "ContentType: application/json\r\n" +
-                    "Transfer-Encoding: chunked\r\n" +
-                    "\r\n" +
-                    "1\r\n[\r\n", StandardCharsets.UTF_8);
+            ByteBuffer response = BufferUtil.toBuffer("""
+                    HTTP/1.1 200 OK\r
+                    ContentType: application/json\r
+                    Transfer-Encoding: chunked\r
+                    \r
+                    1\r
+                    [\r
+                    """, StandardCharsets.UTF_8);
             socket.write(new ByteBuffer[]{response});
         }
     }

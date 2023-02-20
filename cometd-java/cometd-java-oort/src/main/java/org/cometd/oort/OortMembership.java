@@ -30,6 +30,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
@@ -99,7 +100,7 @@ class OortMembership extends AbstractLifeCycle implements Dumpable {
 
     private void disconnect() {
         List<OortComet> comets;
-        try (AutoLock l = lock.lock()) {
+        try (AutoLock ignored = lock.lock()) {
             comets = new ArrayList<>(pendingComets.values());
             pendingComets.clear();
             for (ClientCometInfo cometInfo : clientComets.values()) {
@@ -123,7 +124,7 @@ class OortMembership extends AbstractLifeCycle implements Dumpable {
         }
 
         List<OortComet> comets = new ArrayList<>();
-        try (AutoLock l = lock.lock()) {
+        try (AutoLock ignored = lock.lock()) {
             OortComet comet = pendingComets.remove(cometURL);
             if (comet != null) {
                 if (logger.isDebugEnabled()) {
@@ -153,7 +154,7 @@ class OortMembership extends AbstractLifeCycle implements Dumpable {
 
     Set<String> getKnownComets() {
         Set<String> result = new HashSet<>();
-        try (AutoLock l = lock.lock()) {
+        try (AutoLock ignored = lock.lock()) {
             for (ClientCometInfo cometInfo : clientComets.values()) {
                 result.add(cometInfo.oortURL);
             }
@@ -162,7 +163,7 @@ class OortMembership extends AbstractLifeCycle implements Dumpable {
     }
 
     OortComet getComet(String cometURL) {
-        try (AutoLock l = lock.lock()) {
+        try (AutoLock ignored = lock.lock()) {
             for (ClientCometInfo cometInfo : clientComets.values()) {
                 if (cometInfo.matchesURL(cometURL)) {
                     return cometInfo.oortComet;
@@ -173,7 +174,7 @@ class OortMembership extends AbstractLifeCycle implements Dumpable {
     }
 
     OortComet findComet(String cometURL) {
-        try (AutoLock l = lock.lock()) {
+        try (AutoLock ignored = lock.lock()) {
             OortComet result = pendingComets.get(cometURL);
             if (result == null) {
                 result = getComet(cometURL);
@@ -204,7 +205,7 @@ class OortMembership extends AbstractLifeCycle implements Dumpable {
         }
 
         OortComet oortComet;
-        try (AutoLock l = lock.lock()) {
+        try (AutoLock ignored = lock.lock()) {
             oortComet = oort.getComet(cometURL);
             if (oortComet != null) {
                 if (logger.isDebugEnabled()) {
@@ -234,7 +235,7 @@ class OortMembership extends AbstractLifeCycle implements Dumpable {
     }
 
     OortComet createOortComet(String cometURL) {
-        try (AutoLock l = lock.lock()) {
+        try (AutoLock ignored = lock.lock()) {
             OortComet oortComet = oort.newOortComet(cometURL);
             oort.configureOortComet(oortComet);
             oortComet.getChannel(Channel.META_HANDSHAKE).addListener(new HandshakeListener(cometURL, oortComet));
@@ -245,7 +246,7 @@ class OortMembership extends AbstractLifeCycle implements Dumpable {
 
     void observeChannels(Set<String> channels) {
         List<OortComet> oortComets = new ArrayList<>();
-        try (AutoLock l = lock.lock()) {
+        try (AutoLock ignored = lock.lock()) {
             for (ClientCometInfo cometInfo : clientComets.values()) {
                 oortComets.add(cometInfo.oortComet);
             }
@@ -257,7 +258,7 @@ class OortMembership extends AbstractLifeCycle implements Dumpable {
 
     void deobserveChannel(String channelName) {
         List<OortComet> oortComets = new ArrayList<>();
-        try (AutoLock l = lock.lock()) {
+        try (AutoLock ignored = lock.lock()) {
             for (ClientCometInfo cometInfo : clientComets.values()) {
                 oortComets.add(cometInfo.oortComet);
             }
@@ -268,7 +269,7 @@ class OortMembership extends AbstractLifeCycle implements Dumpable {
     }
 
     boolean containsServerSession(ServerSession session) {
-        try (AutoLock l = lock.lock()) {
+        try (AutoLock ignored = lock.lock()) {
             for (ServerCometInfo cometInfo : serverComets.values()) {
                 if (cometInfo.session.getId().equals(session.getId())) {
                     return true;
@@ -279,7 +280,7 @@ class OortMembership extends AbstractLifeCycle implements Dumpable {
     }
 
     boolean isCometConnected(String oortURL) {
-        try (AutoLock l = lock.lock()) {
+        try (AutoLock ignored = lock.lock()) {
             for (ServerCometInfo serverCometInfo : serverComets.values()) {
                 if (serverCometInfo.oortURL.equals(oortURL)) {
                     return true;
@@ -291,7 +292,7 @@ class OortMembership extends AbstractLifeCycle implements Dumpable {
 
     List<String> knownOortIds() {
         List<String> result;
-        try (AutoLock l = lock.lock()) {
+        try (AutoLock ignored = lock.lock()) {
             result = new ArrayList<>(clientComets.keySet());
         }
         return result;
@@ -302,7 +303,7 @@ class OortMembership extends AbstractLifeCycle implements Dumpable {
         Collection<OortComet> pendingComets;
         Collection<ClientCometInfo> clientComets;
         Collection<ServerCometInfo> serverComets;
-        try (AutoLock l = lock.lock()) {
+        try (AutoLock ignored = lock.lock()) {
             pendingComets = new ArrayList<>(this.pendingComets.values());
             clientComets = new ArrayList<>(this.clientComets.values());
             serverComets = new ArrayList<>(this.serverComets.values());
@@ -415,7 +416,7 @@ class OortMembership extends AbstractLifeCycle implements Dumpable {
             ClientCometInfo clientCometInfo;
             ServerCometInfo serverCometInfo;
             boolean notify = false;
-            try (AutoLock l = lock.lock()) {
+            try (AutoLock ignored = lock.lock()) {
                 // Remove possibly stale information, e.g. when the other node restarted
                 // we will have a stale oortId for the same oortURL we are processing now.
                 Iterator<ClientCometInfo> iterator = clientComets.values().iterator();
@@ -542,7 +543,7 @@ class OortMembership extends AbstractLifeCycle implements Dumpable {
                 ClientCometInfo clientCometInfo;
                 ServerCometInfo existingServerCometInfo;
                 ServerCometInfo serverCometInfo = new ServerCometInfo(remoteOortId, remoteOortURL, session);
-                try (AutoLock l = lock.lock()) {
+                try (AutoLock ignored = lock.lock()) {
                     clientCometInfo = clientComets.get(remoteOortId);
                     if (logger.isDebugEnabled()) {
                         logger.debug("Current client {}", clientCometInfo);
@@ -621,7 +622,7 @@ class OortMembership extends AbstractLifeCycle implements Dumpable {
         @Override
         public void removed(ServerSession session, ServerMessage message, boolean timeout) {
             ServerCometInfo serverCometInfo = null;
-            try (AutoLock l = lock.lock()) {
+            try (AutoLock ignored = lock.lock()) {
                 Iterator<ServerCometInfo> serverCometInfos = serverComets.values().iterator();
                 while (serverCometInfos.hasNext()) {
                     ServerCometInfo info = serverCometInfos.next();
@@ -642,7 +643,7 @@ class OortMembership extends AbstractLifeCycle implements Dumpable {
 
                 if (!timeout) {
                     OortComet oortComet;
-                    try (AutoLock l = lock.lock()) {
+                    try (AutoLock ignored = lock.lock()) {
                         oortComet = pendingComets.remove(remoteOortURL);
                         if (oortComet == null) {
                             ClientCometInfo clientCometInfo = clientComets.remove(remoteOortId);
@@ -696,7 +697,7 @@ class OortMembership extends AbstractLifeCycle implements Dumpable {
             if (remoteOortURL != null && remoteOortId != null) {
                 boolean notify = false;
                 Set<String> staleComets = null;
-                try (AutoLock l = lock.lock()) {
+                try (AutoLock ignored = lock.lock()) {
                     ClientCometInfo clientCometInfo = clientComets.get(remoteOortId);
                     if (logger.isDebugEnabled()) {
                         logger.debug("Current client {}", clientCometInfo);

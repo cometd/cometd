@@ -28,6 +28,7 @@ import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.ServerMessage;
@@ -321,47 +322,42 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
             while (true) {
                 State current = state;
                 switch (current) {
-                    case BEGIN: {
+                    case BEGIN -> {
                         state = State.HANDSHAKE;
                         if (!writeBegin(output)) {
                             return;
                         }
-                        break;
                     }
-                    case HANDSHAKE: {
+                    case HANDSHAKE -> {
                         state = State.MESSAGES;
                         if (!writeHandshakeReply(output)) {
                             return;
                         }
-                        break;
                     }
-                    case MESSAGES: {
+                    case MESSAGES -> {
                         if (!writeMessages(output)) {
                             return;
                         }
                         state = State.REPLIES;
-                        break;
                     }
-                    case REPLIES: {
+                    case REPLIES -> {
                         if (!writeReplies(output)) {
                             return;
                         }
                         state = State.END;
-                        break;
                     }
-                    case END: {
+                    case END -> {
                         state = State.COMPLETE;
                         if (!writeEnd(output)) {
                             return;
                         }
-                        break;
                     }
-                    case COMPLETE: {
+                    case COMPLETE -> {
                         promise.succeed(null);
                         writeComplete(context, messages);
                         return;
                     }
-                    default: {
+                    default -> {
                         throw new IllegalStateException("Could not write in state " + current);
                     }
                 }

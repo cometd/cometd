@@ -35,7 +35,7 @@ import java.lang.annotation.Target;
 @Documented
 public @interface Subscription {
     /**
-     * @return the list of channels to which the callback method subscribes to
+     * @return the channels to which the callback method subscribes to
      */
     String[] value();
 }

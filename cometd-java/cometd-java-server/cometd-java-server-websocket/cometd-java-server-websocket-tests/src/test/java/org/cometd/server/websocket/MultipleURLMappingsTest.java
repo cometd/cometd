@@ -60,14 +60,9 @@ public class MultipleURLMappingsTest {
         ServletContextHandler context = new ServletContextHandler(server, "/", true, false);
 
         switch (wsTransportClass) {
-            case JAKARTA_WS_TRANSPORT:
-                JakartaWebSocketServletContainerInitializer.configure(context, null);
-                break;
-            case JETTY_WS_TRANSPORT:
-                JettyWebSocketServletContainerInitializer.configure(context, null);
-                break;
-            default:
-                throw new IllegalArgumentException("Unsupported transport " + wsTransportClass);
+            case JAKARTA_WS_TRANSPORT -> JakartaWebSocketServletContainerInitializer.configure(context, null);
+            case JETTY_WS_TRANSPORT -> JettyWebSocketServletContainerInitializer.configure(context, null);
+            default -> throw new IllegalArgumentException("Unsupported transport " + wsTransportClass);
         }
 
         ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);
@@ -79,16 +74,15 @@ public class MultipleURLMappingsTest {
         context.addServlet(cometdServletHolder, servletPath2 + "/*");
 
         switch (wsTransportClass) {
-            case JAKARTA_WS_TRANSPORT:
+            case JAKARTA_WS_TRANSPORT -> {
                 wsClientContainer = ContainerProvider.getWebSocketContainer();
                 server.addBean(wsClientContainer);
-                break;
-            case JETTY_WS_TRANSPORT:
+            }
+            case JETTY_WS_TRANSPORT -> {
                 wsClient = new WebSocketClient();
                 server.addBean(wsClient);
-                break;
-            default:
-                throw new AssertionError();
+            }
+            default -> throw new AssertionError();
         }
 
         server.start();
@@ -99,14 +93,13 @@ public class MultipleURLMappingsTest {
     }
 
     private ClientTransport newWebSocketTransport(String wsTransportClass) {
-        switch (wsTransportClass) {
-            case JAKARTA_WS_TRANSPORT:
-                return new org.cometd.client.websocket.jakarta.WebSocketTransport(null, null, wsClientContainer);
-            case JETTY_WS_TRANSPORT:
-                return new org.cometd.client.websocket.jetty.JettyWebSocketTransport(null, null, wsClient);
-            default:
-                throw new AssertionError();
-        }
+        return switch (wsTransportClass) {
+            case JAKARTA_WS_TRANSPORT ->
+                    new org.cometd.client.websocket.jakarta.WebSocketTransport(null, null, wsClientContainer);
+            case JETTY_WS_TRANSPORT ->
+                    new org.cometd.client.websocket.jetty.JettyWebSocketTransport(null, null, wsClient);
+            default -> throw new AssertionError();
+        };
     }
 
     @AfterEach

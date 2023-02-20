@@ -107,18 +107,11 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
     @ParameterizedTest
     @MethodSource("wsTypes")
     public void testCookiesSentToClient(String wsType) throws Exception {
-        String wsTransportClass;
-        switch (wsType) {
-            case WEBSOCKET_JAKARTA:
-            case WEBSOCKET_OKHTTP:
-                wsTransportClass = CookieWebSocketTransport.class.getName();
-                break;
-            case WEBSOCKET_JETTY:
-                wsTransportClass = CookieJettyWebSocketTransport.class.getName();
-                break;
-            default:
-                throw new IllegalArgumentException();
-        }
+        String wsTransportClass = switch (wsType) {
+            case WEBSOCKET_JAKARTA, WEBSOCKET_OKHTTP -> CookieWebSocketTransport.class.getName();
+            case WEBSOCKET_JETTY -> CookieJettyWebSocketTransport.class.getName();
+            default -> throw new IllegalArgumentException();
+        };
         prepareServer(wsType, 0, "/cometd", null, wsTransportClass);
         startServer();
         prepareClient(wsType);
@@ -200,18 +193,11 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
     @ParameterizedTest
     @MethodSource("wsTypes")
     public void testSessionAttribute(String wsType) throws Exception {
-        String wsTransportClass;
-        switch (wsType) {
-            case WEBSOCKET_JAKARTA:
-            case WEBSOCKET_OKHTTP:
-                wsTransportClass = SessionWebSocketTransport.class.getName();
-                break;
-            case WEBSOCKET_JETTY:
-                wsTransportClass = SessionJettyWebSocketTransport.class.getName();
-                break;
-            default:
-                throw new IllegalArgumentException();
-        }
+        String wsTransportClass = switch (wsType) {
+            case WEBSOCKET_JAKARTA, WEBSOCKET_OKHTTP -> SessionWebSocketTransport.class.getName();
+            case WEBSOCKET_JETTY -> SessionJettyWebSocketTransport.class.getName();
+            default -> throw new IllegalArgumentException();
+        };
         prepareServer(wsType, 0, "/cometd", null, wsTransportClass);
 
         context.addServlet(new ServletHolder(new HttpServlet() {
@@ -289,18 +275,11 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
     @ParameterizedTest
     @MethodSource("wsTypes")
     public void testConcurrentClientsHaveDifferentBayeuxContexts(String wsType) throws Exception {
-        String wsTransportClass;
-        switch (wsType) {
-            case WEBSOCKET_JAKARTA:
-            case WEBSOCKET_OKHTTP:
-                wsTransportClass = ConcurrentBayeuxContextWebSocketTransport.class.getName();
-                break;
-            case WEBSOCKET_JETTY:
-                wsTransportClass = ConcurrentBayeuxContextJettyWebSocketTransport.class.getName();
-                break;
-            default:
-                throw new IllegalArgumentException();
-        }
+        String wsTransportClass = switch (wsType) {
+            case WEBSOCKET_JAKARTA, WEBSOCKET_OKHTTP -> ConcurrentBayeuxContextWebSocketTransport.class.getName();
+            case WEBSOCKET_JETTY -> ConcurrentBayeuxContextJettyWebSocketTransport.class.getName();
+            default -> throw new IllegalArgumentException();
+        };
         prepareServer(wsType, 0, "/cometd", null, wsTransportClass);
         startServer();
         prepareClient(wsType);
@@ -313,19 +292,15 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
 
         // Wait for the first client to arrive at the concurrency point.
         switch (wsType) {
-            case WEBSOCKET_JAKARTA:
-            case WEBSOCKET_OKHTTP: {
+            case WEBSOCKET_JAKARTA, WEBSOCKET_OKHTTP -> {
                 CountDownLatch enterLatch = ((ConcurrentBayeuxContextWebSocketTransport)bayeux.getTransport("websocket")).enterLatch;
                 Assertions.assertTrue(enterLatch.await(5, TimeUnit.SECONDS));
-                break;
             }
-            case WEBSOCKET_JETTY: {
+            case WEBSOCKET_JETTY -> {
                 CountDownLatch enterLatch = ((ConcurrentBayeuxContextJettyWebSocketTransport)bayeux.getTransport("websocket")).enterLatch;
                 Assertions.assertTrue(enterLatch.await(5, TimeUnit.SECONDS));
-                break;
             }
-            default:
-                throw new IllegalArgumentException();
+            default -> throw new IllegalArgumentException();
         }
 
         // Connect the second client.
@@ -335,15 +310,11 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
 
         // Release the first client.
         switch (wsType) {
-            case WEBSOCKET_JAKARTA:
-            case WEBSOCKET_OKHTTP:
-                ((ConcurrentBayeuxContextWebSocketTransport)bayeux.getTransport("websocket")).proceedLatch.countDown();
-                break;
-            case WEBSOCKET_JETTY:
-                ((ConcurrentBayeuxContextJettyWebSocketTransport)bayeux.getTransport("websocket")).proceedLatch.countDown();
-                break;
-            default:
-                throw new IllegalArgumentException();
+            case WEBSOCKET_JAKARTA, WEBSOCKET_OKHTTP ->
+                    ((ConcurrentBayeuxContextWebSocketTransport)bayeux.getTransport("websocket")).proceedLatch.countDown();
+            case WEBSOCKET_JETTY ->
+                    ((ConcurrentBayeuxContextJettyWebSocketTransport)bayeux.getTransport("websocket")).proceedLatch.countDown();
+            default -> throw new IllegalArgumentException();
         }
         Assertions.assertTrue(client1.waitFor(1000, BayeuxClient.State.CONNECTED));
 

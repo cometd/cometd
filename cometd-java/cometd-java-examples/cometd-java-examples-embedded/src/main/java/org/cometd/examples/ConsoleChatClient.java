@@ -20,6 +20,7 @@ import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
@@ -135,7 +136,6 @@ public class ConsoleChatClient {
     }
 
     private class ConnectionListener implements ClientSessionChannel.MessageListener {
-        private boolean wasConnected;
         private boolean connected;
 
         @Override
@@ -146,7 +146,7 @@ public class ConsoleChatClient {
                 return;
             }
 
-            wasConnected = connected;
+            boolean wasConnected = connected;
             connected = message.isSuccessful();
             if (!wasConnected && connected) {
                 connectionEstablished();
@@ -156,7 +156,7 @@ public class ConsoleChatClient {
         }
     }
 
-    private class ChatListener implements ClientSessionChannel.MessageListener {
+    private static class ChatListener implements ClientSessionChannel.MessageListener {
         @Override
         public void onMessage(ClientSessionChannel channel, Message message) {
             Map<String, Object> data = message.getDataAsMap();
@@ -166,7 +166,7 @@ public class ConsoleChatClient {
         }
     }
 
-    private class MembersListener implements ClientSessionChannel.MessageListener {
+    private static class MembersListener implements ClientSessionChannel.MessageListener {
         @Override
         public void onMessage(ClientSessionChannel channel, Message message) {
             Object data = message.getData();

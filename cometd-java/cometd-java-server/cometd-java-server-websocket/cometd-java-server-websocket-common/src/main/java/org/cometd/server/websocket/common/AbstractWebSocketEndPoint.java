@@ -27,6 +27,7 @@ import java.util.Queue;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicMarkableReference;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
@@ -469,7 +470,7 @@ public abstract class AbstractWebSocketEndPoint {
 
         private boolean queue(Entry entry) {
             Throwable failure;
-            try (AutoLock l = lock.lock()) {
+            try (AutoLock ignored = lock.lock()) {
                 failure = _failure;
                 if (failure == null) {
                     return _entries.offer(entry);
@@ -483,8 +484,8 @@ public abstract class AbstractWebSocketEndPoint {
         protected Action process() {
             while (true) {
                 switch (_state) {
-                    case IDLE: {
-                        try (AutoLock l = lock.lock()) {
+                    case IDLE -> {
+                        try (AutoLock ignored = lock.lock()) {
                             _entry = _entries.poll();
                         }
                         if (_logger.isDebugEnabled()) {
@@ -495,9 +496,8 @@ public abstract class AbstractWebSocketEndPoint {
                         }
                         _state = State.HANDSHAKE;
                         _buffer = new StringBuilder(256);
-                        break;
                     }
-                    case HANDSHAKE: {
+                    case HANDSHAKE -> {
                         _state = State.MESSAGES;
                         List<ServerMessage.Mutable> replies = _entry._context.replies;
                         if (!replies.isEmpty()) {
@@ -520,9 +520,8 @@ public abstract class AbstractWebSocketEndPoint {
                                 return Action.SCHEDULED;
                             }
                         }
-                        break;
                     }
-                    case MESSAGES: {
+                    case MESSAGES -> {
                         List<ServerMessage> messages = _entry._queue;
                         int size = messages.size();
                         if (_messageIndex < size) {
@@ -552,9 +551,8 @@ public abstract class AbstractWebSocketEndPoint {
                         // messages since they may take time to be written.
                         _entry.scheduleExpiration();
                         _state = State.REPLIES;
-                        break;
                     }
-                    case REPLIES: {
+                    case REPLIES -> {
                         List<ServerMessage.Mutable> replies = _entry._context.replies;
                         int size = replies.size();
                         if (_replyIndex < size) {
@@ -579,9 +577,8 @@ public abstract class AbstractWebSocketEndPoint {
                             return Action.SCHEDULED;
                         }
                         _state = State.COMPLETE;
-                        break;
                     }
-                    case COMPLETE: {
+                    case COMPLETE -> {
                         Entry entry = _entry;
                         _state = State.IDLE;
                         // Do not keep the buffer around while we are idle.
@@ -590,9 +587,8 @@ public abstract class AbstractWebSocketEndPoint {
                         _messageIndex = 0;
                         _replyIndex = 0;
                         entry._promise.succeed(null);
-                        break;
                     }
-                    default: {
+                    default -> {
                         throw new IllegalStateException("Invalid state " + _state);
                     }
                 }
@@ -602,7 +598,7 @@ public abstract class AbstractWebSocketEndPoint {
         @Override
         protected void onCompleteFailure(Throwable x) {
             List<Entry> entries;
-            try (AutoLock l = lock.lock()) {
+            try (AutoLock ignored = lock.lock()) {
                 _failure = x;
                 entries = new ArrayList<>(_entries.size() + 1);
                 if (_entry != null) {

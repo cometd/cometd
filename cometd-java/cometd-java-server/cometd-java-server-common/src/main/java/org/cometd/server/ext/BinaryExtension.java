@@ -18,6 +18,7 @@ package org.cometd.server.ext;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
+
 import org.cometd.bayeux.BinaryData;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
@@ -63,8 +64,7 @@ public class BinaryExtension implements BayeuxServer.Extension {
     @Override
     public boolean send(ServerSession from, ServerSession to, ServerMessage.Mutable message) {
         Object data = message.getData();
-        if (data instanceof BinaryData) {
-            BinaryData binaryData = (BinaryData)data;
+        if (data instanceof BinaryData binaryData) {
             Object binary = binaryData.get(BinaryData.DATA);
             String encoded;
             if (binary instanceof byte[]) {

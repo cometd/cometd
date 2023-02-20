@@ -16,12 +16,13 @@
 package org.cometd.server.filter;
 
 import java.util.regex.Pattern;
+
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerSession;
 
 public class NoScriptsFilter extends JSONDataFilter {
-    private static Pattern __scriptBegin = Pattern.compile("<\\s*[Ss][Cc][Rr][Ii][Pp][Tt]");
-    private static Pattern __scriptEnd = Pattern.compile("[Ss][Cc][Rr][Ii][Pp][Tt]\\s*>");
+    private static final Pattern __scriptBegin = Pattern.compile("<\\s*[Ss][Cc][Rr][Ii][Pp][Tt]");
+    private static final Pattern __scriptEnd = Pattern.compile("[Ss][Cc][Rr][Ii][Pp][Tt]\\s*>");
 
     @Override
     protected Object filterString(ServerSession session, ServerChannel channel, String string) {

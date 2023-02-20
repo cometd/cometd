@@ -154,10 +154,11 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
                 }, promise::fail));
             }
 
-//            @Override
-//            protected void metaConnectSuspended(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, ServerSession session) {
-//                suspendLatch.countDown();
-//            }
+            @Override
+            protected HttpScheduler suspend(Context context, Promise<Void> promise, ServerMessage.Mutable message, long timeout) {
+                suspendLatch.countDown();
+                return super.suspend(context, promise, message, timeout);
+            }
         };
         transport.init();
         bayeux.setTransports(transport);

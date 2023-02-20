@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Collectors;
+
 import org.cometd.bayeux.Message;
 import org.cometd.client.BayeuxClient;
 import org.cometd.common.AbstractTransport;
@@ -185,14 +186,11 @@ public abstract class ClientTransport extends AbstractTransport {
         public long delay;
 
         public BayeuxClient.State actionToState() {
-            switch (action) {
-                case Message.RECONNECT_HANDSHAKE_VALUE:
-                    return BayeuxClient.State.REHANDSHAKING;
-                case Message.RECONNECT_NONE_VALUE:
-                    return BayeuxClient.State.TERMINATING;
-                default:
-                    return BayeuxClient.State.UNCONNECTED;
-            }
+            return switch (action) {
+                case Message.RECONNECT_HANDSHAKE_VALUE -> BayeuxClient.State.REHANDSHAKING;
+                case Message.RECONNECT_NONE_VALUE -> BayeuxClient.State.TERMINATING;
+                default -> BayeuxClient.State.UNCONNECTED;
+            };
         }
 
         @Override

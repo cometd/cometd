@@ -18,6 +18,7 @@ package org.cometd.tests;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
@@ -57,9 +58,7 @@ public class SweepTest extends AbstractClientServerTest {
                     sleep(maxProcessing / 2);
                 }
             });
-            session.addListener((ServerSession.RemovedListener)(s, m, t) -> {
-                removeLatch.countDown();
-            });
+            session.addListener((ServerSession.RemovedListener)(s, m, t) -> removeLatch.countDown());
         });
 
         Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));

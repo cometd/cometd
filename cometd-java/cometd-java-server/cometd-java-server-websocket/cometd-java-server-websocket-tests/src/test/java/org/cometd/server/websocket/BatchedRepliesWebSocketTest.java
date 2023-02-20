@@ -38,20 +38,12 @@ public class BatchedRepliesWebSocketTest extends ClientServerWebSocketTest {
 
         AtomicReference<List<Message.Mutable>> batch = new AtomicReference<>();
         CountDownLatch repliesLatch = new CountDownLatch(1);
-        ClientTransport transport;
-        switch (wsType) {
-            case WEBSOCKET_JAKARTA:
-                transport = new WSTransport(batch, repliesLatch);
-                break;
-            case WEBSOCKET_JETTY:
-                transport = new JettyWSTransport(batch, repliesLatch);
-                break;
-            case WEBSOCKET_OKHTTP:
-                transport = new OkWSTransport(batch, repliesLatch);
-                break;
-            default:
-                throw new IllegalArgumentException();
-        }
+        ClientTransport transport = switch (wsType) {
+            case WEBSOCKET_JAKARTA -> new WSTransport(batch, repliesLatch);
+            case WEBSOCKET_JETTY -> new JettyWSTransport(batch, repliesLatch);
+            case WEBSOCKET_OKHTTP -> new OkWSTransport(batch, repliesLatch);
+            default -> throw new IllegalArgumentException();
+        };
 
         BayeuxClient client = new BayeuxClient(cometdURL, transport);
         client.handshake();

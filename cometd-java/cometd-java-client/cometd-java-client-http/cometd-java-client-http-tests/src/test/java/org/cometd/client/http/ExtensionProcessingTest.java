@@ -23,6 +23,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
+
 import org.cometd.bayeux.BinaryData;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
@@ -126,7 +127,7 @@ public class ExtensionProcessingTest extends ClientServerTest {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         IO.copy(gzip, bytes);
         gzip.close();
-        message.setData(new String(bytes.toByteArray(), StandardCharsets.UTF_8));
+        message.setData(bytes.toString(StandardCharsets.UTF_8));
     }
 
     private static byte[] gzip(Message message) throws IOException {

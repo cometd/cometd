@@ -18,6 +18,7 @@ package org.cometd.annotation.server;
 import java.util.ArrayList;
 import java.util.List;
 import jakarta.servlet.ServletException;
+
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.server.CometDServlet;
 import org.eclipse.jetty.util.Loader;
@@ -30,18 +31,18 @@ import org.slf4j.LoggerFactory;
  * be processed by {@link ServerAnnotationProcessor} upon initialization.</p>
  * <p>
  * A configuration example:
- * <pre>
- * &lt;web-app xmlns="http://java.sun.com/xml/ns/javaee" ...&gt;
- *
- *  &lt;servlet&gt;
- *    &lt;servlet-name&gt;cometd&lt;/servlet-name&gt;
- *    &lt;servlet-class&gt;org.cometd.annotation.AnnotationCometDServlet&lt;/servlet-class&gt;
- *    &lt;init-param&gt;
- *      &lt;param-name&gt;services&lt;/param-name&gt;
- *      &lt;param-value&gt;org.cometd.examples.FooService, org.cometd.examples.BarService&lt;/param-value&gt;
- *    &lt;/init-param&gt;
- *  &lt;/servlet&gt;
- * </pre>
+ * <pre>{@code
+ * <web-app xmlns="http://java.sun.com/xml/ns/javaee" ...>
+ *   <servlet>
+ *     <servlet-name>cometd</servlet-name>
+ *     <servlet-class>org.cometd.annotation.AnnotationCometDServlet</servlet-class>
+ *     <init-param>
+ *       <param-name>services</param-name>
+ *       <param-value>org.cometd.examples.FooService, org.cometd.examples.BarService</param-value>
+ *     </init-param>
+ *   </servlet>
+ * </web-app>
+ * }</pre>
  */
 public class AnnotationCometDServlet extends CometDServlet {
     private static final Logger LOGGER = LoggerFactory.getLogger(AnnotationCometDServlet.class);

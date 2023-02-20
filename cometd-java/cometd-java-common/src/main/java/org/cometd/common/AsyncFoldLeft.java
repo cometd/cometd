@@ -21,6 +21,7 @@ import java.util.ListIterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntFunction;
+
 import org.cometd.bayeux.Promise;
 
 /**
@@ -238,20 +239,19 @@ public class AsyncFoldLeft {
             while (true) {
                 State current = state.get();
                 switch (current) {
-                    case LOOP:
+                    case LOOP -> {
                         if (state.compareAndSet(current, State.PROCEED)) {
                             return;
                         }
-                        break;
-                    case ASYNC:
+                    }
+                    case ASYNC -> {
                         if (state.compareAndSet(current, State.PROCEED)) {
                             next();
                             run();
                             return;
                         }
-                        break;
-                    default:
-                        throw new IllegalStateException("Could not proceed loop in state " + current);
+                    }
+                    default -> throw new IllegalStateException("Could not proceed loop in state " + current);
                 }
             }
         }
@@ -262,19 +262,18 @@ public class AsyncFoldLeft {
             while (true) {
                 State current = state.get();
                 switch (current) {
-                    case LOOP:
+                    case LOOP -> {
                         if (state.compareAndSet(current, State.LEAVE)) {
                             return;
                         }
-                        break;
-                    case ASYNC:
+                    }
+                    case ASYNC -> {
                         if (state.compareAndSet(current, State.LEAVE)) {
                             promise.succeed(result.get());
                             return;
                         }
-                        break;
-                    default:
-                        throw new IllegalStateException("Could not leave loop in state " + current);
+                    }
+                    default -> throw new IllegalStateException("Could not leave loop in state " + current);
                 }
             }
         }
@@ -285,19 +284,18 @@ public class AsyncFoldLeft {
             while (true) {
                 State current = state.get();
                 switch (current) {
-                    case LOOP:
+                    case LOOP -> {
                         if (state.compareAndSet(current, State.FAIL)) {
                             return;
                         }
-                        break;
-                    case ASYNC:
+                    }
+                    case ASYNC -> {
                         if (state.compareAndSet(current, State.FAIL)) {
                             promise.fail(x);
                             return;
                         }
-                        break;
-                    default:
-                        throw new IllegalStateException("Could not fail loop in state " + current);
+                    }
+                    default -> throw new IllegalStateException("Could not fail loop in state " + current);
                 }
             }
         }

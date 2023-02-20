@@ -20,6 +20,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+
 import org.cometd.bayeux.server.ServerSession;
 
 /**
@@ -56,7 +57,7 @@ public @interface RemoteCall {
      * arguments (for example: &#64;RemoteCall("/foo/{p}"), but they may not
      * be wildcard channels.</p>
      *
-     * @return the list of remote call targets to which the annotated method responds to
+     * @return the remote call targets to which the annotated method responds to
      */
     public String[] value();
 

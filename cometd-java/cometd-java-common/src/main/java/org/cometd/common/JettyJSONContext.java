@@ -20,6 +20,7 @@ import java.nio.ByteBuffer;
 import java.text.ParseException;
 import java.util.List;
 import java.util.Map;
+
 import org.cometd.bayeux.Message;
 import org.eclipse.jetty.util.ajax.AsyncJSON;
 import org.eclipse.jetty.util.ajax.JSON;
@@ -141,14 +142,13 @@ public abstract class JettyJSONContext<M extends Message.Mutable> {
     }
 
     private class MessagesJSON extends FieldJSON {
-        @Override
-        protected Map<String, Object> newMap() {
-            return newRoot();
+        public MessagesJSON() {
+            setArrayConverter(list -> newRootArray(list.size()));
         }
 
         @Override
-        protected Object[] newArray(int size) {
-            return newRootArray(size);
+        protected Map<String, Object> newMap() {
+            return newRoot();
         }
 
         @Override

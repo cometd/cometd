@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.MarkedReference;
@@ -32,7 +33,7 @@ import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
-import org.eclipse.jetty.util.AttributesMap;
+import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.slf4j.Logger;
@@ -47,7 +48,7 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
     private static final AtomicLong _idGen = new AtomicLong(0);
 
     private final List<Extension> _extensions = new CopyOnWriteArrayList<>();
-    private final AttributesMap _attributes = new AttributesMap();
+    private final Attributes _attributes = new Attributes.Lazy();
     private final ConcurrentMap<String, AbstractSessionChannel> _channels = new ConcurrentHashMap<>();
     private final Map<String, ClientSession.MessageListener> _callbacks = new ConcurrentHashMap<>();
     private final Map<String, ClientSessionChannel.MessageListener> _subscribers = new ConcurrentHashMap<>();
@@ -369,7 +370,7 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
      */
     protected abstract class AbstractSessionChannel implements ClientSessionChannel, Dumpable {
         private final ChannelId _id;
-        private final AttributesMap _attributes = new AttributesMap();
+        private final Attributes _attributes = new Attributes.Lazy();
         private final CopyOnWriteArrayList<MessageListener> _subscriptions = new CopyOnWriteArrayList<>();
         private final AtomicInteger _subscriptionCount = new AtomicInteger();
         private final CopyOnWriteArrayList<ClientSessionChannelListener> _listeners = new CopyOnWriteArrayList<>();
@@ -482,11 +483,6 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
         }
 
         protected void sendUnSubscribe(Message.Mutable message, MessageListener listener, ClientSession.MessageListener callback) {
-            sendUnSubscribe(message, callback);
-        }
-
-        @Deprecated
-        protected void sendUnSubscribe(Message.Mutable message, ClientSession.MessageListener callback) {
             if (message == null) {
                 message = newMessage();
             }

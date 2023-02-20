@@ -86,13 +86,13 @@ public class JettyHttpClientTransportTest {
                 Thread.sleep(processingTime);
 
                 OutputStream output = socket.getOutputStream();
-                output.write((
-                        "HTTP/1.1 200 OK\r\n" +
-                                "Connection: close\r\n" +
-                                "Content-Type: application/json;charset=UTF-8\r\n" +
-                                "Content-Length: 2\r\n" +
-                                "\r\n" +
-                                "[]").getBytes(StandardCharsets.UTF_8));
+                output.write(("""
+                        HTTP/1.1 200 OK\r
+                        Connection: close\r
+                        Content-Type: application/json;charset=UTF-8\r
+                        Content-Length: 2\r
+                        \r
+                        []""").getBytes(StandardCharsets.UTF_8));
                 output.flush();
                 socket.close();
             } catch (Exception x) {
@@ -150,10 +150,11 @@ public class JettyHttpClientTransportTest {
                 Thread.sleep(processingTime);
 
                 OutputStream output = socket.getOutputStream();
-                output.write((
-                        "HTTP/1.1 500 Internal Server Error\r\n" +
-                                "Connection: close\r\n" +
-                                "\r\n").getBytes(StandardCharsets.UTF_8));
+                output.write(("""
+                        HTTP/1.1 500 Internal Server Error\r
+                        Connection: close\r
+                        \r
+                        """).getBytes(StandardCharsets.UTF_8));
                 output.flush();
 
                 socket.close();
@@ -294,13 +295,13 @@ public class JettyHttpClientTransportTest {
                 Thread.sleep(2 * timeout);
 
                 OutputStream output = socket.getOutputStream();
-                output.write((
-                        "HTTP/1.1 200 OK\r\n" +
-                                "Connection: close\r\n" +
-                                "Content-Type: application/json;charset=UTF-8\r\n" +
-                                "Content-Length: 2\r\n" +
-                                "\r\n" +
-                                "[]").getBytes(StandardCharsets.UTF_8));
+                output.write(("""
+                        HTTP/1.1 200 OK\r
+                        Connection: close\r
+                        Content-Type: application/json;charset=UTF-8\r
+                        Content-Length: 2\r
+                        \r
+                        []""").getBytes(StandardCharsets.UTF_8));
                 output.flush();
 
                 socket.close();

@@ -253,12 +253,11 @@ public class ChannelId {
             return true;
         }
 
-        if (!(obj instanceof ChannelId)) {
-            return false;
+        if (obj instanceof ChannelId that) {
+            return _id.equals(that._id);
         }
 
-        ChannelId that = (ChannelId)obj;
-        return _id.equals(that._id);
+        return false;
     }
 
     @Override
@@ -288,10 +287,10 @@ public class ChannelId {
         }
 
         switch (_wild) {
-            case 0: {
+            case 0 -> {
                 return equals(channelId);
             }
-            case 1: {
+            case 1 -> {
                 if (channelId._segments.length != _segments.length) {
                     return false;
                 }
@@ -302,7 +301,7 @@ public class ChannelId {
                 }
                 return true;
             }
-            case 2: {
+            case 2 -> {
                 if (channelId._segments.length < _segments.length) {
                     return false;
                 }
@@ -313,7 +312,7 @@ public class ChannelId {
                 }
                 return true;
             }
-            default: {
+            default -> {
                 throw new IllegalStateException("Invalid wild value " + _wild + " for " + this);
             }
         }

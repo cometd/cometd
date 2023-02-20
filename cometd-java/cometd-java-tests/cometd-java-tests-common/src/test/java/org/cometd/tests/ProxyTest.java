@@ -158,9 +158,7 @@ public class ProxyTest {
         Assertions.assertNotEquals(client.getId(), proxy.getId());
 
         CountDownLatch proxyDisconnectLatch = new CountDownLatch(1);
-        proxy.getChannel(Channel.META_DISCONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
-            proxyDisconnectLatch.countDown();
-        });
+        proxy.getChannel(Channel.META_DISCONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> proxyDisconnectLatch.countDown());
 
         CountDownLatch disconnectLatch = new CountDownLatch(1);
         client.disconnect(message -> disconnectLatch.countDown());

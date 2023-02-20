@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
@@ -43,7 +44,7 @@ import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.common.AsyncFoldLeft;
 import org.cometd.common.HashMapMessage;
 import org.cometd.server.AbstractServerTransport.Scheduler;
-import org.eclipse.jetty.util.AttributesMap;
+import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.thread.Scheduler.Task;
@@ -61,7 +62,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
     private final List<Extension> _extensions = new CopyOnWriteArrayList<>();
     private final Queue<ServerMessage> _queue = new ArrayDeque<>();
     private final LocalSessionImpl _localSession;
-    private final AttributesMap _attributes = new AttributesMap();
+    private final Attributes _attributes = new Attributes.Lazy();
     private final Set<ServerChannelImpl> subscriptions = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final LazyTask _lazyTask = new LazyTask();
     private AbstractServerTransport.Scheduler _scheduler = new Scheduler.None(0);

@@ -17,6 +17,7 @@ package org.cometd.server.http;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -75,7 +76,7 @@ public class JSONPTransportCallbackParamValidationTest extends AbstractBayeuxCli
     @Override
     protected Request newBayeuxRequest(String requestBody) throws UnsupportedEncodingException {
         String messagePath = "&message=";
-        Request request = httpClient.newRequest(cometdURL + messagePath + URLEncoder.encode(requestBody, "UTF-8"));
+        Request request = httpClient.newRequest(cometdURL + messagePath + URLEncoder.encode(requestBody, StandardCharsets.UTF_8));
         request.timeout(5, TimeUnit.SECONDS);
         request.method(HttpMethod.GET);
         return request;

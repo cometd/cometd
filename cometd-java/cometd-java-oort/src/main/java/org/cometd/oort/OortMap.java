@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.slf4j.Logger;
@@ -240,21 +241,13 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>> {
 
         // Perform the action.
         ConcurrentMap<K, V> map = info.getObject();
-        V result;
         String action = (String)data.get(Info.ACTION_FIELD);
-        switch (action) {
-            case ACTION_FIELD_PUT_VALUE:
-                result = map.put(key, value);
-                break;
-            case ACTION_FIELD_PUT_ABSENT_VALUE:
-                result = map.putIfAbsent(key, value);
-                break;
-            case ACTION_FIELD_REMOVE_VALUE:
-                result = map.remove(key);
-                break;
-            default:
-                throw new IllegalArgumentException(action);
-        }
+        V result = switch (action) {
+            case ACTION_FIELD_PUT_VALUE -> map.put(key, value);
+            case ACTION_FIELD_PUT_ABSENT_VALUE -> map.putIfAbsent(key, value);
+            case ACTION_FIELD_REMOVE_VALUE -> map.remove(key);
+            default -> throw new IllegalArgumentException(action);
+        };
 
         // Update the version.
         info.put(Info.VERSION_FIELD, data.get(Info.VERSION_FIELD));
@@ -265,16 +258,13 @@ public abstract class OortMap<K, V> extends OortContainer<ConcurrentMap<K, V>> {
             logger.debug("{} map {} of {}", info.isLocal() ? "Local" : "Remote", action, entry);
         }
         switch (action) {
-            case ACTION_FIELD_PUT_VALUE:
-                notifyEntryPut(info, entry);
-                break;
-            case ACTION_FIELD_PUT_ABSENT_VALUE:
+            case ACTION_FIELD_PUT_VALUE -> notifyEntryPut(info, entry);
+            case ACTION_FIELD_PUT_ABSENT_VALUE -> {
                 if (result == null) {
                     notifyEntryPut(info, entry);
                 }
-                break;
-            case ACTION_FIELD_REMOVE_VALUE:
-                notifyEntryRemoved(info, entry);
+            }
+            case ACTION_FIELD_REMOVE_VALUE -> notifyEntryRemoved(info, entry);
         }
 
         if (data instanceof Data) {
