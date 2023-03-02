@@ -16,6 +16,7 @@
 package org.cometd.javascript;
 
 import java.util.Map;
+
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.SecurityPolicy;
 import org.cometd.bayeux.server.ServerChannel;
@@ -36,21 +37,23 @@ public class CometDHandshakePropsTest extends AbstractCometDTransportsTest {
 
         bayeuxServer.setSecurityPolicy(new TokenSecurityPolicy());
 
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
-        evaluateScript("var handshakeLatch = new Latch(1);");
-        Latch handshakeLatch = javaScript.get("handshakeLatch");
-        evaluateScript("cometd.addListener('/meta/handshake', function() { handshakeLatch.countDown(); });");
-        evaluateScript("var disconnectLatch = new Latch(1);");
-        Latch disconnectLatch = javaScript.get("disconnectLatch");
-        evaluateScript("cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });");
+        evaluateScript("""
+                cometd.configure({url: '$U', logLevel: '$L'});
+                const handshakeLatch = new Latch(1);
+                cometd.addListener('/meta/handshake', () => handshakeLatch.countDown());
+                const disconnectLatch = new Latch(1);
+                cometd.addListener('/meta/disconnect', () => disconnectLatch.countDown());
+                
+                // Start without the token; this makes the handshake fail
+                cometd.handshake({});
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
 
-        // Start without the token; this makes the handshake fail
-        evaluateScript("cometd.handshake({})");
+        Latch handshakeLatch = javaScript.get("handshakeLatch");
         Assertions.assertTrue(handshakeLatch.await(5000));
-        // A failed handshake arrives with an advice to not reconnect
+        // A failed handshake arrives with an advice to not reconnect.
         Assertions.assertEquals("disconnected", evaluateScript("cometd.getStatus()"));
 
-        // We are already initialized, handshake again with a token
+        // We are already initialized, handshake again with a token.
         handshakeLatch.reset(1);
         evaluateScript("cometd.handshake({ext: {token: 'test'}})");
         Assertions.assertTrue(handshakeLatch.await(5000));
@@ -62,6 +65,7 @@ public class CometDHandshakePropsTest extends AbstractCometDTransportsTest {
         Assertions.assertEquals("connected", evaluateScript("cometd.getStatus();"));
 
         evaluateScript("cometd.disconnect();");
+        Latch disconnectLatch = javaScript.get("disconnectLatch");
         Assertions.assertTrue(disconnectLatch.await(5000));
 
         Assertions.assertEquals("disconnected", evaluateScript("cometd.getStatus();"));

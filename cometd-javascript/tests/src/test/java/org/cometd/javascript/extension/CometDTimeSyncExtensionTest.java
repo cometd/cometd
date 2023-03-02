@@ -30,47 +30,50 @@ public class CometDTimeSyncExtensionTest extends AbstractCometDTransportsTest {
 
         bayeuxServer.addExtension(new TimesyncExtension());
 
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
+        evaluateScript("const readyLatch = new Latch(1);");
+        Latch readyLatch = javaScript.get("readyLatch");
+        evaluateScript("""
+                let inTimeSync;
+                let outTimeSync;
+                cometd.registerExtension('test', {
+                    incoming: message => {
+                        const channel = message.channel;
+                        if (channel && channel.indexOf('/meta/') === 0) {
+                            /* The timesync from the server may be missing if it's accurate enough */
+                            const timesync = message.ext && message.ext.timesync;
+                            if (timesync) {
+                                inTimeSync = timesync;
+                            }
+                        }
+                        return message;
+                    },
+                    outgoing: message => {
+                        const channel = message.channel;
+                        if (channel && channel.indexOf('/meta/') === 0) {
+                            outTimeSync = message.ext && message.ext.timesync;
+                        }
+                        return message;
+                    }
+                });
+                cometd.configure({url: '$U', logLevel: '$L'});
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
 
-        evaluateScript("var inTimeSync = undefined;");
-        evaluateScript("var outTimeSync = undefined;");
-        evaluateScript("cometd.registerExtension('test', {" +
-                "incoming: function(message) {" +
-                "    var channel = message.channel;" +
-                "    if (channel && channel.indexOf('/meta/') === 0) {" +
-                "        /* The timesync from the server may be missing if it's accurate enough */" +
-                "        var timesync = message.ext && message.ext.timesync;" +
-                "        if (timesync) {" +
-                "            inTimeSync = timesync;" +
-                "        }" +
-                "    }" +
-                "    return message;" +
-                "}," +
-                "outgoing: function(message) {" +
-                "    var channel = message.channel;" +
-                "    if (channel && channel.indexOf('/meta/') === 0) {" +
-                "        outTimeSync = message.ext && message.ext.timesync;" +
-                "    }" +
-                "    return message;" +
-                "}" +
-                "});");
         provideTimesyncExtension();
 
-        evaluateScript("var readyLatch = new Latch(1);");
-        Latch readyLatch = javaScript.get("readyLatch");
-        evaluateScript("cometd.addListener('/meta/handshake', function() { readyLatch.countDown(); });");
-        evaluateScript("cometd.handshake();");
+        evaluateScript("cometd.handshake(() => readyLatch.countDown());");
         Assertions.assertTrue(readyLatch.await(5000));
 
         // Both client and server should support timesync
-        Object outTimeSync = javaScript.get("outTimeSync");
-        Assertions.assertNotNull(outTimeSync);
         Object inTimeSync = javaScript.get("inTimeSync");
         Assertions.assertNotNull(inTimeSync);
+        Object outTimeSync = javaScript.get("outTimeSync");
+        Assertions.assertNotNull(outTimeSync);
 
-        evaluateScript("var timesync = cometd.getExtension('timesync');");
-        evaluateScript("var networkLag = timesync.getNetworkLag();");
-        evaluateScript("var timeOffset = timesync.getTimeOffset();");
+        evaluateScript("""
+                const timesync = cometd.getExtension('timesync');
+                const networkLag = timesync.getNetworkLag();
+                const timeOffset = timesync.getTimeOffset();
+                """);
         int networkLag = ((Number)javaScript.get("networkLag")).intValue();
         Assertions.assertTrue(networkLag >= 0, String.valueOf(networkLag));
 

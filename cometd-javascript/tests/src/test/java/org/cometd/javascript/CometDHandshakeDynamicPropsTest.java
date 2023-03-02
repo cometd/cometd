@@ -47,56 +47,58 @@ public class CometDHandshakeDynamicPropsTest extends AbstractCometDLongPollingTe
 
     @Test
     public void testHandshakeDynamicProps() throws Exception {
-        StringBuilder script = new StringBuilder();
-        script.append("cometd.configure({url: '").append(cometdURL);
-        script.append("', logLevel: '").append(getLogLevel()).append("'});");
-        script.append("var outHandshake = undefined;");
-        script.append("var outLatch = new Latch(1);");
-        script.append("cometd.registerExtension('test', {");
-        script.append("    outgoing: function(message) {");
-        script.append("        if ('/meta/handshake' == message.channel) {");
-        script.append("            outHandshake = message;");
-        script.append("            outLatch.countDown();");
-        script.append("        }");
-        script.append("    }");
-        script.append("});");
-        script.append("var inHandshake = undefined;");
-        script.append("var inLatch = new Latch(1);");
-        script.append("cometd.addListener('/meta/handshake', function(message) {");
-        script.append("    inHandshake = message;");
-        script.append("    inLatch.countDown();");
-        script.append("});");
-        evaluateScript(script.toString());
-        script.setLength(0);
+        evaluateScript("""
+                cometd.configure({url: '$U', logLevel: '$L'});
+                let outHandshake;
+                let outLatch = new Latch(1);
+                cometd.registerExtension('test', {
+                    outgoing: message => {
+                        if ('/meta/handshake' === message.channel) {
+                            outHandshake = message;
+                            outLatch.countDown();
+                        }
+                    }
+                });
+                let inHandshake;
+                const inLatch = new Latch(1);
+                cometd.addListener('/meta/handshake', message => {
+                    inHandshake = message;
+                    inLatch.countDown();
+                });
+                const handshakeProps = { ext: { token: 1 } };
+                cometd.handshake(handshakeProps);
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
+
         Latch outLatch = javaScript.get("outLatch");
-        script.append("var handshakeProps = { ext: { token: 1 } };");
-        script.append("cometd.handshake(handshakeProps)");
-        evaluateScript(script.toString());
-        script.setLength(0);
         Assertions.assertTrue(outLatch.await(5000));
 
-        evaluateScript("window.assert(outHandshake !== undefined, 'handshake is undefined');");
-        evaluateScript("window.assert(outHandshake.ext !== undefined, 'handshake without ext');");
+        evaluateScript("""
+            window.assert(outHandshake !== undefined, 'handshake is undefined');
+            window.assert(outHandshake.ext !== undefined, 'handshake without ext');
+            """);
         int token = ((Number)evaluateScript("outHandshake.ext.token")).intValue();
         Assertions.assertEquals(1, token);
 
         Latch inLatch = javaScript.get("inLatch");
         Assertions.assertTrue(inLatch.await(5000));
 
-        String clientId = evaluateScript("inHandshake.clientId");
-        evaluateScript("outHandshake = undefined;");
-        evaluateScript("handshakeProps.ext.token = 2;");
-        evaluateScript("outLatch = new Latch(1);");
+        evaluateScript("""
+                outHandshake = undefined;
+                handshakeProps.ext.token = 2;
+                outLatch = new Latch(1);
+                """);
         outLatch = javaScript.get("outLatch");
 
         // This triggers a re-handshake
-        filter.setClientId(clientId);
+        filter.setClientId(evaluateScript("inHandshake.clientId"));
 
         // Wait for the re-handshake
         Assertions.assertTrue(outLatch.await(5000));
 
-        evaluateScript("window.assert(outHandshake !== undefined, 'handshake is undefined');");
-        evaluateScript("window.assert(outHandshake.ext !== undefined, 'handshake without ext');");
+        evaluateScript("""
+                window.assert(outHandshake !== undefined, 'handshake is undefined');
+                window.assert(outHandshake.ext !== undefined, 'handshake without ext');
+                """);
         token = ((Number)evaluateScript("outHandshake.ext.token")).intValue();
         Assertions.assertEquals(2, token);
 

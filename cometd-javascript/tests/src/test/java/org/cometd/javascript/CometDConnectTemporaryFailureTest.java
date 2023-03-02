@@ -31,46 +31,47 @@ public class CometDConnectTemporaryFailureTest extends AbstractCometDTransportsT
 
         bayeuxServer.addExtension(new DeleteMetaConnectExtension());
 
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
-        evaluateScript("var handshakeLatch = new Latch(1);");
-        Latch handshakeLatch = javaScript.get("handshakeLatch");
-        evaluateScript("var failureLatch = new Latch(1);");
-        Latch failureLatch = javaScript.get("failureLatch");
-        evaluateScript("var connectLatch = new Latch(1);");
-        Latch connectLatch = javaScript.get("connectLatch");
-        evaluateScript("cometd.addListener('/meta/handshake', function() { handshakeLatch.countDown(); });");
-        evaluateScript("" +
-                "var wasConnected = false;" +
-                "var connected = false;" +
-                "cometd.addListener('/meta/connect', function(message) {" +
-                "   window.console.debug('metaConnect: was', wasConnected, 'is', connected, 'message', message.successful);" +
-                "   wasConnected = connected;" +
-                "   connected = message.successful === true;" +
-                "   if (!wasConnected && connected) {" +
-                "       connectLatch.countDown();" +
-                "   } else if (wasConnected && !connected) {" +
-                "       failureLatch.countDown();" +
-                "   }" +
-                "});");
+        evaluateScript("""
+                cometd.configure({url: '$U', logLevel: '$L'});
+                const handshakeLatch = new Latch(1);
+                const connectLatch = new Latch(1);
+                const failureLatch = new Latch(1);
+                cometd.addListener('/meta/handshake', () => handshakeLatch.countDown());
+                let wasConnected = false;
+                let connected = false;
+                cometd.addListener('/meta/connect', message => {
+                   window.console.debug('metaConnect: was', wasConnected, 'is', connected, 'message', message.successful);
+                   wasConnected = connected;
+                   connected = message.successful === true;
+                   if (!wasConnected && connected) {
+                       connectLatch.countDown();
+                   } else if (wasConnected && !connected) {
+                       failureLatch.countDown();
+                   }
+                });
+                cometd.handshake();
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
 
-        evaluateScript("cometd.handshake();");
+        Latch handshakeLatch = javaScript.get("handshakeLatch");
         Assertions.assertTrue(handshakeLatch.await(5000));
+        Latch connectLatch = javaScript.get("connectLatch");
         Assertions.assertTrue(connectLatch.await(5000));
+        Latch failureLatch = javaScript.get("failureLatch");
         Assertions.assertEquals(1L, failureLatch.getCount());
 
         handshakeLatch.reset(1);
         connectLatch.reset(1);
-        // Wait for the connect to temporarily fail
-        Assertions.assertTrue(failureLatch.await(metaConnectPeriod * 2));
+        // Wait for the /meta/connect to temporarily fail.
+        Assertions.assertTrue(failureLatch.await(metaConnectPeriod * 2L));
         Assertions.assertEquals(1L, handshakeLatch.getCount());
         Assertions.assertEquals(1L, connectLatch.getCount());
 
-        // Implementation will backoff the connect attempt
+        // Implementation will backoff the /meta/connect attempt.
         long backoff = ((Number)evaluateScript("cometd.getBackoffIncrement();")).longValue();
         Thread.sleep(backoff);
 
         failureLatch.reset(1);
-        // Reconnection will trigger /meta/connect
+        // Reconnection will trigger /meta/connect.
         Assertions.assertTrue(connectLatch.await(5000));
         Assertions.assertEquals(1L, handshakeLatch.getCount());
         Assertions.assertEquals(1L, failureLatch.getCount());
@@ -85,9 +86,7 @@ public class CometDConnectTemporaryFailureTest extends AbstractCometDTransportsT
         public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message) {
             if (Channel.META_CONNECT.equals(message.getChannel())) {
                 ++connects;
-                if (connects == 3) {
-                    return false;
-                }
+                return connects != 3;
             }
             return true;
         }

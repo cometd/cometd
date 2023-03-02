@@ -21,34 +21,32 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-
 public class CometDExtensionExceptionCallbackTest extends AbstractCometDTransportsTest {
     @ParameterizedTest
     @MethodSource("transports")
     public void testOutgoingExtensionExceptionCallback(String transport) throws Exception {
         initCometDServer(transport);
 
-        evaluateScript("var latch = new Latch(1);");
+        evaluateScript("const latch = new Latch(1);");
         Latch latch = javaScript.get("latch");
-        evaluateScript("var connectLatch = new Latch(1);");
+        evaluateScript("const connectLatch = new Latch(1);");
         Latch connectLatch = javaScript.get("connectLatch");
-        evaluateScript("" +
-                "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
-                "cometd.addListener('/meta/connect', function() { connectLatch.countDown(); });" +
-                "cometd.registerExtension('testext', {" +
-                "   outgoing: function(message) { throw 'test'; }" +
-                "});" +
-                "" +
-                "cometd.onExtensionException = function(exception, extensionName, outgoing, message) {" +
-                "   if (exception === 'test' && extensionName === 'testext' && outgoing === true) {" +
-                "       this.unregisterExtension(extensionName);" +
-                "       latch.countDown();" +
-                "   }" +
-                "};" +
-                "" +
-                "cometd.handshake();");
-        Assertions.assertTrue(latch.await(5000));
+        evaluateScript("""
+                cometd.configure({url: '$U', logLevel: '$L'});
+                cometd.addListener('/meta/connect', () => connectLatch.countDown());
+                cometd.registerExtension('testext', {
+                   outgoing: () => { throw 'test'; }
+                });
+                cometd.onExtensionException = function(exception, extensionName, outgoing, message) {
+                   if (exception === 'test' && extensionName === 'testext' && outgoing === true) {
+                       this.unregisterExtension(extensionName);
+                       latch.countDown();
+                   }
+                };
+                cometd.handshake();
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
 
+        Assertions.assertTrue(latch.await(5000));
         Assertions.assertTrue(connectLatch.await(5000));
 
         disconnect();
@@ -59,27 +57,26 @@ public class CometDExtensionExceptionCallbackTest extends AbstractCometDTranspor
     public void testIncomingExtensionExceptionCallback(String transport) throws Exception {
         initCometDServer(transport);
 
-        evaluateScript("var latch = new Latch(1);");
+        evaluateScript("const latch = new Latch(1);");
         Latch latch = javaScript.get("latch");
-        evaluateScript("var connectLatch = new Latch(1);");
+        evaluateScript("const connectLatch = new Latch(1);");
         Latch connectLatch = javaScript.get("connectLatch");
-        evaluateScript("" +
-                "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
-                "cometd.addListener('/meta/connect', function() { connectLatch.countDown(); });" +
-                "cometd.registerExtension('testext', {" +
-                "   incoming: function(message) { throw 'test'; }" +
-                "});" +
-                "" +
-                "cometd.onExtensionException = function(exception, extensionName, outgoing, message) {" +
-                "   if (exception === 'test' && extensionName === 'testext' && outgoing === false) {" +
-                "       this.unregisterExtension(extensionName);" +
-                "       latch.countDown();" +
-                "   }" +
-                "};" +
-                "" +
-                "cometd.handshake();");
-        Assertions.assertTrue(latch.await(5000));
+        evaluateScript("""
+                cometd.configure({url: '$U', logLevel: '$L'});
+                cometd.addListener('/meta/connect', () => connectLatch.countDown());
+                cometd.registerExtension('testext', {
+                   incoming: () => { throw 'test'; }
+                });
+                cometd.onExtensionException = function(exception, extensionName, outgoing, message) {
+                   if (exception === 'test' && extensionName === 'testext' && outgoing === false) {
+                       this.unregisterExtension(extensionName);
+                       latch.countDown();
+                   }
+                };
+                cometd.handshake();
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
 
+        Assertions.assertTrue(latch.await(5000));
         Assertions.assertTrue(connectLatch.await(5000));
 
         disconnect();

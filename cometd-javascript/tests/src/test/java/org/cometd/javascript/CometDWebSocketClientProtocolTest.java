@@ -23,62 +23,49 @@ public class CometDWebSocketClientProtocolTest extends AbstractCometDWebSocketTe
 
     @Test
     public void testClientWithoutWebSocketProtocolServerWithoutWebSocketProtocol() throws Exception {
-        evaluateScript("cometd.configure({" +
-                "url: '" + cometdURL + "', " +
-                "logLevel: '" + getLogLevel() + "'" +
-                "});");
-
-        evaluateScript("var latch = new Latch(1);");
-        Latch latch = javaScript.get("latch");
         String channelName = "/bar";
-        evaluateScript("cometd.addListener('/meta/handshake', function(message) {" +
-                "   if (message.successful) {" +
-                "       cometd.batch(function() {" +
-                "           cometd.subscribe('" + channelName + "', function() { latch.countDown(); });" +
-                "           cometd.publish('" + channelName + "', {});" +
-                "       });" +
-                "   }" +
-                "});");
+        evaluateScript("""
+                const latch = new Latch(1);
+                cometd.addListener('/meta/handshake', message => {
+                   if (message.successful) {
+                       cometd.batch(function() {
+                           cometd.subscribe('$C', () => latch.countDown());
+                           cometd.publish('$C', {});
+                       });
+                   }
+                });
+                cometd.init({url: '$U', logLevel: '$L'});
+                """.replace("$U", cometdURL).replace("$L", getLogLevel())
+                .replace("$C", channelName));
 
-        evaluateScript("cometd.handshake();");
+        Latch latch = javaScript.get("latch");
         Assertions.assertTrue(latch.await(5000));
 
-        evaluateScript("var disconnectLatch = new Latch(1);");
-        Latch disconnectLatch = javaScript.get("disconnectLatch");
-        evaluateScript("cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });");
-        evaluateScript("cometd.disconnect();");
-        Assertions.assertTrue(disconnectLatch.await(5000));
+        disconnect();
     }
 
     @Test
     public void testClientWithWebSocketProtocolServerWithoutWebSocketProtocol() throws Exception {
-        evaluateScript("cometd.configure({" +
-                "url: '" + cometdURL + "', " +
-                "protocol: '" + PROTOCOL + "', " +
-                "logLevel: '" + getLogLevel() + "'" +
-                "});");
-
-        evaluateScript("var latch = new Latch(1);");
-        Latch latch = javaScript.get("latch");
         String channelName = "/bar";
-        evaluateScript("cometd.addListener('/meta/handshake', function(message) {" +
-                "   if (message.successful) {" +
-                "       cometd.batch(function() {" +
-                "           cometd.subscribe('" + channelName + "', function() { latch.countDown(); });" +
-                "           cometd.publish('" + channelName + "', {});" +
-                "       });" +
-                "   }" +
-                "});");
+        evaluateScript("""
+                const latch = new Latch(1);
+                cometd.addListener('/meta/handshake', message => {
+                   if (message.successful) {
+                       cometd.batch(() => {
+                           cometd.subscribe('$C', () => latch.countDown());
+                           cometd.publish('$C', {});
+                       });
+                   }
+                });
+                cometd.init({url: '$U', logLevel: '$L', protocol: '$P'});
+                """.replace("$U", cometdURL).replace("$L", getLogLevel())
+                .replace("$P", PROTOCOL).replace("$C", channelName));
 
-        evaluateScript("cometd.handshake();");
+        Latch latch = javaScript.get("latch");
         // The server tries to match the client protocol but if it can't tries
-        // as if the client sent no protocol, which in this case will match
+        // as if the client sent no protocol, which in this case will match.
         Assertions.assertTrue(latch.await(5000));
 
-        evaluateScript("var disconnectLatch = new Latch(1);");
-        Latch disconnectLatch = javaScript.get("disconnectLatch");
-        evaluateScript("cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });");
-        evaluateScript("cometd.disconnect();");
-        Assertions.assertTrue(disconnectLatch.await(5000));
+        disconnect();
     }
 }

@@ -22,7 +22,6 @@ import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.nio.channels.UnresolvedAddressException;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -30,7 +29,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import okhttp3.Headers;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -140,14 +138,7 @@ public class OkHttpWebSocketTransport extends AbstractWebSocketTransport {
 
     protected void onHandshakeResponse(Response response) {
         webSocketSupported = response.header(SEC_WEBSOCKET_ACCEPT_HEADER) != null;
-        storeCookies(URI.create(getURL()), headersToMap(response.headers()));
-    }
-
-    public static Map<String, List<String>> headersToMap(Headers headers) {
-        // We want to keep the header name case, so we cannot use Headers.toMultiMap().
-        Map<String, List<String>> result = new LinkedHashMap<>();
-        headers.names().forEach(name -> result.put(name, headers.values(name)));
-        return result;
+        storeCookies(URI.create(getURL()), response.headers().toMultimap());
     }
 
     protected class OkHttpDelegate extends Delegate {

@@ -29,20 +29,21 @@ public class AbstractCometDJQueryTest extends AbstractCometDTest {
         javaScript.evaluate(getClass().getResource("/js/jquery/jquery-3.6.0.js"));
         javaScript.evaluate(getClass().getResource("/js/cometd/cometd.js"));
         javaScript.evaluate(getClass().getResource("/js/jquery/jquery.cometd.js"));
-        evaluateScript("cometd", "" +
-                "var cometdModule = org.cometd;" +
-                "var cometd = $.cometd;" +
-                "var originalTransports = {};" +
-                "var transportNames = cometd.getTransportTypes();" +
-                "for (var i = 0; i < transportNames.length; ++i) {" +
-                "    var transportName = transportNames[i];" +
-                "    originalTransports[transportName] = cometd.findTransport(transportName);" +
-                "}" +
-                "");
+        evaluateScript("cometd", """
+                const cometdModule = org.cometd;
+                const cometd = $.cometd;
+                const originalTransports = {};
+                const transportNames = cometd.getTransportTypes();
+                for (let i = 0; i < transportNames.length; ++i) {
+                    const transportName = transportNames[i];
+                    originalTransports[transportName] = cometd.findTransport(transportName);
+                }
+                """);
         if (transport != null) {
-            evaluateScript("only_" + transport, "" +
-                    "cometd.unregisterTransports();" +
-                    "cometd.registerTransport('" + transport + "', originalTransports['" + transport + "']);");
+            evaluateScript("only_" + transport, """
+                    cometd.unregisterTransports();
+                    cometd.registerTransport('$T', originalTransports['$T']);
+                    """.replace("$T", transport));
         }
     }
 }

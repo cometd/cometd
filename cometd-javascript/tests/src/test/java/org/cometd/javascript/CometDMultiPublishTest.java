@@ -49,41 +49,49 @@ public class CometDMultiPublishTest extends AbstractCometDLongPollingTest {
 
     @Test
     public void testMultiPublish() throws Throwable {
-        evaluateScript("var readyLatch = new Latch(1);");
+        evaluateScript("""
+                const readyLatch = new Latch(1);
+                cometd.addListener('/meta/connect', () => readyLatch.countDown());
+                cometd.init({url: '$U', logLevel: '$L'});
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
         Latch readyLatch = javaScript.get("readyLatch");
-        evaluateScript("cometd.addListener('/meta/connect', function() { readyLatch.countDown(); });");
-        evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         Assertions.assertTrue(readyLatch.await(5000));
 
-        evaluateScript("var subscribeLatch = new Latch(1);");
+        evaluateScript("""
+                const subscribeLatch = new Latch(1);
+                cometd.addListener('/meta/subscribe', () => subscribeLatch.countDown());
+                const latch = new Latch(1);
+                cometd.subscribe('/echo', () => latch.countDown());
+                """);
         Latch subscribeLatch = javaScript.get("subscribeLatch");
-        evaluateScript("cometd.addListener('/meta/subscribe', function() { subscribeLatch.countDown(); });");
-        evaluateScript("var latch = new Latch(1);");
-        Latch latch = javaScript.get("latch");
-        evaluateScript("cometd.subscribe('/echo', function() { latch.countDown(); });");
         Assertions.assertTrue(subscribeLatch.await(5000));
 
-        evaluateScript("var Handler = Java.type('" + Handler.class.getName() + "')");
-        evaluateScript("var handler = new Handler();");
-        Handler handler = javaScript.get("handler");
-        evaluateScript("cometd.addListener('/meta/publish', function(m) { handler.handle(m); });");
-        evaluateScript("var disconnect = new Latch(1);");
-        Latch disconnect = javaScript.get("disconnect");
-        evaluateScript("cometd.addListener('/meta/disconnect', function() { disconnect.countDown(); });");
+        evaluateScript("""
+                const Handler = Java.type('$T');
+                const handler = new Handler();
+                cometd.addListener('/meta/publish', m => handler.handle(m));
+                const disconnect = new Latch(1);
+                cometd.addListener('/meta/disconnect', () => disconnect.countDown());
+                """.replace("$T", Handler.class.getName()));
 
         AtomicReference<List<Throwable>> failures = new AtomicReference<>(new ArrayList<>());
+        Handler handler = javaScript.get("handler");
         handler.expect(failures, 4);
+        Latch disconnect = javaScript.get("disconnect");
         disconnect.reset(1);
 
         // These publish are sent without waiting each one to return,
         // so they will be queued. The second publish will fail, we
         // expect the following to fail as well, in order.
-        evaluateScript("cometd.publish('/echo', {id: 1});" +
-                "cometd.publish('/echo', {id: 2});" +
-                "cometd.publish('/echo', {id: 3});" +
-                "cometd.publish('/echo', {id: 4});" +
-                "cometd.disconnect();");
+        evaluateScript("""
+                cometd.publish('/echo', {id: 1});
+                cometd.publish('/echo', {id: 2});
+                cometd.publish('/echo', {id: 3});
+                cometd.publish('/echo', {id: 4});
+                cometd.disconnect();
+                """);
 
+        Latch latch = javaScript.get("latch");
         Assertions.assertTrue(latch.await(5000));
         Assertions.assertTrue(handler.await(5000), failures.get().toString());
         Assertions.assertTrue(failures.get().isEmpty(), failures.get().toString());

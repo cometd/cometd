@@ -16,6 +16,7 @@
 package org.cometd.javascript;
 
 import java.util.Map;
+
 import org.w3c.dom.Element;
 import org.w3c.dom.events.Event;
 import org.w3c.dom.events.EventListener;
@@ -45,8 +46,7 @@ public class ScriptInjectionEventListener implements EventListener {
     public void handleEvent(Event evt) {
         if ("DOMNodeInserted".equals(evt.getType())) {
             Object target = evt.getTarget();
-            if (target instanceof Element) {
-                Element element = (Element)target;
+            if (target instanceof Element element) {
                 if ("script".equalsIgnoreCase(element.getNodeName())) {
                     javaScript.invoke(true, jsThis, function, domNodes.get(element));
                 }

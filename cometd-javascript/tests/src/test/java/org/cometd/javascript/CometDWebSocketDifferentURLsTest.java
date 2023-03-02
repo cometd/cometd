@@ -21,29 +21,22 @@ import org.junit.jupiter.api.Test;
 public class CometDWebSocketDifferentURLsTest extends AbstractCometDWebSocketTest {
     @Test
     public void testDifferentURLs() throws Exception {
-        evaluateScript("cometd.configure({" +
-                "url: 'http://wrong/', " +
-                "urls: {" +
-                "    'websocket': '" + cometdURL + "'" +
-                "}," +
-                "logLevel: '" + getLogLevel() + "'" +
-                "});");
+        evaluateScript("""
+                const latch = new Latch(1);
+                cometd.addListener('/meta/handshake', message => {
+                   if (message.successful) {
+                       latch.countDown();
+                   }
+                });
+                cometd.init({url: '$W', logLevel: '$L', urls: {
+                    websocket: '$U'
+                }});
+                """.replace("$U", cometdURL).replace("$L", getLogLevel())
+                .replace("$W", "http://wrong/"));
 
-        evaluateScript("var latch = new Latch(1);");
         Latch latch = javaScript.get("latch");
-        evaluateScript("cometd.addListener('/meta/handshake', function(message) {" +
-                "   if (message.successful) {" +
-                "       latch.countDown();" +
-                "   }" +
-                "});");
-
-        evaluateScript("cometd.handshake();");
         Assertions.assertTrue(latch.await(5000));
 
-        evaluateScript("var disconnectLatch = new Latch(1);");
-        Latch disconnectLatch = javaScript.get("disconnectLatch");
-        evaluateScript("cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });");
-        evaluateScript("cometd.disconnect();");
-        Assertions.assertTrue(disconnectLatch.await(5000));
+        disconnect();
     }
 }

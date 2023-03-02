@@ -65,7 +65,7 @@ public class JavaScriptCookieStore {
         }
     }
 
-    public void set(String scheme, String host, String uriPath, String cookies) throws Exception {
+    public void set(String scheme, String host, String uriPath, String cookies) {
         try {
             String name = null;
             String value = null;

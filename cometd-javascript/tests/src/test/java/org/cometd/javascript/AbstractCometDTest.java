@@ -15,7 +15,7 @@
  */
 package org.cometd.javascript;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -81,7 +81,7 @@ public abstract class AbstractCometDTest {
         server.setHandler(handlers);
 
         String contextPath = "/cometd";
-        context = new ServletContextHandler(handlers, contextPath, ServletContextHandler.SESSIONS);
+        context = new ServletContextHandler(handlers, contextPath);
 
         JakartaWebSocketServletContainerInitializer.configure(context, null);
 
@@ -132,14 +132,16 @@ public abstract class AbstractCometDTest {
     }
 
     protected void customizeContext(ServletContextHandler context) throws Exception {
-        File baseDirectory = new File(System.getProperty("basedir", "."));
-        File overlaidScriptDirectory = new File(baseDirectory, "target/test-classes");
-        File mainResourcesDirectory = new File(baseDirectory, "src/main/resources");
-        File testResourcesDirectory = new File(baseDirectory, "src/test/resources");
+        Path baseDirectory = Path.of(System.getProperty("basedir", "."))
+                .toAbsolutePath()
+                .normalize();
+        Path overlaidScriptDirectory = baseDirectory.resolve("target/test-classes");
+        Path mainResourcesDirectory = baseDirectory.resolve("src/main/resources");
+        Path testResourcesDirectory = baseDirectory.resolve("src/test/resources");
         context.setBaseResource(ResourceFactory.of(context).newResource(List.of(
-                overlaidScriptDirectory.toURI(),
-                mainResourcesDirectory.toURI(),
-                testResourcesDirectory.toURI()
+                overlaidScriptDirectory.toUri(),
+                mainResourcesDirectory.toUri(),
+                testResourcesDirectory.toUri()
         )));
     }
 
@@ -172,23 +174,24 @@ public abstract class AbstractCometDTest {
 
     protected void provideCometD(String transport) {
         javaScript.evaluate(getClass().getResource("/js/cometd/cometd.js"));
-        evaluateScript("cometd", "" +
-                "var cometdModule = org.cometd;" +
-                "var cometd = new cometdModule.CometD();" +
-                "var originalTransports = {};" +
-                "originalTransports['websocket'] = new cometdModule.WebSocketTransport();" +
-                "originalTransports['long-polling'] = new cometdModule.LongPollingTransport();" +
-                "originalTransports['callback-polling'] = new cometdModule.CallbackPollingTransport();" +
-                "if (window.WebSocket) {" +
-                "    cometd.registerTransport('websocket', originalTransports['websocket']);" +
-                "}" +
-                "cometd.registerTransport('long-polling', originalTransports['long-polling']);" +
-                "cometd.registerTransport('callback-polling', originalTransports['callback-polling']);" +
-                "");
+        evaluateScript("cometd", """
+                const cometdModule = org.cometd;
+                const cometd = new cometdModule.CometD();
+                const originalTransports = {};
+                originalTransports['websocket'] = new cometdModule.WebSocketTransport();
+                originalTransports['long-polling'] = new cometdModule.LongPollingTransport();
+                originalTransports['callback-polling'] = new cometdModule.CallbackPollingTransport();
+                if (window.WebSocket) {
+                    cometd.registerTransport('websocket', originalTransports['websocket']);
+                }
+                cometd.registerTransport('long-polling', originalTransports['long-polling']);
+                cometd.registerTransport('callback-polling', originalTransports['callback-polling']);
+                """);
         if (transport != null) {
-            evaluateScript("only_" + transport, "" +
-                    "cometd.unregisterTransports();" +
-                    "cometd.registerTransport('" + transport + "', originalTransports['" + transport + "']);");
+            evaluateScript("only_" + transport, """
+                    cometd.unregisterTransports();
+                    cometd.registerTransport('$T', originalTransports['$T']);
+                    """.replace("$T", transport));
         }
     }
 
@@ -257,15 +260,16 @@ public abstract class AbstractCometDTest {
     }
 
     protected void disconnect() throws InterruptedException {
-        evaluateScript("var disconnectLatch = new Latch(1);");
+        evaluateScript("""
+                // Use var in case this method is called twice.
+                var disconnectLatch = new Latch(1);
+                if (cometd.isDisconnected()) {
+                    disconnectLatch.countDown();
+                } else {
+                    cometd.disconnect(() => disconnectLatch.countDown());
+                }
+                """);
         Latch disconnectLatch = javaScript.get("disconnectLatch");
-        evaluateScript("" +
-                "if (cometd.isDisconnected()) {" +
-                "    disconnectLatch.countDown();" +
-                "} else {" +
-                "    cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });" +
-                "    cometd.disconnect();" +
-                "}");
         Assertions.assertTrue(disconnectLatch.await(5000));
         String status = evaluateScript("cometd.getStatus();");
         Assertions.assertEquals("disconnected", status);

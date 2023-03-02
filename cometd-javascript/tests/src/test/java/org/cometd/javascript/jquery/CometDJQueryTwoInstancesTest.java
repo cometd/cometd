@@ -22,61 +22,61 @@ import org.junit.jupiter.api.Test;
 public class CometDJQueryTwoInstancesTest extends AbstractCometDJQueryTest {
     @Test
     public void testTwoInstances() throws Exception {
-        evaluateScript("var handshakeLatch = new Latch(1);");
-        evaluateScript("var handshakeLatch2 = new Latch(1);");
+        evaluateScript("const handshakeLatch = new Latch(1);");
         Latch handshakeLatch = javaScript.get("handshakeLatch");
+        evaluateScript("const handshakeLatch2 = new Latch(1);");
         Latch handshakeLatch2 = javaScript.get("handshakeLatch2");
 
-        evaluateScript("" +
-                "var cometd2 = new $.CometD('jquery');" +
-                "cometd2.unregisterTransport('websocket');" +
-                "" +
-                "/* Check that the other cometd object has not been influenced */" +
-                "window.assert(cometd.findTransport('websocket') !== null);" +
-                "" +
-                "cometd.addListener('/meta/handshake', function() { handshakeLatch.countDown(); });" +
-                "cometd2.addListener('/meta/handshake', function() { handshakeLatch2.countDown(); });" +
-                "" +
-                "cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
-                "");
+        evaluateScript("""
+                const cometd2 = new $.CometD('jquery');
+                cometd2.unregisterTransport('websocket');
+
+                // Check that the other cometd object has not been influenced.
+                window.assert(cometd.findTransport('websocket') !== null);
+
+                cometd.addListener('/meta/handshake', () => handshakeLatch.countDown());
+                cometd2.addListener('/meta/handshake', () => handshakeLatch2.countDown());
+
+                cometd.init({url: '$U', logLevel: '$L'});
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
         Assertions.assertTrue(handshakeLatch.await(5000));
         Assertions.assertFalse(handshakeLatch2.await(1000));
 
         String cometdURL2 = cometdURL.replace("localhost", "127.0.0.1");
-        evaluateScript("" +
-                "cometd2.init({url: '" + cometdURL2 + "', logLevel: '" + getLogLevel() + "'});" +
-                "");
+        evaluateScript("""
+                cometd2.init({url: '$U', logLevel: '$L'});
+                """.replace("$U", cometdURL2).replace("$L", getLogLevel()));
         Assertions.assertTrue(handshakeLatch2.await(5000));
 
         String channelName = "/test";
 
-        evaluateScript("var subscribeLatch = new Latch(1);");
-        evaluateScript("var subscribeLatch2 = new Latch(1);");
+        evaluateScript("const subscribeLatch = new Latch(1);");
         Latch subscribeLatch = javaScript.get("subscribeLatch");
+        evaluateScript("const subscribeLatch2 = new Latch(1);");
         Latch subscribeLatch2 = javaScript.get("subscribeLatch2");
-        evaluateScript("var publishLatch = new Latch(2);");
-        evaluateScript("var publishLatch2 = new Latch(2);");
+        evaluateScript("const publishLatch = new Latch(2);");
         Latch publishLatch = javaScript.get("publishLatch");
+        evaluateScript("const publishLatch2 = new Latch(2);");
         Latch publishLatch2 = javaScript.get("publishLatch2");
-        evaluateScript("" +
-                "cometd.addListener('/meta/subscribe', function() { subscribeLatch.countDown(); });" +
-                "cometd2.addListener('/meta/subscribe', function() { subscribeLatch2.countDown(); });" +
-                "cometd.subscribe('" + channelName + "', function() { publishLatch.countDown(); });" +
-                "cometd2.subscribe('" + channelName + "', function() { publishLatch2.countDown(); });" +
-                "");
+        evaluateScript("""
+                cometd.addListener('/meta/subscribe', () => subscribeLatch.countDown());
+                cometd2.addListener('/meta/subscribe', () => subscribeLatch2.countDown());
+                cometd.subscribe('$C', () => publishLatch.countDown());
+                cometd2.subscribe('$C', () => publishLatch2.countDown());
+                """.replace("$C", channelName));
         Assertions.assertTrue(subscribeLatch.await(5000));
         Assertions.assertTrue(subscribeLatch2.await(5000));
 
-        evaluateScript("" +
-                "cometd.publish('" + channelName + "', {});" +
-                "cometd2.publish('" + channelName + "', {});" +
-                "");
+        evaluateScript("""
+                cometd.publish('$C', {});
+                cometd2.publish('$C', {});
+                """.replace("$C", channelName));
         Assertions.assertTrue(publishLatch.await(5000));
         Assertions.assertTrue(publishLatch2.await(5000));
 
-        evaluateScript("" +
-                "cometd.disconnect();" +
-                "cometd2.disconnect();" +
-                "");
+        evaluateScript("""
+                cometd.disconnect();
+                cometd2.disconnect();
+                """);
     }
 }

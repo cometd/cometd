@@ -41,16 +41,18 @@ public class CometDEmptyResponseTest extends AbstractCometDLongPollingTest {
 
     @Test
     public void testEmptyResponse() throws Exception {
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
-        evaluateScript("var handshakeLatch = new Latch(1);");
-        Latch handshakeLatch = javaScript.get("handshakeLatch");
-        evaluateScript("var failureLatch = new Latch(1);");
-        Latch failureLatch = javaScript.get("failureLatch");
-        evaluateScript("cometd.addListener('/meta/handshake', function() { handshakeLatch.countDown(); });");
-        evaluateScript("cometd.addListener('/meta/unsuccessful', function() { failureLatch.countDown(); });");
+        evaluateScript("""
+                cometd.configure({url: '$U', logLevel: '$L'});
+                const handshakeLatch = new Latch(1);
+                cometd.addListener('/meta/handshake', () => handshakeLatch.countDown());
+                const failureLatch = new Latch(1);
+                cometd.addListener('/meta/unsuccessful', () => failureLatch.countDown());
+                cometd.handshake();
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
 
-        evaluateScript("cometd.handshake();");
+        Latch handshakeLatch = javaScript.get("handshakeLatch");
         Assertions.assertTrue(handshakeLatch.await(5000));
+        Latch failureLatch = javaScript.get("failureLatch");
         Assertions.assertTrue(failureLatch.await(5000));
 
         disconnect();

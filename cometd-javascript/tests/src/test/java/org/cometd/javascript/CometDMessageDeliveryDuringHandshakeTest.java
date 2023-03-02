@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
@@ -79,29 +80,24 @@ public class CometDMessageDeliveryDuringHandshakeTest extends AbstractCometDTran
         };
         javaScript.put("checkQueue", checkQueue);
 
-        evaluateScript("" +
-                "cometd.configure({" +
-                "    url: '" + cometdURL + "', " +
-                "    logLevel: '" + getLogLevel() + "'" +
-                "});");
-
-        evaluateScript("var handshakeLatch = new Latch(1);");
-        Latch handshakeLatch = javaScript.get("handshakeLatch");
-        evaluateScript("var channelLatch = new Latch(2);");
-        Latch channelLatch = javaScript.get("channelLatch");
-        evaluateScript("var connectLatch = new Latch(1);");
-        Latch connectLatch = javaScript.get("connectLatch");
-        evaluateScript("" +
-                "cometd.addListener('/meta/handshake', () => handshakeLatch.countDown());" +
-                "cometd.addListener('" + channelName + "', () => channelLatch.countDown());" +
-                "cometd.addListener('/meta/connect', () => connectLatch.countDown());" +
-                "cometd.addListener('/meta/handshake', m => checkQueue.accept(m.clientId));");
-        evaluateScript("" +
-                "cometd.handshake();");
+        evaluateScript("""
+                cometd.configure({url: '$U', logLevel: '$L'});
+                const handshakeLatch = new Latch(1);
+                cometd.addListener('/meta/handshake', () => handshakeLatch.countDown());
+                const channelLatch = new Latch(2);
+                cometd.addListener('$C', () => channelLatch.countDown());
+                const connectLatch = new Latch(1);
+                cometd.addListener('/meta/connect', () => connectLatch.countDown());
+                cometd.addListener('/meta/handshake', m => checkQueue.accept(m.clientId));
+                cometd.handshake();
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()).replace("$C", channelName));
 
         Assertions.assertTrue(queueLatch.await(5, TimeUnit.SECONDS));
+        Latch handshakeLatch = javaScript.get("handshakeLatch");
         Assertions.assertTrue(handshakeLatch.await(5000));
+        Latch channelLatch = javaScript.get("channelLatch");
         Assertions.assertTrue(channelLatch.await(5000));
+        Latch connectLatch = javaScript.get("connectLatch");
         Assertions.assertTrue(connectLatch.await(5000));
 
         disconnect();
@@ -142,21 +138,22 @@ public class CometDMessageDeliveryDuringHandshakeTest extends AbstractCometDTran
                 "    logLevel: '" + getLogLevel() + "'" +
                 "});");
 
-        evaluateScript("var handshakeLatch = new Latch(1);");
-        Latch handshakeLatch = javaScript.get("handshakeLatch");
-        evaluateScript("var channelLatch = new Latch(1);");
-        Latch channelLatch = javaScript.get("channelLatch");
-        evaluateScript("var connectLatch = new Latch(1);");
-        Latch connectLatch = javaScript.get("connectLatch");
-        evaluateScript("" +
-                "cometd.addListener('/meta/handshake', () => handshakeLatch.countDown());" +
-                "cometd.addListener('" + channelName + "', () => channelLatch.countDown());" +
-                "cometd.addListener('/meta/connect', () => connectLatch.countDown());");
-        evaluateScript("" +
-                "cometd.handshake();");
+        evaluateScript("""
+                cometd.configure({url: '$U', logLevel: '$L'});
+                const handshakeLatch = new Latch(1);
+                const channelLatch = new Latch(1);
+                const connectLatch = new Latch(1);
+                cometd.addListener('/meta/handshake', () => handshakeLatch.countDown());
+                cometd.addListener('$C', () => channelLatch.countDown());
+                cometd.addListener('/meta/connect', () => connectLatch.countDown());
+                cometd.handshake();
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()).replace("$C", channelName));
 
+        Latch handshakeLatch = javaScript.get("handshakeLatch");
         Assertions.assertTrue(handshakeLatch.await(5000));
+        Latch channelLatch = javaScript.get("channelLatch");
         Assertions.assertTrue(channelLatch.await(5000));
+        Latch connectLatch = javaScript.get("connectLatch");
         Assertions.assertTrue(connectLatch.await(5000));
 
         disconnect();

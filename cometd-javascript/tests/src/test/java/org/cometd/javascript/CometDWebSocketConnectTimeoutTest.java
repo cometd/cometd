@@ -37,7 +37,6 @@ public class CometDWebSocketConnectTimeoutTest extends AbstractCometDWebSocketTe
 
     @Test
     public void testConnectTimeout() throws Exception {
-
         TimeoutFilter filter = new TimeoutFilter();
         FilterHolder filterHolder = new FilterHolder(filter);
         context.getServletHandler().prependFilter(filterHolder);
@@ -47,78 +46,63 @@ public class CometDWebSocketConnectTimeoutTest extends AbstractCometDWebSocketTe
         mapping.setDispatcherTypes(EnumSet.of(DispatcherType.REQUEST));
         context.getServletHandler().prependFilterMapping(mapping);
 
-        evaluateScript("var failureLatch = new Latch(1);");
+        evaluateScript("""
+                // Need long-polling as a fallback after websocket fails.
+                cometd.registerTransport('long-polling', originalTransports['long-polling']);
+                const wsLatch = new Latch(1);
+                const lpLatch = new Latch(1);
+                cometd.addListener('/meta/handshake', message => {
+                   if (cometd.getTransport().getType() === 'websocket' && !message.successful) {
+                       wsLatch.countDown();
+                   } else if (cometd.getTransport().getType() === 'long-polling' && message.successful) {
+                       lpLatch.countDown();
+                   }
+                });
+                const failureLatch = new Latch(1);
+                cometd.onTransportException = (failure, oldTransport, newTransport) => {
+                    failureLatch.countDown();
+                };
+                cometd.init({url: '$U', logLevel: '$L', connectTimeout: $T});
+                """.replace("$U", cometdURL).replace("$L", getLogLevel())
+                .replace("$T", String.valueOf(timeout)));
+
         Latch failureLatch = javaScript.get("failureLatch");
-        evaluateScript("var wsLatch = new Latch(1);");
-        Latch wsLatch = javaScript.get("wsLatch");
-        evaluateScript("var lpLatch = new Latch(1);");
-        Latch lpLatch = javaScript.get("lpLatch");
-
-        // Need long-polling as a fallback after websocket fails
-        evaluateScript("cometd.registerTransport('long-polling', originalTransports['long-polling']);");
-
-        evaluateScript("cometd.configure({" +
-                "url: '" + cometdURL + "', " +
-                "connectTimeout: " + timeout + ", " +
-                "logLevel: '" + getLogLevel() + "'" +
-                "});");
-        evaluateScript("cometd.addListener('/meta/handshake', function(message) {" +
-                "   if (cometd.getTransport().getType() === 'websocket' && !message.successful) {" +
-                "       wsLatch.countDown();" +
-                "   } else if (cometd.getTransport().getType() === 'long-polling' && message.successful) {" +
-                "       lpLatch.countDown();" +
-                "   }" +
-                "});");
-        evaluateScript("cometd.onTransportException = function(failure, oldTransport, newTransport) {" +
-                "    failureLatch.countDown();" +
-                "};");
-
-        evaluateScript("cometd.handshake()");
         Assertions.assertTrue(failureLatch.await(2 * timeout));
+        Latch wsLatch = javaScript.get("wsLatch");
         Assertions.assertTrue(wsLatch.await(2 * timeout));
+        Latch lpLatch = javaScript.get("lpLatch");
         Assertions.assertTrue(lpLatch.await(2 * timeout));
 
-        evaluateScript("var disconnectLatch = new Latch(1);");
-        Latch disconnectLatch = javaScript.get("disconnectLatch");
-        evaluateScript("cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });");
-        evaluateScript("cometd.disconnect();");
-        Assertions.assertTrue(disconnectLatch.await(5000));
+        disconnect();
     }
 
     @Test
     public void testConnectTimeoutIsCanceledOnSuccessfulConnect() throws Exception {
-        evaluateScript("var handshakeLatch = new Latch(1);");
+        evaluateScript("""
+                const handshakeLatch = new Latch(1);
+                cometd.addListener('/meta/handshake', message => {
+                   if (cometd.getTransport().getType() === 'websocket' && message.successful) {
+                       handshakeLatch.countDown();
+                   }
+                });
+                const connectLatch = new Latch(1);
+                cometd.addListener('/meta/connect', message => {
+                   if (!message.successful) {
+                       connectLatch.countDown();
+                   }
+                });
+                cometd.init({url: '$U', logLevel: '$L', connectTimeout: $T});
+                """.replace("$U", cometdURL).replace("$L", getLogLevel())
+                .replace("$T", String.valueOf(timeout)));
+        
         Latch handshakeLatch = javaScript.get("handshakeLatch");
-        evaluateScript("var connectLatch = new Latch(1);");
-        Latch connectLatch = javaScript.get("connectLatch");
-
-        evaluateScript("cometd.configure({" +
-                "url: '" + cometdURL + "', " +
-                "connectTimeout: " + timeout + ", " +
-                "logLevel: '" + getLogLevel() + "'" +
-                "});");
-        evaluateScript("cometd.addListener('/meta/handshake', function(message) {" +
-                "   if (cometd.getTransport().getType() === 'websocket' && message.successful) {" +
-                "       handshakeLatch.countDown();" +
-                "   }" +
-                "});");
-        evaluateScript("cometd.addListener('/meta/connect', function(message) {" +
-                "   if (!message.successful) {" +
-                "       connectLatch.countDown();" +
-                "   }" +
-                "});");
-
-        evaluateScript("cometd.handshake()");
         Assertions.assertTrue(handshakeLatch.await(2 * timeout));
 
-        // Wait to be sure we're not disconnected
+        // Wait to be sure we're not disconnected.
+        Latch connectLatch = javaScript.get("connectLatch");
         Assertions.assertFalse(connectLatch.await(2 * timeout));
 
-        evaluateScript("var disconnectLatch = new Latch(1);");
-        Latch disconnectLatch = javaScript.get("disconnectLatch");
-        evaluateScript("cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });");
-        evaluateScript("cometd.disconnect();");
-        Assertions.assertTrue(disconnectLatch.await(5000));
+        disconnect();
     }
 
     private class TimeoutFilter implements Filter {

@@ -18,7 +18,6 @@ package org.cometd.client.http.jetty;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -236,8 +235,7 @@ public class JettyHttpClientTransport extends AbstractHttpClientTransport {
                     // We do not allow cookies to be handled by HttpClient, since one
                     // HttpClient instance is shared by multiple BayeuxClient instances.
                     // Instead, we store the cookies in the BayeuxClient instance.
-                    Map<String, List<String>> cookies = new HashMap<>(1);
-                    cookies.put(field.getName(), List.of(field.getValue()));
+                    Map<String, List<String>> cookies = Map.of(field.getName(), field.getValueList());
                     storeCookies(cookieURI, cookies);
                     return false;
                 }

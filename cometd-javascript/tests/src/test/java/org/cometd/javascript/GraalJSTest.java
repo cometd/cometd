@@ -16,6 +16,7 @@
 package org.cometd.javascript;
 
 import java.util.function.Function;
+
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Value;
 import org.junit.jupiter.api.Assertions;
@@ -54,11 +55,16 @@ public class GraalJSTest {
     public void testThisInsideFunction() {
         try (Context context = Context.newBuilder("js").allowAllAccess(true).build()) {
             withContext(context, () -> {
-//                Value obj = context.eval("js", "{ \"exec\": function() { return this; } }");
-                Value obj = context.eval("js", "({ " +
-                        "  self: {}," +
-                        "  exec: function(arg) { if (arg === true) { return this; } } " +
-                        "})");
+                Value obj = context.eval("js", """
+                        ({
+                            self: {},
+                            exec: function(arg) {
+                                if (arg === true) {
+                                    return this;
+                                }
+                            }
+                        })
+                        """);
                 Value jsThis = obj.getMember("self");
                 Object[] args = new Object[]{Boolean.TRUE};
                 Value result1 = obj.getMember("exec").execute(args);
@@ -73,19 +79,19 @@ public class GraalJSTest {
     public void testPrototype() {
         try (Context context = Context.newBuilder("js").allowAllAccess(true).build()) {
             withContext(context, () -> {
-                Value result = context.eval("js", "" +
-                        "var W = {};" +
-                        "W.A = function() {};" +
-                        "W.A.prototype = function() {" +
-                        "  return {" +
-                        "    run: function() { return 'SIMON'; }," +
-                        "    get foo() { return 'FOO'; }" +
-                        "  };" +
-                        "}();" +
-                        "var a = new W.A();" +
-                        "console.log(W.A.prototype);" +
-                        "a.foo + a.run();" +
-                        "");
+                Value result = context.eval("js", """
+                        const W = {};
+                        W.A = function() {};
+                        W.A.prototype = function() {
+                            return {
+                                run: function() { return 'SIMON'; },
+                                get foo() { return 'FOO'; }
+                            };
+                        }();
+                        const a = new W.A();
+                        console.log(W.A.prototype);
+                        a.foo + a.run();
+                        """);
                 System.err.println("result = " + result);
             });
         }
@@ -95,11 +101,12 @@ public class GraalJSTest {
     public void testForLoop() {
         try (Context context = Context.newBuilder("js").allowAllAccess(true).build()) {
             withContext(context, () -> {
-                context.eval("js", "" +
-                        "var obj = new (function A(){})();" +
-                        "for (var n in obj) {" +
-                        "  printErr(n);" +
-                        "}");
+                context.eval("js", """
+                        const obj = new (function A(){})();
+                        for (const n in obj) {
+                          printErr(n);
+                        }
+                        """);
             });
         }
     }
@@ -108,12 +115,13 @@ public class GraalJSTest {
     public void testBinary() {
         try (Context context = Context.newBuilder("js").allowAllAccess(true).build()) {
             withContext(context, () -> {
-                context.eval("js", "" +
-                        "var buffer = new ArrayBuffer(16);" +
-                        "var view1 = new DataView(buffer);" +
-                        "for (var d = 0; d < view1.byteLength; ++d) {" +
-                        "    view1.setUint8(d, d);" +
-                        "}");
+                context.eval("js", """
+                        const buffer = new ArrayBuffer(16);
+                        const view1 = new DataView(buffer);
+                        for (let d = 0; d < view1.byteLength; ++d) {
+                            view1.setUint8(d, d);
+                        }
+                        """);
             });
         }
     }

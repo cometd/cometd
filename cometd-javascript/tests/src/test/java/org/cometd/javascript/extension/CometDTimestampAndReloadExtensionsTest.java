@@ -27,15 +27,16 @@ public class CometDTimestampAndReloadExtensionsTest extends AbstractCometDTransp
     public void testReloadWithTimestamp(String transport) throws Exception {
         initCometDServer(transport);
 
-        evaluateScript("cometd.setLogLevel('debug');");
         provideTimestampExtension();
         provideReloadExtension();
 
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
-        evaluateScript("var readyLatch = new Latch(1);");
+        evaluateScript("const readyLatch = new Latch(1);");
         Latch readyLatch = javaScript.get("readyLatch");
-        evaluateScript("cometd.addListener('/meta/connect', function() { readyLatch.countDown(); });");
-        evaluateScript("cometd.handshake();");
+        evaluateScript("""
+                cometd.configure({url: '$U', logLevel: '$L'});
+                cometd.addListener('/meta/connect', () => readyLatch.countDown());
+                cometd.handshake();
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
         Assertions.assertTrue(readyLatch.await(5000));
 
         // Get the clientId
@@ -48,20 +49,21 @@ public class CometDTimestampAndReloadExtensionsTest extends AbstractCometDTransp
         destroyPage();
         initPage(transport);
 
-        evaluateScript("cometd.setLogLevel('" + getLogLevel() + "');");
         provideTimestampExtension();
         provideReloadExtension();
 
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
-        evaluateScript("var readyLatch = new Latch(1);");
+        evaluateScript("const readyLatch = new Latch(1);");
         readyLatch = javaScript.get("readyLatch");
-        evaluateScript("" +
-                "cometd.addListener('/meta/connect', function(message) { " +
-                "   if (message.successful) {" +
-                "       readyLatch.countDown();" +
-                "   }" +
-                "});");
-        evaluateScript("cometd.handshake();");
+        evaluateScript("".replace("$U", cometdURL).replace("$L", getLogLevel()));
+        evaluateScript("""
+                cometd.configure({url: '$U', logLevel: '$L'});
+                cometd.addListener('/meta/connect', message => {
+                   if (message.successful) {
+                       readyLatch.countDown();
+                   }
+                });
+                cometd.handshake();
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
         Assertions.assertTrue(readyLatch.await(5000));
 
         String newClientId = evaluateScript("cometd.getClientId();");

@@ -25,23 +25,25 @@ public class CometDRedeployTest extends AbstractCometDTransportsTest {
     public void testRedeploy(String transport) throws Exception {
         initCometDServer(transport);
 
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
-        evaluateScript("var handshakeLatch = new Latch(1);");
+        evaluateScript("""
+                cometd.configure({url: '$U', logLevel: '$L'});
+                const handshakeLatch = new Latch(1);
+                cometd.addListener('/meta/handshake', () => handshakeLatch.countDown());
+                const connectLatch = new Latch(1);
+                const failureLatch = new Latch(1);
+                cometd.addListener('/meta/connect', message => {
+                   if (message.successful) {
+                       connectLatch.countDown();
+                   } else {
+                       failureLatch.countDown();
+                   }
+                });
+                cometd.handshake();
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
+
         Latch handshakeLatch = javaScript.get("handshakeLatch");
-        evaluateScript("var connectLatch = new Latch(1);");
-        Latch connectLatch = javaScript.get("connectLatch");
-        evaluateScript("var failureLatch = new Latch(1);");
-        Latch failureLatch = javaScript.get("failureLatch");
-        evaluateScript("cometd.addListener('/meta/handshake', function() { handshakeLatch.countDown(); });");
-        evaluateScript("cometd.addListener('/meta/connect', function(message) {" +
-                "   if (message.successful) {" +
-                "       connectLatch.countDown();" +
-                "   } else {" +
-                "       failureLatch.countDown();" +
-                "   }" +
-                "});");
-        evaluateScript("cometd.handshake();");
         Assertions.assertTrue(handshakeLatch.await(5000));
+        Latch connectLatch = javaScript.get("connectLatch");
         Assertions.assertTrue(connectLatch.await(5000));
 
         // Wait for the second connect to reach the server
@@ -51,21 +53,18 @@ public class CometDRedeployTest extends AbstractCometDTransportsTest {
         handshakeLatch.reset(1);
         connectLatch.reset(1);
         context.stop();
+        Latch failureLatch = javaScript.get("failureLatch");
         Assertions.assertTrue(failureLatch.await(5000));
-        // Assume the redeploy takes a while
+        // Assume the redeploy takes a while.
         long backoffIncrement = ((Number)evaluateScript("cometd.getBackoffIncrement();")).longValue();
         Thread.sleep(2 * backoffIncrement);
-        // Restart the context
+        // Restart the context.
         context.start();
 
         long backoffPeriod = ((Number)evaluateScript("cometd.getBackoffPeriod();")).longValue();
         Assertions.assertTrue(handshakeLatch.await(backoffPeriod + 2 * backoffIncrement));
         Assertions.assertTrue(connectLatch.await(5000));
 
-        evaluateScript("var disconnectLatch = new Latch(1);");
-        Latch disconnectLatch = javaScript.get("disconnectLatch");
-        evaluateScript("cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });");
-        evaluateScript("cometd.disconnect();");
-        Assertions.assertTrue(disconnectLatch.await(5000));
+        disconnect();
     }
 }

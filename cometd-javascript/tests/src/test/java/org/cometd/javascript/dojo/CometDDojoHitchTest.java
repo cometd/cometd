@@ -17,27 +17,32 @@ package org.cometd.javascript.dojo;
 
 import org.cometd.javascript.Latch;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-@Disabled("Failing due to issue #742")
 public class CometDDojoHitchTest extends AbstractCometDDojoTest {
     @Test
     public void testDojoHitch() throws Exception {
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
-        evaluateScript("var handshakeLatch = new Latch(1);");
+        evaluateScript("const handshakeLatch = new Latch(1);");
         Latch handshakeLatch = javaScript.get("handshakeLatch");
-        evaluateScript("cometd.addListener('/meta/handshake', function() { handshakeLatch.countDown(); });");
-        evaluateScript("cometd.handshake();");
+        evaluateScript("""
+                cometd.configure({url: '$U', logLevel: '$L'});
+                cometd.addListener('/meta/handshake', () => handshakeLatch.countDown());
+                cometd.handshake();
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
         Assertions.assertTrue(handshakeLatch.await(5000));
 
-        evaluateScript("var latch1 = new Latch(1);");
+        evaluateScript("const latch1 = new Latch(1);");
         Latch latch1 = javaScript.get("latch1");
-        evaluateScript("cometd.subscribe('/test', dojo.hitch(latch1, 'countDown'), {});");
-        evaluateScript("var latch2 = new Latch(1);");
+        evaluateScript("const latch2 = new Latch(1);");
         Latch latch2 = javaScript.get("latch2");
-        evaluateScript("cometd.subscribe('/test', dojo.hitch(latch2, 'countDown'));");
-        evaluateScript("cometd.publish('/test', {});");
+        evaluateScript("""
+                // dojo.hitch() calls apply(scope, arguments), but GraalJS throws because
+                // the arity is wrong, so explicitly invoke call() with zero arguments.
+                // See also issue #742.
+                cometd.subscribe('/test', () => dojo.hitch(latch1, 'countDown').call(latch1) , {});
+                cometd.subscribe('/test', () => dojo.hitch(latch2, 'countDown').call(latch2));
+                cometd.publish('/test', {});
+                """);
         Assertions.assertTrue(latch1.await(5000));
         Assertions.assertTrue(latch2.await(5000));
 

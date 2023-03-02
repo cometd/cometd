@@ -31,22 +31,19 @@ public class CometDConnectFailureTest extends AbstractCometDTransportsTest {
 
         bayeuxServer.addExtension(new DeleteMetaConnectExtension());
 
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
-        evaluateScript("var handshakeLatch = new Latch(1);");
-        Latch handshakeLatch = javaScript.get("handshakeLatch");
-        evaluateScript("var connectLatch = new Latch(2);");
-        Latch connectLatch = javaScript.get("connectLatch");
-        evaluateScript("cometd.addListener('/meta/handshake', function() { handshakeLatch.countDown(); });");
-        evaluateScript("cometd.addListener('/meta/connect', function(message) {" +
-                "    if (message.successful === false) {" +
-                "        connectLatch.countDown();" +
-                "    }" +
-                "});");
-
-        evaluateScript("var backoff = cometd.getBackoffPeriod();");
-        evaluateScript("var backoffIncrement = cometd.getBackoffIncrement();");
-        int backoff = ((Number)javaScript.get("backoff")).intValue();
-        int backoffIncrement = ((Number)javaScript.get("backoffIncrement")).intValue();
+        evaluateScript("""
+                cometd.configure({url: '$U', logLevel: '$L'});
+                const handshakeLatch = new Latch(1);
+                const connectLatch = new Latch(2);
+                cometd.addListener('/meta/handshake', () => handshakeLatch.countDown());
+                cometd.addListener('/meta/connect', message => {
+                    if (message.successful === false) {
+                        connectLatch.countDown();
+                    }
+                });
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
+        int backoff = ((Number)evaluateScript("cometd.getBackoffPeriod();")).intValue();
+        int backoffIncrement = ((Number)evaluateScript("cometd.getBackoffIncrement();")).intValue();
         Assertions.assertEquals(0, backoff);
         Assertions.assertTrue(backoffIncrement > 0);
 
@@ -55,45 +52,39 @@ public class CometDConnectFailureTest extends AbstractCometDTransportsTest {
         // Time = 0.
         // First connect after handshake will fail,
         // will be retried after a backoff.
+        Latch handshakeLatch = javaScript.get("handshakeLatch");
         Assertions.assertTrue(handshakeLatch.await(5000));
-        Assertions.assertTrue(connectLatch.await(2 * backoffIncrement));
+        Latch connectLatch = javaScript.get("connectLatch");
+        Assertions.assertTrue(connectLatch.await(2L * backoffIncrement));
 
         // Time = 1.
         // Waits for the backoff to happen.
         Thread.sleep(backoffIncrement / 2);
         // Time = 1.5.
-        evaluateScript("var backoff = cometd.getBackoffPeriod();");
-        backoff = ((Number)javaScript.get("backoff")).intValue();
+        backoff = ((Number)evaluateScript("cometd.getBackoffPeriod();")).intValue();
         // The backoff period is always the backoff that will be waited on the *next* failure.
         Assertions.assertEquals(2 * backoffIncrement, backoff);
 
         connectLatch.reset(1);
-        Assertions.assertTrue(connectLatch.await(2 * backoffIncrement));
+        Assertions.assertTrue(connectLatch.await(2L * backoffIncrement));
 
         // Time = 3.
         // Another failure, backoff will be increased to 3 * backoffIncrement.
         // Waits for the backoff to happen.
         Thread.sleep(backoffIncrement / 2);
         // Time = 3.5.
-        evaluateScript("var backoff = cometd.getBackoffPeriod();");
-        backoff = ((Number)javaScript.get("backoff")).intValue();
+        backoff = ((Number)evaluateScript("cometd.getBackoffPeriod();")).intValue();
         Assertions.assertEquals(3 * backoffIncrement, backoff);
 
         connectLatch.reset(1);
-        Assertions.assertTrue(connectLatch.await(3 * backoffIncrement));
+        Assertions.assertTrue(connectLatch.await(3L * backoffIncrement));
 
-        // Disconnect so that connect is not performed anymore
-        evaluateScript("var disconnectLatch = new Latch(1);");
-        Latch disconnectLatch = javaScript.get("disconnectLatch");
-        evaluateScript("cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });");
-        evaluateScript("cometd.disconnect();");
-        Assertions.assertTrue(disconnectLatch.await(5000));
-        String status = evaluateScript("cometd.getStatus();");
-        Assertions.assertEquals("disconnected", status);
+        // Disconnect so that /meta/connect is not performed anymore.
+        disconnect();
 
-        // Be sure the connect is not retried anymore
+        // Be sure the /meta/connect is not retried anymore.
         connectLatch.reset(1);
-        Assertions.assertFalse(connectLatch.await(4 * backoffIncrement));
+        Assertions.assertFalse(connectLatch.await(4L * backoffIncrement));
     }
 
     private static class DeleteMetaConnectExtension implements BayeuxServer.Extension {

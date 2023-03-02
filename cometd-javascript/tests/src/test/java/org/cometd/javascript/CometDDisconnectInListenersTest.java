@@ -25,29 +25,22 @@ public class CometDDisconnectInListenersTest extends AbstractCometDTransportsTes
     public void testDisconnectInHandshakeListener(String transport) throws Exception {
         initCometDServer(transport);
 
-        evaluateScript("var connectLatch = new Latch(1);");
+        evaluateScript("""
+                cometd.configure({url: '$U', logLevel: '$L'});
+                cometd.addListener('/meta/handshake', () => cometd.disconnect());
+                const connectLatch = new Latch(1);
+                cometd.addListener('/meta/connect', () => connectLatch.countDown());
+                const disconnectLatch = new Latch(1);
+                cometd.addListener('/meta/disconnect', () => disconnectLatch.countDown());
+
+                cometd.handshake();
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
+
+        // Connect must not be called.
         Latch connectLatch = javaScript.get("connectLatch");
-        evaluateScript("var disconnectLatch = new Latch(1);");
-        Latch disconnectLatch = javaScript.get("disconnectLatch");
-
-        evaluateScript("" +
-                "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
-                "cometd.addListener('/meta/handshake', function() {" +
-                "   cometd.disconnect();" +
-                "});" +
-                "cometd.addListener('/meta/connect', function() {" +
-                "   connectLatch.countDown();" +
-                "});" +
-                "cometd.addListener('/meta/disconnect', function() {" +
-                "   disconnectLatch.countDown();" +
-                "});" +
-                "" +
-                "cometd.handshake();" +
-                "");
-
-        // Connect must not be called
         Assertions.assertFalse(connectLatch.await(1000));
 
+        Latch disconnectLatch = javaScript.get("disconnectLatch");
         Assertions.assertTrue(disconnectLatch.await(5000));
     }
 
@@ -56,30 +49,27 @@ public class CometDDisconnectInListenersTest extends AbstractCometDTransportsTes
     public void testDisconnectInConnectListener(String transport) throws Exception {
         initCometDServer(transport);
 
-        evaluateScript("var connectLatch = new Latch(2);");
-        Latch connectLatch = javaScript.get("connectLatch");
-        evaluateScript("var disconnectLatch = new Latch(1);");
-        Latch disconnectLatch = javaScript.get("disconnectLatch");
+        evaluateScript("""
+                cometd.configure({url: '$U', logLevel: '$L'});
+                const connectLatch = new Latch(2);
+                cometd.addListener('/meta/connect', () => {
+                   if (connectLatch.getCount() === 2) {
+                       cometd.disconnect();
+                   }
+                   connectLatch.countDown();
+                });
+                const disconnectLatch = new Latch(1);
+                cometd.addListener('/meta/disconnect', () => disconnectLatch.countDown());
 
-        evaluateScript("" +
-                "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
-                "cometd.addListener('/meta/connect', function() {" +
-                "   if (connectLatch.getCount() === 2) {" +
-                "       cometd.disconnect();" +
-                "   }" +
-                "   connectLatch.countDown();" +
-                "});" +
-                "cometd.addListener('/meta/disconnect', function() {" +
-                "   disconnectLatch.countDown();" +
-                "});" +
-                "" +
-                "cometd.handshake();" +
-                "");
+                cometd.handshake();
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
 
         // Connect must be called only once
+        Latch connectLatch = javaScript.get("connectLatch");
         Assertions.assertFalse(connectLatch.await(1000));
         Assertions.assertEquals(1L, connectLatch.getCount());
 
+        Latch disconnectLatch = javaScript.get("disconnectLatch");
         Assertions.assertTrue(disconnectLatch.await(5000));
     }
 }

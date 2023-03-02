@@ -25,100 +25,106 @@ public class CometDTransportTest extends AbstractCometDTransportsTest {
     public void testTransport(String transport) throws Exception {
         initCometDServer(transport);
 
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
+        evaluateScript("""
+                const readyLatch = new Latch(1);
+                function LocalTransport() {
+                    const _super = new cometdModule.RequestTransport();
+                    const that = cometdModule.Transport.derive(_super);
+                    let _sends = 0;
 
-        evaluateScript("cometd.unregisterTransports();");
+                    that.getSends = () => { return _sends; };
 
-        String localTransport =
-                "var readyLatch = new Latch(1);" +
-                        "function LocalTransport()" +
-                        "{" +
-                        "    var _super = new cometdModule.RequestTransport();" +
-                        "    var that = cometdModule.Transport.derive(_super);" +
-                        "    var _sends = 0;" +
-                        "" +
-                        "    that.getSends = function() { return _sends; };" +
-                        "" +
-                        "    that.accept = function(version, crossDomain) {" +
-                        "        return true;" +
-                        "    };" +
-                        "" +
-                        "    that.transportSend = function(envelope, request) {" +
-                        "        ++_sends;" +
-                        "        var response;" +
-                        "        var timeout;" +
-                        "        switch (_sends) {" +
-                        "            case 1:" +
-                        "                response = '[{" +
-                        "                    \"successful\":true," +
-                        "                    \"channel\":\"/meta/handshake\"," +
-                        "                    \"clientId\":\"dmigjcjnakuysa9j29\"," +
-                        "                    \"id\":\"1\"," +
-                        "                    \"minimumVersion\":\"0.9\"," +
-                        "                    \"version\":\"1.0\"," +
-                        "                    \"supportedConnectionTypes\":[\"long-polling\",\"callback-polling\"]," +
-                        "                    \"advice\":{\"reconnect\":\"retry\",\"interval\":0,\"timeout\":5000}" +
-                        "                }]';" +
-                        "                timeout = 0;" +
-                        "                break;" +
-                        "            case 2:" +
-                        "                response = '[{" +
-                        "                    \"successful\":true," +
-                        "                    \"channel\":\"/meta/connect\"," +
-                        "                    \"id\":\"2\"," +
-                        "                    \"advice\":{\"reconnect\":\"retry\",\"interval\":0,\"timeout\":5000}" +
-                        "                }]';" +
-                        "                timeout = 0;" +
-                        "                break;" +
-                        "            case 3:" +
-                        "                response = '[{" +
-                        "                    \"successful\":true," +
-                        "                    \"channel\":\"/meta/connect\"," +
-                        "                    \"id\":\"2\"," +
-                        "                    \"advice\":{\"reconnect\":\"retry\",\"interval\":0,\"timeout\":5000}" +
-                        "                }]';" +
-                        "                timeout = 5000;" +
-                        "                readyLatch.countDown();" +
-                        "                break;" +
-                        "            case 4:" +
-                        "                response = '[{" +
-                        "                    \"successful\":true," +
-                        "                    \"channel\":\"/meta/disconnect\"," +
-                        "                    \"id\":\"3\"" +
-                        "                }]';" +
-                        "                timeout = 0;" +
-                        "                break;" +
-                        "            default:" +
-                        "                throw 'Test Error';" +
-                        "        }" +
-                        "" +
-                        "        /* Respond asynchronously */" +
-                        "        var self = this;" +
-                        "        setTimeout(function() {" +
-                        "            self.transportSuccess(envelope, request, self.convertToMessages(response));" +
-                        "        }, timeout);" +
-                        "    };" +
-                        "" +
-                        "    return that;" +
-                        "};";
+                    that.accept = () => {
+                        return true;
+                    };
 
-        evaluateScript(localTransport);
+                    that.transportSend = function(envelope, request) {
+                        ++_sends;
+                        let response;
+                        let timeout;
+                        switch (_sends) {
+                            case 1:
+                                response = JSON.stringify([{
+                                    "successful": true,
+                                    "channel": "/meta/handshake",
+                                    "clientId": "dmigjcjnakuysa9j29",
+                                    "id": "1",
+                                    "minimumVersion": "0.9",
+                                    "version": "1.0",
+                                    "supportedConnectionTypes": ["long-polling","callback-polling"],
+                                    "advice": {
+                                        "reconnect": "retry",
+                                        "interval": 0,
+                                        "timeout": 5000
+                                    }
+                                }]);
+                                timeout = 0;
+                                break;
+                            case 2:
+                                response = JSON.stringify([{
+                                    "successful": true,
+                                    "channel": "/meta/connect",
+                                    "id": "2",
+                                    "advice": {
+                                        "reconnect": "retry",
+                                        "interval": 0,
+                                        "timeout": 5000
+                                    }
+                                }]);
+                                timeout = 0;
+                                break;
+                            case 3:
+                                response = JSON.stringify([{
+                                    "successful": true,
+                                    "channel": "/meta/connect",
+                                    "id": "3",
+                                    "advice": {
+                                        "reconnect": "retry",
+                                        "interval": 0,
+                                        "timeout": 5000
+                                    }
+                                }]);
+                                timeout = 5000;
+                                readyLatch.countDown();
+                                break;
+                            case 4:
+                                response = JSON.stringify([{
+                                    "successful": true,
+                                    "channel": "/meta/disconnect",
+                                    "id": "4"
+                                }]);
+                                timeout = 0;
+                                break;
+                            default:
+                                throw 'Test Error';
+                        }
+                        
+                        // Respond asynchronously.
+                        const self = this;
+                        setTimeout(() => {
+                            self.transportSuccess(envelope, request, self.convertToMessages(response));
+                        }, timeout);
+                    };
 
-        evaluateScript("var localTransport = new LocalTransport();");
-        // The server does not support a 'local' transport, so use 'long-polling'
-        boolean registered = evaluateScript("cometd.registerTransport('long-polling', localTransport);");
-        Assertions.assertTrue(registered);
+                    return that;
+                }
+                const localTransport = new LocalTransport();
+                cometd.unregisterTransports();
+                // The server does not support a 'local' transport, so use 'long-polling'.
+                const registered = cometd.registerTransport('long-polling', localTransport);
+                window.assert(registered === true, 'local transport not registered');
+                                
+                cometd.init({url: '$U', logLevel: '$L'});
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
 
         Latch readyLatch = javaScript.get("readyLatch");
-        evaluateScript("cometd.handshake();");
         Assertions.assertTrue(readyLatch.await(5000));
 
         Assertions.assertEquals(3, ((Number)evaluateScript("localTransport.getSends();")).intValue());
         Assertions.assertEquals("connected", evaluateScript("cometd.getStatus();"));
 
         readyLatch.reset(1);
-        evaluateScript("cometd.addListener('/meta/disconnect', function() { readyLatch.countDown(); });");
-        evaluateScript("cometd.disconnect();");
+        evaluateScript("cometd.disconnect(() => readyLatch.countDown());");
         Assertions.assertTrue(readyLatch.await(5000));
 
         Assertions.assertEquals(4, ((Number)evaluateScript("localTransport.getSends();")).intValue());

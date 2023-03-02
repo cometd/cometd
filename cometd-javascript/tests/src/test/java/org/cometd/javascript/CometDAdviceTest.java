@@ -18,6 +18,7 @@ package org.cometd.javascript;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -45,22 +46,23 @@ public class CometDAdviceTest extends AbstractCometDTransportsTest {
             }
         });
 
-        evaluateScript("var HandshakeListener = Java.type('" + HandshakeListener.class.getName() + "')");
-        evaluateScript("var handshakeListener = new HandshakeListener();");
+        evaluateScript("const HandshakeListener = Java.type('" + HandshakeListener.class.getName() + "')");
+        evaluateScript("const handshakeListener = new HandshakeListener();");
         HandshakeListener handshakeListener = javaScript.get("handshakeListener");
         handshakeListener.server = bayeuxServer;
 
-        evaluateScript("var connectLatch = new Latch(1);");
+        evaluateScript("const connectLatch = new Latch(1);");
         Latch connectLatch = javaScript.get("connectLatch");
 
-        evaluateScript("cometd.configure({" +
-                "url: '" + cometdURL + "', " +
-                "logLevel: '" + getLogLevel() + "'" +
-                "});");
-        evaluateScript("cometd.addListener('/meta/connect', function(cn) {" +
-                "    if (cn.successful) { connectLatch.countDown(); }" +
-                "});");
-        evaluateScript("cometd.handshake(function(hs) { handshakeListener.handle(hs); });");
+        evaluateScript("""
+                cometd.configure({url: '$U', logLevel: '$L'});
+                cometd.addListener('/meta/connect', cn => {
+                    if (cn.successful) {
+                        connectLatch.countDown();
+                    }
+                });
+                cometd.handshake(hs => handshakeListener.handle(hs));
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
 
         Assertions.assertTrue(handshakeListener.await(5, TimeUnit.SECONDS));
         Assertions.assertTrue(connectLatch.await(5000));

@@ -16,6 +16,7 @@
 package org.cometd.javascript;
 
 import java.util.Map;
+
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
@@ -33,34 +34,45 @@ public class CometDDeliverTest extends AbstractCometDTransportsTest {
 
         new DeliverService(bayeuxServer);
 
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
+        evaluateScript("""
+                cometd.configure({url: '$U', logLevel: '$L'});
+                const pushLatch = new Latch(1);
+                let _data;
+                cometd.addListener('/service/deliver', message => { _data = message.data; pushLatch.countDown(); });
+                const readyLatch = new Latch(1);
+                cometd.addListener('/meta/connect', () => readyLatch.countDown());
+                cometd.handshake();
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
 
-        evaluateScript("var pushLatch = new Latch(1);");
-        Latch pushLatch = javaScript.get("pushLatch");
-        evaluateScript("var _data;");
-        evaluateScript("cometd.addListener('/service/deliver', function(message) { _data = message.data; pushLatch.countDown(); });");
-
-        evaluateScript("var readyLatch = new Latch(1);");
         Latch readyLatch = javaScript.get("readyLatch");
-        evaluateScript("cometd.addListener('/meta/connect', function(message) { readyLatch.countDown(); });");
-        evaluateScript("cometd.handshake();");
         Assertions.assertTrue(readyLatch.await(5000));
 
-        evaluateScript("var latch = new Latch(1);");
+        evaluateScript("""
+                const latch = new Latch(1);
+                let listener = cometd.addListener('/meta/publish', () => latch.countDown());
+                cometd.publish('/service/deliver', { deliver: false });
+                """);
         Latch latch = javaScript.get("latch");
-        evaluateScript("var listener = cometd.addListener('/meta/publish', function(message) { latch.countDown(); });");
-        evaluateScript("cometd.publish('/service/deliver', { deliver: false });");
         Assertions.assertTrue(latch.await(5000));
+
+        Latch pushLatch = javaScript.get("pushLatch");
         Assertions.assertFalse(pushLatch.await(1000));
-        evaluateScript("cometd.removeListener(listener);");
-        evaluateScript("window.assert(_data === undefined);");
+
+        evaluateScript("""
+                cometd.removeListener(listener);
+                window.assert(_data === undefined);
+                """);
 
         latch.reset(1);
-        evaluateScript("listener = cometd.addListener('/meta/publish', function(message) { latch.countDown(); });");
-        evaluateScript("cometd.publish('/service/deliver', { deliver: true });");
+        evaluateScript("""
+                listener = cometd.addListener('/meta/publish', () => latch.countDown());
+                cometd.publish('/service/deliver', { deliver: true });
+                """);
+
         Assertions.assertTrue(latch.await(5000));
+
         evaluateScript("cometd.removeListener(listener);");
-        // Wait for the listener to be notified from the server
+        // Wait for the listener to be notified from the server.
         Assertions.assertTrue(pushLatch.await(5000));
         evaluateScript("window.assert(_data !== undefined);");
 

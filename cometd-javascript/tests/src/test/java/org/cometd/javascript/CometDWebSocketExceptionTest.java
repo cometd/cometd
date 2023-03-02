@@ -21,30 +21,29 @@ import org.junit.jupiter.api.Test;
 public class CometDWebSocketExceptionTest extends AbstractCometDWebSocketTest {
     @Test
     public void testWebSocketConstructorThrowsException() throws Exception {
-        // Need long-polling as a fallback after websocket fails
-        evaluateScript("cometd.registerTransport('long-polling', originalTransports['long-polling']);");
+        evaluateScript("""
+                // Need long-polling as a fallback after websocket fails.
+                cometd.registerTransport('long-polling', originalTransports['long-polling']);
+                
+                // Replace the WebSocket constructor to throw an exception.
+                window.WebSocket = () => { throw 'WebSocketException'; };
+                
+                cometd.configure({url: '$U', logLevel: '$L'});
+                
+                const wsLatch = new Latch(1);
+                const lpLatch = new Latch(1);
+                cometd.handshake(message => {
+                   if (cometd.getTransport().getType() === 'websocket' && !message.successful) {
+                       wsLatch.countDown();
+                   } else if (cometd.getTransport().getType() === 'long-polling' && message.successful) {
+                       lpLatch.countDown();
+                   }
+                });
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
 
-        // Replace the WebSocket constructor to throw an exception
-        evaluateScript("window.WebSocket = function() { throw 'WebSocketException'; };");
-
-        evaluateScript("cometd.configure({" +
-                "url: '" + cometdURL + "', " +
-                "logLevel: '" + getLogLevel() + "'" +
-                "});");
-
-        evaluateScript("var wsLatch = new Latch(1);");
         Latch wsLatch = javaScript.get("wsLatch");
-        evaluateScript("var lpLatch = new Latch(1);");
-        Latch lpLatch = javaScript.get("lpLatch");
-        evaluateScript("cometd.handshake(function(message) {" +
-                "   if (cometd.getTransport().getType() === 'websocket' && !message.successful) {" +
-                "       wsLatch.countDown();" +
-                "   } else if (cometd.getTransport().getType() === 'long-polling' && message.successful) {" +
-                "       lpLatch.countDown();" +
-                "   }" +
-                "});");
-
         Assertions.assertTrue(wsLatch.await(5000));
+        Latch lpLatch = javaScript.get("lpLatch");
         Assertions.assertTrue(lpLatch.await(5000));
 
         disconnect();

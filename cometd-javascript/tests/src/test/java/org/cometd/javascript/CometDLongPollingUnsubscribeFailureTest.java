@@ -43,34 +43,39 @@ public class CometDLongPollingUnsubscribeFailureTest extends AbstractCometDLongP
 
     @Test
     public void testUnsubscribeFailure() throws Exception {
-        evaluateScript("var readyLatch = new Latch(1);");
+        evaluateScript("""
+                const readyLatch = new Latch(1);
+                cometd.addListener('/meta/connect', () => readyLatch.countDown());
+                cometd.init({url: '$U', logLevel: '$L'});
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
         Latch readyLatch = javaScript.get("readyLatch");
-        evaluateScript("cometd.addListener('/meta/connect', function() { readyLatch.countDown(); });");
-        evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'})");
         Assertions.assertTrue(readyLatch.await(5000));
 
         // Wait for the long poll to establish
         Thread.sleep(1000);
 
-        evaluateScript("var subscribeLatch = new Latch(1);");
+        evaluateScript("""
+                const subscribeLatch = new Latch(1);
+                cometd.addListener('/meta/subscribe', () => subscribeLatch.countDown());
+                const subscription = cometd.subscribe('/echo', () => subscribeLatch.countDown());
+                """);
         Latch subscribeLatch = javaScript.get("subscribeLatch");
-        evaluateScript("cometd.addListener('/meta/subscribe', function() { subscribeLatch.countDown(); });");
-        evaluateScript("var subscription = cometd.subscribe('/echo', function() { subscribeLatch.countDown(); });");
         Assertions.assertTrue(subscribeLatch.await(5000));
 
-        evaluateScript("var unsubscribeLatch = new Latch(1);");
+        evaluateScript("""
+                const unsubscribeLatch = new Latch(1);
+                cometd.addListener('/meta/unsubscribe', () => unsubscribeLatch.countDown());
+                const failureLatch = new Latch(1);
+                cometd.addListener('/meta/unsuccessful', () => failureLatch.countDown());
+                cometd.unsubscribe(subscription);
+                """);
         Latch unsubscribeLatch = javaScript.get("unsubscribeLatch");
-        evaluateScript("var failureLatch = new Latch(1);");
-        Latch failureLatch = javaScript.get("failureLatch");
-        evaluateScript("cometd.addListener('/meta/unsubscribe', function() { unsubscribeLatch.countDown(); });");
-        evaluateScript("cometd.addListener('/meta/unsuccessful', function() { failureLatch.countDown(); });");
-        evaluateScript("cometd.unsubscribe(subscription);");
         Assertions.assertTrue(unsubscribeLatch.await(5000));
+        Latch failureLatch = javaScript.get("failureLatch");
         Assertions.assertTrue(failureLatch.await(5000));
 
         // Be sure there is no backoff
-        evaluateScript("var backoff = cometd.getBackoffPeriod();");
-        int backoff = ((Number)javaScript.get("backoff")).intValue();
+        int backoff = ((Number)evaluateScript("cometd.getBackoffPeriod()")).intValue();
         Assertions.assertEquals(0, backoff);
 
         disconnect();

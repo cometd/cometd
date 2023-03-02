@@ -89,7 +89,7 @@ public class ExtensionNegotiationTest extends ClientServerWebSocketTest {
             @Override
             protected void onHandshakeResponse(okhttp3.Response response) {
                 super.onHandshakeResponse(response);
-                responseHeaders.putAll(OkHttpWebSocketTransport.headersToMap(response.headers()));
+                responseHeaders.putAll(response.headers().toMultimap());
             }
         };
     }

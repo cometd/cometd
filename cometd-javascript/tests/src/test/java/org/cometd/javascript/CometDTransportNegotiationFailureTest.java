@@ -21,6 +21,7 @@ import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -42,22 +43,22 @@ public class CometDTransportNegotiationFailureTest extends AbstractCometDTranspo
             }
         });
 
-        evaluateScript("keep_only_long_polling_transport",
-                "cometd.unregisterTransports();" +
-                        "cometd.registerTransport('long-polling', originalTransports['long-polling']);");
+        evaluateScript("""
+                cometd.unregisterTransports();
+                cometd.registerTransport('long-polling', originalTransports['long-polling']);
+                
+                const failureLatch = new Latch(2);
+                cometd.onTransportException = () => { failureLatch.countDown(); };
+                
+                cometd.configure({url: '$U', logLevel: '$L'});
+                cometd.handshake(message => {
+                    if (message.successful === false) {
+                        failureLatch.countDown();
+                    }
+                });
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
 
-        evaluateScript("var failureLatch = new Latch(2);");
         Latch failureLatch = javaScript.get("failureLatch");
-        evaluateScript("cometd.onTransportException = function(failure, oldTransport, newTransport) {" +
-                "    failureLatch.countDown();" +
-                "}");
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
-        evaluateScript("cometd.handshake(function(message) {" +
-                "    if (message.successful === false) { " +
-                "        failureLatch.countDown(); " +
-                "    }" +
-                "});");
-
         Assertions.assertTrue(failureLatch.await(5000));
 
         disconnect();
@@ -70,22 +71,23 @@ public class CometDTransportNegotiationFailureTest extends AbstractCometDTranspo
 
         // Only websocket on server, only long-polling on client.
         bayeuxServer.setAllowedTransports("websocket");
-        evaluateScript("keep_only_long_polling_transport",
-                "cometd.unregisterTransports();" +
-                        "cometd.registerTransport('long-polling', originalTransports['long-polling']);");
 
-        evaluateScript("var failureLatch = new Latch(2);");
+        evaluateScript("""
+                cometd.unregisterTransports();
+                cometd.registerTransport('long-polling', originalTransports['long-polling']);
+                
+                const failureLatch = new Latch(2);
+                cometd.onTransportException = () => { failureLatch.countDown(); };
+                
+                cometd.configure({url: '$U', logLevel: '$L'});
+                cometd.handshake(message => {
+                    if (message.successful === false) {
+                        failureLatch.countDown();
+                    }
+                });
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
+
         Latch failureLatch = javaScript.get("failureLatch");
-        evaluateScript("cometd.onTransportException = function(failure, oldTransport, newTransport) {" +
-                "    failureLatch.countDown();" +
-                "}");
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
-        evaluateScript("cometd.handshake(function(message) {" +
-                "    if (message.successful === false) { " +
-                "        failureLatch.countDown(); " +
-                "    }" +
-                "});");
-
         Assertions.assertTrue(failureLatch.await(5000));
 
         disconnect();
@@ -93,27 +95,29 @@ public class CometDTransportNegotiationFailureTest extends AbstractCometDTranspo
 
     @ParameterizedTest
     @MethodSource("transports")
+    @Disabled("Fails due to https://github.com/eclipse/jetty.project/issues/9412")
     public void testTransportNegotiationFailureForClientWebSocketServerLongPolling(String transport) throws Exception {
         initCometDServer(transport);
 
         // Only long-polling on server, only websocket on client.
         bayeuxServer.setAllowedTransports("long-polling");
-        evaluateScript("keep_only_websocket_transport",
-                "cometd.unregisterTransports();" +
-                        "cometd.registerTransport('websocket', originalTransports['websocket']);");
 
-        evaluateScript("var failureLatch = new Latch(2);");
+        evaluateScript("""
+                cometd.unregisterTransports();
+                cometd.registerTransport('websocket', originalTransports['websocket']);
+                
+                const failureLatch = new Latch(2);
+                cometd.onTransportException = () => { failureLatch.countDown(); };
+                
+                cometd.configure({url: '$U', logLevel: '$L'});
+                cometd.handshake(message => {
+                    if (message.successful === false) {
+                        failureLatch.countDown();
+                    }
+                });
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
+
         Latch failureLatch = javaScript.get("failureLatch");
-        evaluateScript("cometd.onTransportException = function(failure, oldTransport, newTransport) {" +
-                "    failureLatch.countDown();" +
-                "}");
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
-        evaluateScript("cometd.handshake(function(message) {" +
-                "    if (message.successful === false) {" +
-                "        failureLatch.countDown(); " +
-                "    }" +
-                "});");
-
         Assertions.assertTrue(failureLatch.await(5000));
         boolean disconnected = evaluateScript("cometd.isDisconnected();");
         Assertions.assertTrue(disconnected);

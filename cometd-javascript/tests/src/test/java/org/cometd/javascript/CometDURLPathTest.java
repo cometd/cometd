@@ -31,136 +31,177 @@ public class CometDURLPathTest extends AbstractCometDLongPollingTest {
 
     @Test
     public void testURLPath() throws Exception {
-        evaluateScript("var connectLatch = new Latch(1);");
+        evaluateScript("""
+                let handshake;
+                cometd.addListener('/meta/handshake', message => { handshake = message; });
+                let connect;
+                const connectLatch = new Latch(1);
+                cometd.addListener('/meta/connect', message => { connect = message; connectLatch.countDown(); });
+                cometd.init({url: '$U', logLevel: '$L'});
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
+
         Latch connectLatch = javaScript.get("connectLatch");
-        evaluateScript("var handshake = undefined;");
-        evaluateScript("var connect = undefined;");
-        evaluateScript("cometd.addListener('/meta/handshake', function(message) { handshake = message; });");
-        evaluateScript("cometd.addListener('/meta/connect', function(message) { connect = message; connectLatch.countDown(); });");
-        evaluateScript("cometd.init({url: '" + cometdURL + "/', logLevel: '" + getLogLevel() + "'})");
         Assertions.assertTrue(connectLatch.await(5000));
 
-        evaluateScript("window.assert(handshake !== undefined, 'handshake is undefined');");
-        evaluateScript("window.assert(handshake.ext !== undefined, 'handshake without ext');");
+        evaluateScript("""
+                window.assert(handshake !== undefined, 'handshake is undefined');
+                window.assert(handshake.ext !== undefined, 'handshake without ext');
+                """);
         String handshakeURI = evaluateScript("handshake.ext.uri");
         Assertions.assertTrue(handshakeURI.endsWith("/handshake"));
 
-        evaluateScript("window.assert(connect !== undefined, 'connect is undefined');");
-        evaluateScript("window.assert(connect.ext !== undefined, 'connect without ext');");
+        evaluateScript("""
+                        window.assert(connect !== undefined, 'connect is undefined');
+                        window.assert(connect.ext !== undefined, 'connect without ext');
+                """);
         String connectURI = evaluateScript("connect.ext.uri");
         Assertions.assertTrue(connectURI.endsWith("/connect"));
 
-        evaluateScript("var disconnectLatch = new Latch(1);");
+        evaluateScript("""
+                const disconnectLatch = new Latch(1);
+                let disconnect;
+                cometd.addListener('/meta/disconnect', message => { disconnect = message; disconnectLatch.countDown(); });
+                cometd.disconnect();
+                """);
         Latch disconnectLatch = javaScript.get("disconnectLatch");
-        evaluateScript("var disconnect = undefined;");
-        evaluateScript("cometd.addListener('/meta/disconnect', function(message) { disconnect = message; disconnectLatch.countDown(); });");
-        evaluateScript("cometd.disconnect();");
         Assertions.assertTrue(disconnectLatch.await(5000));
 
-        evaluateScript("window.assert(disconnect !== undefined, 'disconnect is undefined');");
-        evaluateScript("window.assert(disconnect.ext !== undefined, 'disconnect without ext');");
+        evaluateScript("""
+                window.assert(disconnect !== undefined, 'disconnect is undefined');
+                window.assert(disconnect.ext !== undefined, 'disconnect without ext');
+                """);
         String disconnectURI = evaluateScript("disconnect.ext.uri");
         Assertions.assertTrue(disconnectURI.endsWith("/disconnect"));
     }
 
     @Test
     public void testURLPathWithFile() throws Exception {
-        evaluateScript("var connectLatch = new Latch(1);");
+        evaluateScript("""
+                const connectLatch = new Latch(1);
+                let handshake;
+                let connect;
+                cometd.addListener('/meta/handshake', message => { handshake = message; });
+                cometd.addListener('/meta/connect', message => { connect = message; connectLatch.countDown(); });
+                cometd.init({url: '$U', logLevel: '$L'});
+                """.replace("$U", cometdURL + "/target.cometd").replace("$L", getLogLevel()));
         Latch connectLatch = javaScript.get("connectLatch");
-        evaluateScript("var handshake = undefined;");
-        evaluateScript("var connect = undefined;");
-        evaluateScript("cometd.addListener('/meta/handshake', function(message) { handshake = message; });");
-        evaluateScript("cometd.addListener('/meta/connect', function(message) { connect = message; connectLatch.countDown(); });");
-        evaluateScript("cometd.init({url: '" + cometdURL + "/target.cometd', logLevel: '" + getLogLevel() + "'})");
         Assertions.assertTrue(connectLatch.await(5000));
 
-        evaluateScript("window.assert(handshake !== undefined, 'handshake is undefined');");
-        evaluateScript("window.assert(handshake.ext !== undefined, 'handshake without ext');");
+        evaluateScript("""
+                window.assert(handshake !== undefined, 'handshake is undefined');
+                window.assert(handshake.ext !== undefined, 'handshake without ext');
+                """);
         String handshakeURI = evaluateScript("handshake.ext.uri");
         Assertions.assertFalse(handshakeURI.endsWith("/handshake"));
 
-        evaluateScript("window.assert(connect !== undefined, 'connect is undefined');");
-        evaluateScript("window.assert(connect.ext !== undefined, 'connect without ext');");
+        evaluateScript("""
+                window.assert(connect !== undefined, 'connect is undefined');
+                window.assert(connect.ext !== undefined, 'connect without ext');
+                """);
         String connectURI = evaluateScript("connect.ext.uri");
         Assertions.assertFalse(connectURI.endsWith("/connect"));
 
-        evaluateScript("var disconnectLatch = new Latch(1);");
+        evaluateScript("""
+                const disconnectLatch = new Latch(1);
+                let disconnect;
+                cometd.addListener('/meta/disconnect', message => { disconnect = message; disconnectLatch.countDown(); });
+                cometd.disconnect();
+                """);
         Latch disconnectLatch = javaScript.get("disconnectLatch");
-        evaluateScript("var disconnect = undefined;");
-        evaluateScript("cometd.addListener('/meta/disconnect', function(message) { disconnect = message; disconnectLatch.countDown(); });");
-        evaluateScript("cometd.disconnect();");
         Assertions.assertTrue(disconnectLatch.await(5000));
 
-        evaluateScript("window.assert(disconnect !== undefined, 'disconnect is undefined');");
-        evaluateScript("window.assert(disconnect.ext !== undefined, 'disconnect without ext');");
+        evaluateScript("""
+                window.assert(disconnect !== undefined, 'disconnect is undefined');
+                window.assert(disconnect.ext !== undefined, 'disconnect without ext');
+                """);
         String disconnectURI = evaluateScript("disconnect.ext.uri");
         Assertions.assertFalse(disconnectURI.endsWith("/disconnect"));
     }
 
     @Test
     public void testURLPathWithParameters() throws Exception {
-        evaluateScript("var connectLatch = new Latch(1);");
+        evaluateScript("""
+                const connectLatch = new Latch(1);
+                let handshake;
+                let connect;
+                cometd.addListener('/meta/handshake', message => { handshake = message; });
+                cometd.addListener('/meta/connect', message => { connect = message; connectLatch.countDown(); });
+                cometd.init({url: '$U', logLevel: '$L'});
+                """.replace("$U", cometdURL + "/?param=1").replace("$L", getLogLevel()));
         Latch connectLatch = javaScript.get("connectLatch");
-        evaluateScript("var handshake = undefined;");
-        evaluateScript("var connect = undefined;");
-        evaluateScript("cometd.addListener('/meta/handshake', function(message) { handshake = message; });");
-        evaluateScript("cometd.addListener('/meta/connect', function(message) { connect = message; connectLatch.countDown(); });");
-        evaluateScript("cometd.init({url: '" + cometdURL + "/?param=1', logLevel: '" + getLogLevel() + "'})");
         Assertions.assertTrue(connectLatch.await(5000));
 
-        evaluateScript("window.assert(handshake !== undefined, 'handshake is undefined');");
-        evaluateScript("window.assert(handshake.ext !== undefined, 'handshake without ext');");
+        evaluateScript("""
+                window.assert(handshake !== undefined, 'handshake is undefined');
+                window.assert(handshake.ext !== undefined, 'handshake without ext');
+                """);
         String handshakeURI = evaluateScript("handshake.ext.uri");
         Assertions.assertFalse(handshakeURI.endsWith("/handshake"));
 
-        evaluateScript("window.assert(connect !== undefined, 'connect is undefined');");
-        evaluateScript("window.assert(connect.ext !== undefined, 'connect without ext');");
+        evaluateScript("""
+                window.assert(connect !== undefined, 'connect is undefined');
+                window.assert(connect.ext !== undefined, 'connect without ext');
+                """);
         String connectURI = evaluateScript("connect.ext.uri");
         Assertions.assertFalse(connectURI.endsWith("/connect"));
 
-        evaluateScript("var disconnectLatch = new Latch(1);");
+        evaluateScript("""
+                const disconnectLatch = new Latch(1);
+                let disconnect;
+                cometd.addListener('/meta/disconnect', message => { disconnect = message; disconnectLatch.countDown(); });
+                cometd.disconnect();
+                """);
         Latch disconnectLatch = javaScript.get("disconnectLatch");
-        evaluateScript("var disconnect = undefined;");
-        evaluateScript("cometd.addListener('/meta/disconnect', function(message) { disconnect = message; disconnectLatch.countDown(); });");
-        evaluateScript("cometd.disconnect();");
         Assertions.assertTrue(disconnectLatch.await(5000));
 
-        evaluateScript("window.assert(disconnect !== undefined, 'disconnect is undefined');");
-        evaluateScript("window.assert(disconnect.ext !== undefined, 'disconnect without ext');");
+        evaluateScript("""
+                window.assert(disconnect !== undefined, 'disconnect is undefined');
+                window.assert(disconnect.ext !== undefined, 'disconnect without ext');
+                """);
         String disconnectURI = evaluateScript("disconnect.ext.uri");
         Assertions.assertFalse(disconnectURI.endsWith("/disconnect"));
     }
 
     @Test
     public void testURLPathDisabled() throws Exception {
-        evaluateScript("var connectLatch = new Latch(1);");
+        evaluateScript("""
+                const connectLatch = new Latch(1);
+                let handshake;
+                let connect;
+                cometd.addListener('/meta/handshake', message => { handshake = message; });
+                cometd.addListener('/meta/connect', message => { connect = message; connectLatch.countDown(); });
+                cometd.init({url: '$U', logLevel: '$L', appendMessageTypeToURL: false});
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
         Latch connectLatch = javaScript.get("connectLatch");
-        evaluateScript("var handshake = undefined;");
-        evaluateScript("var connect = undefined;");
-        evaluateScript("cometd.addListener('/meta/handshake', function(message) { handshake = message; });");
-        evaluateScript("cometd.addListener('/meta/connect', function(message) { connect = message; connectLatch.countDown(); });");
-        evaluateScript("cometd.init({url: '" + cometdURL + "/', logLevel: '" + getLogLevel() + "', appendMessageTypeToURL: false})");
         Assertions.assertTrue(connectLatch.await(5000));
 
-        evaluateScript("window.assert(handshake !== undefined, 'handshake is undefined');");
-        evaluateScript("window.assert(handshake.ext !== undefined, 'handshake without ext');");
+        evaluateScript("""
+                window.assert(handshake !== undefined, 'handshake is undefined');
+                window.assert(handshake.ext !== undefined, 'handshake without ext');
+                """);
         String handshakeURI = evaluateScript("handshake.ext.uri");
         Assertions.assertFalse(handshakeURI.endsWith("/handshake"));
 
-        evaluateScript("window.assert(connect !== undefined, 'connect is undefined');");
-        evaluateScript("window.assert(connect.ext !== undefined, 'connect without ext');");
+        evaluateScript("""
+                window.assert(connect !== undefined, 'connect is undefined');
+                window.assert(connect.ext !== undefined, 'connect without ext');
+                """);
         String connectURI = evaluateScript("connect.ext.uri");
         Assertions.assertFalse(connectURI.endsWith("/connect"));
 
-        evaluateScript("var disconnectLatch = new Latch(1);");
+        evaluateScript("""
+                const disconnectLatch = new Latch(1);
+                let disconnect;
+                cometd.addListener('/meta/disconnect', message => { disconnect = message; disconnectLatch.countDown(); });
+                cometd.disconnect();
+                """);
         Latch disconnectLatch = javaScript.get("disconnectLatch");
-        evaluateScript("var disconnect = undefined;");
-        evaluateScript("cometd.addListener('/meta/disconnect', function(message) { disconnect = message; disconnectLatch.countDown(); });");
-        evaluateScript("cometd.disconnect();");
         Assertions.assertTrue(disconnectLatch.await(5000));
 
-        evaluateScript("window.assert(disconnect !== undefined, 'disconnect is undefined');");
-        evaluateScript("window.assert(disconnect.ext !== undefined, 'disconnect without ext');");
+        evaluateScript("""
+                window.assert(disconnect !== undefined, 'disconnect is undefined');
+                window.assert(disconnect.ext !== undefined, 'disconnect without ext');
+                """);
         String disconnectURI = evaluateScript("disconnect.ext.uri");
         Assertions.assertFalse(disconnectURI.endsWith("/disconnect"));
     }

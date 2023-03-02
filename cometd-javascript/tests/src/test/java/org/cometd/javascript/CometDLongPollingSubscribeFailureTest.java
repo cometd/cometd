@@ -43,27 +43,28 @@ public class CometDLongPollingSubscribeFailureTest extends AbstractCometDLongPol
         FilterHolder filterHolder = new FilterHolder(filter);
         context.addFilter(filterHolder, cometdServletPath + "/*", EnumSet.of(DispatcherType.REQUEST));
 
-        evaluateScript("var readyLatch = new Latch(1);");
+        evaluateScript("""
+                const readyLatch = new Latch(1);
+                cometd.addListener('/meta/connect', () => readyLatch.countDown());
+                cometd.init({url: '$U', logLevel: '$L'});
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
         Latch readyLatch = javaScript.get("readyLatch");
-        evaluateScript("cometd.addListener('/meta/connect', function() { readyLatch.countDown(); });");
-        evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'})");
         Assertions.assertTrue(readyLatch.await(5000));
 
-        evaluateScript("var subscribeLatch = new Latch(1);");
+        evaluateScript("""
+                const subscribeLatch = new Latch(1);
+                cometd.addListener('/meta/subscribe', () => subscribeLatch.countDown());
+                const failureLatch = new Latch(1);
+                cometd.addListener('/meta/unsuccessful', () => failureLatch.countDown());
+                cometd.subscribe('/echo', () => subscribeLatch.countDown());
+                """);
         Latch subscribeLatch = javaScript.get("subscribeLatch");
-        evaluateScript("var failureLatch = new Latch(1);");
-        Latch failureLatch = javaScript.get("failureLatch");
-        String script = "cometd.addListener('/meta/subscribe', function() { subscribeLatch.countDown(); });";
-        script += "cometd.addListener('/meta/unsuccessful', function() { failureLatch.countDown(); });";
-        evaluateScript(script);
-
-        evaluateScript("cometd.subscribe('/echo', function() { subscribeLatch.countDown(); });");
         Assertions.assertTrue(subscribeLatch.await(5000));
+        Latch failureLatch = javaScript.get("failureLatch");
         Assertions.assertTrue(failureLatch.await(5000));
 
         // Be sure there is no backoff
-        evaluateScript("var backoff = cometd.getBackoffPeriod();");
-        int backoff = ((Number)javaScript.get("backoff")).intValue();
+        int backoff = ((Number)evaluateScript("cometd.getBackoffPeriod()")).intValue();
         Assertions.assertEquals(0, backoff);
 
         disconnect();
@@ -79,31 +80,31 @@ public class CometDLongPollingSubscribeFailureTest extends AbstractCometDLongPol
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 try {
                     Thread.sleep(sleep);
-                } catch (InterruptedException x) {
-                    // Ignored.
+                } catch (InterruptedException ignored) {
                 }
                 return true;
             }
         });
 
-        evaluateScript("var readyLatch = new Latch(1);");
+        evaluateScript("""
+                const readyLatch = new Latch(1);
+                cometd.addListener('/meta/connect', () => readyLatch.countDown());
+                cometd.init({url: '$U', logLevel: '$L', maxNetworkDelay: $M});
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()).replace("$M", String.valueOf(maxNetworkDelay)));
         Latch readyLatch = javaScript.get("readyLatch");
-        evaluateScript("cometd.addListener('/meta/connect', function() { readyLatch.countDown(); });");
-        evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'," +
-                "maxNetworkDelay: " + maxNetworkDelay + "})");
         Assertions.assertTrue(readyLatch.await(5000));
 
-        evaluateScript("var subscribeLatch = new Latch(1);");
-        Latch subscribeLatch = javaScript.get("subscribeLatch");
-        evaluateScript("var messageLatch = new Latch(1);");
-        Latch messageLatch = javaScript.get("messageLatch");
         String channelName = "/echo";
-        evaluateScript("cometd.subscribe('" + channelName + "', function() { messageLatch.countDown(); }, " +
-                "function(reply) {" +
-                "   if (reply.successful === false) {" +
-                "       subscribeLatch.countDown();" +
-                "   }" +
-                "});");
+        evaluateScript("""
+                const subscribeLatch = new Latch(1);
+                const messageLatch = new Latch(1);
+                cometd.subscribe('$C', () => messageLatch.countDown(), reply => {
+                   if (reply.successful === false) {
+                       subscribeLatch.countDown();
+                   }
+                });
+                """.replace("$C", channelName));
+        Latch subscribeLatch = javaScript.get("subscribeLatch");
         Assertions.assertTrue(subscribeLatch.await(5000));
 
         // Wait for the subscription to happen on server.
@@ -112,6 +113,7 @@ public class CometDLongPollingSubscribeFailureTest extends AbstractCometDLongPol
         // Subscription has failed on the client, but not on server.
         // Emitting a message on server must not be received by the client.
         bayeuxServer.getChannel(channelName).publish(null, "data", Promise.noop());
+        Latch messageLatch = javaScript.get("messageLatch");
         Assertions.assertFalse(messageLatch.await(1000));
 
         disconnect();

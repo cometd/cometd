@@ -18,6 +18,7 @@ package org.cometd.javascript;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
@@ -36,11 +37,9 @@ public class CometDMaxMessageSizeTest extends AbstractCometDTransportsTest {
         Arrays.fill(chars, 'a');
         String data = new String(chars);
 
-        evaluateScript("cometd.configure({" +
-                "url: '" + cometdURL + "', " +
-                "maxSendBayeuxMessageSize: " + maxMessageSize + ", " +
-                "logLevel: '" + getLogLevel() + "'" +
-                "});");
+        evaluateScript("""
+                cometd.configure({url: '$U', logLevel: '$L', maxSendBayeuxMessageSize: $M});
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()).replace("$M", String.valueOf(maxMessageSize)));
 
         String channelName = "/max_msg";
 
@@ -53,18 +52,20 @@ public class CometDMaxMessageSizeTest extends AbstractCometDTransportsTest {
             }
         });
 
-        evaluateScript("var clientLatch = new Latch(1);");
+        evaluateScript("""
+                const clientLatch = new Latch(1);
+                cometd.handshake(hsReply => {
+                  if (hsReply.successful) {
+                    cometd.publish('$C', '$D', reply => {
+                      if (!reply.successful) {
+                        clientLatch.countDown();
+                      }
+                    });
+                  }
+                });
+                """.replace("$C", channelName).replace("$D", data));
+        
         Latch clientLatch = javaScript.get("clientLatch");
-        evaluateScript("cometd.handshake(function(hsReply) {" +
-                "  if (hsReply.successful) {" +
-                "    cometd.publish('" + channelName + "', '" + data + "', function(reply) {" +
-                "      if (!reply.successful) {" +
-                "        clientLatch.countDown();" +
-                "      }" +
-                "    });" +
-                "  }" +
-                "});");
-
         Assertions.assertTrue(clientLatch.await(5000));
         // The message should not reach the server.
         Assertions.assertFalse(serverLatch.await(1, TimeUnit.SECONDS));

@@ -16,6 +16,7 @@
 package org.cometd.javascript;
 
 import java.util.Map;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -30,54 +31,48 @@ public class CometDWebSocketServerProtocolTest extends AbstractCometDWebSocketTe
 
     @Test
     public void testClientWithoutWebSocketProtocolServerWithWebSocketProtocol() throws Exception {
-        evaluateScript("cometd.configure({" +
-                "url: '" + cometdURL + "', " +
-                "logLevel: '" + getLogLevel() + "'" +
-                "});");
-
-        evaluateScript("var latch = new Latch(1);");
-        Latch latch = javaScript.get("latch");
         String channelName = "/bar";
-        evaluateScript("cometd.addListener('/meta/handshake', function(message) {" +
-                "   if (message.successful) {" +
-                "       cometd.batch(function() {" +
-                "           cometd.subscribe('" + channelName + "', function() { latch.countDown(); });" +
-                "           cometd.publish('" + channelName + "', {});" +
-                "       });" +
-                "   }" +
-                "});");
+        evaluateScript("""
+                cometd.configure({url: '$U', logLevel: '$L'});
+                const latch = new Latch(1);
+                cometd.addListener('/meta/handshake', message => {
+                   if (message.successful) {
+                       cometd.batch(function() {
+                           cometd.subscribe('$C', () => latch.countDown());
+                           cometd.publish('$C', {});
+                       });
+                   }
+                });
+                cometd.handshake();
+                """.replace("$U", cometdURL).replace("$L", getLogLevel())
+                .replace("$C", channelName));
 
-        evaluateScript("cometd.handshake();");
+        Latch latch = javaScript.get("latch");
         Assertions.assertFalse(latch.await(1000));
     }
 
     @Test
     public void testClientWithWebSocketProtocolServerWithWebSocketProtocol() throws Exception {
-        evaluateScript("cometd.configure({" +
-                "url: '" + cometdURL + "', " +
-                "protocol: '" + PROTOCOL + "', " +
-                "logLevel: '" + getLogLevel() + "'" +
-                "});");
-
-        evaluateScript("var latch = new Latch(1);");
-        Latch latch = javaScript.get("latch");
         String channelName = "/bar";
-        evaluateScript("cometd.addListener('/meta/handshake', function(message) {" +
-                "   if (message.successful) {" +
-                "       cometd.batch(function() {" +
-                "           cometd.subscribe('" + channelName + "', function() { latch.countDown(); });" +
-                "           cometd.publish('" + channelName + "', {});" +
-                "       });" +
-                "   }" +
-                "});");
+        evaluateScript("""
+                cometd.configure({url: '$U', logLevel: '$L', protocol: '$P'});
+                const latch = new Latch(1);
+                cometd.addListener('/meta/handshake', message => {
+                   if (message.successful) {
+                       cometd.batch(function() {
+                           cometd.subscribe('$C', () => latch.countDown());
+                           cometd.publish('$C', {});
+                       });
+                   }
+                });
+                cometd.handshake();
+                """.replace("$U", cometdURL).replace("$L", getLogLevel())
+                .replace("$P", PROTOCOL)
+                .replace("$C", channelName));
 
-        evaluateScript("cometd.handshake();");
+        Latch latch = javaScript.get("latch");
         Assertions.assertTrue(latch.await(5000));
 
-        evaluateScript("var disconnectLatch = new Latch(1);");
-        Latch disconnectLatch = javaScript.get("disconnectLatch");
-        evaluateScript("cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });");
-        evaluateScript("cometd.disconnect();");
-        Assertions.assertTrue(disconnectLatch.await(5000));
+        disconnect();
     }
 }

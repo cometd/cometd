@@ -20,6 +20,7 @@ import java.net.CookieManager;
 import java.net.CookiePolicy;
 import java.net.CookieStore;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
@@ -55,15 +56,15 @@ public abstract class HttpClientTransport extends ClientTransport {
         return getHttpCookieStore().match(uri);
     }
 
-    protected void storeCookies(URI uri, Map<String, List<String>> cookies) {
+    protected void storeCookies(URI uri, Map<String, List<String>> headers) {
         // TODO: change this old API that uses java.net to use Jetty 12 cookie APIs.
         try {
             Store store = new Store();
             CookieManager cookieManager = new CookieManager(store, CookiePolicy.ACCEPT_ALL);
-            cookieManager.put(uri, cookies);
-            HttpCookie cookie = store.cookie;
-            if (cookie != null) {
-                cookieStore.add(uri, cookie);
+            cookieManager.put(uri, headers);
+            List<HttpCookie> cookies = store.cookies;
+            if (cookies != null) {
+                cookies.forEach(cookie -> cookieStore.add(uri, cookie));
             }
         } catch (IOException x) {
             if (LOGGER.isDebugEnabled()) {
@@ -74,7 +75,7 @@ public abstract class HttpClientTransport extends ClientTransport {
 
     private static class Store implements CookieStore
     {
-        private HttpCookie cookie;
+        private List<HttpCookie> cookies;
 
         @Override
         public void add(URI uri, java.net.HttpCookie cookie)
@@ -82,7 +83,10 @@ public abstract class HttpClientTransport extends ClientTransport {
             String domain = cookie.getDomain();
             if ("localhost.local".equals(domain))
                 cookie.setDomain("localhost");
-            this.cookie = HttpCookie.from(cookie);
+            if (cookies == null) {
+                cookies = new ArrayList<>();
+            }
+            cookies.add(HttpCookie.from(cookie));
         }
 
         @Override

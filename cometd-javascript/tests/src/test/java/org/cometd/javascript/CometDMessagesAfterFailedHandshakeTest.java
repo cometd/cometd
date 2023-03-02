@@ -35,25 +35,26 @@ public class CometDMessagesAfterFailedHandshakeTest extends AbstractCometDTransp
     public void testSubscribeAfterFailedHandshake(String transport) throws Exception {
         initCometDServer(transport);
 
-        evaluateScript("var handshakeLatch = new Latch(1);");
+        evaluateScript("""
+                const handshakeLatch = new Latch(1);
+                cometd.addListener('/meta/handshake', message => {
+                    if (!message.successful) {
+                        cometd.subscribe('/foo', () => {});
+                        handshakeLatch.countDown();
+                    }
+                });
+                const subscribeLatch = new Latch(1);
+                cometd.addListener('/meta/subscribe', message => {
+                    if (!message.successful) {
+                        subscribeLatch.countDown();
+                    }
+                });
+                cometd.init({url: '$U', logLevel: '$L'});
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
+        
         Latch handshakeLatch = javaScript.get("handshakeLatch");
-        evaluateScript("var subscribeLatch = new Latch(1);");
-        Latch subscribeLatch = javaScript.get("subscribeLatch");
-        evaluateScript("" +
-                "cometd.addListener('/meta/handshake', function(message) {" +
-                "    if (!message.successful) {" +
-                "        cometd.subscribe('/foo', function() {});" +
-                "        handshakeLatch.countDown();" +
-                "    }" +
-                "});" +
-                "cometd.addListener('/meta/subscribe', function(message) {" +
-                "    if (!message.successful) {" +
-                "        subscribeLatch.countDown();" +
-                "    }" +
-                "});" +
-                "cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
-
         Assertions.assertTrue(handshakeLatch.await(5000));
+        Latch subscribeLatch = javaScript.get("subscribeLatch");
         Assertions.assertTrue(subscribeLatch.await(5000));
 
         disconnect();
@@ -64,25 +65,26 @@ public class CometDMessagesAfterFailedHandshakeTest extends AbstractCometDTransp
     public void testPublishAfterFailedHandshake(String transport) throws Exception {
         initCometDServer(transport);
 
-        evaluateScript("var handshakeLatch = new Latch(1);");
-        Latch handshakeLatch = javaScript.get("handshakeLatch");
-        evaluateScript("var publishLatch = new Latch(1);");
-        Latch publishLatch = javaScript.get("publishLatch");
-        evaluateScript("" +
-                "cometd.addListener('/meta/handshake', function(message) {" +
-                "    if (!message.successful) {" +
-                "        cometd.publish('/foo', {});" +
-                "        handshakeLatch.countDown();" +
-                "    }" +
-                "});" +
-                "cometd.addListener('/meta/publish', function(message) {" +
-                "    if (!message.successful) {" +
-                "        publishLatch.countDown();" +
-                "    }" +
-                "});" +
-                "cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
+        evaluateScript("""
+                const handshakeLatch = new Latch(1);
+                const publishLatch = new Latch(1);
+                cometd.addListener('/meta/handshake', message => {
+                    if (!message.successful) {
+                        cometd.publish('/foo', {});
+                        handshakeLatch.countDown();
+                    }
+                });
+                cometd.addListener('/meta/publish', message => {
+                    if (!message.successful) {
+                        publishLatch.countDown();
+                    }
+                });
+                cometd.init({url: '$U', logLevel: '$L'});
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
 
+        Latch handshakeLatch = javaScript.get("handshakeLatch");
         Assertions.assertTrue(handshakeLatch.await(5000));
+        Latch publishLatch = javaScript.get("publishLatch");
         Assertions.assertTrue(publishLatch.await(5000));
 
         disconnect();

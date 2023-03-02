@@ -51,20 +51,24 @@ public class CometDCrossOriginReHandshakeTest extends AbstractCometDLongPollingT
         bayeuxServer.addExtension(new ReHandshakeExtension());
 
         String crossOriginCometDURL = cometdURL.replace("localhost", "127.0.0.1");
-        evaluateScript("cometd.configure({" +
-                "url: '" + crossOriginCometDURL + "', " +
-                "requestHeaders: { Origin: 'http://localhost:8080' }, " +
-                "logLevel: '" + getLogLevel() + "'" +
-                "});");
-        evaluateScript("var handshakeLatch = new Latch(2);");
-        evaluateScript("var connectLatch = new Latch(2);");
-        Latch handshakeLatch = javaScript.get("handshakeLatch");
-        Latch connectLatch = javaScript.get("connectLatch");
-        evaluateScript("cometd.addListener('/meta/handshake', function() { handshakeLatch.countDown(); });");
-        evaluateScript("cometd.addListener('/meta/connect', function() { connectLatch.countDown(); });");
-        evaluateScript("cometd.handshake();");
+        evaluateScript("""
+                cometd.configure({
+                    url: '$U',
+                    logLevel: '$L',
+                    requestHeaders: {
+                        Origin: 'http://localhost:8080'
+                    }
+                });
+                const handshakeLatch = new Latch(2);
+                const connectLatch = new Latch(2);
+                cometd.addListener('/meta/handshake', () => handshakeLatch.countDown());
+                cometd.addListener('/meta/connect', () => connectLatch.countDown());
+                cometd.handshake();
+                """.replace("$U", crossOriginCometDURL).replace("$L", getLogLevel()));
 
+        Latch connectLatch = javaScript.get("connectLatch");
         Assertions.assertTrue(connectLatch.await(metaConnectPeriod + 5000));
+        Latch handshakeLatch = javaScript.get("handshakeLatch");
         Assertions.assertTrue(handshakeLatch.await(5000));
         Assertions.assertEquals("long-polling", evaluateScript("cometd.getTransport().getType()"));
 

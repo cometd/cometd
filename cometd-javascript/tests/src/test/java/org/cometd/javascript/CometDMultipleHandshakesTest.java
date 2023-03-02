@@ -25,21 +25,24 @@ public class CometDMultipleHandshakesTest extends AbstractCometDTransportsTest {
     public void testMultipleHandshakes(String transport) throws Exception {
         initCometDServer(transport);
 
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
-        evaluateScript("var handshakeLatch = new Latch(1);");
+        evaluateScript("""
+                cometd.configure({url: '$U', logLevel: '$L'});
+                const handshakeLatch = new Latch(1);
+                cometd.addListener('/meta/handshake', () => handshakeLatch.countDown());
+                cometd.handshake();
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
+
         Latch handshakeLatch = javaScript.get("handshakeLatch");
-        evaluateScript("cometd.addListener('/meta/handshake', function(m) { handshakeLatch.countDown(); });");
-        evaluateScript("cometd.handshake();");
         Assertions.assertTrue(handshakeLatch.await(5000));
 
         // Handshake again.
-        evaluateScript("" +
-                "try {" +
-                "    cometd.handshake();" +
-                "    window.assert(false);" +
-                "} catch (x) {" +
-                "}" +
-                "");
+        evaluateScript("""
+                try {
+                    cometd.handshake();
+                    window.assert(false);
+                } catch (x) {
+                }
+                """);
 
         disconnect();
     }

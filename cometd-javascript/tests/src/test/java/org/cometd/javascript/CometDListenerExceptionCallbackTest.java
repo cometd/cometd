@@ -25,25 +25,27 @@ public class CometDListenerExceptionCallbackTest extends AbstractCometDTransport
     public void testListenerExceptionCallback(String transport) throws Exception {
         initCometDServer(transport);
 
-        evaluateScript("var latch = new Latch(1);");
+        evaluateScript("""
+                const latch = new Latch(1);
+                const connectLatch = new Latch(1);
+                cometd.configure({url: '$U', logLevel: '$L'});
+                const handshakeSubscription = cometd.addListener('/meta/handshake', () => { throw 'test'; });
+                cometd.addListener('/meta/connect', () => connectLatch.countDown());
+
+                cometd.onListenerException = function(exception, subscriptionHandle, isListener, message) {
+                   if (exception === 'test' && handshakeSubscription === subscriptionHandle && isListener === true) {
+                       this.removeListener(subscriptionHandle);
+                       latch.countDown();
+                   }
+                };
+
+                cometd.handshake();
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
+
         Latch latch = javaScript.get("latch");
-        evaluateScript("var connectLatch = new Latch(1);");
-        Latch connectLatch = javaScript.get("connectLatch");
-        evaluateScript("" +
-                "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
-                "var handshakeSubscription = cometd.addListener('/meta/handshake', function() { throw 'test'; });" +
-                "cometd.addListener('/meta/connect', function() { connectLatch.countDown(); });" +
-                "" +
-                "cometd.onListenerException = function(exception, subscriptionHandle, isListener, message) {" +
-                "   if (exception === 'test' && handshakeSubscription === subscriptionHandle && isListener === true) {" +
-                "       this.removeListener(subscriptionHandle);" +
-                "       latch.countDown();" +
-                "   }" +
-                "};" +
-                "" +
-                "cometd.handshake();");
         Assertions.assertTrue(latch.await(5000));
 
+        Latch connectLatch = javaScript.get("connectLatch");
         Assertions.assertTrue(connectLatch.await(5000));
 
         disconnect();
@@ -54,21 +56,23 @@ public class CometDListenerExceptionCallbackTest extends AbstractCometDTransport
     public void testSubscriberExceptionCallback(String transport) throws Exception {
         initCometDServer(transport);
 
-        evaluateScript("var latch = new Latch(1);");
+        evaluateScript("""
+                const latch = new Latch(1);
+                cometd.configure({url: '$U', logLevel: '$L'});
+                let channelSubscription;
+                cometd.onListenerException = function(exception, subscriptionHandle, isListener, message) {
+                   if (exception === 'test' && channelSubscription === subscriptionHandle && isListener === false) {
+                       this.unsubscribe(subscriptionHandle);
+                   }
+                };
+
+                cometd.addListener('/meta/unsubscribe', () => latch.countDown());
+                cometd.handshake(() => {
+                    channelSubscription = cometd.subscribe('/test', () => { throw 'test'; });
+                    cometd.publish('/test', {});
+                });
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
         Latch latch = javaScript.get("latch");
-        evaluateScript("" +
-                "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
-                "var channelSubscription = undefined;" +
-                "cometd.onListenerException = function(exception, subscriptionHandle, isListener, message) {" +
-                "   if (exception === 'test' && channelSubscription === subscriptionHandle && isListener === false) {" +
-                "       this.unsubscribe(subscriptionHandle);" +
-                "   }" +
-                "};" +
-                "" +
-                "cometd.addListener('/meta/unsubscribe', function() { latch.countDown(); });" +
-                "cometd.handshake();" +
-                "channelSubscription = cometd.subscribe('/test', function() { throw 'test'; });" +
-                "cometd.publish('/test', {});");
         Assertions.assertTrue(latch.await(5000));
 
         disconnect();

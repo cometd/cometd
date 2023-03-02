@@ -32,46 +32,40 @@ public class CometDSubscribeWithPublishDeniedTest extends AbstractCometDTranspor
 
         bayeuxServer.setSecurityPolicy(new Policy());
 
-        evaluateScript("var subscribeLatch = new Latch(1);");
+        evaluateScript("""
+                const subscribeLatch = new Latch(1);
+                const publishLatch = new Latch(1);
+                let subscribeFailed = false;
+                let publishFailed = false;
+                const channelName = '/foo';
+                cometd.addListener('/meta/handshake', () => {
+                    cometd.subscribe(channelName, () => {});
+                });
+                cometd.addListener('/meta/subscribe', message => {
+                    if (!message.successful) {
+                        subscribeFailed = true;
+                    }
+                    subscribeLatch.countDown();
+                });
+                cometd.addListener('/meta/publish', message => {
+                    if (!message.successful) {
+                        publishFailed = true;
+                    }
+                    publishLatch.countDown();
+                });
+                cometd.init({url: '$U', logLevel: '$L'});
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
         Latch subscribeLatch = javaScript.get("subscribeLatch");
-        evaluateScript("var publishLatch = new Latch(1);");
-        Latch publishLatch = javaScript.get("publishLatch");
-        evaluateScript("" +
-                "var subscribeFailed = false;" +
-                "var publishFailed = false;" +
-                "" +
-                "var channelName = '/foo';" +
-                "cometd.addListener('/meta/handshake', function() {" +
-                "    cometd.subscribe(channelName, function() {});" +
-                "});" +
-                "" +
-                "cometd.addListener('/meta/subscribe', function(message) {" +
-                "    if (!message.successful) {" +
-                "        subscribeFailed = true;" +
-                "    }" +
-                "    subscribeLatch.countDown();" +
-                "});" +
-                "" +
-                "cometd.addListener('/meta/publish', function(message) {" +
-                "    if (!message.successful) {" +
-                "        publishFailed = true;" +
-                "    }" +
-                "    publishLatch.countDown();" +
-                "});" +
-                "" +
-                "cometd.init({ url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "' });" +
-                "");
         Assertions.assertTrue(subscribeLatch.await(5000));
         boolean subscribeFailed = javaScript.get("subscribeFailed");
         Assertions.assertFalse(subscribeFailed);
 
-        evaluateScript("" +
-                "cometd.publish(channelName, {});" +
-                "");
+        evaluateScript("cometd.publish(channelName, {});");
 
+        Latch publishLatch = javaScript.get("publishLatch");
         Assertions.assertTrue(publishLatch.await(5000));
         boolean publishFailed = javaScript.get("publishFailed");
-        // Denied by policy
+        // Denied by policy.
         Assertions.assertTrue(publishFailed);
 
         disconnect();

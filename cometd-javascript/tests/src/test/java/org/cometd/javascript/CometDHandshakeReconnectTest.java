@@ -18,6 +18,7 @@ package org.cometd.javascript;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
@@ -40,17 +41,18 @@ public class CometDHandshakeReconnectTest extends AbstractCometDTransportsTest {
     public void testReconnectUsingHandshake(String transport) throws Exception {
         initCometDServer(transport);
 
-        evaluateScript("var connectLatch = new Latch(1);");
+        evaluateScript("""
+                const connectLatch = new Latch(1);
+                cometd.addListener('/meta/connect', m => {
+                   if (m.successful) {
+                       connectLatch.countDown();
+                   }
+                });
+                cometd.configure({url: '$U', logLevel: '$L'});
+                cometd.handshake();
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
+        
         Latch connectLatch = javaScript.get("connectLatch");
-        evaluateScript("cometd.addListener('/meta/connect', function(m) {" +
-                "   if (m.successful) {" +
-                "       connectLatch.countDown();" +
-                "   }" +
-                "});");
-
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
-        evaluateScript("cometd.handshake();");
-
         Assertions.assertTrue(connectLatch.await(5000));
 
         // Wait for the /meta/connect to be held.
@@ -60,13 +62,14 @@ public class CometDHandshakeReconnectTest extends AbstractCometDTransportsTest {
         connector.stop();
 
         // Add a /meta/handshake listener to be sure we reconnect using handshake.
-        evaluateScript("var handshakeReconnect = new Latch(1);");
-        Latch handshakeReconnect = javaScript.get("handshakeReconnect");
-        evaluateScript("cometd.addListener('/meta/handshake', function(m) {" +
-                "   if (!m.successful) {" +
-                "       handshakeReconnect.countDown();" +
-                "   }" +
-                "});");
+        evaluateScript("""
+                const handshakeReconnect = new Latch(1);
+                cometd.addListener('/meta/handshake', m => {
+                   if (!m.successful) {
+                       handshakeReconnect.countDown();
+                   }
+                });
+                """);
 
         // Wait for the session to be swept (timeout + maxInterval).
         CountDownLatch sessionRemoved = new CountDownLatch(1);
@@ -81,6 +84,7 @@ public class CometDHandshakeReconnectTest extends AbstractCometDTransportsTest {
         long maxInterval = Long.parseLong((String)bayeuxServer.getOption(AbstractServerTransport.MAX_INTERVAL_OPTION));
         Assertions.assertTrue(sessionRemoved.await(timeout + 2 * maxInterval, TimeUnit.MILLISECONDS));
 
+        Latch handshakeReconnect = javaScript.get("handshakeReconnect");
         Assertions.assertTrue(handshakeReconnect.await(10000));
 
         // Restart the connector.

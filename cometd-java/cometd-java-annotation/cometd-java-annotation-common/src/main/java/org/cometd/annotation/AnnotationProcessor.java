@@ -206,7 +206,7 @@ public class AnnotationProcessor {
 
     protected Object getField(Object bean, Field field) {
         try {
-            if (field.canAccess(bean)) {
+            if (!field.canAccess(bean)) {
                 field.setAccessible(true);
             }
             return field.get(bean);

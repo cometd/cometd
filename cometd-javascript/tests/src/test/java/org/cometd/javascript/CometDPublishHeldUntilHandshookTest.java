@@ -16,6 +16,7 @@
 package org.cometd.javascript;
 
 import java.util.List;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -26,34 +27,34 @@ public class CometDPublishHeldUntilHandshookTest extends AbstractCometDTransport
     public void testPublishHeldUntilHandshook(String transport) throws Exception {
         initCometDServer(transport);
 
-        evaluateScript("" +
-                "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
-                "var latch = new Latch(2);" +
-                "var savedChannels;" +
-                "var channels = [];" +
-                "cometd.registerExtension('test', {" +
-                "    outgoing: function(message) {" +
-                "        channels.push(message.channel);" +
-                "    }" +
-                "});" +
-                "cometd.addListener('/meta/handshake', function(message) {" +
-                "    cometd.publish('/bar', {});" +
-                "    cometd.batch(function() {" +
-                "        cometd.subscribe('/foo', function() { latch.countDown(); });" +
-                "        cometd.publish('/foo', {});" +
-                "    });" +
-                "});" +
-                "cometd.addListener('/meta/connect', function(message) {" +
-                "   /* Copy the array so that from now on it is not modified anymore */" +
-                "   if (!savedChannels) {" +
-                "       savedChannels = channels.slice(0);" +
-                "       latch.countDown();" +
-                "   }" +
-                "});" +
-                "");
-        Latch latch = javaScript.get("latch");
-        evaluateScript("cometd.handshake();");
+        evaluateScript("""
+                cometd.configure({url: '$U', logLevel: '$L'});
+                const latch = new Latch(2);
+                let savedChannels;
+                const channels = [];
+                cometd.registerExtension('test', {
+                    outgoing: message => {
+                        channels.push(message.channel);
+                    }
+                });
+                cometd.addListener('/meta/handshake', () => {
+                    cometd.publish('/bar', {});
+                    cometd.batch(() => {
+                        cometd.subscribe('/foo', () => latch.countDown());
+                        cometd.publish('/foo', {});
+                    });
+                });
+                cometd.addListener('/meta/connect', () => {
+                   // Copy the array so that from now on it is not modified anymore.
+                   if (!savedChannels) {
+                       savedChannels = channels.slice(0);
+                       latch.countDown();
+                   }
+                });
+                cometd.handshake();
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
 
+        Latch latch = javaScript.get("latch");
         Assertions.assertTrue(latch.await(5000));
 
         String[] channels = javaScript.evaluate(null, "Java.to(savedChannels, 'java.lang.String[]')");

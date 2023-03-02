@@ -32,6 +32,7 @@ import org.cometd.server.http.JSONTransport;
 import org.cometd.server.websocket.jakarta.WebSocketTransport;
 import org.cometd.server.websocket.jetty.JettyWebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.websocket.client.WebSocketClient;
@@ -103,7 +104,7 @@ public abstract class ClientServerWebSocketTest {
         serverThreads.setName("server");
         server = new Server(serverThreads);
 
-        connector = new ServerConnector(server);
+        connector = new ServerConnector(server, 1, 1);
         connector.setPort(port);
         server.addConnector(connector);
 
@@ -142,7 +143,7 @@ public abstract class ClientServerWebSocketTest {
     protected void prepareClient(String wsType) {
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
-        httpClient = new HttpClient();
+        httpClient = new HttpClient(new HttpClientTransportOverHTTP(1));
         httpClient.setExecutor(clientThreads);
         switch (wsType) {
             case WEBSOCKET_JAKARTA -> {

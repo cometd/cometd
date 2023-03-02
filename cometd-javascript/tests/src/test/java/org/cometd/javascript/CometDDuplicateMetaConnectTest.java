@@ -21,32 +21,28 @@ public class CometDDuplicateMetaConnectTest extends AbstractCometDLongPollingTes
     @Test
     public void testDuplicateMetaConnectWithoutFailingExistingMetaConnect() throws Exception {
         long backoff = 500;
-        evaluateScript("cometd.configure({" +
-                "url: '" + cometdURL + "'," +
-                "logLevel: '" + getLogLevel() + "'," +
-                "backoffIncrement: " + backoff +
-                "});");
-
-        evaluateScript("" +
-                "var metaConnectIds = [];" +
-                "cometd.addListener('/meta/connect', function(message) {" +
-                "  metaConnectIds.push(message.id);" +
-                "});");
-
-        evaluateScript("cometd.handshake();");
+        evaluateScript("""
+                cometd.configure({url: '$U', logLevel: '$L', backoffIncrement: $B});
+                const metaConnectIds = [];
+                cometd.addListener('/meta/connect', message => {
+                  metaConnectIds.push(message.id);
+                });
+                cometd.handshake();
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()).replace("$B", String.valueOf(backoff)));
 
         // Wait for the /meta/connect to be held by the server.
         Thread.sleep(1000);
 
         // Simulate that a failed /meta/connect reply
         // arrives unexpectedly, it should be dropped.
-        evaluateScript("cometd.receive({" +
-                "  \"id\": \"0\"," +
-                "  \"successful\": false," +
-                "  \"channel\": \"/meta/connect\"" +
-                "});");
-
-        evaluateScript("window.assert(metaConnectIds.indexOf(\"0\") < 0);");
+        evaluateScript("""
+                cometd.receive({
+                    id: "0",
+                    successful: false,
+                    channel: "/meta/connect"
+                });
+                window.assert(metaConnectIds.indexOf('"0"') < 0);
+                """);
 
         disconnect();
     }

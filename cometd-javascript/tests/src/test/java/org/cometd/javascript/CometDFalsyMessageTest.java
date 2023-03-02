@@ -38,27 +38,27 @@ public class CometDFalsyMessageTest extends AbstractCometDTransportsTest {
         initCometDServer(transport);
 
         String channelName = "/foo";
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
+        evaluateScript("""
+                cometd.configure({url: '$U', logLevel: '$L'});
+                const messageLatch = new Latch(1);
+                cometd.addListener('/meta/handshake', m => {
+                    if (m.successful) {
+                        cometd.subscribe('$C', () => messageLatch.countDown());
+                    }
+                });
+                const subscribeLatch = new Latch(1);
+                cometd.addListener('/meta/subscribe', () => subscribeLatch.countDown());
+                cometd.handshake();
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()).replace("$C", channelName));
 
-        evaluateScript("var messageLatch = new Latch(1);");
-        Latch messageLatch = javaScript.get("messageLatch");
-        evaluateScript("cometd.addListener('/meta/handshake', function(m) {" +
-                "    if (m.successful) {" +
-                "        cometd.subscribe('" + channelName + "', function() { messageLatch.countDown(); });" +
-                "    }" +
-                "});");
-
-        evaluateScript("var subscribeLatch = new Latch(1);");
         Latch subscribeLatch = javaScript.get("subscribeLatch");
-        evaluateScript("cometd.addListener('/meta/subscribe', function() { subscribeLatch.countDown(); });");
-
-        evaluateScript("cometd.handshake();");
         Assertions.assertTrue(subscribeLatch.await(5000));
 
         String sessionId = evaluateScript("cometd.getClientId();");
         ServerSession session = bayeuxServer.getSession(sessionId);
         session.deliver(null, channelName, content, Promise.noop());
 
+        Latch messageLatch = javaScript.get("messageLatch");
         Assertions.assertTrue(messageLatch.await(5000));
     }
 }

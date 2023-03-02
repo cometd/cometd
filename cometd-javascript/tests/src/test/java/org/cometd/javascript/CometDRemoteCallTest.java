@@ -17,6 +17,7 @@ package org.cometd.javascript;
 
 import java.util.HashMap;
 import java.util.Map;
+
 import org.cometd.annotation.Service;
 import org.cometd.annotation.server.RemoteCall;
 import org.cometd.annotation.server.ServerAnnotationProcessor;
@@ -39,20 +40,24 @@ public class CometDRemoteCallTest extends AbstractCometDTransportsTest {
         String response = "response";
         processor.process(new RemoteCallWithResultService(response));
 
-        evaluateScript("cometd.init({ url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "' });");
+
+        evaluateScript("cometd.init({url: '$U', logLevel: '$L'});"
+                .replace("$U", cometdURL).replace("$L", getLogLevel()));
         Thread.sleep(1000); // Wait for /meta/connect
 
-        evaluateScript("var latch = new Latch(1);");
-        Latch latch = javaScript.get("latch");
-
         String request = "request";
-        evaluateScript("cometd.remoteCall('" + RemoteCallWithResultService.CHANNEL + "', '" + request + "', " +
-                "function(response) {" +
-                "    window.assert(response.successful === true, 'missing successful field');" +
-                "    window.assert(response.data === '" + response + "', 'wrong response');" +
-                "    latch.countDown();" +
-                "});");
+        evaluateScript("""
+                const latch = new Latch(1);
+                cometd.remoteCall('$C', '$D', response => {
+                    window.assert(response.successful === true, 'missing successful field');
+                    window.assert(response.data === '$R', 'wrong response');
+                    latch.countDown();
+                });
+                """.replace("$C", RemoteCallWithResultService.CHANNEL)
+                .replace("$D", request)
+                .replace("$R", response));
 
+        Latch latch = javaScript.get("latch");
         Assertions.assertTrue(latch.await(5000));
 
         disconnect();
@@ -82,20 +87,23 @@ public class CometDRemoteCallTest extends AbstractCometDTransportsTest {
         String failure = "response";
         processor.process(new RemoteCallWithFailureService(failure));
 
-        evaluateScript("cometd.init({ url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "' });");
+        evaluateScript("cometd.init({url: '$U', logLevel: '$L'});"
+                .replace("$U", cometdURL).replace("$L", getLogLevel()));
         Thread.sleep(1000); // Wait for /meta/connect
 
-        evaluateScript("var latch = new Latch(1);");
-        Latch latch = javaScript.get("latch");
-
         String request = "request";
-        evaluateScript("cometd.remoteCall('" + RemoteCallWithFailureService.CHANNEL + "', '" + request + "', " +
-                "function(response) {" +
-                "    window.assert(response.successful === false, 'missing successful field');" +
-                "    window.assert(response.data === '" + failure + "', 'wrong response');" +
-                "    latch.countDown();" +
-                "});");
+        evaluateScript("""
+                const latch = new Latch(1);
+                cometd.remoteCall('$C', '$D', response => {
+                    window.assert(response.successful === false, 'missing successful field');
+                    window.assert(response.data === '$R', 'wrong response');
+                    latch.countDown();
+                });
+                """.replace("$C", RemoteCallWithFailureService.CHANNEL)
+                .replace("$D", request)
+                .replace("$R", failure));
 
+        Latch latch = javaScript.get("latch");
         Assertions.assertTrue(latch.await(5000));
 
         disconnect();
@@ -126,26 +134,26 @@ public class CometDRemoteCallTest extends AbstractCometDTransportsTest {
         boolean processed = processor.process(new RemoteCallTimeoutService(timeout));
         Assertions.assertTrue(processed);
 
-        evaluateScript("cometd.init({ url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "' });");
+        evaluateScript("cometd.init({url: '$U', logLevel: '$L'});"
+                .replace("$U", cometdURL).replace("$L", getLogLevel()));
         Thread.sleep(1000); // Wait for /meta/connect
 
-        evaluateScript("var latch = new Latch(1);");
-        Latch latch = javaScript.get("latch");
-
-        evaluateScript("" +
-                "var calls = 0;" +
-                "cometd.remoteCall('" + RemoteCallTimeoutService.CHANNEL + "', {}, " + timeout + ", " +
-                "function(response) {" +
-                "    ++calls;" +
-                "    window.assert(response.successful === false, 'missing successful field');" +
-                "    window.assert(response.error !== undefined, 'missing error field');" +
-                "    latch.countDown();" +
-                "});");
-
+        evaluateScript("""
+                const latch = new Latch(1);
+                let calls = 0;
+                cometd.remoteCall('$C', {}, $T, response => {
+                    ++calls;
+                    window.assert(response.successful === false, 'missing successful field');
+                    window.assert(response.error !== undefined, 'missing error field');
+                    latch.countDown();
+                });
+                """.replace("$C", RemoteCallTimeoutService.CHANNEL)
+                .replace("$T", String.valueOf(timeout)));
         // Wait enough for the server to actually reply,
         // to verify that the callback is not called twice.
         Thread.sleep(3 * timeout);
 
+        Latch latch = javaScript.get("latch");
         Assertions.assertTrue(latch.await(5000));
         Assertions.assertEquals(1, ((Number)javaScript.get("calls")).intValue());
 
@@ -190,24 +198,27 @@ public class CometDRemoteCallTest extends AbstractCometDTransportsTest {
         boolean processed = processor.process(new RemoteCallWithCustomDataClassService(request, response));
         Assertions.assertTrue(processed);
 
-        evaluateScript("var latch = new Latch(1);");
-        Latch latch = javaScript.get("latch");
-
-        evaluateScript("cometd.init({ url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "' });");
+        evaluateScript("cometd.init({url: '$U', logLevel: '$L'});"
+                .replace("$U", cometdURL).replace("$L", getLogLevel()));
         Thread.sleep(1000); // Wait for /meta/connect
 
-        evaluateScript("" +
-                "cometd.remoteCall('" + RemoteCallWithCustomDataClassService.CHANNEL + "', {" +
-                "   class: '" + Custom.class.getName() + "'," +
-                "   payload: '" + request + "'," +
-                "}, " +
-                "function(response) {" +
-                "    window.assert(response.successful === true);" +
-                "    window.assert(response.data !== undefined);" +
-                "    window.assert(response.data.payload == '" + response + "');" +
-                "    latch.countDown();" +
-                "});");
+        evaluateScript("""
+                const latch = new Latch(1);
+                cometd.remoteCall('$C', {
+                    class: '$T',
+                    payload: '$D',
+                }, response => {
+                    window.assert(response.successful === true);
+                    window.assert(response.data !== undefined);
+                    window.assert(response.data.payload == '$R');
+                    latch.countDown();
+                });
+                """.replace("$C", RemoteCallWithCustomDataClassService.CHANNEL)
+                .replace("$T", Custom.class.getName())
+                .replace("$D", request)
+                .replace("$R", response));
 
+        Latch latch = javaScript.get("latch");
         Assertions.assertTrue(latch.await(5000));
 
         disconnect();
@@ -217,8 +228,8 @@ public class CometDRemoteCallTest extends AbstractCometDTransportsTest {
     public static class RemoteCallWithCustomDataClassService {
         public static final String CHANNEL = "/custom_data_class";
 
-        private String request;
-        private String response;
+        private final String request;
+        private final String response;
 
         public RemoteCallWithCustomDataClassService(String request, String response) {
             this.request = request;
@@ -267,32 +278,33 @@ public class CometDRemoteCallTest extends AbstractCometDTransportsTest {
         ServerAnnotationProcessor processor = new ServerAnnotationProcessor(bayeuxServer);
         processor.process(new RemoteCallBinaryService());
 
-        evaluateScript("cometd.init({ url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "' });");
+        evaluateScript("cometd.init({url: '$U', logLevel: '$L'});"
+                .replace("$U", cometdURL).replace("$L", getLogLevel()));
         Thread.sleep(1000); // Wait for /meta/connect
 
-        evaluateScript("var latch = new Latch(1);");
+        evaluateScript("""
+                const latch = new Latch(1);
+                const buffer = new ArrayBuffer(16);
+                const view1 = new DataView(buffer);
+                for (let d = 0; d < view1.byteLength; ++d) {
+                    view1.setUint8(d, d);
+                }
+                const meta = {
+                    contentType: 'application/octet-stream'
+                };
+                cometd.remoteCallBinary('$C', view1, true, meta, response => {
+                    window.assert(response.successful === true, 'missing successful field');
+                    const data = response.data;
+                    window.assert(meta.contentType === data.meta.contentType);
+                    const view2 = new DataView(data.data);
+                    for (let i = 0; i < view1.byteLength; ++i) {
+                        window.assert(view2.getUint8(i) === view1.getUint8(i));
+                    }
+                    latch.countDown();
+                });
+                """.replace("$C", RemoteCallBinaryService.CHANNEL));
+
         Latch latch = javaScript.get("latch");
-
-        evaluateScript("" +
-                "var buffer = new ArrayBuffer(16);" +
-                "var view1 = new DataView(buffer);" +
-                "for (var d = 0; d < view1.byteLength; ++d) {" +
-                "    view1.setUint8(d, d);" +
-                "}" +
-                "var meta = {" +
-                "    contentType: 'application/octet-stream'" +
-                "};" +
-                "cometd.remoteCallBinary('" + RemoteCallBinaryService.CHANNEL + "', view1, true, meta, function(response) {" +
-                "    window.assert(response.successful === true, 'missing successful field');" +
-                "    var data = response.data;" +
-                "    window.assert(meta.contentType === data.meta.contentType);" +
-                "    var view2 = new DataView(data.data);" +
-                "    for (var i = 0; i < view1.byteLength; ++i) {" +
-                "        window.assert(view2.getUint8(i) === view1.getUint8(i));" +
-                "    }" +
-                "    latch.countDown();" +
-                "});");
-
         Assertions.assertTrue(latch.await(5000));
 
         disconnect();

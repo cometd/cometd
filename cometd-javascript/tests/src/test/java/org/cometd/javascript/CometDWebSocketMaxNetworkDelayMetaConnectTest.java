@@ -18,6 +18,7 @@ package org.cometd.javascript;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
@@ -37,31 +38,29 @@ public class CometDWebSocketMaxNetworkDelayMetaConnectTest extends AbstractComet
 
         bayeuxServer.addExtension(new DelayingExtension(metaConnectPeriod + backOffIncrement + maxNetworkDelay + maxNetworkDelay / 2));
 
-        evaluateScript("var latch = new Latch(6);");
-        Latch latch = javaScript.get("latch");
-        evaluateScript("cometd.configure({" +
-                "url: '" + cometdURL + "', " +
-                "backoffIncrement: " + backOffIncrement + ", " +
-                "maxNetworkDelay: " + maxNetworkDelay + ", " +
-                "logLevel: '" + getLogLevel() + "'" +
-                "});");
-        evaluateScript("var connects = 0;");
-        evaluateScript("var failure;");
-        evaluateScript("cometd.addListener('/meta/connect', function(message) {" +
-                "    ++connects;" +
-                "    if (connects === 1 && message.successful ||" +
-                "        connects === 2 && !message.successful ||" +
-                "        connects === 3 && message.successful ||" +
-                "        connects === 4 && !message.successful ||" +
-                "        connects === 5 && message.successful ||" +
-                "        connects === 6 && message.successful) {" +
-                "        latch.countDown();" +
-                "    } else if (!failure) {" +
-                "        failure = 'Failure at connect #' + connects;" +
-                "    }" +
-                "});");
+        evaluateScript("""
+                const latch = new Latch(6);
+                cometd.configure({url: '$U', logLevel: '$L', backoffIncrement: $B, maxNetworkDelay: $M});
+                let connects = 0;
+                let failure;
+                cometd.addListener('/meta/connect', message => {
+                    ++connects;
+                    if (connects === 1 && message.successful ||
+                        connects === 2 && !message.successful ||
+                        connects === 3 && message.successful ||
+                        connects === 4 && !message.successful ||
+                        connects === 5 && message.successful ||
+                        connects === 6 && message.successful) {
+                        latch.countDown();
+                    } else if (!failure) {
+                        failure = 'Failure at connect #' + connects;
+                    }
+                });
+                cometd.handshake();
+                """.replace("$U", cometdURL).replace("$L", getLogLevel())
+                .replace("$B", String.valueOf(backOffIncrement)).replace("$M", String.valueOf(maxNetworkDelay)));
 
-        evaluateScript("cometd.handshake();");
+        Latch latch = javaScript.get("latch");
 
         // First connect returns immediately (time = 0)
         // Second connect is delayed, but client is not aware of this
@@ -80,7 +79,7 @@ public class CometDWebSocketMaxNetworkDelayMetaConnectTest extends AbstractComet
         //   + Second connect is canceled and not replied
         // Sixth connect is replied
 
-        Assertions.assertTrue(latch.await(2 * (3 * metaConnectPeriod + 3 * maxNetworkDelay)));
+        Assertions.assertTrue(latch.await(2L * (3L * metaConnectPeriod + 3L * maxNetworkDelay)));
         evaluateScript("window.assert(failure === undefined, failure);");
 
         disconnect();
@@ -113,14 +112,9 @@ public class CometDWebSocketMaxNetworkDelayMetaConnectTest extends AbstractComet
         long delay = metaConnectPeriod + backOffIncrement + maxNetworkDelay + maxNetworkDelay / 2;
         bayeuxServer.addExtension(new DelayingExtension(delay));
 
-        evaluateScript("cometd.configure({" +
-                "url: '" + cometdURL + "', " +
-                "backoffIncrement: " + backOffIncrement + ", " +
-                "maxNetworkDelay: " + maxNetworkDelay + ", " +
-                "logLevel: '" + getLogLevel() + "'" +
-                "});");
-
-        evaluateScript("cometd.handshake();");
+        evaluateScript("cometd.init({url: '$U', logLevel: '$L', backoffIncrement: $B, maxNetworkDelay: $M});"
+                .replace("$U", cometdURL).replace("$L", getLogLevel())
+                .replace("$B", String.valueOf(backOffIncrement)).replace("$M", String.valueOf(maxNetworkDelay)));
 
         // The second /meta/connect will be delayed on server.
         // The server will expire the session, so further messages will trigger re-handshake.

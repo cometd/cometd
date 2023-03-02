@@ -27,21 +27,23 @@ public class CometDExtensionsTest extends AbstractCometDTransportsTest {
     public void testRegisterUnregister(String transport) throws Exception {
         initCometDServer(transport);
 
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
-        evaluateScript("var inCount = 0;");
-        evaluateScript("var outCount = 0;");
-        evaluateScript("cometd.registerExtension('testin', {" +
-                "incoming: function(message) { ++inCount; return message; }" +
-                "});");
-        evaluateScript("cometd.registerExtension('testout', {" +
-                "outgoing: function(message) { ++outCount; return message; }" +
-                "});");
-        evaluateScript("cometd.registerExtension('testempty', {});");
-
-        evaluateScript("var readyLatch = new Latch(1);");
+        evaluateScript("const readyLatch = new Latch(1);");
         Latch readyLatch = javaScript.get("readyLatch");
-        evaluateScript("cometd.addListener('/meta/connect', function() { readyLatch.countDown(); });");
-        evaluateScript("cometd.handshake();");
+        evaluateScript("""
+                let inCount = 0;
+                let outCount = 0;
+                cometd.configure({url: '$U', logLevel: '$L'});
+                cometd.registerExtension('testin', {
+                    incoming: message => { ++inCount; return message; }
+                });
+                cometd.registerExtension('testout', {
+                    outgoing: message => { ++outCount; return message; }
+                });
+                cometd.registerExtension('testempty', {});
+                cometd.addListener('/meta/connect', () => readyLatch.countDown());
+                cometd.handshake();
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
+
         Assertions.assertTrue(readyLatch.await(5000));
 
         // Wait for the long poll to be established
@@ -57,10 +59,12 @@ public class CometDExtensionsTest extends AbstractCometDTransportsTest {
         unregistered = evaluateScript("cometd.unregisterExtension('testout');");
         Assertions.assertTrue(unregistered);
 
-        evaluateScript("var publishLatch = new Latch(1);");
+        evaluateScript("const publishLatch = new Latch(1);");
         Latch publishLatch = javaScript.get("publishLatch");
-        evaluateScript("cometd.addListener('/meta/publish', function() { publishLatch.countDown(); });");
-        evaluateScript("cometd.publish('/echo', 'ping');");
+        evaluateScript("""
+                cometd.addListener('/meta/publish', () => publishLatch.countDown());
+                cometd.publish('/echo', 'ping');
+                """);
         Assertions.assertTrue(publishLatch.await(5000));
 
         inCount = javaScript.get("inCount");
@@ -76,21 +80,23 @@ public class CometDExtensionsTest extends AbstractCometDTransportsTest {
     public void testExtensions(String transport) throws Exception {
         initCometDServer(transport);
 
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
-
-        evaluateScript("" +
-                "var Listener = Java.type('" + Listener.class.getName() + "');" +
-                "var listener = new Listener();" +
-                "cometd.registerExtension('testext', {" +
-                "incoming: function(message) { listener.incoming(message); return message;}," +
-                "outgoing: function(message) { listener.outgoing(message); return message;}" +
-                "});");
-        Listener listener = javaScript.get("listener");
-
-        evaluateScript("var readyLatch = new Latch(1);");
+        evaluateScript("const readyLatch = new Latch(1);");
         Latch readyLatch = javaScript.get("readyLatch");
-        evaluateScript("cometd.addListener('/meta/connect', function() { readyLatch.countDown(); });");
-        evaluateScript("cometd.handshake();");
+        evaluateScript("""
+                const Listener = Java.type('$C');
+                const listener = new Listener();
+                """.replace("$C", Listener.class.getName()));
+        Listener listener = javaScript.get("listener");
+        evaluateScript("""
+                cometd.configure({url: '$U', logLevel: '$L'});
+                cometd.registerExtension('testext', {
+                    incoming: message => { listener.incoming(message); return message; },
+                    outgoing: message => { listener.outgoing(message); return message; }
+                });
+                cometd.addListener('/meta/connect', () => readyLatch.countDown());
+                cometd.handshake();
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
+
         Assertions.assertTrue(readyLatch.await(5000));
 
         // Wait for the long poll to be established
@@ -101,31 +107,29 @@ public class CometDExtensionsTest extends AbstractCometDTransportsTest {
         Assertions.assertEquals(2, listener.getIncomingMessageCount()); // handshake, connect1
 
         listener.reset();
-        evaluateScript("var subscribeLatch = new Latch(1);");
+        evaluateScript("const subscribeLatch = new Latch(1);");
         Latch subscribeLatch = javaScript.get("subscribeLatch");
-        evaluateScript("cometd.addListener('/meta/subscribe', function() { subscribeLatch.countDown(); });");
-        evaluateScript("var messageLatch = new Latch(1);");
+        evaluateScript("cometd.addListener('/meta/subscribe', () => subscribeLatch.countDown());");
+        evaluateScript("const messageLatch = new Latch(1);");
         Latch messageLatch = javaScript.get("messageLatch");
-        evaluateScript("var subscription = cometd.subscribe('/echo', function() { messageLatch.countDown(); });");
+        evaluateScript("const subscription = cometd.subscribe('/echo', () => messageLatch.countDown());");
         Assertions.assertTrue(subscribeLatch.await(5000));
         Assertions.assertEquals(1, listener.getOutgoingMessageCount()); // subscribe
         Assertions.assertEquals(1, listener.getIncomingMessageCount()); // subscribe
 
         listener.reset();
-        evaluateScript("var publishLatch = new Latch(1);");
+        evaluateScript("const publishLatch = new Latch(1);");
         Latch publishLatch = javaScript.get("publishLatch");
-        evaluateScript("cometd.addListener('/meta/publish', function() { publishLatch.countDown(); });");
-        evaluateScript("cometd.publish('/echo', 'test');");
+        evaluateScript("cometd.publish('/echo', 'test', () => publishLatch.countDown());");
         Assertions.assertTrue(publishLatch.await(5000));
         Assertions.assertTrue(messageLatch.await(5000));
         Assertions.assertEquals(1, listener.getOutgoingMessageCount()); // publish
         Assertions.assertEquals(2, listener.getIncomingMessageCount()); // publish, message
 
         listener.reset();
-        evaluateScript("var unsubscribeLatch = new Latch(1);");
+        evaluateScript("const unsubscribeLatch = new Latch(1);");
         Latch unsubscribeLatch = javaScript.get("unsubscribeLatch");
-        evaluateScript("cometd.addListener('/meta/unsubscribe', function() { unsubscribeLatch.countDown(); });");
-        evaluateScript("cometd.unsubscribe(subscription);");
+        evaluateScript("cometd.unsubscribe(subscription, () => unsubscribeLatch.countDown());");
         Assertions.assertTrue(unsubscribeLatch.await(5000));
         Assertions.assertEquals(1, listener.getOutgoingMessageCount()); // unsubscribe
         Assertions.assertEquals(1, listener.getIncomingMessageCount()); // unsubscribe
@@ -147,51 +151,54 @@ public class CometDExtensionsTest extends AbstractCometDTransportsTest {
     public void testExtensionOrder(String transport) throws Exception {
         initCometDServer(transport);
 
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
-
         String channelName = "/ext_order";
+        evaluateScript("""
+                cometd.registerExtension('ext1', {
+                    incoming: message => {
+                        if (message.channel === '$C' && message.in_ext2 !== 1) {
+                            message.in_ext1 = 1;
+                        }
+                        return message;
+                    },
+                    outgoing: message => {
+                        if (message.channel === '$C' && message.out_ext2 === 1) {
+                            message.out_ext1 = 1;
+                        }
+                    }
+                });
+                cometd.registerExtension('ext2', {
+                    incoming: message => {
+                        if (message.channel === '$C' && message.in_ext1 === 1) {
+                            message.in_ext2 = 1;
+                        }
+                        return message;
+                    },
+                    outgoing: message => {
+                        if (message.channel === '$C' && message.out_ext1 !== 1) {
+                            message.out_ext2 = 1;
+                        }
+                    }
+                });
+                """.replace("$C", channelName));
 
-        evaluateScript("cometd.registerExtension('ext1', {" +
-                "incoming: function(message) {" +
-                "    if (message.channel === '" + channelName + "' && message.in_ext2 !== 1) {" +
-                "        message.in_ext1 = 1;" +
-                "    }" +
-                "    return message;" +
-                "}," +
-                "outgoing: function(message) {" +
-                "    if (message.channel === '" + channelName + "' && message.out_ext2 === 1) {" +
-                "        message.out_ext1 = 1;" +
-                "    }" +
-                "}" +
-                "});");
-        evaluateScript("cometd.registerExtension('ext2', {" +
-                "incoming: function(message) {" +
-                "    if (message.channel === '" + channelName + "' && message.in_ext1 === 1) {" +
-                "        message.in_ext2 = 1;" +
-                "    }" +
-                "    return message;" +
-                "}," +
-                "outgoing: function(message) {" +
-                "    if (message.channel === '" + channelName + "' && message.out_ext1 !== 1) {" +
-                "        message.out_ext2 = 1;" +
-                "    }" +
-                "}" +
-                "});");
+        evaluateScript("cometd.configure({url: '$U', logLevel: '$L'});".replace("$U", cometdURL).replace("$L", getLogLevel()));
 
-        evaluateScript("var latch = new Latch(1);");
+        evaluateScript("const latch = new Latch(1);");
         Latch latch = javaScript.get("latch");
-        evaluateScript("cometd.handshake(function(handshakeReply) {" +
-                "cometd.batch(function() {" +
-                "    cometd.subscribe('" + channelName + "', function(m) {" +
-                "        if (m.in_ext1 === 1 && m.in_ext2 === 1 && m.out_ext1 === 1 && m.out_ext2 === 1) {" +
-                "            latch.countDown();" +
-                "        } else {" +
-                "            window.console.info('Wrong extension order', m);" +
-                "        }" +
-                "    });" +
-                "    cometd.publish('" + channelName + "', 'wxyz');" +
-                "});" +
-                "});");
+        evaluateScript("""
+                cometd.handshake(() => {
+                    cometd.batch(() => {
+                        cometd.subscribe('$C', m => {
+                            if (m.in_ext1 === 1 && m.in_ext2 === 1 && m.out_ext1 === 1 && m.out_ext2 === 1) {
+                                latch.countDown();
+                            } else {
+                                window.console.info('Wrong extension order', m);
+                            }
+                        });
+                        cometd.publish('$C', 'wxyz');
+                    });
+                });
+                """.replace("$C", channelName));
 
         Assertions.assertTrue(latch.await(5000));
 
@@ -203,19 +210,21 @@ public class CometDExtensionsTest extends AbstractCometDTransportsTest {
     public void testExtensionRegistrationCallbacks(String transport) throws Exception {
         initCometDServer(transport);
 
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
-        evaluateScript("var n;");
-        evaluateScript("var c;");
-        evaluateScript("cometd.registerExtension('ext1', {" +
-                "registered: function(name, cometd) {" +
-                "    n = name;" +
-                "    c = cometd;" +
-                "}," +
-                "unregistered: function() {" +
-                "    n = null;" +
-                "    c = null;" +
-                "}" +
-                "});");
+        evaluateScript("""
+                let n;
+                let c;
+                cometd.registerExtension('ext1', {
+                    registered: (name, cometd) => {
+                        n = name;
+                        c = cometd;
+                    },
+                    unregistered: () => {
+                        n = null;
+                        c = null;
+                    }
+                });
+                cometd.configure({url: '$U', logLevel: '$L'});
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
         Object extName = javaScript.get("n");
         Assertions.assertNotNull(extName);
         Object extCometD = javaScript.get("c");

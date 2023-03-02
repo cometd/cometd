@@ -41,48 +41,43 @@ public class CometDWebSocketNetworkDelayListenerTest extends AbstractCometDWebSo
             }
         });
 
-        evaluateScript("cometd.configure({" +
-                "url: '" + cometdURL + "', " +
-                "logLevel: '" + getLogLevel() + "'," +
-                "maxNetworkDelay: " + maxNetworkDelay +
-                "});");
-
-        evaluateScript("var transportLatch = new Latch(1);");
-        Latch transportLatch = javaScript.get("transportLatch");
-        evaluateScript("cometd.addTransportListener('timeout', function() {" +
-                "transportLatch.countDown();" +
-                "return " + maxNetworkDelay + ";" +
-                "});");
-
         String channelName = "/delayListener";
-        evaluateScript("var messageLatch = new Latch(1);");
-        Latch messageLatch = javaScript.get("messageLatch");
-        evaluateScript("cometd.addListener('" + channelName + "', function() { messageLatch.countDown(); });");
-
-        evaluateScript("var connectLatch = new Latch(2);");
-        Latch connectLatch = javaScript.get("connectLatch");
-        evaluateScript("cometd.addListener('/meta/connect', function(m) {" +
-                "  if (m.successful) {" +
-                "    connectLatch.countDown(); " +
-                "  } else {" +
-                "    cometd._info('/meta/connect failure', m);" +
-                "  }" +
-                "});");
-
-        evaluateScript("cometd.handshake();");
+        evaluateScript("""
+                const transportLatch = new Latch(1);
+                cometd.addTransportListener('timeout', () => {
+                    transportLatch.countDown();
+                    return $M;
+                });
+                const messageLatch = new Latch(1);
+                cometd.addListener('$C', () => messageLatch.countDown());
+                const connectLatch = new Latch(2);
+                cometd.addListener('/meta/connect', m => {
+                    if (m.successful) {
+                      connectLatch.countDown();\s
+                    } else {
+                      cometd._info('/meta/connect failure', m);
+                    }
+                });
+                cometd.init({url: '$U', logLevel: '$L', maxNetworkDelay: $M});
+                """.replace("$U", cometdURL).replace("$L", getLogLevel())
+                .replace("$M", String.valueOf(maxNetworkDelay))
+                .replace("$C", channelName));
 
         Thread.sleep(metaConnectPeriod / 2);
 
         String sessionId = evaluateScript("cometd.getClientId();");
         bayeuxServer.getSession(sessionId).deliver(null, channelName, "DATA", Promise.noop());
 
+        Latch messageLatch = javaScript.get("messageLatch");
         Assertions.assertTrue(messageLatch.await(5000));
 
         // Verify that the transport listener is invoked.
+        Latch transportLatch = javaScript.get("transportLatch");
         Assertions.assertTrue(transportLatch.await(metaConnectPeriod));
 
         // Verify that we are still connected.
-        Assertions.assertTrue(connectLatch.await(2 * metaConnectPeriod));
+        Latch connectLatch = javaScript.get("connectLatch");
+        Assertions.assertTrue(connectLatch.await(2L * metaConnectPeriod));
         boolean disconnected = evaluateScript("cometd.isDisconnected();");
         Assertions.assertFalse(disconnected);
 

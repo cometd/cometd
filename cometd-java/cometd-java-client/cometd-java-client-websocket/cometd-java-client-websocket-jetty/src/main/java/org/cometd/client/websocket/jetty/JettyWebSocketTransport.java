@@ -23,6 +23,7 @@ import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.nio.channels.UnresolvedAddressException;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -93,7 +94,10 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
                 LOGGER.debug("Opening websocket session to {}", uri);
             }
             ClientUpgradeRequest request = new ClientUpgradeRequest();
-            request.setCookies(getHttpCookieStore().match(URI.create(uri)).stream().map(HttpCookie::asJavaNetHttpCookie).toList());
+            // TODO: remove this mangling when HttpCookieStore supports the "ws" scheme.
+            String mangledURI = uri.replaceFirst("^ws", "http");
+            List<HttpCookie> cookies = getHttpCookieStore().match(URI.create(mangledURI));
+            request.setCookies(cookies.stream().map(HttpCookie::asJavaNetHttpCookie).toList());
             String protocol = getProtocol();
             if (protocol != null) {
                 request.setSubProtocols(protocol);
@@ -161,7 +165,13 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
         Map<String, List<String>> result = new LinkedHashMap<>();
         headers.forEach(field -> {
             String name = field.getName();
-            result.put(name, List.of(field.getValues()));
+            result.compute(name, (k, v) -> {
+                if (v == null) {
+                    v = new ArrayList<>(1);
+                }
+                v.addAll(field.getValueList());
+                return v;
+            });
         });
         return result;
     }

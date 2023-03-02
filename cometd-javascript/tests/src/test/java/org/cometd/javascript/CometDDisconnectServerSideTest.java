@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -38,21 +39,22 @@ public class CometDDisconnectServerSideTest extends AbstractCometDTransportsTest
         CountDownLatch connectRequestLatch = new CountDownLatch(1);
         ServerSideDisconnectService service = new ServerSideDisconnectService(bayeuxServer, connectRequestLatch);
 
-        evaluateScript("var connectLatch = new Latch(2);");
-        Latch connectResponseLatch = javaScript.get("connectLatch");
-        evaluateScript("var disconnectLatch = new Latch(1);");
-        Latch disconnectLatch = javaScript.get("disconnectLatch");
-        evaluateScript("" +
-                "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
-                "cometd.addListener('/meta/connect', function() { connectLatch.countDown(); });" +
-                "cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });" +
-                "cometd.handshake();" +
-                "");
+        evaluateScript("""
+                cometd.configure({url: '$U', logLevel: '$L'});
+                const connectLatch = new Latch(2);
+                cometd.addListener('/meta/connect', () => connectLatch.countDown());
+                const disconnectLatch = new Latch(1);
+                cometd.addListener('/meta/disconnect', () => disconnectLatch.countDown());
+                cometd.handshake();
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
+
         Assertions.assertTrue(connectRequestLatch.await(5, TimeUnit.SECONDS));
 
         service.disconnect(evaluateScript("cometd.getClientId()"));
 
+        Latch disconnectLatch = javaScript.get("disconnectLatch");
         Assertions.assertTrue(disconnectLatch.await(5000));
+        Latch connectResponseLatch = javaScript.get("connectLatch");
         Assertions.assertTrue(connectResponseLatch.await(5000));
     }
 
@@ -65,25 +67,26 @@ public class CometDDisconnectServerSideTest extends AbstractCometDTransportsTest
         CountDownLatch connectLatch = new CountDownLatch(1);
         DeliverAndServerSideDisconnectService service = new DeliverAndServerSideDisconnectService(bayeuxServer, channelName, connectLatch);
 
-        evaluateScript("var deliverLatch = new Latch(1);");
-        Latch deliverLatch = javaScript.get("deliverLatch");
-        evaluateScript("var disconnectLatch = new Latch(1);");
-        Latch disconnectLatch = javaScript.get("disconnectLatch");
-        evaluateScript("" +
-                "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
-                "cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });" +
-                "cometd.addListener('/meta/handshake', function(message) {" +
-                "    if (message.successful) {" +
-                "        cometd.addListener('" + channelName + "', function() { deliverLatch.countDown(); });" +
-                "    }" +
-                "});" +
-                "cometd.handshake();" +
-                "");
+        evaluateScript("""
+                const deliverLatch = new Latch(1);
+                const disconnectLatch = new Latch(1);
+                cometd.configure({url: '$U', logLevel: '$L'});
+                cometd.addListener('/meta/disconnect', () => disconnectLatch.countDown());
+                cometd.addListener('/meta/handshake', message => {
+                    if (message.successful) {
+                        cometd.addListener('$C', () => deliverLatch.countDown());
+                    }
+                });
+                cometd.handshake();
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()).replace("$C", channelName));
+
         Assertions.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
 
         service.kick(evaluateScript("cometd.getClientId()"));
 
+        Latch deliverLatch = javaScript.get("deliverLatch");
         Assertions.assertTrue(deliverLatch.await(5000));
+        Latch disconnectLatch = javaScript.get("disconnectLatch");
         Assertions.assertTrue(disconnectLatch.await(5000));
     }
 

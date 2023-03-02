@@ -32,27 +32,42 @@ public class CometDCharsetTest extends AbstractCometDTransportsTest {
         String hiragana = "\u3068"; // to
         String chinese = "\u2ee2"; // cjk's horse
 
-        evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
-        evaluateScript("var latch = new Latch(1);");
+        evaluateScript("""
+                cometd.init({url: '$U', logLevel: '$L'});
+                const latch = new Latch(1);
+                let data;
+                cometd.subscribe('/echo', message => { data = message.data; latch.countDown(); });
+                cometd.publish('/echo', {
+                    cyrillic: '$CY',
+                    greek: '$GR',
+                    hebrew: '$HE',
+                    arabic: '$AR',
+                    hiragana: '$HI',
+                    chinese: '$CH'
+                });
+                """.replace("$U", cometdURL).replace("$L", getLogLevel())
+                .replace("$CY", cyrillic)
+                .replace("$GR", greek)
+                .replace("$HE", hebrew)
+                .replace("$AR", arabic)
+                .replace("$HI", hiragana)
+                .replace("$CH", chinese));
         Latch latch = javaScript.get("latch");
-        evaluateScript("var data = undefined;");
-        evaluateScript("cometd.subscribe('/echo', function(message) { data = message.data; latch.countDown(); });");
-        evaluateScript("cometd.publish('/echo', {" +
-                "cyrillic: '" + cyrillic + "'," +
-                "greek: '" + greek + "'," +
-                "hebrew: '" + hebrew + "'," +
-                "arabic: '" + arabic + "'," +
-                "hiragana: '" + hiragana + "'," +
-                "chinese: '" + chinese + "'" +
-                "});");
         Assertions.assertTrue(latch.await(5000));
-        evaluateScript("window.assert(data !== undefined, 'data is undefined');");
-        evaluateScript("window.assert(data.cyrillic === '" + cyrillic + "', 'bad cyrillic');");
-        evaluateScript("window.assert(data.greek === '" + greek + "', 'bad greek');");
-        evaluateScript("window.assert(data.hebrew === '" + hebrew + "', 'bad hebrew');");
-        evaluateScript("window.assert(data.arabic === '" + arabic + "', 'bad arabic');");
-        evaluateScript("window.assert(data.hiragana === '" + hiragana + "', 'bad hiragana');");
-        evaluateScript("window.assert(data.chinese === '" + chinese + "', 'bad chinese');");
+        evaluateScript("""
+                window.assert(data !== undefined, 'data is undefined');
+                window.assert(data.cyrillic === '$CY', 'bad cyrillic');
+                window.assert(data.greek === '$GR', 'bad greek');
+                window.assert(data.hebrew === '$HE', 'bad hebrew');
+                window.assert(data.arabic === '$AR', 'bad arabic');
+                window.assert(data.hiragana === '$HI', 'bad hiragana');
+                window.assert(data.chinese === '$CH', 'bad chinese');
+                """.replace("$CY", cyrillic)
+                .replace("$GR", greek)
+                .replace("$HE", hebrew)
+                .replace("$AR", arabic)
+                .replace("$HI", hiragana)
+                .replace("$CH", chinese));
 
         disconnect();
     }

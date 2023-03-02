@@ -17,6 +17,7 @@ package org.cometd.javascript;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
@@ -31,23 +32,25 @@ public class CometDInitDisconnectTest extends AbstractCometDTransportsTest {
     public void testInitDisconnect(String transport) throws Exception {
         initCometDServer(transport);
 
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
-        evaluateScript("var latch = new Latch(2);");
+        evaluateScript("""
+                cometd.configure({url: '$U', logLevel: '$L'});
+                const latch = new Latch(2);
+                cometd.addListener('/**', () => latch.countDown());
+                // Expect 2 messages: handshake and connect.
+                cometd.handshake();
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
+
         Latch latch = javaScript.get("latch");
-        String script = "cometd.addListener('/**', function() { latch.countDown(); });" +
-                // Expect 2 messages: handshake and connect
-                "cometd.handshake();";
-        evaluateScript(script);
         Assertions.assertTrue(latch.await(5000));
 
-        // Wait for the long poll to happen, so that we're sure
-        // the disconnect is sent after the long poll
+        // Wait for the long poll to happen, so that we're
+        // sure the disconnect is sent after the long poll.
         Thread.sleep(1000);
 
         String status = evaluateScript("cometd.getStatus();");
         Assertions.assertEquals("connected", status);
 
-        // Expect disconnect and connect
+        // Expect disconnect and connect.
         latch.reset(2);
         disconnect();
         Assertions.assertTrue(latch.await(5000));
@@ -57,7 +60,7 @@ public class CometDInitDisconnectTest extends AbstractCometDTransportsTest {
 
         // Make sure there are no attempts to reconnect
         latch.reset(1);
-        Assertions.assertFalse(latch.await(metaConnectPeriod * 3));
+        Assertions.assertFalse(latch.await(metaConnectPeriod * 3L));
     }
 
     @ParameterizedTest
@@ -84,18 +87,20 @@ public class CometDInitDisconnectTest extends AbstractCometDTransportsTest {
         // will not work, since the disconnect will need to pass to the server
         // a clientId, which is not known since the handshake has not returned yet
 
-        evaluateScript("var disconnectLatch = new Latch(1);");
-        Latch disconnectLatch = javaScript.get("disconnectLatch");
-        evaluateScript("" +
-                "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
-                "cometd.addListener('/meta/handshake', function(message) {" +
-                "    if (message.successful) {" +
-                "        cometd.disconnect();" +
-                "    }" +
-                "});" +
-                "cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });" +
-                "cometd.handshake();");
+        evaluateScript("""
+                const disconnectLatch = new Latch(1);
+                cometd.configure({url: '$U', logLevel: '$L'});
+                cometd.addListener('/meta/handshake', message => {
+                    if (message.successful) {
+                        cometd.disconnect();
+                    }
+                });
+                cometd.addListener('/meta/disconnect', () => disconnectLatch.countDown());
+                cometd.handshake();
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
+        
         Assertions.assertTrue(removeLatch.await(5, TimeUnit.SECONDS));
+        Latch disconnectLatch = javaScript.get("disconnectLatch");
         Assertions.assertTrue(disconnectLatch.await(5000));
     }
 }

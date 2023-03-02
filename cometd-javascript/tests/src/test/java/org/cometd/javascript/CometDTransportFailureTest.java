@@ -16,6 +16,7 @@
 package org.cometd.javascript;
 
 import java.util.concurrent.atomic.AtomicInteger;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
@@ -30,6 +31,7 @@ public class CometDTransportFailureTest extends AbstractCometDWebSocketTest {
         ServerConnector connector2 = new ServerConnector(server);
         connector2.start();
         server.addConnector(connector2);
+        
         // Fail the second connect.
         bayeuxServer.addExtension(new ConnectFailureExtension() {
             @Override
@@ -42,45 +44,41 @@ public class CometDTransportFailureTest extends AbstractCometDWebSocketTest {
             }
         });
 
-        evaluateScript("" +
-                "cometd.configure({" +
-                "    url: '" + cometdURL + "', " +
-                "    logLevel: '" + getLogLevel() + "'" +
-                "});");
-
         String newURL = "http://localhost:" + connector2.getLocalPort() + context.getContextPath() + cometdServletPath;
+        evaluateScript("""
+                cometd.configure({url: '$U', logLevel: '$L'});
+                
+                // Replace the transport failure logic.
+                const oTF = cometd.onTransportFailure;
+                cometd.onTransportFailure = function(message, failureInfo, failureHandler) {
+                    if (message.channel === '/meta/connect') {
+                        failureInfo.action = 'retry';
+                        failureInfo.delay = 0;
+                        failureInfo.url = '$N';
+                        failureHandler(failureInfo);
+                        // Reinstall the original function.
+                        cometd.onTransportFailure = oTF;
+                    } else {
+                        oTF.call(this, message, failureInfo, failureHandler);
+                    }
+                };
+                
+                // The second connect fails, the third connect should succeed on the new URL.
+                const latch = new Latch(1);
+                let url = null;
+                let connects = 0;
+                cometd.addListener('/meta/connect', message => {
+                    ++connects;
+                    if (connects === 3 && message.successful) {
+                        url = cometd.getTransport().getURL();
+                        latch.countDown();
+                    }
+                });
+                
+                cometd.handshake();
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()).replace("$N", newURL));
 
-        // Replace the transport failure logic.
-        evaluateScript("" +
-                "var oTF = cometd.onTransportFailure;" +
-                "cometd.onTransportFailure = function(message, failureInfo, failureHandler) {" +
-                "    if (message.channel === '/meta/connect') {" +
-                "        failureInfo.action = 'retry';" +
-                "        failureInfo.delay = 0;" +
-                "        failureInfo.url = '" + newURL + "';" +
-                "        failureHandler(failureInfo);" +
-                "        /* Reinstall the original function */" +
-                "        cometd.onTransportFailure = oTF;" +
-                "    } else {" +
-                "        oTF.call(this, message, failureInfo, failureHandler);" +
-                "    }" +
-                "};");
-
-        // The second connect fails, the third connect should succeed on the new URL.
-        evaluateScript("var latch = new Latch(1);");
         Latch latch = javaScript.get("latch");
-        evaluateScript("" +
-                "var url = null;" +
-                "var connects = 0;" +
-                "cometd.addListener('/meta/connect', function(message) {" +
-                "    ++connects;" +
-                "    if (connects === 3 && message.successful) {" +
-                "        url = cometd.getTransport().getURL();" +
-                "        latch.countDown();" +
-                "    }" +
-                "});" +
-                "cometd.handshake();");
-
         Assertions.assertTrue(latch.await(5000));
         Assertions.assertEquals(newURL, javaScript.get("url"));
 
@@ -96,46 +94,43 @@ public class CometDTransportFailureTest extends AbstractCometDWebSocketTest {
             }
         });
 
-        evaluateScript("" +
-                "cometd.configure({" +
-                "    url: '" + cometdURL + "', " +
-                "    logLevel: '" + getLogLevel() + "'" +
-                "});" +
-                "/* Disable the websocket transport */" +
-                "cometd.websocketEnabled = false;" +
-                "/* Add the long-polling transport */" +
-                "cometd.registerTransport('long-polling', originalTransports['long-polling']);");
+        evaluateScript("""
+                cometd.configure({url: '$U', logLevel: '$L'});
+                // Disable the websocket transport.
+                cometd.websocketEnabled = false;
+                // Add the long-polling transport as fallback.
+                cometd.registerTransport('long-polling', originalTransports['long-polling']);
+                
+                // Replace the transport failure logic.
+                const oTF = cometd.onTransportFailure;
+                cometd.onTransportFailure = function(message, failureInfo, failureHandler) {
+                    if (message.channel === '/meta/connect') {
+                        failureInfo.action = 'retry';
+                        failureInfo.delay = 0;
+                        failureInfo.transport = cometd.findTransport('websocket');
+                        failureHandler(failureInfo);
+                        /* Reinstall the original function */
+                        cometd.onTransportFailure = oTF;
+                    } else {
+                        oTF.call(this, message, failureInfo, failureHandler);
+                    }
+                };
 
-        // Replace the transport failure logic.
-        evaluateScript("" +
-                "var oTF = cometd.onTransportFailure;" +
-                "cometd.onTransportFailure = function(message, failureInfo, failureHandler) {" +
-                "    if (message.channel === '/meta/connect') {" +
-                "        failureInfo.action = 'retry';" +
-                "        failureInfo.delay = 0;" +
-                "        failureInfo.transport = cometd.findTransport('websocket');" +
-                "        failureHandler(failureInfo);" +
-                "        /* Reinstall the original function */" +
-                "        cometd.onTransportFailure = oTF;" +
-                "    } else {" +
-                "        oTF.call(this, message, failureInfo, failureHandler);" +
-                "    }" +
-                "};");
+                const latch = new Latch(1);
+                let transport = null;
+                let connects = 0;
+                cometd.addListener('/meta/connect', message => {
+                    ++connects;
+                    if (connects === 3 && message.successful) {
+                        transport = cometd.getTransport().getType();
+                        latch.countDown();
+                    }
+                });
+                
+                cometd.handshake();
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
 
-        evaluateScript("var latch = new Latch(1);");
         Latch latch = javaScript.get("latch");
-        evaluateScript("" +
-                "var transport = null;" +
-                "var connects = 0;" +
-                "cometd.addListener('/meta/connect', function(message) {" +
-                "    ++connects;" +
-                "    if (connects === 3 && message.successful) {" +
-                "        transport = cometd.getTransport().getType();" +
-                "        latch.countDown();" +
-                "    }" +
-                "});" +
-                "cometd.handshake();");
-
         Assertions.assertTrue(latch.await(5000));
         Assertions.assertEquals("websocket", javaScript.get("transport"));
     }

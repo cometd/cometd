@@ -45,19 +45,22 @@ public class CometDAckAndReloadExtensionsTest extends AbstractCometDTransportsTe
 
         AckService ackService = new AckService(bayeuxServer);
 
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
-        evaluateScript("var readyLatch = new Latch(1);");
+        evaluateScript("const readyLatch = new Latch(1);");
         Latch readyLatch = javaScript.get("readyLatch");
-        evaluateScript("cometd.addListener('/meta/connect', function() { readyLatch.countDown(); });");
-        evaluateScript("cometd.handshake();");
+        evaluateScript("""
+                cometd.configure({url: '$U', logLevel: '$L'});
+                cometd.addListener('/meta/connect', () => readyLatch.countDown());
+                cometd.handshake();
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
         Assertions.assertTrue(readyLatch.await(5000));
 
         // Send a message so that the ack counter is initialized
-        evaluateScript("var latch = new Latch(1);");
+        evaluateScript("const latch = new Latch(1);");
         Latch latch = javaScript.get("latch");
-        evaluateScript("" +
-                "cometd.subscribe('/test', function() { latch.countDown(); });" +
-                "cometd.publish('/test', 'message1');");
+        evaluateScript("""
+                cometd.subscribe('/test', () => latch.countDown());
+                cometd.publish('/test', 'message1');
+                """);
         Assertions.assertTrue(latch.await(5000));
 
         // Wait to allow the long poll to go to the server and tell it the ack id
@@ -72,23 +75,26 @@ public class CometDAckAndReloadExtensionsTest extends AbstractCometDTransportsTe
         initPage(transport);
         initExtensions();
 
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
+        evaluateScript("""
+                cometd.configure({url: '$U', logLevel: '$L'});
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
 
-        evaluateScript("var readyLatch = new Latch(1);");
+        evaluateScript("const readyLatch = new Latch(1);");
         readyLatch = javaScript.get("readyLatch");
         // Expect 2 messages: one sent in the middle of reload, one after reload
-        evaluateScript("var latch = new Latch(2);");
+        evaluateScript("const latch = new Latch(2);");
         latch = javaScript.get("latch");
-        evaluateScript("" +
-                "var testMessage = [];" +
-                "cometd.addListener('/meta/handshake', function(message) {" +
-                "   cometd.batch(function() {" +
-                "       cometd.subscribe('/test', function(message) { testMessage.push(message); latch.countDown(); });" +
-                "       cometd.subscribe('/echo', function(message) { readyLatch.countDown(); });" +
-                "       cometd.publish('/echo', {});" +
-                "   });" +
-                "});" +
-                "cometd.handshake();");
+        evaluateScript("""
+                const testMessage = [];
+                cometd.addListener('/meta/handshake', () => {
+                   cometd.batch(() => {
+                       cometd.subscribe('/test', message => { testMessage.push(message); latch.countDown(); });
+                       cometd.subscribe('/echo', () => readyLatch.countDown());
+                       cometd.publish('/echo', {});
+                   });
+                });
+                cometd.handshake();
+                """);
         Assertions.assertTrue(readyLatch.await(5000));
 
         ackService.emit("message3");

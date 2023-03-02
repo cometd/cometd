@@ -46,30 +46,26 @@ public class CometDLongPollingMaxNetworkDelayMetaConnectTest extends AbstractCom
 
     @Test
     public void testMaxNetworkDelay() throws Exception {
-        evaluateScript("var latch = new Latch(6);");
-        Latch latch = javaScript.get("latch");
-        evaluateScript("cometd.configure({" +
-                "url: '" + cometdURL + "', " +
-                "maxNetworkDelay: " + maxNetworkDelay + ", " +
-                "logLevel: '" + getLogLevel() + "'" +
-                "});");
-        evaluateScript("var connects = 0;");
-        evaluateScript("var failure;");
-        evaluateScript("cometd.addListener('/meta/connect', function(message) {" +
-                "    ++connects;" +
-                "    if (connects === 1 && message.successful ||" +
-                "        connects === 2 && !message.successful ||" +
-                "        connects === 3 && message.successful ||" +
-                "        connects === 4 && !message.successful ||" +
-                "        connects === 5 && message.successful ||" +
-                "        connects === 6 && message.successful) {" +
-                "        latch.countDown();" +
-                "    } else if (!failure) {" +
-                "        failure = 'Failure at connect #' + connects;" +
-                "    }" +
-                "});");
-
-        evaluateScript("cometd.handshake();");
+        evaluateScript("""
+                const latch = new Latch(6);
+                cometd.configure({url: '$U', logLevel: '$L', maxNetworkDelay: $M});
+                let connects = 0;
+                let failure;
+                cometd.addListener('/meta/connect', message => {
+                    ++connects;
+                    if (connects === 1 && message.successful ||
+                        connects === 2 && !message.successful ||
+                        connects === 3 && message.successful ||
+                        connects === 4 && !message.successful ||
+                        connects === 5 && message.successful ||
+                        connects === 6 && message.successful) {
+                        latch.countDown();
+                    } else if (!failure) {
+                        failure = 'Failure at connect #' + connects;
+                    }
+                });
+                cometd.handshake();
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()).replace("$M", String.valueOf(maxNetworkDelay)));
 
         // First connect (id=2) returns immediately (time = 0)
         // Second connect (id=3) is delayed, but client is not aware of this
@@ -87,7 +83,8 @@ public class CometDLongPollingMaxNetworkDelayMetaConnectTest extends AbstractCom
         //  + Sixth connect is held
         // Sixth connect returns (time = 2 * metaConnectPeriod + 2 * maxNetworkDelay)
 
-        Assertions.assertTrue(latch.await(2 * metaConnectPeriod + 3 * maxNetworkDelay));
+        Latch latch = javaScript.get("latch");
+        Assertions.assertTrue(latch.await(2L * metaConnectPeriod + 3L * maxNetworkDelay));
         evaluateScript("window.assert(failure === undefined, failure);");
 
         disconnect();

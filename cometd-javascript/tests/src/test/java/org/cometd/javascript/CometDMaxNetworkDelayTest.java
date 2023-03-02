@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
@@ -38,22 +39,20 @@ public class CometDMaxNetworkDelayTest extends AbstractCometDTransportsTest {
 
         bayeuxServer.addExtension(new DelayingExtension());
 
-        evaluateScript("var Listener = Java.type('" + Listener.class.getName() + "');");
-        evaluateScript("var publishListener = new Listener();");
-        Listener publishListener = javaScript.get("publishListener");
-        evaluateScript("cometd.addListener('/meta/publish', function(m) { publishListener.handle(m); });");
-        evaluateScript("cometd.configure({" +
-                "url: '" + cometdURL + "', " +
-                "maxNetworkDelay: " + maxNetworkDelay + ", " +
-                "logLevel: '" + getLogLevel() + "'" +
-                "});");
-
-        evaluateScript("cometd.handshake();");
+        evaluateScript("""
+                const Listener = Java.type('$T');
+                const publishListener = new Listener();
+                cometd.addListener('/meta/publish', m => publishListener.handle(m));
+                cometd.configure({url: '$U', logLevel: '$L', maxNetworkDelay: $M});
+                cometd.handshake();
+                """.replace("$U", cometdURL).replace("$L", getLogLevel())
+                .replace("$T", Listener.class.getName()).replace("$M", String.valueOf(maxNetworkDelay)));
 
         // Allow long poll to establish
         Thread.sleep(1000);
 
         AtomicReference<List<Throwable>> failures = new AtomicReference<>(new ArrayList<>());
+        Listener publishListener = javaScript.get("publishListener");
         publishListener.expect(failures, 1);
         evaluateScript("cometd.publish('/test', {});");
 
@@ -64,11 +63,7 @@ public class CometDMaxNetworkDelayTest extends AbstractCometDTransportsTest {
         Assertions.assertTrue(publishListener.await(2 * maxNetworkDelay));
         Assertions.assertTrue(failures.get().isEmpty(), failures.get().toString());
 
-        evaluateScript("var disconnectLatch = new Latch(1);");
-        Latch disconnectLatch = javaScript.get("disconnectLatch");
-        evaluateScript("cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });");
-        evaluateScript("cometd.disconnect();");
-        Assertions.assertTrue(disconnectLatch.await(5000));
+        disconnect();
 
         // Avoid exceptions by sleeping a while
         Thread.sleep(maxNetworkDelay);

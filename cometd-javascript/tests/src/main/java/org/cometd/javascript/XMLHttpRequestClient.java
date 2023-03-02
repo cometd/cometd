@@ -50,7 +50,7 @@ public class XMLHttpRequestClient {
         httpClient.stop();
     }
 
-    private class PrivilegedExecutor extends QueuedThreadPool {
+    private static class PrivilegedExecutor extends QueuedThreadPool {
         private final ThreadFactory factory = Executors.privilegedThreadFactory();
 
         public PrivilegedExecutor() {

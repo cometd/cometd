@@ -28,26 +28,28 @@ public abstract class AbstractCometDDojoTest extends AbstractCometDTest {
     protected void provideCometD(String transport) {
         String dojoBaseURL = "/js/dojo";
         javaScript.evaluate(getClass().getResource(dojoBaseURL + "/dojo.js.uncompressed.js"));
-        evaluateScript("cometd", "" +
-                "var cometdModule;" +
-                "var cometd;" +
-                "var originalTransports = {};" +
-                "require({" +
-                "    packages: [{name: 'cometd', location: '../cometd'}]," +
-                "    baseUrl: '" + dojoBaseURL + "'" +
-                "}, ['cometd/cometd', 'dojox/cometd'], function(m, c) {" +
-                "    cometdModule = m;" +
-                "    cometd = c; " +
-                "    var transportNames = cometd.getTransportTypes();" +
-                "    for (var i = 0; i < transportNames.length; ++i) {" +
-                "        var transportName = transportNames[i];" +
-                "        originalTransports[transportName] = cometd.findTransport(transportName);" +
-                "    }" +
-                "});");
+        evaluateScript("cometd", """
+                let cometdModule;
+                let cometd;
+                const originalTransports = {};
+                require({
+                    packages: [{name: 'cometd', location: '../cometd'}],
+                    baseUrl: '$U'
+                }, ['cometd/cometd', 'dojox/cometd'], (m, c) => {
+                    cometdModule = m;
+                    cometd = c;
+                    const transportNames = cometd.getTransportTypes();
+                    for (let i = 0; i < transportNames.length; ++i) {
+                        const transportName = transportNames[i];
+                        originalTransports[transportName] = cometd.findTransport(transportName);
+                    }
+                });
+                """.replace("$U", dojoBaseURL));
         if (transport != null) {
-            evaluateScript("only_" + transport, "" +
-                    "cometd.unregisterTransports();" +
-                    "cometd.registerTransport('" + transport + "', originalTransports['" + transport + "']);");
+            evaluateScript("only_" + transport, """
+                    cometd.unregisterTransports();
+                    cometd.registerTransport('$T', originalTransports['$T']);
+                    """.replace("$T", transport));
         }
     }
 }

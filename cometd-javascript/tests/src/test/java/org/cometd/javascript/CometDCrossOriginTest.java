@@ -40,20 +40,24 @@ public class CometDCrossOriginTest extends AbstractCometDTransportsTest {
         initCometDServer(transport);
 
         String crossOriginCometDURL = cometdURL.replace("localhost", "127.0.0.1");
-        evaluateScript("cometd.configure({" +
-                "url: '" + crossOriginCometDURL + "', " +
-                "requestHeaders: { Origin: 'http://localhost:8080' }, " +
-                "logLevel: '" + getLogLevel() + "'" +
-                "});");
-        evaluateScript("var connectLatch = new Latch(1);");
-        Latch connectLatch = javaScript.get("connectLatch");
-        evaluateScript("cometd.addListener('/meta/connect', function(message) {" +
-                "   if (message.successful) {" +
-                "       connectLatch.countDown(); " +
-                "   }" +
-                "});");
-        evaluateScript("cometd.handshake();");
+        evaluateScript("""
+                cometd.configure({
+                    url: '$U',
+                    logLevel: '$L',
+                    requestHeaders: {
+                        Origin: 'http://localhost:8080'
+                    }
+                });
+                const connectLatch = new Latch(1);
+                cometd.addListener('/meta/connect', message => {
+                    if (message.successful) {
+                        connectLatch.countDown();
+                    }
+                });
+                cometd.handshake();
+                """.replace("$U", crossOriginCometDURL).replace("$L", getLogLevel()));
 
+        Latch connectLatch = javaScript.get("connectLatch");
         Assertions.assertTrue(connectLatch.await(5000));
 
         disconnect();

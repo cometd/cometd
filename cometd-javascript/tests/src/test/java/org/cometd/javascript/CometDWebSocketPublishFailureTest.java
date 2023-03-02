@@ -26,38 +26,38 @@ public class CometDWebSocketPublishFailureTest extends AbstractCometDWebSocketTe
     public void testPublishFailure() throws Exception {
         bayeuxServer.addExtension(new DeletePublishExtension());
 
-        evaluateScript("var readyLatch = new Latch(1);");
+        evaluateScript("""
+                const readyLatch = new Latch(1);
+                cometd.addListener('/meta/connect', () => readyLatch.countDown());
+                cometd.init({url: '$U', logLevel: '$L'});
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
         Latch readyLatch = javaScript.get("readyLatch");
-        evaluateScript("cometd.addListener('/meta/connect', function() { readyLatch.countDown(); });");
-        evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'})");
         Assertions.assertTrue(readyLatch.await(5000));
 
-        // Wait a while for the connect to establish
+        // Wait a while for the /meta/connect to establish.
         Thread.sleep(1000);
 
-        evaluateScript("var subscribeLatch = new Latch(1);");
+        evaluateScript("""
+                const subscribeLatch = new Latch(1);
+                cometd.addListener('/meta/subscribe', () => subscribeLatch.countDown());
+                const subscription = cometd.subscribe('/echo', () => subscribeLatch.countDown());
+                """);
         Latch subscribeLatch = javaScript.get("subscribeLatch");
-        evaluateScript("cometd.addListener('/meta/subscribe', function() { subscribeLatch.countDown(); });");
-        evaluateScript("var subscription = cometd.subscribe('/echo', function() { subscribeLatch.countDown(); });");
         Assertions.assertTrue(subscribeLatch.await(5000));
 
-        evaluateScript("var publishLatch = new Latch(1);");
+        evaluateScript("""
+                const publishLatch = new Latch(1);
+                cometd.addListener('/meta/publish', () => publishLatch.countDown());
+                const failureLatch = new Latch(1);
+                cometd.addListener('/meta/unsuccessful', () => failureLatch.countDown());
+                cometd.publish('/echo', 'test');
+                """);
         Latch publishLatch = javaScript.get("publishLatch");
-        evaluateScript("var failureLatch = new Latch(1);");
-        Latch failureLatch = javaScript.get("failureLatch");
-        evaluateScript("cometd.addListener('/meta/publish', function() { publishLatch.countDown(); });");
-        evaluateScript("cometd.addListener('/meta/unsuccessful', function() { failureLatch.countDown(); });");
-        evaluateScript("cometd.publish('/echo', 'test');");
         Assertions.assertTrue(publishLatch.await(5000));
+        Latch failureLatch = javaScript.get("failureLatch");
         Assertions.assertTrue(failureLatch.await(5000));
 
-        evaluateScript("var disconnectLatch = new Latch(1);");
-        Latch disconnectLatch = javaScript.get("disconnectLatch");
-        evaluateScript("cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });");
-        evaluateScript("cometd.disconnect();");
-        Assertions.assertTrue(disconnectLatch.await(5000));
-        String status = evaluateScript("cometd.getStatus();");
-        Assertions.assertEquals("disconnected", status);
+        disconnect();
     }
 
     private static class DeletePublishExtension implements BayeuxServer.Extension {

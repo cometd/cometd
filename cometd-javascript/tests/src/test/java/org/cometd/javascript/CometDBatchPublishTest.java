@@ -25,23 +25,24 @@ public class CometDBatchPublishTest extends AbstractCometDTransportsTest {
     public void testBatchPublish(String transport) throws Exception {
         initCometDServer(transport);
 
-        evaluateScript("var latch = new Latch(1);");
+        evaluateScript("const latch = new Latch(1);");
         Latch latch = javaScript.get("latch");
 
-        evaluateScript("" +
-                "var _connected = false;" +
-                "cometd.addListener('/meta/connect', function(message) {" +
-                "    var wasConnected = _connected;" +
-                "    _connected = message.successful;" +
-                "    if (!wasConnected && _connected) {" +
-                "        cometd.startBatch();" +
-                "        cometd.subscribe('/echo', function() { latch.countDown(); });" +
-                "        cometd.publish('/echo', 'test');" +
-                "        cometd.endBatch();" +
-                "    }" +
-                "});" +
-                "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
-                "cometd.handshake();");
+        evaluateScript("""
+                let _connected = false;
+                cometd.addListener('/meta/connect', message => {
+                    const wasConnected = _connected;
+                    _connected = message.successful;
+                    if (!wasConnected && _connected) {
+                        cometd.startBatch();
+                        cometd.subscribe('/echo', () => latch.countDown());
+                        cometd.publish('/echo', 'test');
+                        cometd.endBatch();
+                    }
+                });
+                cometd.configure({url: '$U', logLevel: '$L'});
+                cometd.handshake();
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
         Assertions.assertTrue(latch.await(5000));
 
         disconnect();

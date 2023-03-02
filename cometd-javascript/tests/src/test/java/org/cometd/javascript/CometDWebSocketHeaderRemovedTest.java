@@ -63,29 +63,24 @@ public class CometDWebSocketHeaderRemovedTest extends AbstractCometDWebSocketTes
             }
         }), cometdServletPath, EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
 
-        // Need long-polling as a fallback after websocket fails
-        evaluateScript("cometd.registerTransport('long-polling', originalTransports['long-polling']);");
+        evaluateScript("""
+                // Need long-polling as a fallback after websocket fails.
+                cometd.registerTransport('long-polling', originalTransports['long-polling']);
+                
+                cometd.configure({url: '$U', logLevel: '$L'});
+                
+                const latch = new Latch(1);
+                cometd.addListener('/meta/handshake', message => {
+                   if (cometd.getTransport().getType() === 'long-polling' && message.successful) {
+                       latch.countDown();
+                   }
+                });
+                cometd.handshake();
+                """.replace("$U", cometdURL).replace("$L", getLogLevel()));
 
-        evaluateScript("cometd.configure({" +
-                "url: '" + cometdURL + "', " +
-                "logLevel: '" + getLogLevel() + "'" +
-                "});");
-
-        evaluateScript("var latch = new Latch(1);");
         Latch latch = javaScript.get("latch");
-        evaluateScript("cometd.addListener('/meta/handshake', function(message) {" +
-                "   if (cometd.getTransport().getType() === 'long-polling' && message.successful) {" +
-                "       latch.countDown();" +
-                "   }" +
-                "});");
-
-        evaluateScript("cometd.handshake()");
         Assertions.assertTrue(latch.await(5000));
 
-        evaluateScript("var disconnectLatch = new Latch(1);");
-        Latch disconnectLatch = javaScript.get("disconnectLatch");
-        evaluateScript("cometd.addListener('/meta/disconnect', function() { disconnectLatch.countDown(); });");
-        evaluateScript("cometd.disconnect();");
-        Assertions.assertTrue(disconnectLatch.await(5000));
+        disconnect();
     }
 }
