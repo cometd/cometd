@@ -15,8 +15,16 @@
  */
 package org.cometd.server.jmx;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import javax.management.openmbean.CompositeData;
+import javax.management.openmbean.CompositeDataSupport;
+import javax.management.openmbean.CompositeType;
+import javax.management.openmbean.OpenDataException;
+import javax.management.openmbean.OpenType;
+import javax.management.openmbean.SimpleType;
+
 import org.cometd.server.BayeuxServerImpl;
 import org.eclipse.jetty.jmx.ObjectMBean;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -56,5 +64,38 @@ public class BayeuxServerImplMBean extends ObjectMBean {
     @ManagedAttribute(value = "The configuration option names", readonly = true)
     public Set<String> getOptionNames() {
         return new TreeSet<>(bayeux.getOptionNames());
+    }
+
+    @ManagedAttribute(value = "The statistics of the last sweep", readonly = true)
+    public CompositeData getLastSweepStatistics() {
+        return toCompositeData("lastSweepStatistics", bayeux.getSweeperStats());
+    }
+
+    private static CompositeData toCompositeData(String typeName, Map<String, Object> map) {
+        try {
+            String[] itemNames = new String[map.size()];
+            OpenType<?>[] itemTypes = new OpenType<?>[map.size()];
+            Object[] itemValues = new Object[map.size()];
+            int i = 0;
+            for (Map.Entry<String, Object> entry : map.entrySet()) {
+                String key = entry.getKey();
+                Object value = entry.getValue();
+
+                itemNames[i] = key;
+                if (value.getClass() == Long.class) {
+                    itemTypes[i] = SimpleType.LONG;
+                    itemValues[i] = value;
+                } else {
+                    itemTypes[i] = SimpleType.STRING;
+                    itemValues[i] = value.toString();
+                }
+
+                i++;
+            }
+            CompositeType rowType = new CompositeType(typeName, typeName, itemNames, itemNames, itemTypes);
+            return new CompositeDataSupport(rowType, itemNames, itemValues);
+        } catch (OpenDataException e) {
+            throw new IllegalStateException(e);
+        }
     }
 }
