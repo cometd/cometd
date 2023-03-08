@@ -70,6 +70,11 @@
       <scope>compile</scope>
     </dependency>
     <dependency>
+      <groupId>jakarta.websocket</groupId>
+      <artifactId>jakarta.websocket-client-api</artifactId>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
       <groupId>org.cometd.java</groupId>
       <artifactId>cometd-java-benchmark-common</artifactId>
       <version>${project.version}</version>
