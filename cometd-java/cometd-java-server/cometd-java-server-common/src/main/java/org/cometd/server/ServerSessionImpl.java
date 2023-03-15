@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
@@ -692,23 +693,26 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         long interval = calculateInterval(defaultInterval);
         long maxInterval = calculateMaxInterval(defaultMaxInterval);
         long now = System.nanoTime();
-        boolean scheduled = false;
         lock.lock();
         try {
             // When metaConnectCycle == 0, the /meta/connect was not suspended.
-            // Otherwise it was suspended, and some other event such as the
+            // Otherwise, it was suspended, and some other event such as the
             // /meta/connect timeout expiration may schedule session expiration
             // only if there isn't a more recent /meta/connect that was suspended,
             // which would have cancelled the session expiration.
-            if (metaConnectCycle == 0 || metaConnectCycle == getMetaConnectCycle()) {
-                scheduled = true;
+            long currentMetaConnectCycle = getMetaConnectCycle();
+            if (metaConnectCycle == 0 || metaConnectCycle == currentMetaConnectCycle) {
                 _expireTime = now + TimeUnit.MILLISECONDS.toNanos(interval + maxInterval);
+                if (_logger.isDebugEnabled()) {
+                    _logger.debug("Scheduled expiration for {}", this);
+                }
+            } else {
+                if (_logger.isDebugEnabled()) {
+                    _logger.debug("Skipped expiration at cycle {}/{} for {}", metaConnectCycle, currentMetaConnectCycle, this);
+                }
             }
         } finally {
             lock.unlock();
-        }
-        if (_logger.isDebugEnabled()) {
-            _logger.debug("{} expiration for {}", scheduled ? "Scheduled" : "Skipped", this);
         }
     }
 
@@ -860,12 +864,16 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
     }
 
     public boolean updateServerEndPoint(Object newEndPoint) {
-        Object oldEndPoint = _endPoint;
-        if (oldEndPoint == newEndPoint) {
-            return false;
+        lock.lock();
+        try {
+            if (_endPoint == newEndPoint) {
+                return _state == State.NEW || _state == State.HANDSHAKEN;
+            }
+            _endPoint = newEndPoint;
+            return true;
+        } finally {
+            lock.unlock();
         }
-        _endPoint = newEndPoint;
-        return true;
     }
 
     @Override
@@ -1058,6 +1066,8 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         long expire;
         State state;
         int size;
+        Scheduler scheduler;
+        Object endPoint;
         long now = System.nanoTime();
         lock.lock();
         try {
@@ -1066,10 +1076,12 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
             expire = _expireTime == 0 ? 0 : _expireTime - now;
             state = _state;
             size = _queue.size();
+            scheduler = _scheduler;
+            endPoint = _endPoint;
         } finally {
             lock.unlock();
         }
-        return String.format("%s@%x[%s,%s,q=%d,cycle=%d,last=%d,expire=%d]",
+        return String.format("%s@%x[%s,%s,q=%d,cycle=%d,last=%d,expire=%d,scheduler=%s,endPoint=%s]",
                 getClass().getSimpleName(),
                 hashCode(),
                 _id,
@@ -1077,7 +1089,9 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
                 size,
                 cycle,
                 TimeUnit.NANOSECONDS.toMillis(last),
-                TimeUnit.NANOSECONDS.toMillis(expire));
+                TimeUnit.NANOSECONDS.toMillis(expire),
+                scheduler,
+                endPoint);
     }
 
     private class LazyTask implements Runnable {

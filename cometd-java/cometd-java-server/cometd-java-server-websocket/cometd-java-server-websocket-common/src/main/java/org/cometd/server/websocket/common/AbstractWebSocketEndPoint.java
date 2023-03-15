@@ -27,6 +27,7 @@ import java.util.Queue;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicMarkableReference;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
@@ -47,9 +48,8 @@ import org.slf4j.LoggerFactory;
 
 public abstract class AbstractWebSocketEndPoint {
     private final Logger _logger = LoggerFactory.getLogger(getClass());
-    private final AutoLock lock = new AutoLock();
-    private final Flusher flusher = new Flusher();
-    private final AtomicBoolean terminated = new AtomicBoolean();
+    private final Flusher _flusher = new Flusher();
+    private final AtomicBoolean _terminated = new AtomicBoolean();
     private final AbstractWebSocketTransport _transport;
     private final BayeuxContext _bayeuxContext;
     private ServerSessionImpl _session;
@@ -92,7 +92,7 @@ public abstract class AbstractWebSocketEndPoint {
     }
 
     public void onClose(int code, String reason) {
-        if (terminated.compareAndSet(false, true)) {
+        if (_terminated.compareAndSet(false, true)) {
             // There is no need to call BayeuxServerImpl.removeServerSession(),
             // because the connection may have been closed for a reload.
             ServerSessionImpl session = _session;
@@ -104,7 +104,7 @@ public abstract class AbstractWebSocketEndPoint {
     }
 
     public void onError(Throwable failure) {
-        if (terminated.compareAndSet(false, true)) {
+        if (_terminated.compareAndSet(false, true)) {
             if (failure instanceof SocketTimeoutException || failure instanceof TimeoutException) {
                 if (_logger.isDebugEnabled()) {
                     _logger.debug("WebSocket timeout on {}", this, failure);
@@ -175,6 +175,7 @@ public abstract class AbstractWebSocketEndPoint {
                 promise.fail(new IOException("protocol violation"));
             } else {
                 if (session != null) {
+                    session.updateServerEndPoint(this);
                     // Always disable the Scheduler, as we don't want
                     // messages to be sent before the handshake reply.
                     session.setScheduler(null);
@@ -182,9 +183,9 @@ public abstract class AbstractWebSocketEndPoint {
                 processMetaHandshake(context, message, promise);
             }
         } else {
-            // If the endpoint changed, we want to install a scheduler for the current endpoint,
-            // so that server-side messages can be delivered without waiting for a /meta/connect.
             if (session != null && session.updateServerEndPoint(this)) {
+                // Install a scheduler for the current endpoint, so that server-side
+                // messages can be delivered without waiting for a /meta/connect.
                 session.setScheduler(new WebSocketScheduler(context, message, 0));
             }
             if (Channel.META_CONNECT.equals(channel)) {
@@ -307,12 +308,12 @@ public abstract class AbstractWebSocketEndPoint {
             _logger.debug("Flushing {}, replies={}, messages={} on {}", session, context.replies, msgs, this);
         }
         List<ServerMessage> messages = msgs;
-        boolean queued = flusher.queue(new Entry(context, messages, Promise.from(y -> {
+        boolean queued = _flusher.queue(new Entry(context, messages, Promise.from(y -> {
             promise.succeed(null);
             writeComplete(context, messages);
         }, promise::fail)));
         if (queued) {
-            flusher.iterate();
+            _flusher.iterate();
         }
     }
 
@@ -325,7 +326,7 @@ public abstract class AbstractWebSocketEndPoint {
 
     @Override
     public String toString() {
-        return String.format("%s@%x", getClass().getSimpleName(), hashCode());
+        return String.format("%s@%x[%s]", getClass().getSimpleName(), hashCode(), _flusher);
     }
 
     private class WebSocketScheduler implements AbstractServerTransport.Scheduler, Runnable, Promise<Void> {
@@ -459,6 +460,7 @@ public abstract class AbstractWebSocketEndPoint {
     }
 
     private class Flusher extends IteratingCallback {
+        private final AutoLock _lock = new AutoLock();
         private final Queue<Entry> _entries = new ArrayDeque<>();
         private State _state = State.IDLE;
         private StringBuilder _buffer;
@@ -469,7 +471,7 @@ public abstract class AbstractWebSocketEndPoint {
 
         private boolean queue(Entry entry) {
             Throwable failure;
-            try (AutoLock l = lock.lock()) {
+            try (AutoLock ignored = _lock.lock()) {
                 failure = _failure;
                 if (failure == null) {
                     return _entries.offer(entry);
@@ -484,7 +486,7 @@ public abstract class AbstractWebSocketEndPoint {
             while (true) {
                 switch (_state) {
                     case IDLE: {
-                        try (AutoLock l = lock.lock()) {
+                        try (AutoLock ignored = _lock.lock()) {
                             _entry = _entries.poll();
                         }
                         if (_logger.isDebugEnabled()) {
@@ -589,7 +591,7 @@ public abstract class AbstractWebSocketEndPoint {
                         _entry = null;
                         _messageIndex = 0;
                         _replyIndex = 0;
-                        entry._promise.succeed(null);
+                        entry.succeed();
                         break;
                     }
                     default: {
@@ -602,7 +604,7 @@ public abstract class AbstractWebSocketEndPoint {
         @Override
         protected void onCompleteFailure(Throwable x) {
             List<Entry> entries;
-            try (AutoLock l = lock.lock()) {
+            try (AutoLock ignored = _lock.lock()) {
                 _failure = x;
                 entries = new ArrayList<>(_entries.size() + 1);
                 if (_entry != null) {
@@ -613,6 +615,17 @@ public abstract class AbstractWebSocketEndPoint {
                 _entries.clear();
             }
             entries.forEach(e -> e.fail(x));
+        }
+
+        @Override
+        public String toString() {
+            int size;
+            Throwable failure;
+            try (AutoLock ignored = _lock.lock()) {
+                size = _entries.size();
+                failure = _failure;
+            }
+            return String.format("%s@%x[%s,e=%s,q=%d,f=%s]", getClass().getSimpleName(), hashCode(), _state, _entry, size, failure);
         }
     }
 
@@ -625,6 +638,10 @@ public abstract class AbstractWebSocketEndPoint {
             this._context = context;
             this._queue = queue;
             this._promise = promise;
+        }
+
+        private void succeed() {
+            _promise.succeed(null);
         }
 
         private void fail(Throwable failure) {
