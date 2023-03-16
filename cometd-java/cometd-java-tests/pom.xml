@@ -19,5 +19,6 @@
   <modules>
     <module>cometd-java-tests-common</module>
     <module>cometd-java-tests-spring</module>
+    <module>cometd-java-tests-oort</module>
   </modules>
 </project>
