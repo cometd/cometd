@@ -10,6 +10,10 @@
   <artifactId>cometd-java-annotation-tests</artifactId>
   <name>CometD :: Java :: Annotation :: Tests</name>
 
+  <properties>
+    <maven.deploy.skip>true</maven.deploy.skip>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.junit.jupiter</groupId>

@@ -12,6 +12,10 @@
   <packaging>pom</packaging>
   <name>CometD :: Java :: Tests</name>
 
+  <properties>
+    <maven.deploy.skip>true</maven.deploy.skip>
+  </properties>
+
   <modules>
     <module>cometd-java-tests-common</module>
     <module>cometd-java-tests-spring</module>

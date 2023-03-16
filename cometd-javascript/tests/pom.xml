@@ -11,6 +11,10 @@
   <packaging>jar</packaging>
   <name>CometD :: JavaScript :: Tests</name>
 
+  <properties>
+    <maven.deploy.skip>true</maven.deploy.skip>
+  </properties>
+
   <build>
     <plugins>
       <plugin>

@@ -10,6 +10,10 @@
   <artifactId>cometd-java-server-websocket-tests</artifactId>
   <name>CometD :: Java :: Server :: WebSocket :: Tests</name>
 
+  <properties>
+    <maven.deploy.skip>true</maven.deploy.skip>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
