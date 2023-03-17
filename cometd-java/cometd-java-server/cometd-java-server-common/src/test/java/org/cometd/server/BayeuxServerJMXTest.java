@@ -47,10 +47,10 @@ import org.junit.jupiter.api.Test;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
 
-public class BayeuxServerJmxTest
+public class BayeuxServerJMXTest
 {
     private Server server;
     private JMXServiceURL jmxURL;
@@ -96,7 +96,7 @@ public class BayeuxServerJmxTest
     }
 
     @Test
-    public void testLastSweepStatisticsOverRemoteJmx() throws Exception
+    public void testLastSweepInfoOverRemoteJMX() throws Exception
     {
         try (JMXConnector client = JMXConnectorFactory.connect(jmxURL, null))
         {
@@ -107,21 +107,24 @@ public class BayeuxServerJmxTest
             MBeanServerConnection msc = client.getMBeanServerConnection();
             Set<ObjectName> mbeanNames = msc.queryNames(ObjectName.getInstance(BayeuxServerImpl.class.getPackage().getName() + ":*,type=bayeuxserverimpl"), null);
             ObjectName bayeuxObjectName = mbeanNames.iterator().next();
-            AtomicReference<CompositeData> lastSweepStatisticsRef = new AtomicReference<>();
+            AtomicReference<CompositeData> lastSweepInfoRef = new AtomicReference<>();
             await().pollDelay(1, TimeUnit.MILLISECONDS).atMost(5, TimeUnit.SECONDS).until(() -> {
-                CompositeData lastSweepStatistics = (CompositeData)msc.getAttribute(bayeuxObjectName, "lastSweepStatistics");
-                long lastSweepTransportDuration = (long)lastSweepStatistics.get("serverSessionSweepCount");
+                CompositeData lastSweepInfo = (CompositeData)msc.getAttribute(bayeuxObjectName, "lastSweepInfo");
+                long lastSweepTransportDuration = (long)lastSweepInfo.get("serverSessionSweepCount");
                 if (lastSweepTransportDuration != 0) {
-                    lastSweepStatisticsRef.set(lastSweepStatistics);
+                    lastSweepInfoRef.set(lastSweepInfo);
                     return true;
                 }
                 return false;
             });
-            assertThat((long)lastSweepStatisticsRef.get().get("serverSessionSweepDuration"), not(0));
-            assertThat(lastSweepStatisticsRef.get().containsKey("transportSweepDuration"), is(true));
-            assertThat(lastSweepStatisticsRef.get().containsKey("serverChannelSweepCount"), is(true));
-            assertThat(lastSweepStatisticsRef.get().containsKey("serverChannelSweepDuration"), is(true));
-            assertThat(lastSweepStatisticsRef.get().containsKey("startInstant"), is(true));
+            CompositeData lastSweepInfo = lastSweepInfoRef.get();
+            assertThat(lastSweepInfo.containsKey("startInstant"), is(true));
+            assertThat(lastSweepInfo.containsKey("transportSweepDuration"), is(true));
+            assertThat(lastSweepInfo.containsKey("serverChannelSweepCount"), is(true));
+            assertThat(lastSweepInfo.containsKey("serverChannelSweepDuration"), is(true));
+            assertThat(((Number)lastSweepInfo.get("serverSessionSweepCount")).longValue(), greaterThan(0L));
+            assertThat(lastSweepInfo.containsKey("serverSessionSweepDuration"), is(true));
+            assertThat(lastSweepInfo.containsKey("sweepDuration"), is(true));
         }
     }
 

@@ -38,7 +38,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -1587,30 +1586,36 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
         return null;
     }
 
-    public Map<String, Object> getSweeperStats() {
-        return _sweeper._sweeperStats.toMap();
+    public Map<String, Object> getLastSweepInfo() {
+        return _sweeper._lastSweepInfo.toMap();
+    }
+
+    public Map<String, Object> getLongestSweepInfo() {
+        return _sweeper._longestSweepInfo.toMap();
     }
 
     private class Sweeper {
         private final Logger _logger = LoggerFactory.getLogger(Sweeper.class.getName() + "@" + Integer.toHexString(System.identityHashCode(BayeuxServerImpl.this)));
 
-        private SweeperStats _sweeperStats = new SweeperStats(null);
+        private SweepInfo _lastSweepInfo = new SweepInfo(Instant.EPOCH);
+        private SweepInfo _longestSweepInfo = new SweepInfo(Instant.EPOCH);
 
         private CompletableFuture<Void> asyncSweep() {
-            AtomicLong previousNanoTime = new AtomicLong(System.nanoTime());
-            AtomicInteger serverChannelSweepCounter = new AtomicInteger();
-            AtomicInteger serverSessionSweepCounter = new AtomicInteger();
-            SweeperStats sweeperStats = new SweeperStats(Instant.now());
+            long beginNanoTime = System.nanoTime();
+            AtomicLong previousNanoTime = new AtomicLong(beginNanoTime);
+            AtomicLong serverChannelSweepCounter = new AtomicLong();
+            AtomicLong serverSessionSweepCounter = new AtomicLong();
+            SweepInfo sweeperInfo = new SweepInfo(Instant.now());
             if (_logger.isDebugEnabled()) {
-                _logger.debug("Starting async sweep at {}", sweeperStats.startInstant);
+                _logger.debug("Starting async sweep at {}", sweeperInfo.startInstant);
             }
 
             return CompletableFuture.runAsync(BayeuxServerImpl.this::sweepTransports, getExecutor())
                 .thenCompose(unused -> {
                     long now = System.nanoTime();
-                    sweeperStats.transportSweepDuration = TimeUnit.NANOSECONDS.toMillis(now - previousNanoTime.getAndSet(now));
+                    sweeperInfo.transportSweepDuration = TimeUnit.NANOSECONDS.toMillis(now - previousNanoTime.getAndSet(now));
                     if (_logger.isDebugEnabled()) {
-                        _logger.debug("Swept transports, took {}ms", sweeperStats.transportSweepDuration);
+                        _logger.debug("Swept transports, took {}ms", sweeperInfo.transportSweepDuration);
                     }
                     return runAsync(_channels.values(), serverChannel -> {
                         if (serverChannel.sweep())
@@ -1619,10 +1624,10 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
                 })
                 .thenCompose(unused -> {
                     long now = System.nanoTime();
-                    sweeperStats.serverChannelSweepCount = serverChannelSweepCounter.get();
-                    sweeperStats.serverChannelSweepDuration = TimeUnit.NANOSECONDS.toMillis(now - previousNanoTime.getAndSet(now));
+                    sweeperInfo.serverChannelSweepCount = serverChannelSweepCounter.get();
+                    sweeperInfo.serverChannelSweepDuration = TimeUnit.NANOSECONDS.toMillis(now - previousNanoTime.getAndSet(now));
                     if (_logger.isDebugEnabled()) {
-                        _logger.debug("Swept server channels, {} in {}ms", sweeperStats.serverChannelSweepCount, sweeperStats.serverChannelSweepDuration);
+                        _logger.debug("Swept server channels, {} in {}ms", sweeperInfo.serverChannelSweepCount, sweeperInfo.serverChannelSweepDuration);
                     }
                     return runAsync(_sessions.values(), serverSession -> {
                         if (serverSession.sweep(now))
@@ -1631,12 +1636,16 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
                 })
                 .thenRun(() -> {
                     long now = System.nanoTime();
-                    sweeperStats.serverSessionSweepCount = serverSessionSweepCounter.get();
-                    sweeperStats.serverSessionSweepDuration = TimeUnit.NANOSECONDS.toMillis(now - previousNanoTime.getAndSet(now));
-                    _sweeperStats = sweeperStats;
+                    sweeperInfo.serverSessionSweepCount = serverSessionSweepCounter.get();
+                    sweeperInfo.serverSessionSweepDuration = TimeUnit.NANOSECONDS.toMillis(now - previousNanoTime.getAndSet(now));
+                    sweeperInfo.sweepDurationNanos = now - beginNanoTime;
+                    if (sweeperInfo.sweepDurationNanos >= _lastSweepInfo.sweepDurationNanos) {
+                        _longestSweepInfo = sweeperInfo;
+                    }
+                    _lastSweepInfo = sweeperInfo;
                     if (_logger.isDebugEnabled()) {
-                        _logger.debug("Swept server sessions, {} in {}ms", sweeperStats.serverSessionSweepCount, sweeperStats.serverSessionSweepDuration);
-                        _logger.debug("End of async sweep at {}", Instant.now());
+                        _logger.debug("Swept server sessions, {} in {}ms", sweeperInfo.serverSessionSweepCount, sweeperInfo.serverSessionSweepDuration);
+                        _logger.debug("End of async sweep in {}ns at {}", sweeperInfo.sweepDurationNanos, Instant.now());
                     }
                 });
         }
@@ -1696,26 +1705,28 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
         }
     }
 
-    private static class SweeperStats {
-        private Instant startInstant;
+    private static class SweepInfo {
+        private final Instant startInstant;
         private long transportSweepDuration;
         private long serverChannelSweepDuration;
-        private int serverChannelSweepCount;
+        private long serverChannelSweepCount;
         private long serverSessionSweepDuration;
-        private int serverSessionSweepCount;
+        private long serverSessionSweepCount;
+        private long sweepDurationNanos;
 
-        public SweeperStats(Instant instant) {
-            this.startInstant = instant;
+        public SweepInfo(Instant instant) {
+            this.startInstant = Objects.requireNonNull(instant);
         }
 
         private Map<String, Object> toMap() {
             Map<String, Object> result = new LinkedHashMap<>();
-            result.put("startInstant", startInstant == null ? "" : startInstant.toString());
+            result.put("startInstant", startInstant.toString());
             result.put("transportSweepDuration", transportSweepDuration);
+            result.put("serverChannelSweepCount", serverChannelSweepCount);
             result.put("serverChannelSweepDuration", serverChannelSweepDuration);
-            result.put("serverChannelSweepCount", (long)serverChannelSweepCount);
+            result.put("serverSessionSweepCount", serverSessionSweepCount);
             result.put("serverSessionSweepDuration", serverSessionSweepDuration);
-            result.put("serverSessionSweepCount", (long)serverSessionSweepCount);
+            result.put("sweepDuration", TimeUnit.NANOSECONDS.toMillis(sweepDurationNanos));
             return result;
         }
     }
