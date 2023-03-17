@@ -17,8 +17,9 @@
         <configuration>
           <argLine>
             @{argLine}
-            <!-- Jetty's JSON is an optional dependency, so it
-            must be explicitly added to the module graph. -->
+            <!-- Jetty's JMX is an optional dependency, add it explicitly to the module graph. -->
+            --add-modules org.eclipse.jetty.jmx
+            <!-- Jetty's JSON is an optional dependency, add it explicitly to the module graph. -->
             --add-modules org.eclipse.jetty.util.ajax
           </argLine>
         </configuration>
