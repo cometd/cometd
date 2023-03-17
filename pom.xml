@@ -60,9 +60,9 @@
     <!-- end::jetty-version[] -->
     <graalvm-version>22.3.1</graalvm-version>
     <slf4j-version>2.0.6</slf4j-version>
-    <log4j2-version>2.19.0</log4j2-version>
+    <log4j2-version>2.20.0</log4j2-version>
     <spring-version>5.3.25</spring-version>
-    <spring-boot-version>2.7.8</spring-boot-version>
+    <spring-boot-version>2.7.9</spring-boot-version>
     <jackson-version>2.14.2</jackson-version>
     <dojo-version>1.17.3</dojo-version>
     <okhttp-version>4.10.0</okhttp-version>
@@ -345,7 +345,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-assembly-plugin</artifactId>
-          <version>3.4.2</version>
+          <version>3.5.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -355,7 +355,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.10.1</version>
+          <version>3.11.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -435,17 +435,10 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>3.0.0-M5</version>
+          <version>3.0.0</version>
           <configuration>
             <argLine>@{argLine} -showversion -Xmx1g -Xms1g -Xlog:gc* -XX:+PrintCommandLineFlags</argLine>
           </configuration>
-          <dependencies>
-            <dependency>
-              <groupId>org.codehaus.plexus</groupId>
-              <artifactId>plexus-java</artifactId>
-              <version>1.0.4</version>
-            </dependency>
-          </dependencies>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -524,7 +517,7 @@
       <dependency>
         <groupId>com.google.javascript</groupId>
         <artifactId>closure-compiler</artifactId>
-        <version>v20230206</version>
+        <version>v20230228</version>
       </dependency>
 
       <dependency>

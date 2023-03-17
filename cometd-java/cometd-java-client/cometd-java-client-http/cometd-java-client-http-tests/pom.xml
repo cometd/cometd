@@ -10,6 +10,10 @@
   <artifactId>cometd-java-client-http-tests</artifactId>
   <name>CometD :: Java :: Client :: HTTP :: Tests</name>
 
+  <properties>
+    <maven.deploy.skip>true</maven.deploy.skip>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.junit.jupiter</groupId>

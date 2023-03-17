@@ -1,18 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <parent>
-    <groupId>org.cometd.java</groupId>
-    <artifactId>cometd-java-server-websocket</artifactId>
+    <groupId>org.cometd.java.tests</groupId>
+    <artifactId>cometd-java-tests</artifactId>
     <version>7.0.10-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>cometd-java-server-websocket-tests</artifactId>
-  <name>CometD :: Java :: Server :: WebSocket :: Tests</name>
-
-  <properties>
-    <maven.deploy.skip>true</maven.deploy.skip>
-  </properties>
+  <artifactId>cometd-java-tests-oort</artifactId>
+  <name>CometD :: Java :: Tests :: Oort</name>
 
   <dependencies>
     <dependency>
@@ -28,42 +24,14 @@
       <artifactId>log4j-slf4j2-impl</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-jakarta-servlet-api</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-jakarta-websocket-api</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.cometd.java</groupId>
-      <artifactId>cometd-java-client-http-jetty</artifactId>
+      <artifactId>cometd-java-oort</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.cometd.java</groupId>
-      <artifactId>cometd-java-client-websocket-javax</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.cometd.java</groupId>
-      <artifactId>cometd-java-client-websocket-jetty</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.cometd.java</groupId>
-      <artifactId>cometd-java-client-websocket-okhttp</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.cometd.java</groupId>
-      <artifactId>cometd-java-server-common</artifactId>
+      <artifactId>cometd-java-annotation-server</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
@@ -80,8 +48,20 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.cometd.java</groupId>
+      <artifactId>cometd-java-client-http-okhttp</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.cometd.java</groupId>
+      <artifactId>cometd-java-client-websocket-okhttp</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-client</artifactId>
+      <artifactId>jetty-jmx</artifactId>
       <version>${jetty-version}</version>
       <scope>test</scope>
     </dependency>
@@ -105,7 +85,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>websocket-jetty-client</artifactId>
+      <artifactId>websocket-jakarta-server</artifactId>
       <version>${jetty-version}</version>
       <scope>test</scope>
     </dependency>
@@ -116,14 +96,9 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>websocket-jakarta-server</artifactId>
-      <version>${jetty-version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>${jackson-version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
