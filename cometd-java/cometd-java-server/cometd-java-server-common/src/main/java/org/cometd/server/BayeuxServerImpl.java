@@ -155,7 +155,7 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
         schedule(new Runnable() {
             @Override
             public void run() {
-                _sweeper.asyncSweep().whenComplete((r, x) -> schedule(this, getSweepPeriod()));
+                asyncSweep().whenComplete((r, x) -> schedule(this, getSweepPeriod()));
             }
         }, getSweepPeriod());
     }
@@ -1591,7 +1591,7 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
         return _sweeper._sweeperStats.toMap();
     }
 
-    class Sweeper {
+    private class Sweeper {
         private final Logger _logger = LoggerFactory.getLogger(Sweeper.class.getName() + "@" + Integer.toHexString(System.identityHashCode(BayeuxServerImpl.this)));
 
         private SweeperStats _sweeperStats = new SweeperStats(null);
