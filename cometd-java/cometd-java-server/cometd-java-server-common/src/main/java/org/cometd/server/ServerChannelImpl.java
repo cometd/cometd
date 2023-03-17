@@ -329,7 +329,7 @@ public class ServerChannelImpl implements ServerChannel, Dumpable {
         publish(from, mutable, promise);
     }
 
-    protected void sweep() {
+    protected boolean sweep() {
         waitForInitialized();
 
         for (ServerSession session : _subscribers) {
@@ -339,28 +339,29 @@ public class ServerChannelImpl implements ServerChannel, Dumpable {
         }
 
         if (isMeta() || isPersistent()) {
-            return;
+            return false;
         }
 
         if (!_subscribers.isEmpty()) {
-            return;
+            return false;
         }
 
         if (!_authorizers.isEmpty()) {
-            return;
+            return false;
         }
 
         for (ServerChannelListener listener : _listeners) {
             if (!(listener instanceof ServerChannelListener.Weak)) {
-                return;
+                return false;
             }
         }
 
         if (_sweeperPasses.incrementAndGet() < 3) {
-            return;
+            return false;
         }
 
         remove();
+        return true;
     }
 
     @Override

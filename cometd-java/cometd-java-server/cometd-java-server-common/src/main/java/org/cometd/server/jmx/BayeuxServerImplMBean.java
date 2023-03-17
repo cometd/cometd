@@ -15,8 +15,16 @@
  */
 package org.cometd.server.jmx;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import javax.management.openmbean.CompositeData;
+import javax.management.openmbean.CompositeDataSupport;
+import javax.management.openmbean.CompositeType;
+import javax.management.openmbean.OpenDataException;
+import javax.management.openmbean.OpenType;
+import javax.management.openmbean.SimpleType;
+
 import org.cometd.server.BayeuxServerImpl;
 import org.eclipse.jetty.jmx.ObjectMBean;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -24,37 +32,74 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 
 @ManagedObject
 public class BayeuxServerImplMBean extends ObjectMBean {
-    private final BayeuxServerImpl bayeux;
-
     public BayeuxServerImplMBean(Object managedObject) {
         super(managedObject);
-        bayeux = (BayeuxServerImpl)managedObject;
+    }
+
+    private BayeuxServerImpl bayeux() {
+        return (BayeuxServerImpl)getManagedObject();
     }
 
     @Override
     public String getObjectContextBasis() {
-        return bayeux.getName();
+        return bayeux().getName();
     }
 
     @ManagedAttribute(value = "The number of ServerSessions", readonly = true)
     public int getSessionCount() {
-        return bayeux.getSessions().size();
+        return bayeux().getSessions().size();
     }
 
     @ManagedAttribute(value = "The number of ServerChannels", readonly = true)
     public int getChannelCount() {
-        return bayeux.getChannels().size();
+        return bayeux().getChannels().size();
     }
 
     // Replicated here because ConcurrentMap.KeySet is not serializable
     @ManagedAttribute(value = "The transports known by this CometD server", readonly = true)
     public Set<String> getKnownTransportNames() {
-        return new TreeSet<>(bayeux.getKnownTransportNames());
+        return new TreeSet<>(bayeux().getKnownTransportNames());
     }
 
     // Replicated here because ConcurrentMap.KeySet is not serializable
     @ManagedAttribute(value = "The configuration option names", readonly = true)
     public Set<String> getOptionNames() {
-        return new TreeSet<>(bayeux.getOptionNames());
+        return new TreeSet<>(bayeux().getOptionNames());
+    }
+
+    @ManagedAttribute(value = "The information about the last sweep", readonly = true)
+    public CompositeData getLastSweepInfo() {
+        return toCompositeData("lastSweepInfo", bayeux().getLastSweepInfo());
+    }
+
+    @ManagedAttribute(value = "The information about the sweep that took the longest time", readonly = true)
+    public CompositeData getLongestSweepInfo() {
+        return toCompositeData("longestSweepInfo", bayeux().getLongestSweepInfo());
+    }
+
+    private static CompositeData toCompositeData(String typeName, Map<String, Object> map) {
+        try {
+            String[] itemNames = new String[map.size()];
+            OpenType<?>[] itemTypes = new OpenType<?>[map.size()];
+            Object[] itemValues = new Object[map.size()];
+            int i = 0;
+            for (Map.Entry<String, Object> entry : map.entrySet()) {
+                String key = entry.getKey();
+                Object value = entry.getValue();
+                itemNames[i] = key;
+                if (value instanceof Number) {
+                    itemTypes[i] = SimpleType.LONG;
+                    itemValues[i] =  ((Number)value).longValue();
+                } else {
+                    itemTypes[i] = SimpleType.STRING;
+                    itemValues[i] = String.valueOf(value);
+                }
+                ++i;
+            }
+            CompositeType type = new CompositeType(typeName, typeName, itemNames, itemNames, itemTypes);
+            return new CompositeDataSupport(type, itemNames, itemValues);
+        } catch (OpenDataException x) {
+            throw new RuntimeException(x);
+        }
     }
 }
