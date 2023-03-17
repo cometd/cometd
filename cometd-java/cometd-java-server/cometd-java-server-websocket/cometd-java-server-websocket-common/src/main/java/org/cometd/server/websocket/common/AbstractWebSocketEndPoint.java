@@ -38,7 +38,6 @@ import org.cometd.common.AsyncFoldLeft;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.ServerMessageImpl;
 import org.cometd.server.ServerSessionImpl;
-import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -111,12 +110,8 @@ public abstract class AbstractWebSocketEndPoint {
                 }
             } else {
                 InetSocketAddress address = _bayeuxContext == null ? null : _bayeuxContext.getRemoteAddress();
-                if (failure instanceof QuietException) {
-                    if (_logger.isDebugEnabled()) {
-                        _logger.debug("WebSocket failure, address {} on {}", address, this, failure);
-                    }
-                } else {
-                    _logger.info("WebSocket failure, address {} on {}", address, this, failure);
+                if (_logger.isDebugEnabled()) {
+                    _logger.debug("WebSocket failure, address {} on {}", address, this, failure);
                 }
             }
         }

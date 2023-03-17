@@ -18,5 +18,4 @@ module org.cometd.server.websocket.common {
 
     requires transitive org.cometd.server;
     requires org.slf4j;
-    requires org.eclipse.jetty.io;
 }
