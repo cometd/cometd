@@ -153,7 +153,7 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
         schedule(new Runnable() {
             @Override
             public void run() {
-                _sweeper.asyncSweep().whenComplete((r, x) -> schedule(this, getSweepPeriod()));
+                asyncSweep().whenComplete((r, x) -> schedule(this, getSweepPeriod()));
             }
         }, getSweepPeriod());
     }
@@ -1585,11 +1585,11 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
         return null;
     }
 
-    class Sweeper {
+    private class Sweeper {
         private final Logger _logger = LoggerFactory.getLogger(Sweeper.class.getName() + "@" + Integer.toHexString(System.identityHashCode(BayeuxServerImpl.this)));
 
         private CompletableFuture<Void> asyncSweep() {
-            long before = System.nanoTime();
+            long begin = System.nanoTime();
             if (_logger.isDebugEnabled()) {
                 _logger.debug("Starting async sweep at {}", Instant.now());
             }
@@ -1602,7 +1602,7 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
                 });
 
             if (_logger.isDebugEnabled()) {
-                completableFuture = completableFuture.thenRun(() -> _logger.debug("End of async sweep, took {}ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - before)));
+                completableFuture = completableFuture.thenRun(() -> _logger.debug("End of async sweep, took {}ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin)));
             }
 
             return completableFuture;
