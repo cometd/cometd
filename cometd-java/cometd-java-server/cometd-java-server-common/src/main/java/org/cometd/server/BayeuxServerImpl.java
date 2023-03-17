@@ -36,6 +36,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletRequest;
@@ -1583,27 +1584,68 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
         return null;
     }
 
+    public Map<String, Object> getLastSweepInfo() {
+        return _sweeper._lastSweepInfo.toMap();
+    }
+
+    public Map<String, Object> getLongestSweepInfo() {
+        return _sweeper._longestSweepInfo.toMap();
+    }
+
     private class Sweeper {
         private final Logger _logger = LoggerFactory.getLogger(Sweeper.class.getName() + "@" + Integer.toHexString(System.identityHashCode(BayeuxServerImpl.this)));
 
+        private SweepInfo _lastSweepInfo = new SweepInfo(Instant.EPOCH);
+        private SweepInfo _longestSweepInfo = new SweepInfo(Instant.EPOCH);
+
         private CompletableFuture<Void> asyncSweep() {
-            long begin = System.nanoTime();
+            long beginNanoTime = System.nanoTime();
+            AtomicLong previousNanoTime = new AtomicLong(beginNanoTime);
+            AtomicLong serverChannelSweepCounter = new AtomicLong();
+            AtomicLong serverSessionSweepCounter = new AtomicLong();
+            SweepInfo sweeperInfo = new SweepInfo(Instant.now());
             if (_logger.isDebugEnabled()) {
-                _logger.debug("Starting async sweep at {}", Instant.now());
+                _logger.debug("Starting async sweep at {}", sweeperInfo.startInstant);
             }
 
-            CompletableFuture<Void> completableFuture = CompletableFuture.runAsync(BayeuxServerImpl.this::sweepTransports, getExecutor())
-                .thenCompose(unused -> runAsync(_channels.values(), ServerChannelImpl::sweep))
+            return CompletableFuture.runAsync(BayeuxServerImpl.this::sweepTransports, getExecutor())
                 .thenCompose(unused -> {
                     long now = System.nanoTime();
-                    return runAsync(_sessions.values(), serverSession -> serverSession.sweep(now));
+                    sweeperInfo.transportSweepDuration = TimeUnit.NANOSECONDS.toMillis(now - previousNanoTime.getAndSet(now));
+                    if (_logger.isDebugEnabled()) {
+                        _logger.debug("Swept transports, took {}ms", sweeperInfo.transportSweepDuration);
+                    }
+                    return runAsync(_channels.values(), serverChannel -> {
+                        if (serverChannel.sweep())
+                            serverChannelSweepCounter.incrementAndGet();
+                    });
+                })
+                .thenCompose(unused -> {
+                    long now = System.nanoTime();
+                    sweeperInfo.serverChannelSweepCount = serverChannelSweepCounter.get();
+                    sweeperInfo.serverChannelSweepDuration = TimeUnit.NANOSECONDS.toMillis(now - previousNanoTime.getAndSet(now));
+                    if (_logger.isDebugEnabled()) {
+                        _logger.debug("Swept server channels, {} in {}ms", sweeperInfo.serverChannelSweepCount, sweeperInfo.serverChannelSweepDuration);
+                    }
+                    return runAsync(_sessions.values(), serverSession -> {
+                        if (serverSession.sweep(now))
+                            serverSessionSweepCounter.incrementAndGet();
+                    });
+                })
+                .thenRun(() -> {
+                    long now = System.nanoTime();
+                    sweeperInfo.serverSessionSweepCount = serverSessionSweepCounter.get();
+                    sweeperInfo.serverSessionSweepDuration = TimeUnit.NANOSECONDS.toMillis(now - previousNanoTime.getAndSet(now));
+                    sweeperInfo.sweepDurationNanos = now - beginNanoTime;
+                    if (sweeperInfo.sweepDurationNanos >= _lastSweepInfo.sweepDurationNanos) {
+                        _longestSweepInfo = sweeperInfo;
+                    }
+                    _lastSweepInfo = sweeperInfo;
+                    if (_logger.isDebugEnabled()) {
+                        _logger.debug("Swept server sessions, {} in {}ms", sweeperInfo.serverSessionSweepCount, sweeperInfo.serverSessionSweepDuration);
+                        _logger.debug("End of async sweep in {}ns at {}", sweeperInfo.sweepDurationNanos, Instant.now());
+                    }
                 });
-
-            if (_logger.isDebugEnabled()) {
-                completableFuture = completableFuture.thenRun(() -> _logger.debug("End of async sweep, took {}ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin)));
-            }
-
-            return completableFuture;
         }
 
         /**
@@ -1658,6 +1700,32 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
                 newSpliterators.clear();
             }
             return resultSpliterators;
+        }
+    }
+
+    private static class SweepInfo {
+        private final Instant startInstant;
+        private long transportSweepDuration;
+        private long serverChannelSweepDuration;
+        private long serverChannelSweepCount;
+        private long serverSessionSweepDuration;
+        private long serverSessionSweepCount;
+        private long sweepDurationNanos;
+
+        public SweepInfo(Instant instant) {
+            this.startInstant = Objects.requireNonNull(instant);
+        }
+
+        private Map<String, Object> toMap() {
+            Map<String, Object> result = new LinkedHashMap<>();
+            result.put("startInstant", startInstant.toString());
+            result.put("transportSweepDuration", transportSweepDuration);
+            result.put("serverChannelSweepCount", serverChannelSweepCount);
+            result.put("serverChannelSweepDuration", serverChannelSweepDuration);
+            result.put("serverSessionSweepCount", serverSessionSweepCount);
+            result.put("serverSessionSweepDuration", serverSessionSweepDuration);
+            result.put("sweepDuration", TimeUnit.NANOSECONDS.toMillis(sweepDurationNanos));
+            return result;
         }
     }
 }

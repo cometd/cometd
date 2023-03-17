@@ -151,9 +151,9 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         _browserId = browserId;
     }
 
-    protected void sweep(long now) {
+    protected boolean sweep(long now) {
         if (isLocalSession()) {
-            return;
+            return false;
         }
 
         boolean remove = false;
@@ -182,6 +182,9 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         if (remove) {
             scheduler.destroy();
             _bayeux.removeServerSession(this, true);
+            return true;
+        } else {
+            return false;
         }
     }
 
