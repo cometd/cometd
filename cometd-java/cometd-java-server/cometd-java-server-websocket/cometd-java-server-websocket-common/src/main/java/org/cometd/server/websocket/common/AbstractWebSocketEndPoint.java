@@ -618,7 +618,13 @@ public abstract class AbstractWebSocketEndPoint {
 
         @Override
         public String toString() {
-            return String.format("%s@%x[%s,e=%s,q=%d,f=%s]", getClass().getSimpleName(), hashCode(), _state, _entry, _entries.size(), _failure);
+            int size;
+            Throwable failure;
+            synchronized (this) {
+                size = _entries.size();
+                failure = _failure;
+            }
+            return String.format("%s@%x[%s,e=%s,q=%d,f=%s]", getClass().getSimpleName(), hashCode(), _state, _entry, size, failure);
         }
     }
 
