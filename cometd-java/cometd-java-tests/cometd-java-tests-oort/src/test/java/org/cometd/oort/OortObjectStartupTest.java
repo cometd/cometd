@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
@@ -31,19 +32,19 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public class SetiStartupTest extends OortTest {
-    private final List<Seti> setis = new ArrayList<>();
+public class OortObjectStartupTest extends OortTest {
+    private final List<OortObject<String>> oortObjects = new ArrayList<>();
 
     @AfterEach
     public void dispose() throws Exception {
-        for (int i = setis.size() - 1; i >= 0; --i) {
-            setis.get(i).stop();
+        for (int i = oortObjects.size() - 1; i >= 0; --i) {
+            oortObjects.get(i).stop();
         }
     }
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testSetiStartup(String serverTransport) throws Exception {
+    public void testOortObjectStartup(String serverTransport) throws Exception {
         int nodes = 4;
         int edges = nodes * (nodes - 1);
         CountDownLatch joinLatch = new CountDownLatch(edges);
@@ -74,7 +75,7 @@ public class SetiStartupTest extends OortTest {
             oort.getBayeuxServer().addListener(new BayeuxServer.SubscriptionListener() {
                 @Override
                 public void subscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
-                    if (channel.getId().equals("/seti/all")) {
+                    if (channel.getId().startsWith("/oort/objects/")) {
                         logger.info("{} subscription from {}", oort.getURL(), session);
                     }
                 }
@@ -82,17 +83,22 @@ public class SetiStartupTest extends OortTest {
         }
 
         CountDownLatch initialLatch = new CountDownLatch(edges);
-        for (Oort oort : oorts) {
-            Seti seti = new Seti(oort) {
+        String name = "test_startup";
+        for (int i = 0; i < oorts.size(); i++) {
+            Oort oort = oorts.get(i);
+            OortObject<String> oortObject = new OortObject<>(oort, name, OortObjectFactories.forString(i + "_default"));
+            oortObject.addListener(new OortObject.Listener<>() {
                 @Override
-                protected void receiveRemotePresence(Map<String, Object> presence) {
-                    logger.info("{} presence from {}", oort.getURL(), presence);
-                    initialLatch.countDown();
-                    super.receiveRemotePresence(presence);
+                public void onUpdated(OortObject.Info<String> oldInfo, OortObject.Info<String> newInfo) {
+                    if (oldInfo == null) {
+                        logger.info("{} got part from {}", oort.getURL(), newInfo.getOortURL());
+                        initialLatch.countDown();
+                    }
                 }
-            };
-            setis.add(seti);
-            seti.start();
+            });
+            oortObjects.add(oortObject);
+            oortObject.start();
+            Thread.sleep(1000);
         }
         Assertions.assertTrue(initialLatch.await(nodes * 2, TimeUnit.SECONDS));
     }

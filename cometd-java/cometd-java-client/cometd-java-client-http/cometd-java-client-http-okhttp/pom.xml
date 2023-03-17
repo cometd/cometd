@@ -21,6 +21,5 @@
       <artifactId>okhttp</artifactId>
       <version>${okhttp-version}</version>
     </dependency>
-
   </dependencies>
 </project>
