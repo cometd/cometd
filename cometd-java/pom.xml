@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.cometd</groupId>
     <artifactId>cometd-project</artifactId>
-    <version>7.0.10</version>
+    <version>7.0.11-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
