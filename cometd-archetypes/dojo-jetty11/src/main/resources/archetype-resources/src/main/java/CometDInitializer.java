@@ -1,4 +1,4 @@
-package $
+package ${package};
 
 import java.io.IOException;
 import jakarta.servlet.GenericServlet;

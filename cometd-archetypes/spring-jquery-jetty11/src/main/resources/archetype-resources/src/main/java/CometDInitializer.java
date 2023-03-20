@@ -1,4 +1,4 @@
-package $
+package ${package};
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;

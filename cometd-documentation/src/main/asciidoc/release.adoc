@@ -45,15 +45,6 @@ This will make the staged project downloadable for testing, but not yet publishe
 Tick again the checkbox correspondent to the closed staged project, choose "Release" from the toolbar, then click on the "Release" button.
 This will publish the project to the Maven Central Repository.
 
-[[_release_archetype]]
-=== Upload the Archetype Catalog
-
-Make sure the archetype catalog `$HOME/.m2/archetype-catalog.xml` refers to the release just prepared, then upload it.
-
-----
-$ dd if=$HOME/.m2/archetype-catalog.xml | ssh <user>@cometd.org "sudo -u www-data dd of=/var/www/cometd.org/archetype-catalog.xml"
-----
-
 [[_release_issues]]
 === Close the GitHub Issues Project
 
