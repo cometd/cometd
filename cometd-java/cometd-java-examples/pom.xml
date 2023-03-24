@@ -13,7 +13,17 @@
 
   <modules>
     <module>cometd-java-examples-embedded</module>
-    <!-- Disabled until Spring updates to JakartaEE -->
-    <!--<module>cometd-java-examples-springboot</module>-->
   </modules>
+
+  <profiles>
+    <profile>
+      <id>jdk17</id>
+      <activation>
+        <jdk>[17,)</jdk>
+      </activation>
+      <modules>
+        <module>cometd-java-examples-springboot</module>
+      </modules>
+    </profile>
+  </profiles>
 </project>
