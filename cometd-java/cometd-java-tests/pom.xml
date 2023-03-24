@@ -18,8 +18,18 @@
 
   <modules>
     <module>cometd-java-tests-common</module>
-    <!-- Disabled until Spring updates to JakartaEE -->
-    <!--<module>cometd-java-tests-spring</module>-->
     <module>cometd-java-tests-oort</module>
   </modules>
+
+  <profiles>
+    <profile>
+      <id>jdk17</id>
+      <activation>
+        <jdk>[17,)</jdk>
+      </activation>
+      <modules>
+        <module>cometd-java-tests-spring</module>
+      </modules>
+    </profile>
+  </profiles>
 </project>
