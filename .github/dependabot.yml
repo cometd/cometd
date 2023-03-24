@@ -33,8 +33,13 @@ updates:
         versions: [ ">=6.0.0" ]
       - dependency-name: "org.springframework.boot:*"
         versions: [ ">=3.0.0" ]
-      - dependency-name: "org.jetbrains.kotlin:kotlin-stdlib"
-        versions: [ ">1.1.4" ]
+
+  - package-ecosystem: "maven"
+    directory: "/"
+    open-pull-requests-limit: 50
+    target-branch: "7.0.x"
+    schedule:
+      interval: "daily"
 
   - package-ecosystem: "github-actions"
     directory: "/"
