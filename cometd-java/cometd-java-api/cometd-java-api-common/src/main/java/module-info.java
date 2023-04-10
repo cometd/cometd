@@ -15,4 +15,5 @@
  */
 module org.cometd.api {
     exports org.cometd.bayeux;
+    exports org.cometd.api;
 }

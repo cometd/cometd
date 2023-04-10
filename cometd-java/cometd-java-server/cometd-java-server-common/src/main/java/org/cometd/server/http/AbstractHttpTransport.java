@@ -16,14 +16,9 @@
 package org.cometd.server.http;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
-import java.security.Principal;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -32,17 +27,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import jakarta.servlet.AsyncContext;
-import jakarta.servlet.AsyncEvent;
-import jakarta.servlet.AsyncListener;
-import jakarta.servlet.RequestDispatcher;
-import jakarta.servlet.ServletContext;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 
+import org.cometd.api.CometDCookie;
+import org.cometd.api.CometDException;
+import org.cometd.api.CometDRequest;
+import org.cometd.api.CometDResponse;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
@@ -113,7 +102,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         _http2MaxSessionsPerBrowser = getOption(HTTP2_MAX_SESSIONS_PER_BROWSER_OPTION, -1);
         _multiSessionInterval = getOption(MULTI_SESSION_INTERVAL_OPTION, 2000);
         _trustClientSession = getOption(TRUST_CLIENT_SESSION_OPTION, false);
-        _duplicateMetaConnectHttpResponseCode = getOption(DUPLICATE_META_CONNECT_HTTP_RESPONSE_CODE_OPTION, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        _duplicateMetaConnectHttpResponseCode = getOption(DUPLICATE_META_CONNECT_HTTP_RESPONSE_CODE_OPTION, CometDResponse.SC_INTERNAL_SERVER_ERROR);
         if (_duplicateMetaConnectHttpResponseCode < 400) {
             throw new IllegalArgumentException("Option '" + DUPLICATE_META_CONNECT_HTTP_RESPONSE_CODE_OPTION +
                     "' must be greater or equal to 400, not " + _duplicateMetaConnectHttpResponseCode);
@@ -128,9 +117,9 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         return _duplicateMetaConnectHttpResponseCode;
     }
 
-    public abstract boolean accept(HttpServletRequest request);
+    public abstract boolean accept(CometDRequest request);
 
-    public abstract void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException;
+    public abstract void handle(BayeuxContext bayeuxContext, CometDRequest request, CometDResponse response, Promise<Void> promise) throws IOException, CometDException;
 
     protected abstract HttpScheduler suspend(Context context, Promise<Void> promise, ServerMessage.Mutable message, long timeout);
 
@@ -140,7 +129,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         if (messages.isEmpty()) {
             promise.fail(new IOException("protocol violation"));
         } else {
-            Collection<ServerSessionImpl> sessions = findCurrentSessions(context.request);
+            Collection<ServerSessionImpl> sessions = findCurrentSessions(context.request());
             ServerMessage.Mutable message = messages.get(0);
             ServerSessionImpl session = findSession(sessions, message);
             if (LOGGER.isDebugEnabled()) {
@@ -151,9 +140,8 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
                 session.startBatch();
             }
 
-            context.messages = messages;
-            context.session = session;
-            context.bayeuxContext = new HttpContext(context.request);
+            context.messages(messages);
+            context.session(session);
             AsyncFoldLeft.run(messages, null, (result, item, loop) -> processMessage(context, (ServerMessageImpl)item, Promise.from(loop::proceed, loop::fail)), Promise.complete((r, x) -> {
                 if (x == null) {
                     flush(context, promise);
@@ -173,21 +161,21 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         }
 
         message.setServerTransport(this);
-        message.setBayeuxContext(context.bayeuxContext);
-        ServerSessionImpl session = context.session;
+        message.setBayeuxContext(context.bayeuxContext());
+        ServerSessionImpl session = context.session();
         if (session != null) {
             session.setServerTransport(this);
         }
 
         String channel = message.getChannel();
         if (Channel.META_HANDSHAKE.equals(channel)) {
-            if (context.messages.size() > 1) {
+            if (context.messages().size() > 1) {
                 promise.fail(new IOException("bayeux protocol violation"));
             } else {
                 processMetaHandshake(context, message, promise);
             }
         } else if (Channel.META_CONNECT.equals(channel)) {
-            boolean canSuspend = context.messages.size() == 1;
+            boolean canSuspend = context.messages().size() == 1;
             processMetaConnect(context, message, canSuspend, Promise.from(y -> resume(context, message, promise), promise::fail));
         } else {
             processMessage1(context, message, promise);
@@ -220,10 +208,10 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         return null;
     }
 
-    protected Collection<ServerSessionImpl> findCurrentSessions(HttpServletRequest request) {
-        Cookie[] cookies = request.getCookies();
+    protected Collection<ServerSessionImpl> findCurrentSessions(CometDRequest request) {
+        CometDCookie[] cookies = request.getCookies();
         if (cookies != null) {
-            for (Cookie cookie : cookies) {
+            for (CometDCookie cookie : cookies) {
                 if (_browserCookieName.equals(cookie.getName())) {
                     return _sessions.get(cookie.getValue());
                 }
@@ -234,7 +222,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
 
     private void processMetaHandshake(Context context, ServerMessage.Mutable message, Promise<Void> promise) {
         handleMessage(context, message, Promise.from(reply -> {
-            ServerSessionImpl session = context.session;
+            ServerSessionImpl session = context.session();
             if (reply.isSuccessful()) {
                 String id = findBrowserId(context);
                 if (id == null) {
@@ -255,17 +243,17 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
             }
             processReply(session, reply, Promise.from(r -> {
                 if (r != null) {
-                    context.replies.add(r);
+                    context.replies().add(r);
                 }
-                context.sendQueue = r != null && r.isSuccessful() && allowMessageDeliveryDuringHandshake(session);
-                context.scheduleExpiration = true;
+                context.sendQueue(r != null && r.isSuccessful() && allowMessageDeliveryDuringHandshake(session));
+                context.scheduleExpiration(true);
                 promise.succeed(null);
-            }, x -> scheduleExpirationAndFail(session, context.metaConnectCycle, promise, x)));
+            }, x -> scheduleExpirationAndFail(session, context.metaConnectCycle(), promise, x)));
         }, promise::fail));
     }
 
     private void processMetaConnect(Context context, ServerMessage.Mutable message, boolean canSuspend, Promise<Void> promise) {
-        ServerSessionImpl session = context.session;
+        ServerSessionImpl session = context.session();
         if (session != null) {
             // Cancel the previous scheduler to cancel any prior waiting /meta/connect.
             session.setScheduler(null);
@@ -277,7 +265,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
             if (session != null) {
                 boolean maySuspend = !session.shouldSchedule();
                 if (canSuspend && maySuspend && reply.isSuccessful()) {
-                    HttpServletRequest request = context.request;
+                    CometDRequest request = context.request();
                     // Detect if we have multiple sessions from the same browser.
                     boolean allowSuspendConnect = incBrowserId(session, isHTTP2(request));
                     if (allowSuspendConnect) {
@@ -319,19 +307,19 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
             if (proceed) {
                 promise.succeed(null);
             }
-        }, x -> scheduleExpirationAndFail(session, context.metaConnectCycle, promise, x)));
+        }, x -> scheduleExpirationAndFail(session, context.metaConnectCycle(), promise, x)));
     }
 
     private void processMessage1(Context context, ServerMessageImpl message, Promise<Void> promise) {
         handleMessage(context, message, Promise.from(y -> {
-            ServerSessionImpl session = context.session;
+            ServerSessionImpl session = context.session();
             processReply(session, message.getAssociated(), Promise.from(reply -> {
                 if (reply != null) {
-                    context.replies.add(reply);
+                    context.replies().add(reply);
                 }
                 boolean metaConnectDelivery = isMetaConnectDeliveryOnly() || session != null && session.isMetaConnectDeliveryOnly();
                 if (!metaConnectDelivery) {
-                    context.sendQueue = true;
+                    context.sendQueue(true);
                 }
                 // Leave scheduleExpiration unchanged.
                 promise.succeed(null);
@@ -339,18 +327,18 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         }, promise::fail));
     }
 
-    protected boolean isHTTP2(HttpServletRequest request) {
+    protected boolean isHTTP2(CometDRequest request) {
         return "HTTP/2.0".equals(request.getProtocol());
     }
 
     protected void flush(Context context, Promise<Void> promise) {
         List<ServerMessage> messages = List.of();
-        ServerSessionImpl session = context.session;
-        if (context.sendQueue && session != null) {
-            messages = session.takeQueue(context.replies);
+        ServerSessionImpl session = context.session();
+        if (context.sendQueue() && session != null) {
+            messages = session.takeQueue(context.replies());
         }
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Flushing {}, replies={}, messages={}", session, context.replies, messages);
+            LOGGER.debug("Flushing {}, replies={}, messages={}", session, context.replies(), messages);
         }
         write(context, messages, promise);
     }
@@ -361,7 +349,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         }
 
         ServerMessage.Mutable reply = message.getAssociated();
-        ServerSessionImpl session = context.session;
+        ServerSessionImpl session = context.session();
         if (session != null) {
             Map<String, Object> advice = session.takeAdvice(this);
             if (advice != null) {
@@ -374,12 +362,12 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
 
         processReply(session, reply, Promise.from(r -> {
             if (r != null) {
-                context.replies.add(r);
+                context.replies().add(r);
             }
-            context.sendQueue = true;
-            context.scheduleExpiration = true;
+            context.sendQueue(true);
+            context.scheduleExpiration(true);
             promise.succeed(null);
-        }, x -> scheduleExpirationAndFail(session, context.metaConnectCycle, promise, x)));
+        }, x -> scheduleExpirationAndFail(session, context.metaConnectCycle(), promise, x)));
     }
 
     private void scheduleExpirationAndFail(ServerSessionImpl session, long metaConnectCycle, Promise<Void> promise, Throwable x) {
@@ -389,19 +377,8 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         promise.fail(x);
     }
 
-    protected void sendError(HttpServletRequest request, HttpServletResponse response, int code, Throwable failure) {
-        try {
-            request.setAttribute(RequestDispatcher.ERROR_EXCEPTION, failure);
-            response.setStatus(code);
-        } catch (Throwable x) {
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("", x);
-            }
-        }
-    }
-
     protected String findBrowserId(Context context) {
-        return context.bayeuxContext.getCookie(_browserCookieName);
+        return context.bayeuxContext().getCookie(_browserCookieName);
     }
 
     protected String setBrowserId(Context context) {
@@ -424,13 +401,13 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         if (_browserCookieHttpOnly) {
             builder.append("; HttpOnly");
         }
-        if (context.request.isSecure() && _browserCookieSecure) {
+        if (context.request().isSecure() && _browserCookieSecure) {
             builder.append("; Secure");
         }
         if (_browserCookieSameSite != null) {
             builder.append("; SameSite=").append(_browserCookieSameSite);
         }
-        context.response.addHeader("Set-Cookie", builder.toString());
+        context.response().addHeader("Set-Cookie", builder.toString());
 
         return browserId;
     }
@@ -498,25 +475,10 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         }
     }
 
-    protected void handleJSONParseException(HttpServletRequest request, HttpServletResponse response, String json, Throwable failure) throws IOException {
-        LOGGER.warn("Could not parse JSON: " + json, failure);
-        sendError(request, response, HttpServletResponse.SC_BAD_REQUEST, failure);
-    }
-
     protected void handleMessage(Context context, ServerMessage.Mutable message, Promise<ServerMessage.Mutable> promise) {
-        getBayeux().handle(context.session, message, promise);
+        getBayeux().handle(context.session(), message, promise);
     }
 
-    protected AsyncContext getAsyncContext(HttpServletRequest request) {
-        try {
-            return request.getAsyncContext();
-        } catch (Throwable x) {
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Could not retrieve AsyncContext for " + request, x);
-            }
-            return null;
-        }
-    }
 
     /**
      * Sweeps the transport for old Browser IDs
@@ -559,168 +521,14 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         return bytes;
     }
 
-    private static class HttpContext implements BayeuxContext {
-        final HttpServletRequest _request;
-
-        private HttpContext(HttpServletRequest request) {
-            _request = request;
-        }
-
-        @Override
-        public Principal getUserPrincipal() {
-            return _request.getUserPrincipal();
-        }
-
-        @Override
-        public boolean isUserInRole(String role) {
-            return _request.isUserInRole(role);
-        }
-
-        @Override
-        public InetSocketAddress getRemoteAddress() {
-            return new InetSocketAddress(_request.getRemoteHost(), _request.getRemotePort());
-        }
-
-        @Override
-        public InetSocketAddress getLocalAddress() {
-            return new InetSocketAddress(_request.getLocalName(), _request.getLocalPort());
-        }
-
-        @Override
-        public String getHeader(String name) {
-            return _request.getHeader(name);
-        }
-
-        @Override
-        public List<String> getHeaderValues(String name) {
-            return Collections.list(_request.getHeaders(name));
-        }
-
-        @Override
-        public String getParameter(String name) {
-            return _request.getParameter(name);
-        }
-
-        @Override
-        public List<String> getParameterValues(String name) {
-            return List.of(_request.getParameterValues(name));
-        }
-
-        @Override
-        public String getCookie(String name) {
-            Cookie[] cookies = _request.getCookies();
-            if (cookies != null) {
-                for (Cookie c : cookies) {
-                    if (name.equals(c.getName())) {
-                        return c.getValue();
-                    }
-                }
-            }
-            return null;
-        }
-
-        @Override
-        public String getHttpSessionId() {
-            HttpSession session = _request.getSession(false);
-            if (session != null) {
-                return session.getId();
-            }
-            return null;
-        }
-
-        @Override
-        public Object getHttpSessionAttribute(String name) {
-            HttpSession session = _request.getSession(false);
-            if (session != null) {
-                return session.getAttribute(name);
-            }
-            return null;
-        }
-
-        @Override
-        public void setHttpSessionAttribute(String name, Object value) {
-            HttpSession session = _request.getSession(false);
-            if (session != null) {
-                session.setAttribute(name, value);
-            } else {
-                throw new IllegalStateException("!session");
-            }
-        }
-
-        @Override
-        public void invalidateHttpSession() {
-            HttpSession session = _request.getSession(false);
-            if (session != null) {
-                session.invalidate();
-            }
-        }
-
-        @Override
-        public Object getRequestAttribute(String name) {
-            return _request.getAttribute(name);
-        }
-
-        private ServletContext getServletContext() {
-            HttpSession s = _request.getSession(false);
-            if (s != null) {
-                return s.getServletContext();
-            } else {
-                s = _request.getSession(true);
-                ServletContext servletContext = s.getServletContext();
-                s.invalidate();
-                return servletContext;
-            }
-        }
-
-        @Override
-        public Object getContextAttribute(String name) {
-            return getServletContext().getAttribute(name);
-        }
-
-        @Override
-        public String getContextInitParameter(String name) {
-            return getServletContext().getInitParameter(name);
-        }
-
-        @Override
-        public String getContextPath() {
-            return _request.getContextPath();
-        }
-
-        @Override
-        public String getURL() {
-            StringBuffer url = _request.getRequestURL();
-            String query = _request.getQueryString();
-            if (query != null) {
-                url.append("?").append(query);
-            }
-            return url.toString();
-        }
-
-        @Override
-        public List<Locale> getLocales() {
-            return Collections.list(_request.getLocales());
-        }
-
-        @Override
-        public String getProtocol() {
-            return _request.getProtocol();
-        }
-
-        @Override
-        public boolean isSecure() {
-            return _request.isSecure();
-        }
-    }
-
     /**
      * <p>A {@link Scheduler} for HTTP-based transports.</p>
      */
     public interface HttpScheduler extends Scheduler {
-        public ServerMessage.Mutable getMessage();
+        ServerMessage.Mutable getMessage();
     }
 
-    protected abstract class LongPollScheduler implements Runnable, HttpScheduler, AsyncListener {
+    protected abstract class LongPollScheduler implements Runnable, HttpScheduler {
         private final AtomicReference<Task> task = new AtomicReference<>();
         private final Context context;
         private final Promise<Void> promise;
@@ -731,11 +539,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
             this.promise = promise;
             this.message = message;
             this.task.set(getBayeux().schedule(this, timeout));
-            context.metaConnectCycle = newMetaConnectCycle();
-            AsyncContext asyncContext = getAsyncContext(context.request);
-            if (asyncContext != null) {
-                asyncContext.addListener(this);
-            }
+            context.metaConnectCycle(newMetaConnectCycle());
         }
 
         public Context getContext() {
@@ -753,14 +557,14 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
 
         @Override
         public long getMetaConnectCycle() {
-            return context.metaConnectCycle;
+            return context.metaConnectCycle();
         }
 
         @Override
         public void schedule() {
             if (cancelTimeout()) {
                 if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("Resuming suspended {} for {}", message, context.session);
+                    LOGGER.debug("Resuming suspended {} for {}", message, context.session());
                 }
                 resume(false);
             }
@@ -770,7 +574,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         public void cancel() {
             if (cancelTimeout()) {
                 if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("Cancelling suspended {} for {}", message, context.session);
+                    LOGGER.debug("Cancelling suspended {} for {}", message, context.session());
                 }
                 error(new TimeoutException());
             }
@@ -797,39 +601,22 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         public void run() {
             if (cancelTimeout()) {
                 if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("Timing out suspended {} for {}", message, context.session);
+                    LOGGER.debug("Timing out suspended {} for {}", message, context.session());
                 }
                 resume(true);
             }
         }
 
         private void resume(boolean timeout) {
-            decBrowserId(context.session, isHTTP2(context.request));
+            decBrowserId(context.session(), isHTTP2(context.request()));
             dispatch(timeout);
-        }
-
-        @Override
-        public void onStartAsync(AsyncEvent event) {
-        }
-
-        @Override
-        public void onTimeout(AsyncEvent event) {
-        }
-
-        @Override
-        public void onComplete(AsyncEvent asyncEvent) throws IOException {
-        }
-
-        @Override
-        public void onError(AsyncEvent event) {
-            error(event.getThrowable());
         }
 
         protected abstract void dispatch(boolean timeout);
 
-        private void error(Throwable failure) {
-            HttpServletRequest request = context.request;
-            decBrowserId(context.session, isHTTP2(request));
+        protected void error(Throwable failure) {
+            CometDRequest request = context.request();
+            decBrowserId(context.session(), isHTTP2(request));
             promise.fail(failure);
         }
 
@@ -839,21 +626,37 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         }
     }
 
-    public static class Context {
-        protected final List<ServerMessage.Mutable> replies = new ArrayList<>();
-        public final HttpServletRequest request;
-        public final HttpServletResponse response;
-        protected List<ServerMessage.Mutable> messages;
-        protected ServerSessionImpl session;
-        protected BayeuxContext bayeuxContext;
-        protected boolean sendQueue;
-        protected boolean scheduleExpiration;
-        protected HttpScheduler scheduler;
-        protected long metaConnectCycle;
+    public interface Context {
+        BayeuxContext bayeuxContext();
 
-        protected Context(HttpServletRequest request, HttpServletResponse response) {
-            this.request = request;
-            this.response = response;
-        }
+        List<ServerMessage.Mutable> messages();
+
+        void messages(List<ServerMessage.Mutable> messages);
+
+        long metaConnectCycle();
+
+        void metaConnectCycle(long l);
+
+        List<ServerMessage.Mutable> replies();
+
+        CometDRequest request();
+
+        CometDResponse response();
+
+        void scheduleExpiration(boolean b);
+
+        boolean scheduleExpiration();
+
+        AbstractHttpTransport.HttpScheduler scheduler();
+
+        void scheduler(HttpScheduler httpScheduler);
+
+        void sendQueue(boolean b);
+
+        boolean sendQueue();
+
+        ServerSessionImpl session();
+
+        void session(ServerSessionImpl session);
     }
 }

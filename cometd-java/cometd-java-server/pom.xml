@@ -13,6 +13,7 @@
 
   <modules>
     <module>cometd-java-server-common</module>
+    <module>cometd-java-server-servlet</module>
     <module>cometd-java-server-websocket</module>
   </modules>
 </project>

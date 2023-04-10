@@ -17,7 +17,7 @@ If you followed xref:_primer[the primer], Maven has configured the `web.xml` fil
 
   <servlet>
     <servlet-name>cometd</servlet-name>
-    <servlet-class>org.cometd.server.CometDServlet</servlet-class>
+    <servlet-class>org.cometd.server.servlet.CometDServlet</servlet-class>
     <init-param>
       <param-name>timeout</param-name>
       <param-value>60000</param-value>
@@ -270,7 +270,7 @@ Here is an example of `web.xml` configuration for the `CrossOriginFilter`:
 
   <servlet>
     <servlet-name>cometd</servlet-name>
-    <servlet-class>org.cometd.server.CometDServlet</servlet-class>
+    <servlet-class>org.cometd.server.servlet.CometDServlet</servlet-class>
     <init-param>
       <param-name>timeout</param-name>
       <param-value>60000</param-value>
@@ -336,7 +336,7 @@ For example:
 
   <servlet>
     <servlet-name>cometd</servlet-name>
-    <servlet-class>org.cometd.server.CometDServlet</servlet-class>
+    <servlet-class>org.cometd.server.servlet.CometDServlet</servlet-class>
     <load-on-startup>1</load-on-startup>
     <async-supported>true</async-supported> <2>
   </servlet>

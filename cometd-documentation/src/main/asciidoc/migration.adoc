@@ -82,7 +82,7 @@ Only the WebSocket artifacts have changed.
     ...
     <servlet>
         <servlet-name>cometd</servlet-name>
-        <servlet-class>org.cometd.server.CometDServlet</servlet-class>
+        <servlet-class>org.cometd.server.servlet.CometDServlet</servlet-class>
         <load-on-startup>1</load-on-startup> <3>
         <async-supported>true</async-supported> <4>
     </servlet>

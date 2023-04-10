@@ -39,8 +39,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import jakarta.servlet.http.HttpServletRequest;
 
+import org.cometd.api.CometDRequest;
 import org.cometd.bayeux.Bayeux;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
@@ -62,9 +62,6 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.common.AsyncFoldLeft;
 import org.cometd.server.http.AbstractHttpTransport;
-import org.cometd.server.http.AsyncJSONTransport;
-import org.cometd.server.http.JSONPTransport;
-import org.cometd.server.http.JSONTransport;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -223,8 +220,18 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
                 if (transport != null) {
                     addTransport(transport);
                 }
-                addTransport(newJSONTransport());
-                addTransport(new JSONPTransport(this));
+                transport = newJSONTransport();
+                if (transport != null) {
+                    addTransport(transport);
+                }
+                transport = newJSONPTransport();
+                if (transport != null) {
+                    addTransport(transport);
+                }
+
+                if (_transports.isEmpty()) {
+                    throw new IllegalArgumentException("No transport found");
+                }
             } else {
                 for (String className : option.split(",")) {
                     ServerTransport transport = newServerTransport(className.trim());
@@ -291,9 +298,23 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
         try {
             ClassLoader loader = Thread.currentThread().getContextClassLoader();
             loader.loadClass("jakarta.servlet.ReadListener");
-            return new AsyncJSONTransport(this);
+            return newServerTransport("org.cometd.server.servlet.transport.AsyncJSONTransport");
         } catch (Exception x) {
-            return new JSONTransport(this);
+            try {
+                return newServerTransport("org.cometd.server.servlet.transport.JSONTransport");
+            } catch (Exception e) {
+                return null;
+            }
+        }
+    }
+
+    private ServerTransport newJSONPTransport() {
+        try {
+            ClassLoader loader = Thread.currentThread().getContextClassLoader();
+            loader.loadClass("jakarta.servlet.ReadListener");
+            return newServerTransport("org.cometd.server.servlet.transport.JSONPTransport");
+        } catch (Exception x) {
+            return null;
         }
     }
 
@@ -1173,7 +1194,7 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
         return new ArrayList<>(_transports.values());
     }
 
-    protected AbstractHttpTransport findHttpTransport(HttpServletRequest request) {
+    public AbstractHttpTransport findHttpTransport(CometDRequest request) {
         for (String transportName : _allowedTransports) {
             ServerTransport serverTransport = getTransport(transportName);
             if (serverTransport instanceof AbstractHttpTransport transport) {

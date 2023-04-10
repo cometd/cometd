@@ -23,7 +23,7 @@ import jakarta.websocket.WebSocketContainer;
 
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.ClientTransport;
-import org.cometd.server.CometDServlet;
+import org.cometd.server.servlet.CometDServlet;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.websocket.client.WebSocketClient;

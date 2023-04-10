@@ -24,4 +24,5 @@ module org.cometd.oort {
 
     // Only required when using JMX.
     requires static org.eclipse.jetty.jmx;
+    requires jakarta.servlet;
 }

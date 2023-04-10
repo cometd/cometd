@@ -15,10 +15,11 @@
  */
 package org.cometd.server;
 
-import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.Reader;
 import java.text.ParseException;
 import java.util.concurrent.atomic.AtomicLong;
+
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerTransport;
@@ -168,7 +169,7 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
         return _jsonContext;
     }
 
-    protected ServerMessage.Mutable[] parseMessages(BufferedReader reader, boolean jsonDebug) throws ParseException, IOException {
+    protected ServerMessage.Mutable[] parseMessages(Reader reader, boolean jsonDebug) throws ParseException, IOException {
         if (jsonDebug || getMaxMessageSize() > 0) {
             return parseMessages(read(reader));
         } else {
@@ -180,7 +181,7 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
         return _jsonContext.parse(json);
     }
 
-    private String read(BufferedReader reader) throws IOException {
+    private String read(Reader reader) throws IOException {
         long maxMessageSize = getMaxMessageSize();
         StringBuilder builder = new StringBuilder();
         long total = 0;

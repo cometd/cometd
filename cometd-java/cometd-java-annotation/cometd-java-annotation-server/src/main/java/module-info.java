@@ -21,4 +21,6 @@ module org.cometd.annotation.server {
     requires transitive org.cometd.annotation;
     requires transitive org.cometd.server;
     requires org.slf4j;
+    requires jakarta.servlet;
+    requires org.cometd.server.servlet;
 }

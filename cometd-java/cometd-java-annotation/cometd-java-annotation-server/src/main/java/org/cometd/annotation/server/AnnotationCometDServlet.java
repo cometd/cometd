@@ -20,7 +20,7 @@ import java.util.List;
 import jakarta.servlet.ServletException;
 
 import org.cometd.bayeux.server.BayeuxServer;
-import org.cometd.server.CometDServlet;
+import org.cometd.server.servlet.CometDServlet;
 import org.eclipse.jetty.util.Loader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
