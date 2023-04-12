@@ -21,5 +21,10 @@ public interface CometDInput
 {
     void demand(Runnable r);
 
-    int read(byte[] buffer) throws IOException;
+    default int read(byte[] buffer) throws IOException
+    {
+        return read(buffer, 0, buffer.length);
+    }
+
+    int read(byte[] buffer, int off, int len) throws IOException;
 }

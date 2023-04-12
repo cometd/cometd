@@ -16,14 +16,7 @@
 package org.cometd.server.servlet;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
 import java.io.UnsupportedEncodingException;
-import java.nio.charset.Charset;
-import java.security.Principal;
-import java.util.Enumeration;
-import java.util.Locale;
 
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -35,7 +28,7 @@ class ServletCometDRequest implements CometDRequest {
     private final HttpServletRequest request;
     private ServletCometDInput input;
 
-    public ServletCometDRequest(HttpServletRequest request) {
+    ServletCometDRequest(HttpServletRequest request) {
         this.request = request;
     }
 
@@ -68,16 +61,6 @@ class ServletCometDRequest implements CometDRequest {
     }
 
     @Override
-    public String getHeader(String name) {
-        return request.getHeader(name);
-    }
-
-    @Override
-    public Enumeration<String> getHeaders(String name) {
-        return request.getHeaders(name);
-    }
-
-    @Override
     public String getParameter(String name) {
         return request.getParameter(name);
     }
@@ -88,23 +71,8 @@ class ServletCometDRequest implements CometDRequest {
     }
 
     @Override
-    public String getQueryString() {
-        return request.getQueryString();
-    }
-
-    @Override
-    public StringBuffer getRequestURL() {
-        return request.getRequestURL();
-    }
-
-    @Override
     public String getMethod() {
         return request.getMethod();
-    }
-
-    @Override
-    public Enumeration<Locale> getLocales() {
-        return request.getLocales();
     }
 
     @Override
@@ -120,59 +88,13 @@ class ServletCometDRequest implements CometDRequest {
     }
 
     @Override
-    public Reader getReader() {
-        Charset charset = Charset.forName(getCharacterEncoding());
-        return new InputStreamReader(new InputStream() {
-            private final byte[] buf = new byte[1];
-            @Override
-            public int read() throws IOException {
-                int read = getInput().read(buf);
-                if (read == -1) {
-                    return read;
-                }
-                return buf[0];
-            }
-        }, charset);
-    }
-
-    @Override
     public String getProtocol() {
         return request.getProtocol();
     }
 
     @Override
-    public String getLocalName() {
-        return request.getLocalName();
-    }
-
-    @Override
-    public int getLocalPort() {
-        return request.getLocalPort();
-    }
-
-    @Override
-    public String getRemoteHost() {
-        return request.getRemoteHost();
-    }
-
-    @Override
-    public int getRemotePort() {
-        return request.getRemotePort();
-    }
-
-    @Override
     public boolean isSecure() {
         return request.isSecure();
-    }
-
-    @Override
-    public Principal getUserPrincipal() {
-        return request.getUserPrincipal();
-    }
-
-    @Override
-    public boolean isUserInRole(String role) {
-        return request.isUserInRole(role);
     }
 
     @Override

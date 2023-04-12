@@ -16,15 +16,35 @@
 package org.cometd.api;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.ExecutionException;
 
 import org.cometd.bayeux.Promise;
 
 public interface CometDOutput {
-    void close() throws IOException;
+    @Deprecated
+    default void write(char c) throws IOException {
+        write(String.valueOf(c).getBytes(StandardCharsets.US_ASCII));
+    }
 
-    void write(byte[] jsonBytes) throws IOException;
-    void write(char c) throws IOException;
+    @Deprecated
+    default void write(char c, Promise<Void> promise) {
+        write(String.valueOf(c).getBytes(StandardCharsets.US_ASCII), promise);
+    }
+
+    default void write(byte[] jsonBytes) throws IOException {
+        Promise.Completable<Void> promise = new Promise.Completable<>();
+        write(jsonBytes, promise);
+        try {
+            promise.get();
+        } catch (InterruptedException | ExecutionException e) {
+            if (e.getCause() instanceof IOException)
+                throw (IOException)e.getCause();
+            throw new IOException(e.getCause());
+        }
+    }
 
     void write(byte[] jsonBytes, Promise<Void> promise);
-    void write(char c, Promise<Void> promise);
+
+    void close() throws IOException;
 }

@@ -28,9 +28,10 @@ class ServletCometDInput implements CometDInput, ReadListener {
     private final AtomicReference<NextRead> nextReadRef = new AtomicReference<>();
     private volatile Throwable error;
 
-    public ServletCometDInput(HttpServletRequest request) throws IOException {
-        inputStream = request.getInputStream();
-        inputStream.setReadListener(this);
+    ServletCometDInput(HttpServletRequest request) throws IOException {
+        this.request = request;
+        this.inputStream = request.getInputStream();
+        this.inputStream.setReadListener(this);
     }
 
     @Override
@@ -43,13 +44,26 @@ class ServletCometDInput implements CometDInput, ReadListener {
     }
 
     @Override
-    public int read(byte[] buffer) throws IOException {
+    public int read(byte[] buffer, int off, int len) throws IOException {
         if (error != null) {
             throw errorToIOException();
         } else if (inputStream.isFinished()) {
             return -1;
         } else if (inputStream.isReady()) {
-            return inputStream.read(buffer);
+            return inputStream.read(buffer, off, len);
+        } else {
+            return 0;
+        }
+    }
+
+    private int read() throws IOException
+    {
+        if (error != null) {
+            throw errorToIOException();
+        } else if (inputStream.isFinished()) {
+            return -1;
+        } else if (inputStream.isReady()) {
+            return inputStream.read();
         } else {
             return 0;
         }

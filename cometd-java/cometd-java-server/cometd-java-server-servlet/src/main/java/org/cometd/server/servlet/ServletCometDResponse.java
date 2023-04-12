@@ -25,7 +25,7 @@ class ServletCometDResponse implements CometDResponse {
     private final HttpServletResponse response;
     private ServletCometDOutput output;
 
-    public ServletCometDResponse(HttpServletResponse response) {
+    ServletCometDResponse(HttpServletResponse response) {
         this.response = response;
     }
 

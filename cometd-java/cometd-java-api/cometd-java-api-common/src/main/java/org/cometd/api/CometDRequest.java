@@ -15,8 +15,6 @@
  */
 package org.cometd.api;
 
-import java.io.IOException;
-import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.security.Principal;
 import java.util.Enumeration;
@@ -25,35 +23,23 @@ import java.util.Locale;
 public interface CometDRequest
 {
     // HTTP metadata
-    String getCharacterEncoding();
     String getContentType();
-
+    String getCharacterEncoding();
     void setCharacterEncoding(String encoding) throws UnsupportedEncodingException;
     CometDCookie[] getCookies();
     String getHeader(String name);
     Enumeration<String> getHeaders(String name);
     String getParameter(String name);
     String[] getParameterValues(String name);
-    String getQueryString();
-    StringBuffer getRequestURL();
     String getMethod();
-    Enumeration<Locale> getLocales();
+    String getProtocol();
 
     // input reading
     CometDInput getInput();
     Reader getReader();
 
     // network/transport layer metadata
-    String getProtocol();
-    String getLocalName();
-    int getLocalPort();
-    String getRemoteHost();
-    int getRemotePort();
     boolean isSecure();
-
-    // security stuff, remove?
-    Principal getUserPrincipal();
-    boolean isUserInRole(String role);
 
     // in-memory data
     Object getAttribute(String name);

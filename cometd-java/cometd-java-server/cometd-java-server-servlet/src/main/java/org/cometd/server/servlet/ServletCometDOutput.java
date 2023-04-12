@@ -16,8 +16,6 @@
 package org.cometd.server.servlet;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import jakarta.servlet.ServletOutputStream;
@@ -30,7 +28,7 @@ class ServletCometDOutput implements CometDOutput, WriteListener {
     private final ServletOutputStream outputStream;
     private final AtomicReference<NextWrite> nextWriteRef = new AtomicReference<>();
 
-    public ServletCometDOutput(HttpServletResponse response) throws IOException {
+    ServletCometDOutput(HttpServletResponse response) throws IOException {
         this.outputStream = response.getOutputStream();
         this.outputStream.setWriteListener(this);
     }
@@ -38,6 +36,9 @@ class ServletCometDOutput implements CometDOutput, WriteListener {
     @Override
     public void close() throws IOException {
         outputStream.close();
+        NextWrite nextWrite = nextWriteRef.get();
+        if (nextWrite != null)
+            throw new IOException("Closed stream with pending write: " + nextWrite);
     }
 
     @Override
@@ -51,32 +52,6 @@ class ServletCometDOutput implements CometDOutput, WriteListener {
     }
 
     @Override
-    public void write(byte[] jsonBytes) throws IOException {
-        Promise.Completable<Void> promise = new Promise.Completable<>();
-        write(jsonBytes, promise);
-        try {
-            promise.get();
-        } catch (InterruptedException | ExecutionException e) {
-            if (e.getCause() instanceof IOException)
-                throw (IOException)e.getCause();
-            throw new IOException(e.getCause());
-        }
-    }
-
-    @Override
-    public void write(char c) throws IOException {
-        Promise.Completable<Void> promise = new Promise.Completable<>();
-        write(c, promise);
-        try {
-            promise.get();
-        } catch (InterruptedException | ExecutionException e) {
-            if (e.getCause() instanceof IOException)
-                throw (IOException)e.getCause();
-            throw new IOException(e.getCause());
-        }
-    }
-
-    @Override
     public void write(byte[] jsonBytes, Promise<Void> promise) {
         if (outputStream.isReady()) {
             try {
@@ -87,22 +62,6 @@ class ServletCometDOutput implements CometDOutput, WriteListener {
             }
         } else {
             if (!nextWriteRef.compareAndSet(null, new NextWrite(jsonBytes, promise))) {
-                throw new IllegalStateException("Write pending");
-            }
-        }
-    }
-
-    @Override
-    public void write(char c, Promise<Void> promise) {
-        if (outputStream.isReady()) {
-            try {
-                outputStream.write(c);
-                promise.succeed(null);
-            } catch (IOException e) {
-                promise.fail(e);
-            }
-        } else {
-            if (!nextWriteRef.compareAndSet(null, new NextWrite(String.valueOf(c).getBytes(StandardCharsets.UTF_8), promise))) {
                 throw new IllegalStateException("Write pending");
             }
         }
