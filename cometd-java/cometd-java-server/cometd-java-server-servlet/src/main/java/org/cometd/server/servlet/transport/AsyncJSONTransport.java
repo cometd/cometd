@@ -339,46 +339,52 @@ public class AsyncJSONTransport extends AbstractHttpTransport
             }
         }
 
-        private void onWritePossible() throws IOException {
+        private void onWritePossible() {
             CometDOutput output = context.response().getOutput();
 
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Messages/replies {}/{} to write for {}", messages.size(), context.replies().size(), context.session());
             }
 
-            State current = state;
-            switch (current) {
-                case BEGIN -> {
-                    state = State.HANDSHAKE;
-                    writeBegin(output);
-                }
-                case HANDSHAKE -> {
-                    state = State.MESSAGES;
-                    writeHandshakeReply(output);
-                }
-                case MESSAGES -> {
-                    if (!writeMessages(output)) {
+            while (true) {
+                State current = state;
+                switch (current) {
+                    case BEGIN -> {
+                        state = State.HANDSHAKE;
+                        writeBegin(output);
                         return;
                     }
-                    state = State.REPLIES;
-                }
-                case REPLIES -> {
-                    if (!writeReplies(output)) {
+                    case HANDSHAKE -> {
+                        state = State.MESSAGES;
+                        if (!writeHandshakeReply(output)) {
+                            return;
+                        }
+                    }
+                    case MESSAGES -> {
+                        if (!writeMessages(output)) {
+                            return;
+                        }
+                        state = State.REPLIES;
+                    }
+                    case REPLIES -> {
+                        if (!writeReplies(output)) {
+                            return;
+                        }
+                        state = State.END;
+                    }
+                    case END -> {
+                        state = State.COMPLETE;
+                        writeEnd(output);
                         return;
                     }
-                    state = State.END;
-                }
-                case END -> {
-                    state = State.COMPLETE;
-                    writeEnd(output);
-                }
-                case COMPLETE -> {
-                    promise.succeed(null);
-                    writeComplete(context, messages);
-                    return;
-                }
-                default -> {
-                    throw new IllegalStateException("Could not write in state " + current);
+                    case COMPLETE -> {
+                        promise.succeed(null);
+                        writeComplete(context, messages);
+                        return;
+                    }
+                    default -> {
+                        throw new IllegalStateException("Could not write in state " + current);
+                    }
                 }
             }
         }
@@ -387,7 +393,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport
             output.write('[', promise);
         }
 
-        private void writeHandshakeReply(CometDOutput output) {
+        private boolean writeHandshakeReply(CometDOutput output) {
             List<ServerMessage.Mutable> replies = context.replies();
             if (replies.size() > 0) {
                 ServerMessage.Mutable reply = replies.get(0);
@@ -399,8 +405,10 @@ public class AsyncJSONTransport extends AbstractHttpTransport
                     output.write(toJSONBytes(reply), promise);
                     needsComma = true;
                     ++replyIndex;
+                    return false;
                 }
             }
+            return true;
         }
 
         private boolean writeMessages(CometDOutput output) {
@@ -442,9 +450,9 @@ public class AsyncJSONTransport extends AbstractHttpTransport
                     needsComma = false;
                 } else {
                     getBayeux().freeze(reply);
-                    output.write(toJSONBytes(reply), promise);
                     needsComma = replyIndex < size;
                     ++replyIndex;
+                    output.write(toJSONBytes(reply), promise);
                 }
                 return false;
             }

@@ -16,12 +16,16 @@
 package org.cometd.server.servlet;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
 import java.security.Principal;
 import java.util.Enumeration;
 import java.util.Locale;
 
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import org.cometd.api.CometDCookie;
 import org.cometd.api.CometDInput;
@@ -29,167 +33,161 @@ import org.cometd.api.CometDRequest;
 
 class ServletCometDRequest implements CometDRequest {
     private final HttpServletRequest request;
+    private ServletCometDInput input;
 
     public ServletCometDRequest(HttpServletRequest request) {
         this.request = request;
     }
 
     @Override
-    public String getCharacterEncoding()
-    {
+    public String getCharacterEncoding() {
         return request.getCharacterEncoding();
     }
 
     @Override
-    public String getContentType()
-    {
+    public String getContentType() {
         return request.getContentType();
     }
 
     @Override
-    public void setCharacterEncoding(String encoding) throws UnsupportedEncodingException
-    {
+    public void setCharacterEncoding(String encoding) throws UnsupportedEncodingException {
         request.setCharacterEncoding(encoding);
     }
 
     @Override
-    public CometDCookie[] getCookies()
-    {
-        return new CometDCookie[0];
+    public CometDCookie[] getCookies() {
+        Cookie[] cookies = request.getCookies();
+        if (cookies == null) {
+            return null;
+        }
+        CometDCookie[] result = new CometDCookie[cookies.length];
+        for (int i = 0; i < cookies.length; i++) {
+            result[i] = new ServletCometDCookie(cookies[i]);
+        }
+        return result;
     }
 
     @Override
-    public String getHeader(String name)
-    {
+    public String getHeader(String name) {
         return request.getHeader(name);
     }
 
     @Override
-    public Enumeration<String> getHeaders(String name)
-    {
+    public Enumeration<String> getHeaders(String name) {
         return request.getHeaders(name);
     }
 
     @Override
-    public String getParameter(String name)
-    {
+    public String getParameter(String name) {
         return request.getParameter(name);
     }
 
     @Override
-    public String[] getParameterValues(String name)
-    {
+    public String[] getParameterValues(String name) {
         return request.getParameterValues(name);
     }
 
     @Override
-    public String getQueryString()
-    {
+    public String getQueryString() {
         return request.getQueryString();
     }
 
     @Override
-    public StringBuffer getRequestURL()
-    {
+    public StringBuffer getRequestURL() {
         return request.getRequestURL();
     }
 
     @Override
-    public String getMethod()
-    {
+    public String getMethod() {
         return request.getMethod();
     }
 
     @Override
-    public Enumeration<Locale> getLocales()
-    {
+    public Enumeration<Locale> getLocales() {
         return request.getLocales();
     }
 
     @Override
-    public CometDInput getInput()
-    {
-        try
-        {
-            return new ServletCometDInput(request);
+    public CometDInput getInput() {
+        if (input == null) {
+            try {
+                input = new ServletCometDInput(request);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
-        catch (IOException e)
-        {
-            throw new RuntimeException(e);
-        }
+        return input;
     }
 
     @Override
-    public Reader getReader()
-    {
-        // TODO
-        throw new UnsupportedOperationException("TODO");
+    public Reader getReader() {
+        Charset charset = Charset.forName(getCharacterEncoding());
+        return new InputStreamReader(new InputStream() {
+            private final byte[] buf = new byte[1];
+            @Override
+            public int read() throws IOException {
+                int read = getInput().read(buf);
+                if (read == -1) {
+                    return read;
+                }
+                return buf[0];
+            }
+        }, charset);
     }
 
     @Override
-    public String getProtocol()
-    {
+    public String getProtocol() {
         return request.getProtocol();
     }
 
     @Override
-    public String getLocalName()
-    {
+    public String getLocalName() {
         return request.getLocalName();
     }
 
     @Override
-    public int getLocalPort()
-    {
+    public int getLocalPort() {
         return request.getLocalPort();
     }
 
     @Override
-    public String getRemoteHost()
-    {
+    public String getRemoteHost() {
         return request.getRemoteHost();
     }
 
     @Override
-    public int getRemotePort()
-    {
+    public int getRemotePort() {
         return request.getRemotePort();
     }
 
     @Override
-    public boolean isSecure()
-    {
+    public boolean isSecure() {
         return request.isSecure();
     }
 
     @Override
-    public Principal getUserPrincipal()
-    {
+    public Principal getUserPrincipal() {
         return request.getUserPrincipal();
     }
 
     @Override
-    public boolean isUserInRole(String role)
-    {
+    public boolean isUserInRole(String role) {
         return request.isUserInRole(role);
     }
 
     @Override
-    public Object getAttribute(String name)
-    {
+    public Object getAttribute(String name) {
         return request.getAttribute(name);
     }
 
     @Override
-    public void setAttribute(String name, Object value)
-    {
+    public void setAttribute(String name, Object value) {
         request.setAttribute(name, value);
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T> T unwrap(Class<T> clazz)
-    {
+    public <T> T unwrap(Class<T> clazz) {
         if (HttpServletRequest.class.isAssignableFrom(clazz))
             return (T)request;
         return null;

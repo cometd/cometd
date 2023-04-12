@@ -23,6 +23,7 @@ import org.cometd.api.CometDResponse;
 
 class ServletCometDResponse implements CometDResponse {
     private final HttpServletResponse response;
+    private ServletCometDOutput output;
 
     public ServletCometDResponse(HttpServletResponse response) {
         this.response = response;
@@ -40,14 +41,14 @@ class ServletCometDResponse implements CometDResponse {
 
     @Override
     public CometDOutput getOutput() {
-        try
-        {
-            return new ServletCometDOutput(response);
+        if (output == null) {
+            try {
+                output = new ServletCometDOutput(response);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
-        catch (IOException e)
-        {
-            throw new RuntimeException(e);
-        }
+        return output;
     }
 
     @Override

@@ -26,38 +26,32 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.cometd.api.CometDOutput;
 import org.cometd.bayeux.Promise;
 
-class ServletCometDOutput implements CometDOutput, WriteListener
-{
+class ServletCometDOutput implements CometDOutput, WriteListener {
     private final ServletOutputStream outputStream;
     private final AtomicReference<NextWrite> nextWriteRef = new AtomicReference<>();
 
-    public ServletCometDOutput(HttpServletResponse response) throws IOException
-    {
+    public ServletCometDOutput(HttpServletResponse response) throws IOException {
         this.outputStream = response.getOutputStream();
         this.outputStream.setWriteListener(this);
     }
 
     @Override
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
         outputStream.close();
     }
 
     @Override
-    public void onWritePossible()
-    {
+    public void onWritePossible() {
         nextWriteRef.getAndSet(null).write(outputStream);
     }
 
     @Override
-    public void onError(Throwable t)
-    {
+    public void onError(Throwable t) {
         nextWriteRef.getAndSet(null).fail(t);
     }
 
     @Override
-    public void write(byte[] jsonBytes) throws IOException
-    {
+    public void write(byte[] jsonBytes) throws IOException {
         Promise.Completable<Void> promise = new Promise.Completable<>();
         write(jsonBytes, promise);
         try {
@@ -70,8 +64,7 @@ class ServletCometDOutput implements CometDOutput, WriteListener
     }
 
     @Override
-    public void write(char c) throws IOException
-    {
+    public void write(char c) throws IOException {
         Promise.Completable<Void> promise = new Promise.Completable<>();
         write(c, promise);
         try {
@@ -84,77 +77,49 @@ class ServletCometDOutput implements CometDOutput, WriteListener
     }
 
     @Override
-    public void write(byte[] jsonBytes, Promise<Void> promise)
-    {
-        if (outputStream.isReady())
-        {
-            try
-            {
+    public void write(byte[] jsonBytes, Promise<Void> promise) {
+        if (outputStream.isReady()) {
+            try {
                 outputStream.write(jsonBytes);
                 promise.succeed(null);
-            }
-            catch (IOException e)
-            {
+            } catch (IOException e) {
                 promise.fail(e);
             }
-        }
-        else
-        {
-            if (!nextWriteRef.compareAndSet(null, new NextWrite(jsonBytes, promise)))
+        } else {
+            if (!nextWriteRef.compareAndSet(null, new NextWrite(jsonBytes, promise))) {
                 throw new IllegalStateException("Write pending");
+            }
         }
     }
 
     @Override
-    public void write(char c, Promise<Void> promise)
-    {
-        if (outputStream.isReady())
-        {
-            try
-            {
+    public void write(char c, Promise<Void> promise) {
+        if (outputStream.isReady()) {
+            try {
                 outputStream.write(c);
                 promise.succeed(null);
-            }
-            catch (IOException e)
-            {
+            } catch (IOException e) {
                 promise.fail(e);
             }
-        }
-        else
-        {
-            if (!nextWriteRef.compareAndSet(null, new NextWrite(String.valueOf(c).getBytes(StandardCharsets.UTF_8), promise)))
+        } else {
+            if (!nextWriteRef.compareAndSet(null, new NextWrite(String.valueOf(c).getBytes(StandardCharsets.UTF_8), promise))) {
                 throw new IllegalStateException("Write pending");
+            }
         }
     }
 
-    private static class NextWrite
-    {
-        private final byte[] jsonBytes;
-        private final Promise<Void> promise;
-
-        public NextWrite(byte[] jsonBytes, Promise<Void> promise)
-        {
-            this.jsonBytes = jsonBytes;
-            this.promise = promise;
-        }
-
-        public void fail(Throwable t)
-        {
+    private record NextWrite(byte[] jsonBytes, Promise<Void> promise) {
+        public void fail(Throwable t) {
             promise.fail(t);
         }
 
-        void write(ServletOutputStream servletOutputStream)
-        {
-            try
-            {
+        void write(ServletOutputStream servletOutputStream) {
+            try {
                 servletOutputStream.write(jsonBytes);
                 promise.succeed(null);
-            }
-            catch (Throwable x)
-            {
+            } catch (Throwable x) {
                 promise.fail(x);
             }
         }
     }
-
 }

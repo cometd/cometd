@@ -23,21 +23,18 @@ import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import org.cometd.api.CometDInput;
 
-class ServletCometDInput implements CometDInput, ReadListener
-{
+class ServletCometDInput implements CometDInput, ReadListener {
     private final ServletInputStream inputStream;
     private final AtomicReference<NextRead> nextReadRef = new AtomicReference<>();
     private volatile Throwable error;
 
-    public ServletCometDInput(HttpServletRequest request) throws IOException
-    {
+    public ServletCometDInput(HttpServletRequest request) throws IOException {
         inputStream = request.getInputStream();
         inputStream.setReadListener(this);
     }
 
     @Override
-    public void demand(Runnable r)
-    {
+    public void demand(Runnable r) {
         if (error != null || inputStream.isFinished() || inputStream.isReady()) {
             r.run();
         } else {
@@ -46,8 +43,7 @@ class ServletCometDInput implements CometDInput, ReadListener
     }
 
     @Override
-    public int read(byte[] buffer) throws IOException
-    {
+    public int read(byte[] buffer) throws IOException {
         if (error != null) {
             throw errorToIOException();
         } else if (inputStream.isFinished()) {
@@ -59,8 +55,7 @@ class ServletCometDInput implements CometDInput, ReadListener
         }
     }
 
-    private IOException errorToIOException()
-    {
+    private IOException errorToIOException() {
         if (error instanceof IOException)
             return (IOException) error;
         else
@@ -68,8 +63,7 @@ class ServletCometDInput implements CometDInput, ReadListener
     }
 
     @Override
-    public void onDataAvailable() throws IOException
-    {
+    public void onDataAvailable() {
         NextRead nextRead = nextReadRef.getAndSet(null);
         if (nextRead != null) {
             nextRead.run();
@@ -77,8 +71,7 @@ class ServletCometDInput implements CometDInput, ReadListener
     }
 
     @Override
-    public void onAllDataRead() throws IOException
-    {
+    public void onAllDataRead() {
         NextRead nextRead = nextReadRef.getAndSet(null);
         if (nextRead != null) {
             nextRead.run();
@@ -86,8 +79,7 @@ class ServletCometDInput implements CometDInput, ReadListener
     }
 
     @Override
-    public void onError(Throwable t)
-    {
+    public void onError(Throwable t) {
         error = t;
         NextRead nextRead = nextReadRef.getAndSet(null);
         if (nextRead != null) {
@@ -95,8 +87,7 @@ class ServletCometDInput implements CometDInput, ReadListener
         }
     }
 
-    private record NextRead(Runnable runnable)
-    {
+    private record NextRead(Runnable runnable) {
         public void run() {
             runnable.run();
         }
