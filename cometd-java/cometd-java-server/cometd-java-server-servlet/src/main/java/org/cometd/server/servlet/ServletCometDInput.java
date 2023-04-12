@@ -16,6 +16,10 @@
 package org.cometd.server.servlet;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.nio.charset.Charset;
 import java.util.concurrent.atomic.AtomicReference;
 
 import jakarta.servlet.ReadListener;
@@ -25,6 +29,7 @@ import org.cometd.api.CometDInput;
 
 class ServletCometDInput implements CometDInput, ReadListener {
     private final ServletInputStream inputStream;
+    private final HttpServletRequest request;
     private final AtomicReference<NextRead> nextReadRef = new AtomicReference<>();
     private volatile Throwable error;
 
@@ -32,6 +37,23 @@ class ServletCometDInput implements CometDInput, ReadListener {
         this.request = request;
         this.inputStream = request.getInputStream();
         this.inputStream.setReadListener(this);
+    }
+
+    @Override
+    public Reader asReader()
+    {
+        Charset charset = Charset.forName(request.getCharacterEncoding());
+        return new InputStreamReader(new InputStream() {
+            @Override
+            public int read(byte[] b, int off, int len) throws IOException {
+                return ServletCometDInput.this.read(b, off, len);
+            }
+
+            @Override
+            public int read() throws IOException {
+                return ServletCometDInput.this.read();
+            }
+        }, charset);
     }
 
     @Override
@@ -70,10 +92,11 @@ class ServletCometDInput implements CometDInput, ReadListener {
     }
 
     private IOException errorToIOException() {
-        if (error instanceof IOException)
-            return (IOException) error;
-        else
+        if (error instanceof IOException) {
+            return (IOException)error;
+        } else {
             return new IOException(error);
+        }
     }
 
     @Override

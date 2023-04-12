@@ -16,9 +16,12 @@
 package org.cometd.api;
 
 import java.io.IOException;
+import java.io.Reader;
 
 public interface CometDInput
 {
+    Reader asReader();
+
     void demand(Runnable r);
 
     default int read(byte[] buffer) throws IOException
