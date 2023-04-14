@@ -62,7 +62,7 @@
     <graalvm-version>21.3.2.1</graalvm-version>
     <slf4j-version>2.0.7</slf4j-version>
     <log4j2-version>2.20.0</log4j2-version>
-    <spring-version>5.3.26</spring-version>
+    <spring-version>5.3.27</spring-version>
     <spring-boot-version>2.7.10</spring-boot-version>
     <jackson-version>2.14.2</jackson-version>
     <dojo-version>1.17.3</dojo-version>
