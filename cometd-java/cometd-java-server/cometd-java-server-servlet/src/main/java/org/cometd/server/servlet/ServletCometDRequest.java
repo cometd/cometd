@@ -55,7 +55,7 @@ class ServletCometDRequest implements CometDRequest {
         }
         CometDCookie[] result = new CometDCookie[cookies.length];
         for (int i = 0; i < cookies.length; i++) {
-            result[i] = new ServletCometDCookie(cookies[i]);
+            result[i] = new CometDCookie(cookies[i].getName(), cookies[i].getValue());
         }
         return result;
     }

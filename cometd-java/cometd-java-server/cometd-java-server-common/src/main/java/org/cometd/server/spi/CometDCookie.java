@@ -15,9 +15,20 @@
  */
 package org.cometd.server.spi;
 
-public interface CometDCookie
-{
-    String getName();
+public class CometDCookie {
+    private final String name;
+    private final String value;
 
-    String getValue();
+    public CometDCookie(String name, String value) {
+        this.name = name;
+        this.value = value;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getValue() {
+        return value;
+    }
 }
