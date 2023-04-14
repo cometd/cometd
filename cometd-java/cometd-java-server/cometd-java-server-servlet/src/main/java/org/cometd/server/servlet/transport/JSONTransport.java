@@ -53,7 +53,7 @@ public class JSONTransport extends AbstractStreamHttpTransport {
         }
         String contentType = request.getContentType();
         if (contentType == null || contentType.startsWith("application/json")) {
-            return parseMessages(request.getReader(), _jsonDebug);
+            return parseMessages(request.getInput().asReader(), _jsonDebug);
         } else if (contentType.startsWith("application/x-www-form-urlencoded")) {
             return parseMessages(request.getParameterValues(MESSAGE_PARAM));
         } else {

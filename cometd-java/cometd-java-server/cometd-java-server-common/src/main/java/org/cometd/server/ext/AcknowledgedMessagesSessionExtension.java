@@ -237,7 +237,7 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
     }
 
     // Used only in tests.
-    BatchArrayQueue<ServerMessage> getBatchArrayQueue() {
+    public BatchArrayQueue<ServerMessage> getBatchArrayQueue() {
         return _queue;
     }
 }

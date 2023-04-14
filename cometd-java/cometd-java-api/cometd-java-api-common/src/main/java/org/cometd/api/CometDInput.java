@@ -18,6 +18,7 @@ package org.cometd.api;
 import java.io.IOException;
 import java.io.Reader;
 
+//TODO this whole package is SPI, move it to cometd-java-server-common
 public interface CometDInput
 {
     Reader asReader();

@@ -368,7 +368,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         }
     }
 
-    protected boolean handshake(ServerMessage.Mutable message) {
+    public boolean handshake(ServerMessage.Mutable message) {
         AbstractServerTransport transport = message == null ? null : (AbstractServerTransport)message.getServerTransport();
         if (transport != null) {
             _maxQueue = transport.getOption(AbstractServerTransport.MAX_QUEUE_OPTION, -1);
@@ -391,7 +391,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         }
     }
 
-    protected boolean connected() {
+    public boolean connected() {
         lock.lock();
         try {
             if (_state == State.HANDSHAKEN || _state == State.CONNECTED) {
@@ -719,7 +719,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         }
     }
 
-    long getMetaConnectCycle() {
+    public long getMetaConnectCycle() {
         lock.lock();
         try {
             return _scheduler.getMetaConnectCycle();
@@ -738,7 +738,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         _maxInterval = maxInterval;
     }
 
-    long getIntervalTimestamp() {
+    public long getIntervalTimestamp() {
         return _expireTime;
     }
 

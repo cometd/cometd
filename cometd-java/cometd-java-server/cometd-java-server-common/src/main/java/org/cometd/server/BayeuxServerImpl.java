@@ -548,7 +548,7 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
         return clientId == null ? null : _sessions.get(clientId);
     }
 
-    protected void addServerSession(ServerSessionImpl session, ServerMessage message) {
+    public void addServerSession(ServerSessionImpl session, ServerMessage message) {
         if (_logger.isDebugEnabled()) {
             _logger.debug("Adding {}", session);
         }

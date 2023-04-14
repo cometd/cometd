@@ -67,6 +67,22 @@ class ServletCometDOutput implements CometDOutput, WriteListener {
         }
     }
 
+    @Override
+    public void write(byte jsonByte, Promise<Void> promise) {
+        if (outputStream.isReady()) {
+            try {
+                outputStream.write(jsonByte);
+                promise.succeed(null);
+            } catch (IOException e) {
+                promise.fail(e);
+            }
+        } else {
+            if (!nextWriteRef.compareAndSet(null, new NextWrite(new byte[]{jsonByte}, promise))) {
+                throw new IllegalStateException("Write pending");
+            }
+        }
+    }
+
     private record NextWrite(byte[] jsonBytes, Promise<Void> promise) {
         public void fail(Throwable t) {
             promise.fail(t);

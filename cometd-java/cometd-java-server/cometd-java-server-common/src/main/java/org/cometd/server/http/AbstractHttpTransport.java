@@ -421,7 +421,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
      * If false is returned, the count is not incremented.
      * @see #decBrowserId(ServerSessionImpl, boolean)
      */
-    protected boolean incBrowserId(ServerSessionImpl session, boolean http2) {
+    public boolean incBrowserId(ServerSessionImpl session, boolean http2) {
         int maxSessionsPerBrowser = http2 ? _http2MaxSessionsPerBrowser : _maxSessionsPerBrowser;
         if (maxSessionsPerBrowser < 0) {
             return true;
@@ -453,7 +453,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         return result;
     }
 
-    protected void decBrowserId(ServerSessionImpl session, boolean http2) {
+    public void decBrowserId(ServerSessionImpl session, boolean http2) {
         int maxSessionsPerBrowser = http2 ? _http2MaxSessionsPerBrowser : _maxSessionsPerBrowser;
         String browserId = session.getBrowserId();
         if (maxSessionsPerBrowser <= 0 || browserId == null) {
@@ -626,6 +626,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         }
     }
 
+    // TODO make this back to a top-level class in SPI
     public interface Context {
         BayeuxContext bayeuxContext();
 

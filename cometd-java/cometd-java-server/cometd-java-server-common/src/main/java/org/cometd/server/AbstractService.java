@@ -191,7 +191,7 @@ public abstract class AbstractService {
      *                    are received on the channel
      * @see #removeService(String, String)
      */
-    protected void addService(String channelName, String methodName) {
+    public void addService(String channelName, String methodName) {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("Mapping {}#{} to {}", _name, methodName, channelName);
         }
@@ -240,7 +240,7 @@ public abstract class AbstractService {
      * @see #addService(String, String)
      * @see #removeService(String)
      */
-    protected void removeService(String channelName, String methodName) {
+    public void removeService(String channelName, String methodName) {
         ServerChannel channel = _bayeux.getChannel(channelName);
         if (channel != null) {
             Invoker invoker = invokers.remove(methodName);
@@ -255,7 +255,7 @@ public abstract class AbstractService {
      * @see #addService(String, String)
      * @see #removeService(String, String)
      */
-    protected void removeService(String channelName) {
+    public void removeService(String channelName) {
         ServerChannel channel = _bayeux.getChannel(channelName);
         if (channel != null) {
             for (Invoker invoker : invokers.values()) {
