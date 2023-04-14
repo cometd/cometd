@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import jakarta.servlet.ReadListener;
 import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.HttpServletRequest;
-import org.cometd.api.CometDInput;
+import org.cometd.server.spi.CometDInput;
 
 class ServletCometDInput implements CometDInput, ReadListener {
     private final ServletInputStream inputStream;

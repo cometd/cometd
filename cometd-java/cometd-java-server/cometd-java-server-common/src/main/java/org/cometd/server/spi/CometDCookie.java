@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.cometd.api;
+package org.cometd.server.spi;
 
 public interface CometDCookie
 {

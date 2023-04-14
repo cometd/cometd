@@ -16,7 +16,7 @@
 package org.cometd.server.servlet;
 
 import jakarta.servlet.http.Cookie;
-import org.cometd.api.CometDCookie;
+import org.cometd.server.spi.CometDCookie;
 
 class ServletCometDCookie implements CometDCookie {
     private final String name;

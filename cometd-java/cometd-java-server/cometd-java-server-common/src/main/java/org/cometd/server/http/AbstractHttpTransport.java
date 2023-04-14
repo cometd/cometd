@@ -28,10 +28,10 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.cometd.api.CometDCookie;
-import org.cometd.api.CometDException;
-import org.cometd.api.CometDRequest;
-import org.cometd.api.CometDResponse;
+import org.cometd.server.spi.CometDCookie;
+import org.cometd.server.spi.CometDException;
+import org.cometd.server.spi.CometDRequest;
+import org.cometd.server.spi.CometDResponse;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;

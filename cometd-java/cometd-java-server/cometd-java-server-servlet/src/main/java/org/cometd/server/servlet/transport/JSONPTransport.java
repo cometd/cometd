@@ -18,9 +18,9 @@ package org.cometd.server.servlet.transport;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.regex.Pattern;
-import org.cometd.api.CometDOutput;
-import org.cometd.api.CometDRequest;
-import org.cometd.api.CometDResponse;
+import org.cometd.server.spi.CometDOutput;
+import org.cometd.server.spi.CometDRequest;
+import org.cometd.server.spi.CometDResponse;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.BayeuxServerImpl;
 

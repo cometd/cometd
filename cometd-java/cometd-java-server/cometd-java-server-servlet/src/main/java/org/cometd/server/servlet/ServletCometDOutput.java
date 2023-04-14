@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.HttpServletResponse;
-import org.cometd.api.CometDOutput;
+import org.cometd.server.spi.CometDOutput;
 import org.cometd.bayeux.Promise;
 
 class ServletCometDOutput implements CometDOutput, WriteListener {

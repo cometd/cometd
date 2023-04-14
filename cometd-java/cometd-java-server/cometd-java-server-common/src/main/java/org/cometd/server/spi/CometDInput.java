@@ -13,12 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.cometd.api;
+package org.cometd.server.spi;
 
 import java.io.IOException;
 import java.io.Reader;
 
-//TODO this whole package is SPI, move it to cometd-java-server-common
 public interface CometDInput
 {
     Reader asReader();

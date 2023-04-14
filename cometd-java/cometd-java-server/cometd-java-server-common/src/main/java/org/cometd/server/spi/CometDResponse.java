@@ -13,8 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.cometd.api;
+package org.cometd.server.spi;
 
-public class CometDException extends Exception
+public interface CometDResponse
 {
+    int SC_INTERNAL_SERVER_ERROR = 500;
+    int SC_BAD_REQUEST = 400;
+
+    void addHeader(String name, String value);
+
+    String getCharacterEncoding();
+
+    CometDOutput getOutput();
+
+    void setContentType(String contentType);
 }

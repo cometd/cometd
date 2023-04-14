@@ -20,9 +20,9 @@ import java.io.UnsupportedEncodingException;
 
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
-import org.cometd.api.CometDCookie;
-import org.cometd.api.CometDInput;
-import org.cometd.api.CometDRequest;
+import org.cometd.server.spi.CometDCookie;
+import org.cometd.server.spi.CometDInput;
+import org.cometd.server.spi.CometDRequest;
 
 class ServletCometDRequest implements CometDRequest {
     private final HttpServletRequest request;

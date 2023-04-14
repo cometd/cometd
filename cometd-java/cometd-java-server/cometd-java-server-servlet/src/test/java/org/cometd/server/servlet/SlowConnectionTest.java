@@ -27,8 +27,8 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.cometd.api.CometDOutput;
-import org.cometd.api.CometDResponse;
+import org.cometd.server.spi.CometDOutput;
+import org.cometd.server.spi.CometDResponse;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;

@@ -18,8 +18,8 @@ package org.cometd.server.servlet;
 import java.io.IOException;
 
 import jakarta.servlet.http.HttpServletResponse;
-import org.cometd.api.CometDOutput;
-import org.cometd.api.CometDResponse;
+import org.cometd.server.spi.CometDOutput;
+import org.cometd.server.spi.CometDResponse;
 
 class ServletCometDResponse implements CometDResponse {
     private final HttpServletResponse response;
