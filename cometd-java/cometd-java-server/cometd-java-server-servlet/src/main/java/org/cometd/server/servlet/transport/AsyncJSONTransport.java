@@ -195,7 +195,6 @@ public class AsyncJSONTransport extends AbstractHttpTransport
                 }
                 if (read < 0) {
                     onAllDataRead();
-                    promise.succeed(null);
                     break;
                 } else if (read == 0) {
                     input.demand(this::nextRead);
@@ -302,6 +301,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport
         private int replyIndex;
         private boolean needsComma;
         private State state = State.BEGIN;
+        private final SerializedInvoker invoker = new SerializedInvoker();
 
         protected Writer(Context context, List<ServerMessage> messages, Promise<Void> p) {
             this.context = context;
@@ -333,7 +333,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport
 
         private void nextWrite() {
             try {
-                onWritePossible();
+                invoker.run(this::onWritePossible);
             } catch (Throwable x) {
                 promise.fail(x);
             }
@@ -348,6 +348,9 @@ public class AsyncJSONTransport extends AbstractHttpTransport
 
             while (true) {
                 State current = state;
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Current state: {}", current);
+                }
                 switch (current) {
                     case BEGIN -> {
                         state = State.HANDSHAKE;
@@ -420,13 +423,13 @@ public class AsyncJSONTransport extends AbstractHttpTransport
                 return true;
             } else {
                 if (needsComma) {
-                    output.write(',', promise);
                     needsComma = false;
+                    output.write(',', promise);
                 } else {
                     ServerMessage message = messages.get(messageIndex);
-                    output.write(toJSONBytes(message), promise);
-                    needsComma = messageIndex < size;
+                    needsComma = true;
                     ++messageIndex;
+                    output.write(toJSONBytes(message), promise);
                 }
                 return false;
             }
@@ -446,8 +449,8 @@ public class AsyncJSONTransport extends AbstractHttpTransport
             } else {
                 ServerMessage.Mutable reply = replies.get(replyIndex);
                 if (needsComma) {
-                    output.write(',', promise);
                     needsComma = false;
+                    output.write(',', promise);
                 } else {
                     getBayeux().freeze(reply);
                     needsComma = replyIndex < size;
