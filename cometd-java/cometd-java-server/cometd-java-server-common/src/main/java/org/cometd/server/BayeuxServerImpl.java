@@ -1291,7 +1291,7 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
         }
     }
 
-    CompletableFuture<Void> asyncSweep() {
+    public CompletableFuture<Void> asyncSweep() {
         return _sweeper.asyncSweep();
     }
 
