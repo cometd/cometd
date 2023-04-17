@@ -43,12 +43,16 @@ class ServletCometDOutput implements CometDOutput, WriteListener {
 
     @Override
     public void onWritePossible() {
-        nextWriteRef.getAndSet(null).write(outputStream);
+        NextWrite nextWrite = nextWriteRef.getAndSet(null);
+        if (nextWrite != null)
+            nextWrite.write(outputStream);
     }
 
     @Override
     public void onError(Throwable t) {
-        nextWriteRef.getAndSet(null).fail(t);
+        NextWrite nextWrite = nextWriteRef.getAndSet(null);
+        if (nextWrite != null)
+            nextWrite.fail(t);
     }
 
     @Override
