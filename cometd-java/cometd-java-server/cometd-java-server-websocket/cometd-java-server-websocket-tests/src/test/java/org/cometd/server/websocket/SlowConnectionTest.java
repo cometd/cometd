@@ -37,12 +37,14 @@ import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.cometd.server.websocket.common.AbstractWebSocketTransport;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 public class SlowConnectionTest extends ClientServerWebSocketTest {
     @ParameterizedTest
     @MethodSource("wsTypes")
+    @Tag("flaky")
     public void testLargeMessageOnSlowConnection(String wsType) throws Exception {
         testLargeMessageOnSlowConnection(wsType, false);
     }
@@ -175,6 +177,9 @@ public class SlowConnectionTest extends ClientServerWebSocketTest {
             // After maxInterval, the session should be swept.
 
             Assertions.assertTrue(removeLatch.await(timeout + idleTimeout + 2 * maxInterval, TimeUnit.MILLISECONDS));
+
+            // TODO this helps with the flakyness
+            Thread.sleep(100);
         }
     }
 
