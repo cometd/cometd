@@ -93,7 +93,7 @@ public abstract class AbstractClientServerTest {
         connector.setIdleTimeout(30000);
         server.addConnector(connector);
 
-        context = new ServletContextHandler("/");
+        context = new ServletContextHandler("/", ServletContextHandler.SESSIONS); // JETTY_WEBSOCKET requires sessions
         server.setHandler(context);
 
         switch (transport) {
