@@ -58,7 +58,7 @@
     <!-- tag::jetty-version[] -->
     <jetty-version>11.0.15</jetty-version>
     <!-- end::jetty-version[] -->
-    <graalvm-version>22.3.1</graalvm-version>
+    <graalvm-version>22.3.2</graalvm-version>
     <slf4j-version>2.0.7</slf4j-version>
     <log4j2-version>2.20.0</log4j2-version>
     <spring-version>6.0.7</spring-version>
