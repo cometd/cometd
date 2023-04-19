@@ -53,7 +53,10 @@ public abstract class HttpClientTransport extends ClientTransport {
     }
 
     protected List<HttpCookie> getCookies(URI uri) {
-        return getHttpCookieStore().match(uri);
+        // TODO: remove this mangling when HttpCookieStore supports the "ws" scheme.
+        // See: JettyWebSocketTransport.connect()
+        String mangledURI = uri.toASCIIString().replaceFirst("^ws", "http");
+        return getHttpCookieStore().match(URI.create(mangledURI));
     }
 
     protected void storeCookies(URI uri, Map<String, List<String>> headers) {
