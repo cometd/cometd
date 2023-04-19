@@ -387,7 +387,9 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         waitForStates.addAll(List.of(states));
 
         try (AutoLock ignored = lock.lock()) {
-            while (waitMs > 0) {
+            final long startNs = System.nanoTime();
+            long elapsedMs = 0L;
+            while (true) {
                 // This check is needed to avoid that we return from waitFor() too early,
                 // when the state has been set, but its effects (like notifying listeners)
                 // are not completed yet (issue #212).
@@ -409,21 +411,23 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
                     }
                 }
 
+                long delay = waitMs - elapsedMs;
                 if (logger.isDebugEnabled()) {
-                    logger.debug("Waiting {}ms for {}", waitMs, waitForStates);
+                    logger.debug("Waiting {}ms for {}", delay, waitForStates);
                 }
 
-                long start = System.nanoTime();
-                if (sessionState.await(waitMs)) {
+                if (sessionState.await(delay)) {
                     break;
                 }
-                long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+                elapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNs);
 
                 if (logger.isDebugEnabled()) {
-                    logger.debug("Waited {}/{}ms for {}, state is {}", elapsed, waitMs, waitForStates, sessionState.getState());
+                    logger.debug("Waited {}/{}ms for {}, state is {}", elapsedMs, waitMs, waitForStates, sessionState.getState());
                 }
 
-                waitMs -= elapsed;
+                if (waitMs - elapsedMs < 0) {
+                    break;
+                }
             }
             return false;
         }
