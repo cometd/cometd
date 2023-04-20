@@ -16,21 +16,15 @@
 package org.cometd.server.servlet;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.security.Principal;
 import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 import org.cometd.server.spi.CometDException;
 import org.cometd.server.spi.CometDRequest;
 import org.cometd.server.spi.CometDResponse;
@@ -108,154 +102,7 @@ public class CometDServlet extends HttpServlet {
 
         CometDRequest cometDRequest = new ServletCometDRequest(request);
         CometDResponse cometDResponse = new ServletCometDResponse(response);
-        BayeuxContext bayeuxContext = new BayeuxContext()
-        {
-            @Override
-            public Principal getUserPrincipal() {
-                return request.getUserPrincipal();
-            }
-
-            @Override
-            public boolean isUserInRole(String role) {
-                return request.isUserInRole(role);
-            }
-
-            @Override
-            public InetSocketAddress getRemoteAddress() {
-                return new InetSocketAddress(request.getRemoteHost(), request.getRemotePort());
-            }
-
-            @Override
-            public InetSocketAddress getLocalAddress() {
-                return new InetSocketAddress(request.getLocalName(), request.getLocalPort());
-            }
-
-            @Override
-            public String getHeader(String name) {
-                return request.getHeader(name);
-            }
-
-            @Override
-            public List<String> getHeaderValues(String name) {
-                return Collections.list(request.getHeaders(name));
-            }
-
-            @Override
-            public String getParameter(String name) {
-                return request.getParameter(name);
-            }
-
-            @Override
-            public List<String> getParameterValues(String name) {
-                return List.of(request.getParameterValues(name));
-            }
-
-            @Override
-            public String getCookie(String name) {
-                Cookie[] cookies = request.getCookies();
-                if (cookies != null) {
-                    for (Cookie c : cookies) {
-                        if (name.equals(c.getName())) {
-                            return c.getValue();
-                        }
-                    }
-                }
-                return null;
-            }
-
-            @Override
-            public String getHttpSessionId() {
-                HttpSession session = request.getSession(false);
-                if (session != null) {
-                    return session.getId();
-                }
-                return null;
-            }
-
-            @Override
-            public Object getHttpSessionAttribute(String name) {
-                HttpSession session = request.getSession(false);
-                if (session != null) {
-                    return session.getAttribute(name);
-                }
-                return null;
-            }
-
-            @Override
-            public void setHttpSessionAttribute(String name, Object value) {
-                HttpSession session = request.getSession(false);
-                if (session != null) {
-                    session.setAttribute(name, value);
-                } else {
-                    throw new IllegalStateException("!session");
-                }
-            }
-
-            @Override
-            public void invalidateHttpSession() {
-                HttpSession session = request.getSession(false);
-                if (session != null) {
-                    session.invalidate();
-                }
-            }
-
-            @Override
-            public Object getRequestAttribute(String name) {
-                return request.getAttribute(name);
-            }
-
-            private ServletContext getServletContext() {
-                HttpSession s = request.getSession(false);
-                if (s != null) {
-                    return s.getServletContext();
-                } else {
-                    s = request.getSession(true);
-                    ServletContext servletContext = s.getServletContext();
-                    s.invalidate();
-                    return servletContext;
-                }
-            }
-
-            @Override
-            public Object getContextAttribute(String name) {
-                return getServletContext().getAttribute(name);
-            }
-
-            @Override
-            public String getContextInitParameter(String name) {
-                return getServletContext().getInitParameter(name);
-            }
-
-            @Override
-            public String getContextPath() {
-                return request.getContextPath();
-            }
-
-            @Override
-            public String getURL() {
-                StringBuffer url = request.getRequestURL();
-                String query = request.getQueryString();
-                if (query != null) {
-                    url.append("?").append(query);
-                }
-                return url.toString();
-            }
-
-            @Override
-            public List<Locale> getLocales() {
-                return Collections.list(request.getLocales());
-            }
-
-            @Override
-            public String getProtocol() {
-                return request.getProtocol();
-            }
-
-            @Override
-            public boolean isSecure() {
-                return request.isSecure();
-            }
-        };
+        BayeuxContext bayeuxContext = new ServletBayeuxContext(request);
 
         Promise<Void> promise = new Promise<>() {
             @Override
