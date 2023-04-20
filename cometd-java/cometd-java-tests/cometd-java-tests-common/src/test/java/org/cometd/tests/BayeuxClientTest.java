@@ -15,6 +15,7 @@
  */
 package org.cometd.tests;
 
+import java.util.EnumSet;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -31,11 +32,17 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.cometd.tests.AbstractClientServerTest.Transport.ASYNC_HTTP;
+import static org.cometd.tests.AbstractClientServerTest.Transport.JETTY_HTTP;
+import static org.cometd.tests.AbstractClientServerTest.Transport.OKHTTP_HTTP;
+
 public class BayeuxClientTest extends AbstractClientServerTest {
     @ParameterizedTest
     @MethodSource("transports")
     public void testIPv6Address(Transport transport) throws Exception {
         Assumptions.assumeTrue(ipv6Available());
+        Assumptions.assumeFalse(EnumSet.of(JETTY_HTTP, ASYNC_HTTP, OKHTTP_HTTP).contains(transport),
+            "Cookies+IPv6 support currently is broken, see bug #9665");
 
         start(transport);
 
