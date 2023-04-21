@@ -7,7 +7,7 @@
 
   <filter>
     <filter-name>cross-origin</filter-name>
-    <filter-class>org.eclipse.jetty.servlets.CrossOriginFilter</filter-class>
+    <filter-class>org.eclipse.jetty.ee10.servlets.CrossOriginFilter</filter-class>
     <async-supported>true</async-supported>
   </filter>
   <filter-mapping>
@@ -17,7 +17,7 @@
 
   <servlet>
     <servlet-name>cometd</servlet-name>
-    <servlet-class>org.cometd.server.CometDServlet</servlet-class>
+    <servlet-class>org.cometd.server.servlet.CometDServlet</servlet-class>
     <init-param>
       <param-name>transports</param-name>
       <param-value>org.cometd.server.servlet.transport.AsyncJSONTransport</param-value>

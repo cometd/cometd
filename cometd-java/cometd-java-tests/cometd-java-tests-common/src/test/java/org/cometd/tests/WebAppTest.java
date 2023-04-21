@@ -122,6 +122,12 @@ public class WebAppTest {
         copyWebAppDependency(org.eclipse.jetty.websocket.client.WebSocketClient.class, webINF);
         copyWebAppDependency(org.eclipse.jetty.websocket.core.client.WebSocketCoreClient.class, webINF);
         copyWebAppDependency(org.eclipse.jetty.websocket.core.Configuration.class, webINF);
+        copyWebAppDependency(org.cometd.server.servlet.CometDServlet.class, webINF);
+        copyWebAppDependency(org.cometd.server.spi.CometDException.class, webINF);
+        copyWebAppDependency(org.cometd.bayeux.server.BayeuxContext.class, webINF);
+        copyWebAppDependency(org.cometd.bayeux.Promise.class, webINF);
+        copyWebAppDependency(org.cometd.common.JSONContext.class, webINF);
+        copyWebAppDependency(org.cometd.bayeux.client.ClientSession.class, webINF);
 
         // Web application classes.
         Path testClasses = baseDir.resolve("target/test-classes/");
@@ -147,6 +153,7 @@ public class WebAppTest {
         Collection<URL> serverClassPath = new HashSet<>();
         addServerDependency(jakarta.servlet.Servlet.class, serverClassPath);
         addServerDependency(jakarta.websocket.Session.class, serverClassPath);
+        addServerDependency(jakarta.websocket.server.ServerContainer.class, serverClassPath);
         addServerDependency(jakarta.annotation.Resources.class, serverClassPath);
         addServerDependency(jakarta.annotation.security.RunAs.class, serverClassPath);
         addServerDependency(org.slf4j.Logger.class, serverClassPath);
@@ -164,6 +171,9 @@ public class WebAppTest {
         addServerDependency(org.eclipse.jetty.server.Server.class, serverClassPath);
         addServerDependency(org.eclipse.jetty.ee10.servlet.ServletContextHandler.class, serverClassPath);
         addServerDependency(org.eclipse.jetty.util.Callback.class, serverClassPath);
+        addServerDependency(org.eclipse.jetty.ee.Deployable.class, serverClassPath);
+        addServerDependency(org.eclipse.jetty.session.SessionManager.class, serverClassPath);
+        addServerDependency(org.eclipse.jetty.util.ajax.JSON.class, serverClassPath);
         addServerDependency(org.eclipse.jetty.ee10.webapp.WebAppContext.class, serverClassPath);
         addServerDependency(org.eclipse.jetty.websocket.api.Session.class, serverClassPath);
         addServerDependency(org.eclipse.jetty.websocket.common.WebSocketSession.class, serverClassPath);
