@@ -216,7 +216,13 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
             String option = (String)getOption(TRANSPORTS_OPTION);
             if (option == null) {
                 // Order is important, see #findHttpTransport()
-                ServerTransport transport = newWebSocketTransport();
+                ServerTransport transport;
+
+                transport = newAsyncJSONTransport();
+                if (transport != null) {
+                    addTransport(transport);
+                }
+                transport = newWebSocketTransport();
                 if (transport != null) {
                     addTransport(transport);
                 }
@@ -313,6 +319,14 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
             ClassLoader loader = Thread.currentThread().getContextClassLoader();
             loader.loadClass("jakarta.servlet.ReadListener");
             return newServerTransport("org.cometd.server.servlet.transport.JSONPTransport");
+        } catch (Exception x) {
+            return null;
+        }
+    }
+
+    private ServerTransport newAsyncJSONTransport() {
+        try {
+            return newServerTransport("org.cometd.server.handler.transport.AsyncJSONTransport");
         } catch (Exception x) {
             return null;
         }

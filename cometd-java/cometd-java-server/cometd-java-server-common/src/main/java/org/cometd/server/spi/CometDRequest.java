@@ -22,7 +22,7 @@ public interface CometDRequest
     // HTTP metadata
     String getContentType();
     String getCharacterEncoding();
-    void setCharacterEncoding(String encoding) throws UnsupportedEncodingException;
+    void setCharacterEncoding(String encoding) throws UnsupportedEncodingException; // TODO remove API?
     CometDCookie[] getCookies();
     String getParameter(String name);
     String[] getParameterValues(String name);
