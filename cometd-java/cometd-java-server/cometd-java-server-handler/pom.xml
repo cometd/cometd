@@ -22,8 +22,8 @@
             <!-- Jetty's JSON is an optional dependency, add it explicitly to the module graph. -->
             --add-modules org.eclipse.jetty.util.ajax
             <!-- AbstractService tests requires this -->
-            --add-exports org.cometd.server.servlet/org.cometd.server.servlet.ext=org.cometd.server
-            --add-exports org.cometd.server.servlet/org.cometd.server.servlet.ext=ALL-UNNAMED
+            --add-exports org.cometd.server.servlet/org.cometd.server.handler.ext=org.cometd.server
+            --add-exports org.cometd.server.servlet/org.cometd.server.handler.ext=ALL-UNNAMED
           </argLine>
         </configuration>
       </plugin>
