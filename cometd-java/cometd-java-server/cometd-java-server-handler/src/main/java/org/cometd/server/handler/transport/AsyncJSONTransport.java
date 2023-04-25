@@ -43,7 +43,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(AsyncJSONTransport.class);
     private static final String PREFIX = "long-polling.json";
-    private static final String NAME = "long-polling";
+    public static final String NAME = "long-polling";
     private static final int BUFFER_CAPACITY = 512;
     private static final ThreadLocal<byte[]> buffers = ThreadLocal.withInitial(() -> new byte[BUFFER_CAPACITY]);
 

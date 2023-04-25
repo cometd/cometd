@@ -60,6 +60,7 @@ public class CometDHandler extends Handler.Abstract {
     @Override
     public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
+        request.getContext().setAttribute(BayeuxServer.ATTRIBUTE, _bayeux);
         if ("OPTIONS".equals(request.getMethod())) {
             serviceOptions(request, response, callback);
             return true;

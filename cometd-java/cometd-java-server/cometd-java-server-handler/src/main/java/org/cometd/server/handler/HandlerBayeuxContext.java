@@ -128,13 +128,13 @@ class HandlerBayeuxContext implements BayeuxContext
     @Override
     public Object getRequestAttribute(String name)
     {
-        return null;
+        return request.getAttribute(name);
     }
 
     @Override
     public Object getContextAttribute(String name)
     {
-        return null;
+        return request.getContext().getAttribute(name);
     }
 
     @Override
