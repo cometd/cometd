@@ -41,6 +41,7 @@ public abstract class AbstractBayeuxServerTest
     protected Server server;
     protected ServerConnector connector;
     protected int port;
+    protected ContextHandler context;
     protected CometDHandler cometDHandler;
     protected String cometdURL;
     protected BayeuxServerImpl bayeux;
@@ -55,18 +56,19 @@ public abstract class AbstractBayeuxServerTest
         server.setHandler(handlers);
 
         String contextPath = "/cometd";
-        ContextHandler contextHandler = new ContextHandler(contextPath);
-        handlers.addHandler(contextHandler);
+        context = new ContextHandler(contextPath);
+        handlers.addHandler(context);
 
         // Setup comet handler
         cometDHandler = new CometDHandler();
-        contextHandler.setHandler(cometDHandler);
+        context.setHandler(cometDHandler);
 
         if (options == null) {
             options = new HashMap<>();
         }
         options.put("timeout", String.valueOf(timeout));
         options.put("transports", serverTransport);
+        cometDHandler.setOptions(options);
         String cometdServletPath = "/cometd";
 
         server.start();

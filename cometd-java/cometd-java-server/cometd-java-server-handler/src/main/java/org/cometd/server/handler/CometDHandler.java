@@ -15,6 +15,8 @@
  */
 package org.cometd.server.handler;
 
+import java.util.Map;
+
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerSession;
@@ -41,11 +43,24 @@ public class CometDHandler extends Handler.Abstract {
     private static final Logger LOGGER = LoggerFactory.getLogger(CometDHandler.class);
 
     private BayeuxServerImpl _bayeux;
+    private Map<String, String> options;
+
+    public void setOptions(Map<String, String> options)
+    {
+        this.options = options;
+    }
 
     @Override
     protected void doStart() throws Exception
     {
         _bayeux = newBayeuxServer();
+        if (options != null)
+        {
+            for (Map.Entry<String, String> entry : options.entrySet())
+            {
+                _bayeux.setOption(entry.getKey(), entry.getValue());
+            }
+        }
         _bayeux.start();
     }
 
