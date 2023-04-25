@@ -17,7 +17,7 @@ module org.cometd.server.servlet {
     exports org.cometd.server.handler;
     exports org.cometd.server.handler.transport;
 
-    requires org.eclipse.jetty.server;
+    requires transitive org.eclipse.jetty.server;
     requires org.cometd.server;
     requires org.slf4j;
 
@@ -25,5 +25,4 @@ module org.cometd.server.servlet {
     requires static org.eclipse.jetty.jmx;
     // Only required when using Jetty's JSON.
     requires static org.eclipse.jetty.util.ajax;
-
 }

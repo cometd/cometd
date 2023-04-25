@@ -30,6 +30,7 @@ import org.cometd.common.JSONContext;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.JSONContextServer;
 import org.cometd.server.http.AbstractHttpTransport;
+import org.cometd.server.http.TransportContext;
 import org.cometd.server.spi.CometDInput;
 import org.cometd.server.spi.CometDOutput;
 import org.cometd.server.spi.CometDRequest;
@@ -79,7 +80,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport
             }
         };
 
-        Context context = new ContextInHandler(request, response, bayeuxContext);
+        TransportContext context = new TransportContext(bayeuxContext, request, response);
 
         Charset charset = Charset.forName(encoding);
         AbstractReader reader = "UTF-8".equals(charset.name()) ?
@@ -89,7 +90,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport
         input.demand(reader::nextRead);
     }
 
-    protected void process(String json, Context context, Promise<Void> promise) {
+    protected void process(String json, TransportContext context, Promise<Void> promise) {
         try {
             try {
                 ServerMessage.Mutable[] messages = parseMessages(json);
@@ -106,7 +107,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport
         }
     }
 
-    private void process(List<ServerMessage.Mutable> messages, Context context, Promise<Void> promise) {
+    private void process(List<ServerMessage.Mutable> messages, TransportContext context, Promise<Void> promise) {
         try {
             if (messages != null) {
                 processMessages(context, messages, promise);
@@ -119,7 +120,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport
     }
 
     @Override
-    protected HttpScheduler suspend(Context context, Promise<Void> promise, ServerMessage.Mutable message, long timeout) {
+    protected HttpScheduler suspend(TransportContext context, Promise<Void> promise, ServerMessage.Mutable message, long timeout) {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("Suspended {}", message);
         }
@@ -128,12 +129,12 @@ public class AsyncJSONTransport extends AbstractHttpTransport
         return context.scheduler();
     }
 
-    protected HttpScheduler newHttpScheduler(Context context, Promise<Void> promise, ServerMessage.Mutable reply, long timeout) {
+    protected HttpScheduler newHttpScheduler(TransportContext context, Promise<Void> promise, ServerMessage.Mutable reply, long timeout) {
         return new AsyncLongPollScheduler(context, promise, reply, timeout);
     }
 
     @Override
-    protected void write(Context context, List<ServerMessage> messages, Promise<Void> promise) {
+    protected void write(TransportContext context, List<ServerMessage> messages, Promise<Void> promise) {
         CometDResponse response = context.response();
         try {
             // Always write asynchronously
@@ -151,18 +152,18 @@ public class AsyncJSONTransport extends AbstractHttpTransport
         }
     }
 
-    protected void writeComplete(Context context, List<ServerMessage> messages) {
+    protected void writeComplete(TransportContext context, List<ServerMessage> messages) {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("Messages/replies {}/{} written for {}", messages.size(), context.replies().size(), context.session());
         }
     }
 
     protected abstract class AbstractReader {
-        private final Context context;
+        private final TransportContext context;
         private final Promise<Void> promise;
         private int total;
 
-        protected AbstractReader(Context context, Promise<Void> promise) {
+        protected AbstractReader(TransportContext context, Promise<Void> promise) {
             this.context = context;
             this.promise = promise;
         }
@@ -227,7 +228,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport
     protected class UTF8Reader extends AbstractReader {
         private final JSONContext.AsyncParser parser;
 
-        protected UTF8Reader(Context context, Promise<Void> promise) {
+        protected UTF8Reader(TransportContext context, Promise<Void> promise) {
             super(context, promise);
             JSONContextServer jsonContext = getJSONContextServer();
             JSONContext.AsyncParser asyncParser = jsonContext.newAsyncParser();
@@ -254,7 +255,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport
         private final Charset charset;
         private int count;
 
-        public CharsetReader(Context context, Promise<Void> promise, Charset charset) {
+        public CharsetReader(TransportContext context, Promise<Void> promise, Charset charset) {
             super(context, promise);
             this.charset = charset;
         }
@@ -288,7 +289,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport
     }
 
     protected class Writer {
-        private final Context context;
+        private final TransportContext context;
         private final List<ServerMessage> messages;
         private final Promise<Void> promise;
         private int messageIndex;
@@ -297,7 +298,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport
         private State state = State.BEGIN;
         private final SerializedInvoker invoker = new SerializedInvoker();
 
-        protected Writer(Context context, List<ServerMessage> messages, Promise<Void> p) {
+        protected Writer(TransportContext context, List<ServerMessage> messages, Promise<Void> p) {
             this.context = context;
             this.messages = messages;
             this.promise = new Promise<>() {
@@ -466,7 +467,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport
 
     private class AsyncLongPollScheduler extends LongPollScheduler
     {
-        private AsyncLongPollScheduler(Context context, Promise<Void> promise, ServerMessage.Mutable reply, long timeout) {
+        private AsyncLongPollScheduler(TransportContext context, Promise<Void> promise, ServerMessage.Mutable reply, long timeout) {
             super(context, promise, reply, timeout);
         }
 

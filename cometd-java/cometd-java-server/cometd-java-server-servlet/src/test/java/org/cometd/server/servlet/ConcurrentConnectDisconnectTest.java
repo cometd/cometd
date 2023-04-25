@@ -26,6 +26,7 @@ import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.common.JettyJSONContextClient;
+import org.cometd.server.http.TransportContext;
 import org.cometd.server.servlet.transport.JSONTransport;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.FutureResponseListener;
@@ -143,7 +144,7 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
         CountDownLatch suspendLatch = new CountDownLatch(1);
         JSONTransport transport = new JSONTransport(bayeux) {
             @Override
-            protected void handleMessage(Context context, ServerMessage.Mutable message, Promise<ServerMessage.Mutable> promise) {
+            protected void handleMessage(TransportContext context, ServerMessage.Mutable message, Promise<ServerMessage.Mutable> promise) {
                 super.handleMessage(context, message, Promise.from(reply -> {
                     promise.succeed(reply);
                     if (Channel.META_CONNECT.equals(message.getChannel())) {
@@ -156,7 +157,7 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
             }
 
             @Override
-            protected HttpScheduler suspend(Context context, Promise<Void> promise, ServerMessage.Mutable message, long timeout) {
+            protected HttpScheduler suspend(TransportContext context, Promise<Void> promise, ServerMessage.Mutable message, long timeout) {
                 suspendLatch.countDown();
                 return super.suspend(context, promise, message, timeout);
             }

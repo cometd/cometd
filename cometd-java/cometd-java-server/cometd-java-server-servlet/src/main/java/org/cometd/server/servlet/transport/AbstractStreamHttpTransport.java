@@ -25,6 +25,7 @@ import jakarta.servlet.AsyncContext;
 import jakarta.servlet.AsyncEvent;
 import jakarta.servlet.AsyncListener;
 import jakarta.servlet.http.HttpServletRequest;
+import org.cometd.server.http.TransportContext;
 import org.cometd.server.spi.CometDOutput;
 import org.cometd.server.spi.CometDRequest;
 import org.cometd.server.spi.CometDResponse;
@@ -71,9 +72,9 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport
             }
         };
 
-        Context context = (Context)request.getAttribute(CONTEXT_ATTRIBUTE);
+        TransportContext context = (TransportContext)request.getAttribute(CONTEXT_ATTRIBUTE);
         if (context == null) {
-            process(new ContextInServlet(request, response, bayeuxContext), promise);
+            process(new TransportContext(bayeuxContext, request, response), promise);
         } else {
             ServerMessage.Mutable message = context.scheduler().getMessage();
             context.session().notifyResumed(message, (Boolean)request.getAttribute(HEARTBEAT_TIMEOUT_ATTRIBUTE));
@@ -81,7 +82,7 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport
         }
     }
 
-    protected void process(Context context, Promise<Void> promise) {
+    protected void process(TransportContext context, Promise<Void> promise) {
         CometDRequest request = context.request();
         try {
             try {
@@ -104,7 +105,7 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport
     }
 
     @Override
-    protected HttpScheduler suspend(Context context, Promise<Void> promise, ServerMessage.Mutable message, long timeout) {
+    protected HttpScheduler suspend(TransportContext context, Promise<Void> promise, ServerMessage.Mutable message, long timeout) {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("Suspended {}", message);
         }
@@ -115,7 +116,7 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport
         return context.scheduler();
     }
 
-    protected HttpScheduler newHttpScheduler(Context context, Promise<Void> promise, ServerMessage.Mutable message, long timeout) {
+    protected HttpScheduler newHttpScheduler(TransportContext context, Promise<Void> promise, ServerMessage.Mutable message, long timeout) {
         return new DispatchingLongPollScheduler(context, promise, message, timeout);
     }
 
@@ -144,7 +145,7 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport
     }
 
     @Override
-    protected void write(Context context, List<ServerMessage> messages, Promise<Void> promise) {
+    protected void write(TransportContext context, List<ServerMessage> messages, Promise<Void> promise) {
         CometDRequest request = context.request();
         CometDResponse response = context.response();
         try {
@@ -210,7 +211,7 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport
         }
     }
 
-    protected void writeMessage(Context context, CometDOutput output, ServerMessage message) throws IOException {
+    protected void writeMessage(TransportContext context, CometDOutput output, ServerMessage message) throws IOException {
         writeMessage(context.response(), output, context.session(), message);
     }
 
@@ -222,11 +223,11 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport
 
     protected abstract void endWrite(CometDResponse response, CometDOutput output) throws IOException;
 
-    protected void writeComplete(Context context, List<ServerMessage> messages) {
+    protected void writeComplete(TransportContext context, List<ServerMessage> messages) {
     }
 
     protected class DispatchingLongPollScheduler extends LongPollScheduler implements AsyncListener {
-        public DispatchingLongPollScheduler(Context context, Promise<Void> promise, ServerMessage.Mutable message, long timeout) {
+        public DispatchingLongPollScheduler(TransportContext context, Promise<Void> promise, ServerMessage.Mutable message, long timeout) {
             super(context, promise, message, timeout);
             AsyncContext asyncContext = getAsyncContext(context.request());
             if (asyncContext != null) {

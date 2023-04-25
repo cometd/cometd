@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.cometd.server.handler.transport;
+package org.cometd.server.http;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,119 +21,105 @@ import java.util.List;
 import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.ServerSessionImpl;
-import org.cometd.server.http.AbstractHttpTransport;
 import org.cometd.server.spi.CometDRequest;
 import org.cometd.server.spi.CometDResponse;
 
-class ContextInHandler implements AbstractHttpTransport.Context {
-    private final List<ServerMessage.Mutable> replies = new ArrayList<>();
-    private final CometDRequest request;
-    private final CometDResponse response;
+public class TransportContext
+{
     private final BayeuxContext bayeuxContext;
+    private final CometDRequest cometDRequest;
+    private final CometDResponse cometDResponse;
+    private final List<ServerMessage.Mutable> replies = new ArrayList<>();
+
     private List<ServerMessage.Mutable> messages;
-    private ServerSessionImpl session;
-    private boolean sendQueue;
+    private long metaConnectCycle;
     private boolean scheduleExpiration;
     private AbstractHttpTransport.HttpScheduler scheduler;
-    private long metaConnectCycle;
+    private boolean sendQueue;
+    private ServerSessionImpl session;
 
-    public ContextInHandler(CometDRequest request, CometDResponse response, BayeuxContext bayeuxContext) {
-        this.request = request;
-        this.response = response;
+    public TransportContext(BayeuxContext bayeuxContext, CometDRequest cometDRequest, CometDResponse cometDResponse)
+    {
         this.bayeuxContext = bayeuxContext;
+        this.cometDRequest = cometDRequest;
+        this.cometDResponse = cometDResponse;
     }
 
-    @Override
     public BayeuxContext bayeuxContext()
     {
         return bayeuxContext;
     }
 
-    @Override
+    public CometDRequest request()
+    {
+        return cometDRequest;
+    }
+
+    public CometDResponse response()
+    {
+        return cometDResponse;
+    }
+
     public List<ServerMessage.Mutable> messages()
     {
         return messages;
     }
 
-    @Override
     public void messages(List<ServerMessage.Mutable> messages)
     {
         this.messages = messages;
     }
 
-    @Override
     public long metaConnectCycle()
     {
         return metaConnectCycle;
     }
 
-    @Override
     public void metaConnectCycle(long l)
     {
         this.metaConnectCycle = l;
     }
 
-    @Override
     public List<ServerMessage.Mutable> replies()
     {
         return replies;
     }
 
-    @Override
-    public CometDRequest request()
-    {
-        return request;
-    }
-
-    @Override
-    public CometDResponse response()
-    {
-        return response;
-    }
-
-    @Override
     public void scheduleExpiration(boolean b)
     {
         this.scheduleExpiration = b;
     }
 
-    @Override
     public boolean scheduleExpiration()
     {
         return scheduleExpiration;
     }
 
-    @Override
     public AbstractHttpTransport.HttpScheduler scheduler()
     {
         return scheduler;
     }
 
-    @Override
     public void scheduler(AbstractHttpTransport.HttpScheduler httpScheduler)
     {
         this.scheduler = httpScheduler;
     }
 
-    @Override
     public void sendQueue(boolean b)
     {
         this.sendQueue = b;
     }
 
-    @Override
     public boolean sendQueue()
     {
         return sendQueue;
     }
 
-    @Override
     public ServerSessionImpl session()
     {
         return session;
     }
 
-    @Override
     public void session(ServerSessionImpl session)
     {
         this.session = session;

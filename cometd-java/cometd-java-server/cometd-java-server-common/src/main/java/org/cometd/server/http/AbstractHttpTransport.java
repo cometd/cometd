@@ -121,11 +121,11 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
 
     public abstract void handle(BayeuxContext bayeuxContext, CometDRequest request, CometDResponse response, Promise<Void> promise) throws IOException, CometDException;
 
-    protected abstract HttpScheduler suspend(Context context, Promise<Void> promise, ServerMessage.Mutable message, long timeout);
+    protected abstract HttpScheduler suspend(TransportContext context, Promise<Void> promise, ServerMessage.Mutable message, long timeout);
 
-    protected abstract void write(Context context, List<ServerMessage> messages, Promise<Void> promise);
+    protected abstract void write(TransportContext context, List<ServerMessage> messages, Promise<Void> promise);
 
-    protected void processMessages(Context context, List<ServerMessage.Mutable> messages, Promise<Void> promise) {
+    protected void processMessages(TransportContext context, List<ServerMessage.Mutable> messages, Promise<Void> promise) {
         if (messages.isEmpty()) {
             promise.fail(new IOException("protocol violation"));
         } else {
@@ -155,7 +155,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         }
     }
 
-    private void processMessage(Context context, ServerMessageImpl message, Promise<Void> promise) {
+    private void processMessage(TransportContext context, ServerMessageImpl message, Promise<Void> promise) {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("Processing {}", message);
         }
@@ -220,7 +220,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         return null;
     }
 
-    private void processMetaHandshake(Context context, ServerMessage.Mutable message, Promise<Void> promise) {
+    private void processMetaHandshake(TransportContext context, ServerMessage.Mutable message, Promise<Void> promise) {
         handleMessage(context, message, Promise.from(reply -> {
             ServerSessionImpl session = context.session();
             if (reply.isSuccessful()) {
@@ -252,7 +252,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         }, promise::fail));
     }
 
-    private void processMetaConnect(Context context, ServerMessage.Mutable message, boolean canSuspend, Promise<Void> promise) {
+    private void processMetaConnect(TransportContext context, ServerMessage.Mutable message, boolean canSuspend, Promise<Void> promise) {
         ServerSessionImpl session = context.session();
         if (session != null) {
             // Cancel the previous scheduler to cancel any prior waiting /meta/connect.
@@ -310,7 +310,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         }, x -> scheduleExpirationAndFail(session, context.metaConnectCycle(), promise, x)));
     }
 
-    private void processMessage1(Context context, ServerMessageImpl message, Promise<Void> promise) {
+    private void processMessage1(TransportContext context, ServerMessageImpl message, Promise<Void> promise) {
         handleMessage(context, message, Promise.from(y -> {
             ServerSessionImpl session = context.session();
             processReply(session, message.getAssociated(), Promise.from(reply -> {
@@ -331,7 +331,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         return "HTTP/2.0".equals(request.getProtocol());
     }
 
-    protected void flush(Context context, Promise<Void> promise) {
+    protected void flush(TransportContext context, Promise<Void> promise) {
         List<ServerMessage> messages = List.of();
         ServerSessionImpl session = context.session();
         if (context.sendQueue() && session != null) {
@@ -343,7 +343,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         write(context, messages, promise);
     }
 
-    protected void resume(Context context, ServerMessage.Mutable message, Promise<Void> promise) {
+    protected void resume(TransportContext context, ServerMessage.Mutable message, Promise<Void> promise) {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("Resumed {}", message);
         }
@@ -377,11 +377,11 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         promise.fail(x);
     }
 
-    protected String findBrowserId(Context context) {
+    protected String findBrowserId(TransportContext context) {
         return context.bayeuxContext().getCookie(_browserCookieName);
     }
 
-    protected String setBrowserId(Context context) {
+    protected String setBrowserId(TransportContext context) {
         StringBuilder builder = new StringBuilder();
         while (builder.length() < 16) {
             builder.append(Long.toString(getBayeux().randomLong(), 36));
@@ -475,7 +475,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         }
     }
 
-    protected void handleMessage(Context context, ServerMessage.Mutable message, Promise<ServerMessage.Mutable> promise) {
+    protected void handleMessage(TransportContext context, ServerMessage.Mutable message, Promise<ServerMessage.Mutable> promise) {
         getBayeux().handle(context.session(), message, promise);
     }
 
@@ -530,11 +530,11 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
 
     protected abstract class LongPollScheduler implements Runnable, HttpScheduler {
         private final AtomicReference<Task> task = new AtomicReference<>();
-        private final Context context;
+        private final TransportContext context;
         private final Promise<Void> promise;
         private final ServerMessage.Mutable message;
 
-        protected LongPollScheduler(Context context, Promise<Void> promise, ServerMessage.Mutable message, long timeout) {
+        protected LongPollScheduler(TransportContext context, Promise<Void> promise, ServerMessage.Mutable message, long timeout) {
             this.context = context;
             this.promise = promise;
             this.message = message;
@@ -542,7 +542,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
             context.metaConnectCycle(newMetaConnectCycle());
         }
 
-        public Context getContext() {
+        public TransportContext getContext() {
             return context;
         }
 
@@ -624,40 +624,5 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         public String toString() {
             return String.format("%s@%x[cycle=%d]", getClass().getSimpleName(), hashCode(), getMetaConnectCycle());
         }
-    }
-
-    // TODO make this back to a top-level class in SPI
-    public interface Context {
-        BayeuxContext bayeuxContext();
-
-        List<ServerMessage.Mutable> messages();
-
-        void messages(List<ServerMessage.Mutable> messages);
-
-        long metaConnectCycle();
-
-        void metaConnectCycle(long l);
-
-        List<ServerMessage.Mutable> replies();
-
-        CometDRequest request();
-
-        CometDResponse response();
-
-        void scheduleExpiration(boolean b);
-
-        boolean scheduleExpiration();
-
-        AbstractHttpTransport.HttpScheduler scheduler();
-
-        void scheduler(HttpScheduler httpScheduler);
-
-        void sendQueue(boolean b);
-
-        boolean sendQueue();
-
-        ServerSessionImpl session();
-
-        void session(ServerSessionImpl session);
     }
 }
