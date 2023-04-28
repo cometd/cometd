@@ -28,8 +28,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.cometd.server.spi.CometDCookie;
-import org.cometd.server.spi.CometDException;
 import org.cometd.server.spi.CometDRequest;
 import org.cometd.server.spi.CometDResponse;
 import org.cometd.bayeux.Channel;
@@ -119,7 +117,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
 
     public abstract boolean accept(CometDRequest request);
 
-    public abstract void handle(BayeuxContext bayeuxContext, CometDRequest request, CometDResponse response, Promise<Void> promise) throws IOException, CometDException;
+    public abstract void handle(BayeuxContext bayeuxContext, CometDRequest request, CometDResponse response, Promise<Void> promise) throws IOException;
 
     protected abstract HttpScheduler suspend(TransportContext context, Promise<Void> promise, ServerMessage.Mutable message, long timeout);
 
@@ -209,11 +207,11 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
     }
 
     protected Collection<ServerSessionImpl> findCurrentSessions(CometDRequest request) {
-        CometDCookie[] cookies = request.getCookies();
+        List<CometDRequest.CometDCookie> cookies = request.getCookies();
         if (cookies != null) {
-            for (CometDCookie cookie : cookies) {
-                if (_browserCookieName.equals(cookie.getName())) {
-                    return _sessions.get(cookie.getValue());
+            for (CometDRequest.CometDCookie cookie : cookies) {
+                if (_browserCookieName.equals(cookie.name())) {
+                    return _sessions.get(cookie.value());
                 }
             }
         }

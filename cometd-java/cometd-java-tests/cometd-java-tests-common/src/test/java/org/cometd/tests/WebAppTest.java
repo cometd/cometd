@@ -123,7 +123,7 @@ public class WebAppTest {
         copyWebAppDependency(org.eclipse.jetty.websocket.core.client.WebSocketCoreClient.class, webINF);
         copyWebAppDependency(org.eclipse.jetty.websocket.core.Configuration.class, webINF);
         copyWebAppDependency(org.cometd.server.servlet.CometDServlet.class, webINF);
-        copyWebAppDependency(org.cometd.server.spi.CometDException.class, webINF);
+        copyWebAppDependency(org.cometd.server.spi.CometDRequest.class, webINF);
         copyWebAppDependency(org.cometd.bayeux.server.BayeuxContext.class, webINF);
         copyWebAppDependency(org.cometd.bayeux.Promise.class, webINF);
         copyWebAppDependency(org.cometd.common.JSONContext.class, webINF);

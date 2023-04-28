@@ -17,10 +17,11 @@ package org.cometd.server.servlet;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.List;
 
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
-import org.cometd.server.spi.CometDCookie;
 import org.cometd.server.spi.CometDInput;
 import org.cometd.server.spi.CometDRequest;
 
@@ -48,14 +49,14 @@ class ServletCometDRequest implements CometDRequest {
     }
 
     @Override
-    public CometDCookie[] getCookies() {
+    public List<CometDCookie> getCookies() {
         Cookie[] cookies = request.getCookies();
         if (cookies == null) {
             return null;
         }
-        CometDCookie[] result = new CometDCookie[cookies.length];
-        for (int i = 0; i < cookies.length; i++) {
-            result[i] = new CometDCookie(cookies[i].getName(), cookies[i].getValue());
+        List<CometDCookie> result = new ArrayList<>();
+        for (Cookie cookie : cookies) {
+            result.add(new CometDCookie(cookie.getName(), cookie.getValue()));
         }
         return result;
     }

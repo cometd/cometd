@@ -20,7 +20,7 @@ import java.io.Reader;
 
 public interface CometDInput
 {
-    Reader asReader();
+    Reader asReader(); // TODO remove API? This requires abandoning blocking transports
 
     void demand(Runnable r);
 

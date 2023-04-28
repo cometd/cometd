@@ -16,16 +16,17 @@
 package org.cometd.server.spi;
 
 import java.io.UnsupportedEncodingException;
+import java.util.List;
 
 public interface CometDRequest
 {
     // HTTP metadata
-    String getContentType();
-    String getCharacterEncoding();
-    void setCharacterEncoding(String encoding) throws UnsupportedEncodingException; // TODO remove API?
-    CometDCookie[] getCookies();
-    String getParameter(String name);
-    String[] getParameterValues(String name);
+    String getContentType(); // TODO only needed by blocking transport
+    String getCharacterEncoding(); // TODO change API so that it sets the encoding to UTF8 when none is present?
+    void setCharacterEncoding(String encoding) throws UnsupportedEncodingException; // TODO only needed to set the encoding to UTF8 when getCharacterEncoding() returns null
+    List<CometDCookie> getCookies();
+    String getParameter(String name); // TODO only needed by blocking transport
+    String[] getParameterValues(String name); // TODO only needed by blocking transport
     String getMethod();
     String getProtocol();
 
@@ -33,7 +34,7 @@ public interface CometDRequest
     CometDInput getInput();
 
     // network/transport layer metadata
-    boolean isSecure();
+    boolean isSecure(); // TODO identical to BayeuxContext.isSecure() - remove?
 
     // in-memory data
     Object getAttribute(String name);
@@ -41,4 +42,7 @@ public interface CometDRequest
 
     // underlying impl
     <T> T unwrap(Class<T> clazz);
+
+    record CometDCookie(String name, String value) {
+    }
 }

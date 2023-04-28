@@ -23,6 +23,7 @@ import org.cometd.server.spi.CometDResponse;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.BayeuxServerImpl;
 
+// TODO remove blocking transports?
 public class JSONTransport extends AbstractStreamHttpTransport {
     public final static String PREFIX = "long-polling.json";
     public final static String NAME = "long-polling";

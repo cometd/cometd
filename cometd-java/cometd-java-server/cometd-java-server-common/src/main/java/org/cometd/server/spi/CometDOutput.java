@@ -20,6 +20,8 @@ import java.util.concurrent.ExecutionException;
 
 import org.cometd.bayeux.Promise;
 
+// TODO simplify API?
+//  abandoning blocking transports would get rid of blocking write()
 public interface CometDOutput {
     default void write(char c) throws IOException {
         if ((c & 0xFF) != c)
@@ -57,5 +59,5 @@ public interface CometDOutput {
 
     void write(byte[] jsonBytes, Promise<Void> promise);
 
-    void close() throws IOException;
+    void close() throws IOException; // TODO close() is never called by the non-blocking transports, so there is no way to know when they are finished (ie: when to set the last flag to true?)
 }

@@ -41,6 +41,7 @@ import org.cometd.common.JSONContext;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.JSONContextServer;
 import org.cometd.server.http.AbstractHttpTransport;
+import org.eclipse.jetty.util.thread.SerializedInvoker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

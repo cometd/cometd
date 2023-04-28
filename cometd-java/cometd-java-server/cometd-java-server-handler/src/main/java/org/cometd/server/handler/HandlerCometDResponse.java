@@ -20,25 +20,22 @@ import org.cometd.server.spi.CometDResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.Response;
 
-class HandlerCometDResponse implements CometDResponse
-{
+class HandlerCometDResponse implements CometDResponse {
     private final Response response;
     private CometDOutput cometDOutput;
 
-    public HandlerCometDResponse(Response response)
-    {
+    HandlerCometDResponse(Response response) {
         this.response = response;
     }
 
     @Override
-    public void addHeader(String name, String value)
-    {
+    public void addHeader(String name, String value) {
         response.getHeaders().add(name, value);
     }
 
     @Override
-    public String getCharacterEncoding()
-    {
+    public String getCharacterEncoding() {
+        // TODO improve impl or change API
         String[] split = response.getHeaders().get(HttpHeader.CONTENT_TYPE).split(";");
         if (split.length == 2)
             return split[1].split("=")[1];
@@ -46,8 +43,7 @@ class HandlerCometDResponse implements CometDResponse
     }
 
     @Override
-    public CometDOutput getOutput()
-    {
+    public CometDOutput getOutput() {
         if (cometDOutput == null) {
             cometDOutput = new HandlerCometDOutput(response);
         }

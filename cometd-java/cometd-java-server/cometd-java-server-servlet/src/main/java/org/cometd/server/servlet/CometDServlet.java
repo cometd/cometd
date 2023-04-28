@@ -25,10 +25,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.cometd.server.spi.CometDException;
-import org.cometd.server.spi.CometDRequest;
-import org.cometd.server.spi.CometDResponse;
-import org.cometd.server.spi.HttpException;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -36,6 +32,9 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerSessionImpl;
 import org.cometd.server.http.AbstractHttpTransport;
+import org.cometd.server.spi.CometDRequest;
+import org.cometd.server.spi.CometDResponse;
+import org.cometd.server.spi.HttpException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -130,11 +129,7 @@ public class CometDServlet extends HttpServlet {
         if (transport == null) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Unknown Bayeux Transport");
         } else {
-            try {
-                transport.handle(bayeuxContext, cometDRequest, cometDResponse, promise);
-            } catch (CometDException e) {
-                throw new ServletException(e);
-            }
+            transport.handle(bayeuxContext, cometDRequest, cometDResponse, promise);
         }
     }
 

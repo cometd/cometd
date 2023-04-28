@@ -26,10 +26,12 @@ import jakarta.servlet.ReadListener;
 import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import org.cometd.server.spi.CometDInput;
+import org.eclipse.jetty.util.thread.SerializedInvoker;
 
 class ServletCometDInput implements CometDInput, ReadListener {
     private final ServletInputStream inputStream;
     private final HttpServletRequest request;
+    private final SerializedInvoker serializedInvoker = new SerializedInvoker();
     private final AtomicReference<NextRead> nextReadRef = new AtomicReference<>();
     private volatile Throwable error;
 
@@ -40,8 +42,7 @@ class ServletCometDInput implements CometDInput, ReadListener {
     }
 
     @Override
-    public Reader asReader()
-    {
+    public Reader asReader() {
         Charset charset = Charset.forName(request.getCharacterEncoding());
         return new InputStreamReader(new InputStream() {
             @Override
@@ -59,7 +60,7 @@ class ServletCometDInput implements CometDInput, ReadListener {
     @Override
     public void demand(Runnable r) {
         if (error != null || inputStream.isFinished() || inputStream.isReady()) {
-            r.run();
+            serializedInvoker.run(r);
         } else {
             nextReadRef.set(new NextRead(r));
         }

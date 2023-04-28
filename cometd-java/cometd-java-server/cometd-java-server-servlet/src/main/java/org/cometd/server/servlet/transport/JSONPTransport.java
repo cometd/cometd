@@ -24,6 +24,7 @@ import org.cometd.server.spi.CometDResponse;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.BayeuxServerImpl;
 
+// TODO remove blocking transports?
 public class JSONPTransport extends AbstractStreamHttpTransport {
     public final static String PREFIX = "long-polling.jsonp";
     public final static String NAME = "callback-polling";

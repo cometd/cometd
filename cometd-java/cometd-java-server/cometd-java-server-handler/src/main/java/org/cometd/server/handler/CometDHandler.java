@@ -45,19 +45,15 @@ public class CometDHandler extends Handler.Abstract {
     private BayeuxServerImpl _bayeux;
     private Map<String, String> options;
 
-    public void setOptions(Map<String, String> options)
-    {
+    public void setOptions(Map<String, String> options) {
         this.options = options;
     }
 
     @Override
-    protected void doStart() throws Exception
-    {
+    protected void doStart() throws Exception {
         _bayeux = newBayeuxServer();
-        if (options != null)
-        {
-            for (Map.Entry<String, String> entry : options.entrySet())
-            {
+        if (options != null) {
+            for (Map.Entry<String, String> entry : options.entrySet()) {
                 _bayeux.setOption(entry.getKey(), entry.getValue());
             }
         }
@@ -73,8 +69,7 @@ public class CometDHandler extends Handler.Abstract {
     }
 
     @Override
-    public boolean handle(Request request, Response response, Callback callback) throws Exception
-    {
+    public boolean handle(Request request, Response response, Callback callback) throws Exception {
         request.getContext().setAttribute(BayeuxServer.ATTRIBUTE, _bayeux);
         if ("OPTIONS".equals(request.getMethod())) {
             serviceOptions(request, response, callback);

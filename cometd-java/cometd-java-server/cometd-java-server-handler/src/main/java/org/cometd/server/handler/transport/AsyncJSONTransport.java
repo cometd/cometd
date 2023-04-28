@@ -36,6 +36,7 @@ import org.cometd.server.spi.CometDOutput;
 import org.cometd.server.spi.CometDRequest;
 import org.cometd.server.spi.CometDResponse;
 import org.cometd.server.spi.HttpException;
+import org.eclipse.jetty.util.thread.SerializedInvoker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
