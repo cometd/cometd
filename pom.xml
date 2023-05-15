@@ -539,7 +539,7 @@
       <dependency>
         <groupId>com.google.inject</groupId>
         <artifactId>guice</artifactId>
-        <version>5.1.0</version>
+        <version>7.0.0</version>
         <scope>test</scope>
       </dependency>
       <dependency>
