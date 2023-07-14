@@ -78,7 +78,8 @@ public abstract class OortTest {
         connector.setPort(port);
         server.addConnector(connector);
 
-        ServletContextHandler context = new ServletContextHandler(server, "/", ServletContextHandler.SESSIONS);
+        ServletContextHandler context = new ServletContextHandler("/", ServletContextHandler.SESSIONS);
+        server.setHandler(context);
 
         if (serverTransport.equals(WebSocketTransport.class.getName())) {
             JakartaWebSocketServletContainerInitializer.configure(context, null);

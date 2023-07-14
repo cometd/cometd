@@ -56,7 +56,8 @@ public abstract class AbstractBayeuxServerTest {
         server.setHandler(handlers);
 
         String contextPath = "/cometd";
-        context = new ServletContextHandler(handlers, contextPath, ServletContextHandler.SESSIONS);
+        context = new ServletContextHandler(contextPath, ServletContextHandler.SESSIONS);
+        handlers.addHandler(context);
 
         // Setup comet servlet
         cometdServlet = new CometDServlet();

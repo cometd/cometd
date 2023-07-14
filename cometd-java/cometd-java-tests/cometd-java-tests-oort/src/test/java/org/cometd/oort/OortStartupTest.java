@@ -83,7 +83,8 @@ public class OortStartupTest {
         connector.setPort(port1);
         server.addConnector(connector);
 
-        ServletContextHandler context = new ServletContextHandler(server, "/");
+        ServletContextHandler context = new ServletContextHandler("/");
+        server.setHandler(context);
         contexts.put(port1, context);
 
         JakartaWebSocketServletContainerInitializer.configure(context, null);

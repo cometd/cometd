@@ -209,7 +209,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee10.websocket</groupId>
-      <artifactId>jetty-ee10-websocket-jetty-api</artifactId>
+      <artifactId>jetty-ee10-websocket-jakarta-client</artifactId>
       <version>${jetty-version}</version>
     </dependency>
     <dependency>

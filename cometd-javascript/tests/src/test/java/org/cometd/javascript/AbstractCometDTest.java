@@ -81,7 +81,8 @@ public abstract class AbstractCometDTest {
         server.setHandler(handlers);
 
         String contextPath = "/cometd";
-        context = new ServletContextHandler(handlers, contextPath);
+        context = new ServletContextHandler(contextPath);
+        handlers.addHandler(context);
 
         JakartaWebSocketServletContainerInitializer.configure(context, null);
 

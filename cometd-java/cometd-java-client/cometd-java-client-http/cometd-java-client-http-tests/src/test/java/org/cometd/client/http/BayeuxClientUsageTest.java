@@ -55,7 +55,8 @@ public class BayeuxClientUsageTest extends ClientServerTest {
         ServerConnector proxyConnector = new ServerConnector(proxy);
         proxy.addConnector(proxyConnector);
 
-        ServletContextHandler context = new ServletContextHandler(proxy, "/", ServletContextHandler.SESSIONS);
+        ServletContextHandler context = new ServletContextHandler("/", ServletContextHandler.SESSIONS);
+        proxy.setHandler(context);
         ServletHolder proxyServlet = new ServletHolder(ProxyServlet.class);
         context.addServlet(proxyServlet, "/*");
 

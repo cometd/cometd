@@ -33,7 +33,7 @@ import org.cometd.server.websocket.jakarta.WebSocketTransport;
 import org.cometd.server.websocket.jetty.JettyWebSocketTransport;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
-import org.eclipse.jetty.ee10.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.ee10.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.server.Server;
@@ -61,7 +61,8 @@ public class SpringFrameworkWebSocketConfigurationTest {
         server.addConnector(connector);
 
         String contextPath = "/ctx";
-        context = new ServletContextHandler(server, contextPath, true, false);
+        context = new ServletContextHandler(contextPath, true, false);
+        server.setHandler(context);
 
         if (WebSocketTransport.class.equals(wsTransportClass)) {
             JakartaWebSocketServletContainerInitializer.configure(context, null);

@@ -16,7 +16,7 @@
 package org.cometd.javascript;
 
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.ee10.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
 
 public class WebSocketConnector {
     private final XMLHttpRequestClient xhrClient;

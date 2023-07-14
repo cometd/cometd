@@ -34,10 +34,10 @@ import org.cometd.server.BayeuxServerImpl;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.ee10.servlet.security.HashLoginService;
-import org.eclipse.jetty.ee10.servlet.security.authentication.BasicAuthenticator;
+import org.eclipse.jetty.security.HashLoginService;
+import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.util.resource.ResourceFactory;
-import org.eclipse.jetty.util.security.Constraint;
+import org.eclipse.jetty.security.Constraint;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -62,9 +62,7 @@ public class HandshakeWithAuthenticationTest extends ClientServerTest {
         ConstraintSecurityHandler security = new ConstraintSecurityHandler();
         context.setSecurityHandler(security);
 
-        Constraint constraint = new Constraint();
-        constraint.setAuthenticate(true);
-        constraint.setRoles(new String[]{role});
+        Constraint constraint = Constraint.from(role);
 
         ConstraintMapping mapping = new ConstraintMapping();
         mapping.setPathSpec(cometdServletPath + "/*");

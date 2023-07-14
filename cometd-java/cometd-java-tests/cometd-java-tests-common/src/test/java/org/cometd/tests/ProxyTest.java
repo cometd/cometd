@@ -95,7 +95,8 @@ public class ProxyTest {
     }
 
     private ServletContextHandler prepareContext(Server server, Map<String, String> initParams) {
-        ServletContextHandler context = new ServletContextHandler(server, "/");
+        ServletContextHandler context = new ServletContextHandler("/");
+        server.setHandler(context);
         // CometD servlet
         ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);
         cometdServletHolder.setInitParameter(BayeuxServerImpl.TRANSPORTS_OPTION, AsyncJSONTransport.class.getName());

@@ -63,7 +63,8 @@ public class OortDemo {
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         _server.setHandler(contexts);
 
-        ServletContextHandler context = new ServletContextHandler(contexts, "/", ServletContextHandler.SESSIONS);
+        ServletContextHandler context = new ServletContextHandler("/", ServletContextHandler.SESSIONS);
+        contexts.addHandler(context);
         context.addServlet("org.eclipse.jetty.servlet.DefaultServlet", "/");
 
         context.setBaseResource(ResourceFactory.of(_server).newResource(List.of(

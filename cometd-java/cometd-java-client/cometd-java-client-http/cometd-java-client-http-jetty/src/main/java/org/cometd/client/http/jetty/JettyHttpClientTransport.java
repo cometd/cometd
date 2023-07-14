@@ -127,7 +127,7 @@ public class JettyHttpClientTransport extends AbstractHttpClientTransport {
     }
 
     private void send(TransportListener listener, List<Message.Mutable> messages, URI cookieURI, Request request) {
-        request.listener(new Request.Listener.Adapter() {
+        request.listener(new Request.Listener() {
             @Override
             public void onHeaders(Request request) {
                 listener.onSending(messages);
