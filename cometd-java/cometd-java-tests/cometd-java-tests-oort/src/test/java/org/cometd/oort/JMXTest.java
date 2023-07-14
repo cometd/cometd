@@ -46,7 +46,8 @@ public class JMXTest {
         MBeanContainer mbeanContainer = new MBeanContainer(mbeanServer);
         server.addBean(mbeanContainer);
 
-        ServletContextHandler context = new ServletContextHandler(server, "/");
+        ServletContextHandler context = new ServletContextHandler("/");
+        server.setHandler(context);
 
         JakartaWebSocketServletContainerInitializer.configure(context, null);
 
@@ -111,7 +112,8 @@ public class JMXTest {
         ServerConnector connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        ServletContextHandler context = new ServletContextHandler(server, "/");
+        ServletContextHandler context = new ServletContextHandler("/");
+        server.setHandler(context);
 
         JakartaWebSocketServletContainerInitializer.configure(context, null);
 

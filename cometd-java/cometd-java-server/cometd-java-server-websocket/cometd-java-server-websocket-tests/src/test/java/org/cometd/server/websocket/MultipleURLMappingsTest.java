@@ -26,7 +26,7 @@ import org.cometd.client.transport.ClientTransport;
 import org.cometd.server.CometDServlet;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
-import org.eclipse.jetty.ee10.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.ee10.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.server.Server;
@@ -57,7 +57,8 @@ public class MultipleURLMappingsTest {
         connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        ServletContextHandler context = new ServletContextHandler(server, "/", true, false);
+        ServletContextHandler context = new ServletContextHandler("/", true, false);
+        server.setHandler(context);
 
         switch (wsTransportClass) {
             case JAKARTA_WS_TRANSPORT -> JakartaWebSocketServletContainerInitializer.configure(context, null);

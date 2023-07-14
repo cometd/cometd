@@ -49,7 +49,8 @@ public class SpringFrameworkConfigurationTest {
         server.addConnector(connector);
 
         String contextPath = "/cometd";
-        context = new ServletContextHandler(server, contextPath, ServletContextHandler.SESSIONS);
+        context = new ServletContextHandler(contextPath, ServletContextHandler.SESSIONS);
+        server.setHandler(context);
 
         // Setup CometDServlet.
         cometdServlet = new CometDServlet();

@@ -17,6 +17,7 @@ module org.cometd.client.websocket.okhttp {
     exports org.cometd.client.websocket.okhttp;
 
     requires okhttp3;
+    requires kotlin.stdlib;
     requires transitive org.cometd.client.websocket.common;
     requires org.slf4j;
 }

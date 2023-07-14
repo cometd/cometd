@@ -16,18 +16,20 @@
 package org.cometd.javascript;
 
 import java.net.URI;
+import java.nio.ByteBuffer;
+import java.util.concurrent.ExecutionException;
 
-import org.eclipse.jetty.ee10.websocket.api.Session;
-import org.eclipse.jetty.ee10.websocket.api.WebSocketListener;
-import org.eclipse.jetty.ee10.websocket.client.ClientUpgradeRequest;
-import org.eclipse.jetty.ee10.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.api.Callback;
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * <p>This class is the underlying implementation of JavaScript's {@code window.WebSocket} in {@code browser.js}.</p>
  */
-public class WebSocketConnection implements WebSocketListener {
+public class WebSocketConnection implements Session.Listener.AutoDemanding {
     private final Logger logger = LoggerFactory.getLogger(getClass().getName());
     private JavaScript javaScript;
     private Object jsWebSocket;
@@ -79,7 +81,7 @@ public class WebSocketConnection implements WebSocketListener {
                 if (logger.isDebugEnabled()) {
                     logger.debug("WebSocket sending data {}", data);
                 }
-                session.getRemote().sendString(data, null);
+                session.sendText(data, null);
             }
         } catch (Throwable x) {
             // This method is invoked from JavaScript, so we must fail asynchronously
@@ -97,13 +99,13 @@ public class WebSocketConnection implements WebSocketListener {
     public void close(int code, String reason) {
         Session session = this.session;
         if (session != null) {
-            session.close(code, reason);
+            session.close(code, reason, null);
             this.session = null;
         }
     }
 
     @Override
-    public void onWebSocketConnect(Session session) {
+    public void onWebSocketOpen(Session session) {
         this.session = session;
         if (logger.isDebugEnabled()) {
             logger.debug("WebSocket opened session {}", session);
@@ -115,7 +117,7 @@ public class WebSocketConnection implements WebSocketListener {
     }
 
     @Override
-    public void onWebSocketBinary(byte[] payload, int offset, int len) {
+    public void onWebSocketBinary(ByteBuffer payload, Callback callback) {
     }
 
     @Override

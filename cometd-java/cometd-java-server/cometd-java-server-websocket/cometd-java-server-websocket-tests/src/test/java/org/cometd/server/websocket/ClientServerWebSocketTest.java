@@ -35,7 +35,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
-import org.eclipse.jetty.ee10.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.ee10.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.server.Server;
@@ -108,7 +108,8 @@ public abstract class ClientServerWebSocketTest {
         connector.setPort(port);
         server.addConnector(connector);
 
-        context = new ServletContextHandler(server, "/", true, false);
+        context = new ServletContextHandler("/", true, false);
+        server.setHandler(context);
 
         switch (wsType) {
             case WEBSOCKET_JAKARTA, WEBSOCKET_OKHTTP ->

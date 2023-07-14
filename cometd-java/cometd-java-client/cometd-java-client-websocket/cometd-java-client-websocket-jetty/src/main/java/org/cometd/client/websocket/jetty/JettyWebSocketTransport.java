@@ -21,6 +21,7 @@ import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 import java.nio.channels.UnresolvedAddressException;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -40,12 +41,12 @@ import org.cometd.client.websocket.common.AbstractWebSocketTransport;
 import org.cometd.common.TransportException;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
-import org.eclipse.jetty.ee10.websocket.api.Session;
-import org.eclipse.jetty.ee10.websocket.api.WebSocketListener;
-import org.eclipse.jetty.ee10.websocket.api.exceptions.UpgradeException;
-import org.eclipse.jetty.ee10.websocket.client.ClientUpgradeRequest;
-import org.eclipse.jetty.ee10.websocket.client.JettyUpgradeListener;
-import org.eclipse.jetty.ee10.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.api.Callback;
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.exceptions.UpgradeException;
+import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
+import org.eclipse.jetty.websocket.client.JettyUpgradeListener;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -176,11 +177,11 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
         return result;
     }
 
-    public class JettyWebSocketDelegate extends Delegate implements WebSocketListener {
+    public class JettyWebSocketDelegate extends Delegate implements Session.Listener.AutoDemanding {
         private Session _session;
 
         @Override
-        public void onWebSocketConnect(Session session) {
+        public void onWebSocketOpen(Session session) {
             locked(() -> _session = session);
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Opened websocket session {}", session);
@@ -198,7 +199,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
         }
 
         @Override
-        public void onWebSocketBinary(byte[] payload, int offset, int len) {
+        public void onWebSocketBinary(ByteBuffer payload, Callback callback) {
         }
 
         @Override
@@ -216,7 +217,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
 
                 // Blocking async sends for the client to allow concurrent sends.
                 // TODO: do we need to block here?
-                session.getRemote().sendString(content);
+                session.sendText(content, null);
             } catch (Throwable x) {
                 fail(x, "Failure");
             }
@@ -233,7 +234,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("Closing websocket session {}", session);
                 }
-                session.close(NORMAL_CLOSE_CODE, reason);
+                session.close(NORMAL_CLOSE_CODE, reason, null);
             }
         }
 

@@ -36,7 +36,8 @@ public class AnnotationCometDServletTest {
         server.setHandler(handlers);
 
         String contextPath = "/cometd";
-        ServletContextHandler context = new ServletContextHandler(handlers, contextPath, ServletContextHandler.SESSIONS);
+        ServletContextHandler context = new ServletContextHandler(contextPath, ServletContextHandler.SESSIONS);
+        handlers.addHandler(context);
 
         AnnotationCometDServlet cometdServlet = new AnnotationCometDServlet();
         ServletHolder cometdServletHolder = new ServletHolder(cometdServlet);

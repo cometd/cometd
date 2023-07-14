@@ -79,7 +79,8 @@ public class Demo {
         server.addConnector(tlsConnector);
 
         // The context where the application is deployed.
-        ServletContextHandler context = new ServletContextHandler(server, contextPath);
+        ServletContextHandler context = new ServletContextHandler(contextPath);
+        server.setHandler(context);
 
         // Configure WebSocket for the context.
         JakartaWebSocketServletContainerInitializer.configure(context, null);

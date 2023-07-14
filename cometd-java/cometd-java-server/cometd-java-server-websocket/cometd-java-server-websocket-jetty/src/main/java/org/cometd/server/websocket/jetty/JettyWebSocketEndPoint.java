@@ -15,19 +15,22 @@
  */
 package org.cometd.server.websocket.jetty;
 
+import java.nio.ByteBuffer;
+
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.websocket.common.AbstractWebSocketEndPoint;
-import org.eclipse.jetty.ee10.websocket.api.Session;
-import org.eclipse.jetty.ee10.websocket.api.SuspendToken;
-import org.eclipse.jetty.ee10.websocket.api.WebSocketListener;
-import org.eclipse.jetty.ee10.websocket.api.WriteCallback;
+import org.eclipse.jetty.websocket.api.Session;
+//import org.eclipse.jetty.websocket.api.SuspendToken;
+//import org.eclipse.jetty.websocket.api.WebSocketListener;
+//import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class JettyWebSocketEndPoint extends AbstractWebSocketEndPoint implements WebSocketListener {
+public class JettyWebSocketEndPoint extends AbstractWebSocketEndPoint implements Session.Listener.AutoDemanding {
+
     private final Logger _logger = LoggerFactory.getLogger(getClass());
     private volatile Session _wsSession;
 
@@ -36,19 +39,20 @@ public class JettyWebSocketEndPoint extends AbstractWebSocketEndPoint implements
     }
 
     @Override
-    public void onWebSocketConnect(Session session) {
+    public void onWebSocketOpen(Session session) {
         _wsSession = session;
     }
 
     @Override
-    public void onWebSocketBinary(byte[] payload, int offset, int len) {
+    public void onWebSocketBinary(ByteBuffer payload, org.eclipse.jetty.websocket.api.Callback callback) {
     }
 
     @Override
     public void onWebSocketText(String data) {
         try {
-            SuspendToken suspendToken = _wsSession.suspend();
-            onMessage(data, Promise.from(v -> suspendToken.resume(), this::handleFailure));
+//            SuspendToken suspendToken = _wsSession.suspend();
+//            onMessage(data, Promise.from(v -> suspendToken.resume(), this::handleFailure));
+            onMessage(data, Promise.from(v -> {}, this::handleFailure));
         } catch (Throwable failure) {
             handleFailure(failure);
         }
@@ -71,14 +75,14 @@ public class JettyWebSocketEndPoint extends AbstractWebSocketEndPoint implements
         }
 
         // Async version.
-        _wsSession.getRemote().sendString(data, new WriteCallback() {
+        _wsSession.sendText(data, new org.eclipse.jetty.websocket.api.Callback() {
             @Override
-            public void writeSuccess() {
+            public void succeed() {
                 callback.succeeded();
             }
 
             @Override
-            public void writeFailed(Throwable x) {
+            public void fail(Throwable x) {
                 callback.failed(x);
             }
         });
@@ -89,7 +93,7 @@ public class JettyWebSocketEndPoint extends AbstractWebSocketEndPoint implements
         if (_logger.isDebugEnabled()) {
             _logger.debug("Closing {}/{} on {}", code, reason, this);
         }
-        _wsSession.close(code, reason);
+        _wsSession.close(code, reason, null);
     }
 
     private void handleFailure(Throwable t)

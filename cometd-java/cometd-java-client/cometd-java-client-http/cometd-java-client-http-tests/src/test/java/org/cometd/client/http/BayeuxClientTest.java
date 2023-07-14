@@ -77,7 +77,7 @@ public class BayeuxClientTest extends ClientServerTest {
         ClientTransport transport = new JettyHttpClientTransport(null, httpClient) {
             @Override
             protected void customize(Request request) {
-                request.listener(new Request.Listener.Adapter() {
+                request.listener(new Request.Listener() {
                     @Override
                     public void onBegin(Request request) {
                         // Remove the host header so the request will fail
@@ -750,7 +750,7 @@ public class BayeuxClientTest extends ClientServerTest {
             @Override
             protected void customize(Request request) {
                 if (failHandShake.compareAndSet(true, false)) {
-                    request.listener(new Request.Listener.Adapter() {
+                    request.listener(new Request.Listener() {
                         @Override
                         public void onBegin(Request request) {
                             request.headers(headers -> headers.remove(HttpHeader.HOST));

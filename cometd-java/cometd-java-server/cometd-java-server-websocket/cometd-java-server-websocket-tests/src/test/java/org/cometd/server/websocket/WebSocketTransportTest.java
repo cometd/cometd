@@ -40,9 +40,8 @@ import org.cometd.server.websocket.jakarta.WebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
-import org.eclipse.jetty.ee10.websocket.api.Session;
-import org.eclipse.jetty.ee10.websocket.api.WebSocketAdapter;
-import org.eclipse.jetty.ee10.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.ee10.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -79,7 +78,8 @@ public class WebSocketTransportTest {
         connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        ServletContextHandler context = new ServletContextHandler(server, "/");
+        ServletContextHandler context = new ServletContextHandler("/");
+        server.setHandler(context);
         JakartaWebSocketServletContainerInitializer.configure(context, null);
 
         String cometdURLMapping = "/cometd/*";
@@ -129,7 +129,7 @@ public class WebSocketTransportTest {
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"websocket\"]" +
                 "}]";
-        wsSession.getRemote().sendString(handshake);
+        wsSession.sendText(handshake, null);
 
         Message message = messages.poll(5, TimeUnit.SECONDS);
         Assertions.assertNotNull(message);
@@ -144,7 +144,7 @@ public class WebSocketTransportTest {
                 "\"clientId\":\"" + clientId + "\"," +
                 "\"advice\": {\"timeout\":0}" +
                 "}]";
-        wsSession.getRemote().sendString(connect);
+        wsSession.sendText(connect, null);
 
         ServerSession session = bayeux.getSession(clientId);
 
@@ -181,7 +181,7 @@ public class WebSocketTransportTest {
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"websocket\"]" +
                 "}]";
-        session.getRemote().sendString(handshake);
+        session.sendText(handshake, null);
 
         Message message = messages.poll(5, TimeUnit.SECONDS);
         Assertions.assertNotNull(message);
@@ -206,7 +206,7 @@ public class WebSocketTransportTest {
                 "\"clientId\":\"" + clientId + "\"," +
                 "\"advice\": {\"timeout\":0}" +
                 "}]";
-        session.getRemote().sendString(connect);
+        session.sendText(connect, null);
 
         message = messages.poll(2 * maxInterval, TimeUnit.MILLISECONDS);
         Assertions.assertNotNull(message);
@@ -233,7 +233,7 @@ public class WebSocketTransportTest {
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"websocket\"]" +
                 "}]";
-        session1.getRemote().sendString(handshake);
+        session1.sendText(handshake, null);
 
         Message handshakeReply = messages.poll(5, TimeUnit.SECONDS);
         Assertions.assertNotNull(handshakeReply);
@@ -255,7 +255,7 @@ public class WebSocketTransportTest {
                 "\"clientId\":\"" + clientId + "\"," +
                 "\"subscription\":[\"" + testChannel + "\"]" +
                 "}]";
-        session1.getRemote().sendString(connect1);
+        session1.sendText(connect1, null);
 
         Message connect1Reply = messages.poll(5, TimeUnit.SECONDS);
         Assertions.assertNotNull(connect1Reply);
@@ -276,7 +276,7 @@ public class WebSocketTransportTest {
                 "\"clientId\":\"" + clientId + "\"," +
                 "\"advice\": {\"timeout\":0}" +
                 "}]";
-        session2.getRemote().sendString(connect2);
+        session2.sendText(connect2, null);
 
         Message connect2Reply = messages.poll(5, TimeUnit.SECONDS);
         Assertions.assertNotNull(connect2Reply);
@@ -301,12 +301,19 @@ public class WebSocketTransportTest {
         }
     }
 
-    public class WebSocketEndPoint extends WebSocketAdapter {
+    public class WebSocketEndPoint implements Session.Listener.AutoDemanding {
         private final JSONContext.Client jsonContext = new JettyJSONContextClient();
         private final BlockingQueue<Message> messages;
+        private Session session;
 
         public WebSocketEndPoint(BlockingQueue<Message> messages) {
             this.messages = messages;
+        }
+
+        @Override
+        public void onWebSocketOpen(Session session)
+        {
+            this.session = session;
         }
 
         @Override
@@ -315,7 +322,7 @@ public class WebSocketTransportTest {
                 Message.Mutable[] mutables = jsonContext.parse(message);
                 Collections.addAll(messages, mutables);
             } catch (Throwable x) {
-                disconnect(getSession());
+                disconnect(session);
             }
         }
     }

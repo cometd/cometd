@@ -63,7 +63,8 @@ public class CometDDemo {
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         server.setHandler(contexts);
 
-        ServletContextHandler context = new ServletContextHandler(contexts, "/", ServletContextHandler.SESSIONS);
+        ServletContextHandler context = new ServletContextHandler("/", ServletContextHandler.SESSIONS);
+        contexts.addHandler(context);
         context.setBaseResource(ResourceFactory.of(server).newResource(List.of(
                 URI.create("../../../cometd-demo/src/main/webapp/"),
                 URI.create("../../../cometd-javascript/common/src/main/webapp/"),

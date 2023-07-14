@@ -322,7 +322,8 @@ public class CometDLoadServer {
 
         // Add more handlers if needed
 
-        ServletContextHandler context = new ServletContextHandler(handler, Config.CONTEXT_PATH, ServletContextHandler.SESSIONS);
+        ServletContextHandler context = new ServletContextHandler(Config.CONTEXT_PATH, ServletContextHandler.SESSIONS);
+        handler.setHandler(context);
         context.getServletContext().setAttribute(BayeuxServer.ATTRIBUTE, bayeuxServer);
         context.setInitParameter(ServletContextHandler.MANAGED_ATTRIBUTES, BayeuxServer.ATTRIBUTE);
 
