@@ -15,21 +15,16 @@
  */
 package org.cometd.server.websocket.jetty;
 
-import java.nio.ByteBuffer;
-
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.websocket.common.AbstractWebSocketEndPoint;
-import org.eclipse.jetty.websocket.api.Session;
-//import org.eclipse.jetty.websocket.api.SuspendToken;
-//import org.eclipse.jetty.websocket.api.WebSocketListener;
-//import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.websocket.api.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class JettyWebSocketEndPoint extends AbstractWebSocketEndPoint implements Session.Listener.AutoDemanding {
+public class JettyWebSocketEndPoint extends AbstractWebSocketEndPoint implements Session.Listener {
 
     private final Logger _logger = LoggerFactory.getLogger(getClass());
     private volatile Session _wsSession;
@@ -44,15 +39,9 @@ public class JettyWebSocketEndPoint extends AbstractWebSocketEndPoint implements
     }
 
     @Override
-    public void onWebSocketBinary(ByteBuffer payload, org.eclipse.jetty.websocket.api.Callback callback) {
-    }
-
-    @Override
     public void onWebSocketText(String data) {
         try {
-//            SuspendToken suspendToken = _wsSession.suspend();
-//            onMessage(data, Promise.from(v -> suspendToken.resume(), this::handleFailure));
-            onMessage(data, Promise.from(v -> {}, this::handleFailure));
+            onMessage(data, Promise.from(v -> _wsSession.demand(), this::handleFailure));
         } catch (Throwable failure) {
             handleFailure(failure);
         }

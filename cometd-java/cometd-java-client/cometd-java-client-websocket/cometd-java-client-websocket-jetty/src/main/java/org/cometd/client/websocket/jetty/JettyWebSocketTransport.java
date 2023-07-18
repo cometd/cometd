@@ -21,7 +21,6 @@ import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
-import java.nio.ByteBuffer;
 import java.nio.channels.UnresolvedAddressException;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -41,15 +40,14 @@ import org.cometd.client.websocket.common.AbstractWebSocketTransport;
 import org.cometd.common.TransportException;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
-import org.eclipse.jetty.websocket.api.Callback;
+import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.exceptions.UpgradeException;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.JettyUpgradeListener;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.http.HttpCookie;
-import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -189,17 +187,13 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
         }
 
         @Override
-        public void onWebSocketClose(int closeCode, String reason) {
-            onClose(closeCode, reason);
-        }
-
-        @Override
         public void onWebSocketText(String data) {
             onData(data);
         }
 
         @Override
-        public void onWebSocketBinary(ByteBuffer payload, Callback callback) {
+        public void onWebSocketClose(int closeCode, String reason) {
+            onClose(closeCode, reason);
         }
 
         @Override
