@@ -287,7 +287,22 @@
         <artifactId>license-maven-plugin</artifactId>
         <inherited>false</inherited>
         <configuration>
-          <header>copyright-header.txt</header>
+          <licenseSets>
+            <licenseSet>
+              <header>copyright-header.txt</header>
+              <includes>
+                <include>**/*.java</include>
+                <include>cometd-javascript/common/**/cometd-header.js</include>
+                <include>cometd-javascript/dojo/**/*.js</include>
+                <include>cometd-javascript/jquery/**/*.js</include>
+              </includes>
+              <excludes>
+                <exclude>cometd-archetypes/**</exclude>
+                <exclude>**/overlays/**</exclude>
+                <exclude>cometd-javascript/jquery/**/jquery-*.js</exclude>
+              </excludes>
+            </licenseSet>
+          </licenseSets>
           <aggregate>true</aggregate>
           <failIfMissing>true</failIfMissing>
           <strictCheck>true</strictCheck>
@@ -297,17 +312,6 @@
           <mapping>
             <java>SLASHSTAR_STYLE</java>
           </mapping>
-          <includes>
-            <include>**/*.java</include>
-            <include>cometd-javascript/common/**/cometd-header.js</include>
-            <include>cometd-javascript/dojo/**/*.js</include>
-            <include>cometd-javascript/jquery/**/*.js</include>
-          </includes>
-          <excludes>
-            <exclude>cometd-archetypes/**</exclude>
-            <exclude>**/overlays/**</exclude>
-            <exclude>cometd-javascript/jquery/**/jquery-*.js</exclude>
-          </excludes>
         </configuration>
         <executions>
           <execution>
