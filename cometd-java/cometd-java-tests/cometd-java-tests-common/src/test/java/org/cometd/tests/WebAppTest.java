@@ -171,7 +171,7 @@ public class WebAppTest {
         addServerDependency(org.eclipse.jetty.server.Server.class, serverClassPath);
         addServerDependency(org.eclipse.jetty.ee10.servlet.ServletContextHandler.class, serverClassPath);
         addServerDependency(org.eclipse.jetty.util.Callback.class, serverClassPath);
-        addServerDependency(org.eclipse.jetty.ee.Deployable.class, serverClassPath);
+        addServerDependency(org.eclipse.jetty.server.Deployable.class, serverClassPath);
         addServerDependency(org.eclipse.jetty.session.SessionManager.class, serverClassPath);
         addServerDependency(org.eclipse.jetty.util.ajax.JSON.class, serverClassPath);
         addServerDependency(org.eclipse.jetty.ee10.webapp.WebAppContext.class, serverClassPath);
