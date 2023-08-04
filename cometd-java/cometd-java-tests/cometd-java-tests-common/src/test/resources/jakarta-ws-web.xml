@@ -7,7 +7,7 @@
 
   <filter>
     <filter-name>cross-origin</filter-name>
-    <filter-class>org.eclipse.jetty.servlets.CrossOriginFilter</filter-class>
+    <filter-class>org.eclipse.jetty.ee10.servlets.CrossOriginFilter</filter-class>
     <async-supported>true</async-supported>
   </filter>
   <filter-mapping>
@@ -16,13 +16,13 @@
   </filter-mapping>
 
   <filter>
-    <filter-name>org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter</filter-name>
-    <filter-class>org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter</filter-class>
+    <filter-name>org.eclipse.jetty.ee10.websocket.servlet.WebSocketUpgradeFilter</filter-name>
+    <filter-class>org.eclipse.jetty.ee10.websocket.servlet.WebSocketUpgradeFilter</filter-class>
     <async-supported>true</async-supported>
   </filter>
 
   <filter-mapping>
-    <filter-name>org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter</filter-name>
+    <filter-name>org.eclipse.jetty.ee10.websocket.servlet.WebSocketUpgradeFilter</filter-name>
     <url-pattern>/cometd/*</url-pattern>
   </filter-mapping>
 

@@ -32,8 +32,8 @@ import org.cometd.client.websocket.jetty.JettyWebSocketTransport;
 import org.cometd.common.JettyJSONContextClient;
 import org.cometd.server.JettyJSONContextServer;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.util.ajax.JSON;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
 
 @Service
 public class WebAppService {
@@ -53,12 +53,7 @@ public class WebAppService {
         // Add the container as a bean so that it can be stopped.
         httpClient.addBean(wsContainer);
         httpClient.start();
-        // Cannot pass the HttpClient to the constructor because I will get a
-        // LinkageError, as WebSocketClient is loaded from the server classpath.
-        // Also, I must start it independently from HttpClient because
-        // WebSocketClient implements LifeCycle from the server classpath,
-        // not the LifeCycle from the webapp classpath like HttpClient does.
-        wsClient = new WebSocketClient();
+        wsClient = new WebSocketClient(httpClient);
         wsClient.start();
     }
 

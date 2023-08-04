@@ -29,10 +29,10 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.websocket.common.AbstractBayeuxContext;
 import org.cometd.server.websocket.common.AbstractWebSocketTransport;
-import org.eclipse.jetty.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.ee10.websocket.server.JettyServerUpgradeRequest;
 import org.eclipse.jetty.ee10.websocket.server.JettyServerUpgradeResponse;
 import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServerContainer;
+import org.eclipse.jetty.websocket.api.ExtensionConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -131,7 +131,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport {
 
         private WebSocketContext(ServletContext context, JettyServerUpgradeRequest request) {
             super(context, request.getRequestURI().toString(), request.getQueryString(), request.getHeaders(),
-                    request.getParameterMap(), request.getUserPrincipal(), (HttpSession)request.getSession(),
+                    request.getParameterMap(), request.getUserPrincipal(), getHttpSession(request),
                     (InetSocketAddress)request.getLocalSocketAddress(), (InetSocketAddress)request.getRemoteSocketAddress(),
                     Collections.list(request.getLocales()), "HTTP/1.1", request.isSecure());
             this.attributes = request.getServletAttributes();
@@ -140,6 +140,14 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport {
         @Override
         public Object getRequestAttribute(String name) {
             return attributes.get(name);
+        }
+
+        private static HttpSession getHttpSession(JettyServerUpgradeRequest request) {
+            try {
+                return (HttpSession)request.getSession();
+            } catch (Throwable x) {
+                return null;
+            }
         }
     }
 

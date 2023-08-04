@@ -43,6 +43,7 @@ import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.exceptions.UpgradeException;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
@@ -211,7 +212,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
 
                 // Blocking async sends for the client to allow concurrent sends.
                 // TODO: do we need to block here?
-                session.sendText(content, null);
+                session.sendText(content, Callback.NOOP);
             } catch (Throwable x) {
                 fail(x, "Failure");
             }
@@ -228,7 +229,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("Closing websocket session {}", session);
                 }
-                session.close(NORMAL_CLOSE_CODE, reason, null);
+                session.close(NORMAL_CLOSE_CODE, reason, Callback.NOOP);
             }
         }
 

@@ -36,6 +36,7 @@ public class JettyWebSocketEndPoint extends AbstractWebSocketEndPoint implements
     @Override
     public void onWebSocketOpen(Session session) {
         _wsSession = session;
+        session.demand();
     }
 
     @Override
@@ -82,7 +83,7 @@ public class JettyWebSocketEndPoint extends AbstractWebSocketEndPoint implements
         if (_logger.isDebugEnabled()) {
             _logger.debug("Closing {}/{} on {}", code, reason, this);
         }
-        _wsSession.close(code, reason, null);
+        _wsSession.close(code, reason, org.eclipse.jetty.websocket.api.Callback.NOOP);
     }
 
     private void handleFailure(Throwable t)

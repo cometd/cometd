@@ -19,6 +19,7 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
@@ -28,10 +29,12 @@ import org.cometd.client.BayeuxClient;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 public class BayeuxClientTest extends AbstractClientServerTest {
+    @Disabled("Restore when Jetty issue #10219 is released")
     @ParameterizedTest
     @MethodSource("transports")
     public void testIPv6Address(Transport transport) throws Exception {

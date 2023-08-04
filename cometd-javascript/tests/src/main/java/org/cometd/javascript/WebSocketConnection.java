@@ -17,7 +17,6 @@ package org.cometd.javascript;
 
 import java.net.URI;
 import java.nio.ByteBuffer;
-import java.util.concurrent.ExecutionException;
 
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
@@ -81,7 +80,7 @@ public class WebSocketConnection implements Session.Listener.AutoDemanding {
                 if (logger.isDebugEnabled()) {
                     logger.debug("WebSocket sending data {}", data);
                 }
-                session.sendText(data, null);
+                session.sendText(data, Callback.NOOP);
             }
         } catch (Throwable x) {
             // This method is invoked from JavaScript, so we must fail asynchronously
@@ -99,7 +98,7 @@ public class WebSocketConnection implements Session.Listener.AutoDemanding {
     public void close(int code, String reason) {
         Session session = this.session;
         if (session != null) {
-            session.close(code, reason, null);
+            session.close(code, reason, Callback.NOOP);
             this.session = null;
         }
     }

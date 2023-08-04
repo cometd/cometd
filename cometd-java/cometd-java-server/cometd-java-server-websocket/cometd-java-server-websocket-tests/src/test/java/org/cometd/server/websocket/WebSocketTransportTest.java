@@ -40,12 +40,13 @@ import org.cometd.server.websocket.jakarta.WebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.ee10.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.websocket.api.Callback;
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -129,7 +130,7 @@ public class WebSocketTransportTest {
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"websocket\"]" +
                 "}]";
-        wsSession.sendText(handshake, null);
+        wsSession.sendText(handshake, Callback.NOOP);
 
         Message message = messages.poll(5, TimeUnit.SECONDS);
         Assertions.assertNotNull(message);
@@ -144,7 +145,7 @@ public class WebSocketTransportTest {
                 "\"clientId\":\"" + clientId + "\"," +
                 "\"advice\": {\"timeout\":0}" +
                 "}]";
-        wsSession.sendText(connect, null);
+        wsSession.sendText(connect, Callback.NOOP);
 
         ServerSession session = bayeux.getSession(clientId);
 
@@ -181,7 +182,7 @@ public class WebSocketTransportTest {
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"websocket\"]" +
                 "}]";
-        session.sendText(handshake, null);
+        session.sendText(handshake, Callback.NOOP);
 
         Message message = messages.poll(5, TimeUnit.SECONDS);
         Assertions.assertNotNull(message);
@@ -206,7 +207,7 @@ public class WebSocketTransportTest {
                 "\"clientId\":\"" + clientId + "\"," +
                 "\"advice\": {\"timeout\":0}" +
                 "}]";
-        session.sendText(connect, null);
+        session.sendText(connect, Callback.NOOP);
 
         message = messages.poll(2 * maxInterval, TimeUnit.MILLISECONDS);
         Assertions.assertNotNull(message);
@@ -233,7 +234,7 @@ public class WebSocketTransportTest {
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"websocket\"]" +
                 "}]";
-        session1.sendText(handshake, null);
+        session1.sendText(handshake, Callback.NOOP);
 
         Message handshakeReply = messages.poll(5, TimeUnit.SECONDS);
         Assertions.assertNotNull(handshakeReply);
@@ -255,7 +256,7 @@ public class WebSocketTransportTest {
                 "\"clientId\":\"" + clientId + "\"," +
                 "\"subscription\":[\"" + testChannel + "\"]" +
                 "}]";
-        session1.sendText(connect1, null);
+        session1.sendText(connect1, Callback.NOOP);
 
         Message connect1Reply = messages.poll(5, TimeUnit.SECONDS);
         Assertions.assertNotNull(connect1Reply);
@@ -276,7 +277,7 @@ public class WebSocketTransportTest {
                 "\"clientId\":\"" + clientId + "\"," +
                 "\"advice\": {\"timeout\":0}" +
                 "}]";
-        session2.sendText(connect2, null);
+        session2.sendText(connect2, Callback.NOOP);
 
         Message connect2Reply = messages.poll(5, TimeUnit.SECONDS);
         Assertions.assertNotNull(connect2Reply);
