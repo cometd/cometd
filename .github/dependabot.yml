@@ -13,6 +13,8 @@ updates:
         versions: [ ">=1.1" ]
       - dependency-name: "javax.websocket:javax.websocket-api"
         versions: [ ">=1.1" ]
+      - dependency-name: "com.google.inject:guice"
+        versions: [ ">=7.0.0" ]
       - dependency-name: "com.google.javascript:closure-compiler"
         versions: [ ">=v20220502" ]
       - dependency-name: "org.graalvm.js:js"
@@ -29,6 +31,8 @@ updates:
     schedule:
       interval: "daily"
     ignore:
+      - dependency-name: "com.google.inject:guice"
+        versions: [ ">=7.0.0" ]
       - dependency-name: "org.springframework:*"
         versions: [ ">=6.0.0" ]
       - dependency-name: "org.springframework.boot:*"
