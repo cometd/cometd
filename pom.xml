@@ -59,7 +59,7 @@
     <jetty-version>11.0.15</jetty-version>
     <!-- end::jetty-version[] -->
     <graalvm-version>23.0.1</graalvm-version>
-    <slf4j-version>2.0.7</slf4j-version>
+    <slf4j-version>2.0.9</slf4j-version>
     <log4j2-version>2.20.0</log4j2-version>
     <spring-version>6.0.11</spring-version>
     <spring-boot-version>3.1.3</spring-boot-version>
