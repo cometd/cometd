@@ -36,6 +36,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
@@ -319,28 +320,23 @@ public class Oort extends ContainerLifeCycle {
             options.put(ClientTransport.JSON_CONTEXT_OPTION, jsonContext);
         }
 
-        String maxMessageSizeOption = ClientTransport.MAX_MESSAGE_SIZE_OPTION;
-        Object option = _bayeux.getOption(maxMessageSizeOption);
-        if (option != null) {
-            options.put(maxMessageSizeOption, option);
-        }
+        for (String clientTransportOption : ClientTransport.KNOWN_OPTIONS) {
+            Object option = _bayeux.getOption(clientTransportOption);
+            if (option != null) {
+                options.put(clientTransportOption, option);
+            }
 
-        maxMessageSizeOption = WebSocketTransport.PREFIX + "." + maxMessageSizeOption;
-        option = _bayeux.getOption(maxMessageSizeOption);
-        if (option != null) {
-            options.put(maxMessageSizeOption, option);
+            String wsClientTransportOption = WebSocketTransport.PREFIX + "." + clientTransportOption;
+            option = _bayeux.getOption(wsClientTransportOption);
+            if (option != null) {
+                options.put(wsClientTransportOption, option);
+            }
         }
 
         String idleTimeoutOption = WebSocketTransport.PREFIX + "." + WebSocketTransport.IDLE_TIMEOUT_OPTION;
-        option = _bayeux.getOption(idleTimeoutOption);
+        Object option = _bayeux.getOption(idleTimeoutOption);
         if (option != null) {
             options.put(idleTimeoutOption, option);
-        }
-
-        String maxNetworkDelayOption = ClientTransport.MAX_NETWORK_DELAY_OPTION;
-        option = _bayeux.getOption(maxNetworkDelayOption);
-        if (option != null) {
-            options.put(maxNetworkDelayOption, option);
         }
 
         List<ClientTransport> transports = new ArrayList<>();

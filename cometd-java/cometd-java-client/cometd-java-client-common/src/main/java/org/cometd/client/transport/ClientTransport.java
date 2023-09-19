@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Collectors;
+
 import org.cometd.bayeux.Message;
 import org.cometd.client.BayeuxClient;
 import org.cometd.common.AbstractTransport;
@@ -37,6 +38,14 @@ public abstract class ClientTransport extends AbstractTransport {
     public static final String SCHEDULER_OPTION = "scheduler";
     public static final String MAX_SEND_BAYEUX_MESSAGE_SIZE_OPTION = "maxSendBayeuxMessageSize";
     public static final String MAX_MESSAGE_SIZE_OPTION = "maxMessageSize";
+    public static final List<String> KNOWN_OPTIONS = List.of(
+        URL_OPTION,
+        MAX_NETWORK_DELAY_OPTION,
+        JSON_CONTEXT_OPTION,
+        SCHEDULER_OPTION,
+        MAX_SEND_BAYEUX_MESSAGE_SIZE_OPTION,
+        MAX_MESSAGE_SIZE_OPTION
+    );
 
     private String url;
     private ScheduledExecutorService scheduler;
