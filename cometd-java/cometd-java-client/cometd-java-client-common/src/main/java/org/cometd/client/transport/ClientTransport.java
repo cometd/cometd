@@ -41,7 +41,6 @@ public abstract class ClientTransport extends AbstractTransport {
     public static final List<String> KNOWN_OPTIONS = List.of(
         URL_OPTION,
         MAX_NETWORK_DELAY_OPTION,
-        JSON_CONTEXT_OPTION,
         SCHEDULER_OPTION,
         MAX_SEND_BAYEUX_MESSAGE_SIZE_OPTION,
         MAX_MESSAGE_SIZE_OPTION
