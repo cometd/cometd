@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.MarkedReference;
@@ -246,11 +247,14 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
             ClientSessionChannel.MessageListener subscriber = unregisterSubscriber(message.getId());
             if (!message.isSuccessful()) {
                 String subscription = (String)message.get(Message.SUBSCRIPTION_FIELD);
-                MarkedReference<AbstractSessionChannel> channelRef = getReleasableChannel(subscription);
-                AbstractSessionChannel channel = channelRef.getReference();
-                channel.removeSubscription(subscriber);
-                if (channelRef.isMarked()) {
-                    channel.release();
+                // Avoid NPE when the server sends an invalid message with no subscription field.
+                if (subscription != null) {
+                    MarkedReference<AbstractSessionChannel> channelRef = getReleasableChannel(subscription);
+                    AbstractSessionChannel channel = channelRef.getReference();
+                    channel.removeSubscription(subscriber);
+                    if (channelRef.isMarked()) {
+                        channel.release();
+                    }
                 }
             }
         }
