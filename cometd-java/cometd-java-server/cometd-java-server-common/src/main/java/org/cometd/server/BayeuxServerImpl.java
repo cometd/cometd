@@ -40,7 +40,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import org.cometd.server.spi.CometDRequest;
 import org.cometd.bayeux.Bayeux;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
@@ -61,7 +60,6 @@ import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.common.AsyncFoldLeft;
-import org.cometd.server.http.AbstractHttpTransport;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -215,7 +213,7 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
         if (_transports.isEmpty()) {
             String option = (String)getOption(TRANSPORTS_OPTION);
             if (option == null) {
-                // Order is important, see #findHttpTransport()
+                // Order is important.
                 ServerTransport transport;
 
                 transport = newAsyncJSONTransport();
@@ -1206,18 +1204,6 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
 
     public List<ServerTransport> getTransports() {
         return new ArrayList<>(_transports.values());
-    }
-
-    public AbstractHttpTransport findHttpTransport(CometDRequest request) {
-        for (String transportName : _allowedTransports) {
-            ServerTransport serverTransport = getTransport(transportName);
-            if (serverTransport instanceof AbstractHttpTransport transport) {
-                if (transport.accept(request)) {
-                    return transport;
-                }
-            }
-        }
-        return null;
     }
 
     @ManagedAttribute(value = "The transports allowed by this CometD server", readonly = true)

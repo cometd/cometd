@@ -77,7 +77,7 @@ public abstract class AbstractBayeuxServerTest
         String contextURL = "http://localhost:" + port + contextPath;
         cometdURL = contextURL + cometdServletPath;
 
-        bayeux = cometDHandler.getBayeux();
+        bayeux = (BayeuxServerImpl)cometDHandler.getBayeuxServer();
     }
 
     @AfterEach

@@ -33,14 +33,12 @@ public interface CometDRequest
     // input reading
     CometDInput getInput();
 
-    // network/transport layer metadata
-    boolean isSecure(); // TODO identical to BayeuxContext.isSecure() - remove?
-
     // in-memory data
     Object getAttribute(String name);
     void setAttribute(String name, Object value);
 
     // underlying impl
+    // TODO: this is only necessary to retrieve AsyncContext - store it as attribute.
     <T> T unwrap(Class<T> clazz);
 
     record CometDCookie(String name, String value) {

@@ -16,6 +16,7 @@
 package org.cometd.bayeux.server;
 
 import java.util.List;
+
 import org.cometd.bayeux.Bayeux;
 import org.cometd.bayeux.MarkedReference;
 import org.cometd.bayeux.Promise;
@@ -42,6 +43,9 @@ import org.cometd.bayeux.client.ClientSessionChannel;
  * like a client-side Bayeux session.</p>
  */
 public interface BayeuxServer extends Bayeux {
+    @Override
+    ServerTransport getTransport(String transport);
+
     /**
      * ServletContext attribute name used to obtain the Bayeux object
      */

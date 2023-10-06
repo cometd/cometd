@@ -40,8 +40,7 @@ import org.eclipse.jetty.util.thread.SerializedInvoker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class AsyncJSONTransport extends AbstractHttpTransport
-{
+public class AsyncJSONTransport extends AbstractHttpTransport {
     private static final Logger LOGGER = LoggerFactory.getLogger(AsyncJSONTransport.class);
     private static final String PREFIX = "long-polling.json";
     public static final String NAME = "long-polling";
@@ -75,8 +74,8 @@ public class AsyncJSONTransport extends AbstractHttpTransport
             @Override
             public void fail(Throwable failure) {
                 int code = failure instanceof TimeoutException ?
-                    getDuplicateMetaConnectHttpResponseCode() :
-                    CometDResponse.SC_INTERNAL_SERVER_ERROR;
+                        getDuplicateMetaConnectHttpResponseCode() :
+                        CometDResponse.SC_INTERNAL_SERVER_ERROR;
                 p.fail(new HttpException(code, failure));
             }
         };
@@ -251,6 +250,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport
         }
     }
 
+    // TODO: use ByteBufferAggregator|Accumulator to avoid multiple copies?
     protected class CharsetReader extends AbstractReader {
         private byte[] content = new byte[BUFFER_CAPACITY];
         private final Charset charset;
@@ -289,6 +289,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport
         }
     }
 
+    // TODO: Quite messy, needs to be converted to an IteratingCallback.
     protected class Writer {
         private final TransportContext context;
         private final List<ServerMessage> messages;
@@ -304,8 +305,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport
             this.messages = messages;
             this.promise = new Promise<>() {
                 @Override
-                public void succeed(Void result)
-                {
+                public void succeed(Void result) {
                     if (state == State.COMPLETE) {
                         p.succeed(result);
                     } else {
@@ -314,8 +314,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport
                 }
 
                 @Override
-                public void fail(Throwable failure)
-                {
+                public void fail(Throwable failure) {
                     if (LOGGER.isDebugEnabled()) {
                         LOGGER.debug("Failure writing messages", failure);
                     }
@@ -418,6 +417,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport
                 startExpiration();
                 return true;
             } else {
+                // TODO: this relies on buffering which we may not have in Handlers.
                 if (needsComma) {
                     needsComma = false;
                     output.write(',', promise);
@@ -466,8 +466,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport
         BEGIN, HANDSHAKE, MESSAGES, REPLIES, END, COMPLETE
     }
 
-    private class AsyncLongPollScheduler extends LongPollScheduler
-    {
+    private class AsyncLongPollScheduler extends LongPollScheduler {
         private AsyncLongPollScheduler(TransportContext context, Promise<Void> promise, ServerMessage.Mutable reply, long timeout) {
             super(context, promise, reply, timeout);
         }

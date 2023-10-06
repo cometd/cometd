@@ -24,6 +24,9 @@ public interface CometDInput
 
     void demand(Runnable r);
 
+    // TODO: the APis must be based on ByteBuffer to make them very efficient with Jetty 12 Chunks
+    //  byte[] can be wrapped into ByteBuffers without copy, but not the other way around.
+
     default int read(byte[] buffer) throws IOException
     {
         return read(buffer, 0, buffer.length);

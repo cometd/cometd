@@ -20,18 +20,12 @@ import java.nio.charset.Charset;
 import java.text.ParseException;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
-
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.AsyncEvent;
 import jakarta.servlet.AsyncListener;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServletRequest;
-import org.cometd.server.http.TransportContext;
-import org.cometd.server.spi.CometDInput;
-import org.cometd.server.spi.CometDOutput;
-import org.cometd.server.spi.CometDRequest;
-import org.cometd.server.spi.CometDResponse;
-import org.cometd.server.spi.HttpException;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxContext;
@@ -41,6 +35,12 @@ import org.cometd.common.JSONContext;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.JSONContextServer;
 import org.cometd.server.http.AbstractHttpTransport;
+import org.cometd.server.http.TransportContext;
+import org.cometd.server.spi.CometDInput;
+import org.cometd.server.spi.CometDOutput;
+import org.cometd.server.spi.CometDRequest;
+import org.cometd.server.spi.CometDResponse;
+import org.cometd.server.spi.HttpException;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -295,6 +295,8 @@ public class AsyncJSONTransport extends AbstractHttpTransport
         }
     }
 
+    // TODO: the original Servlet one was relying on isReady(), but here we cannot.
+    //  We need to use an async API that works with both Servlet and Handler and it is efficient.
     protected class Writer {
         private final TransportContext context;
         private final List<ServerMessage> messages;
@@ -424,6 +426,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport
                 startExpiration();
                 return true;
             } else {
+                // TODO: this relies on buffering, which in Servlet we probably always have.
                 if (needsComma) {
                     needsComma = false;
                     output.write(',', promise);

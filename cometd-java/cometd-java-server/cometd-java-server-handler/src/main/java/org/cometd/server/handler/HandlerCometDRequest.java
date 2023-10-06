@@ -92,12 +92,6 @@ class HandlerCometDRequest implements CometDRequest {
     }
 
     @Override
-    public boolean isSecure() {
-        LOGGER.warn("identical to BayeuxContext.isSecure; REMOVE API?");
-        return request.getConnectionMetaData().isSecure();
-    }
-
-    @Override
     public Object getAttribute(String name) {
         return request.getAttribute(name);
     }

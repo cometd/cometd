@@ -28,19 +28,21 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.cometd.server.spi.CometDRequest;
-import org.cometd.server.spi.CometDResponse;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxContext;
+import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
+import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.common.AsyncFoldLeft;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerMessageImpl;
 import org.cometd.server.ServerSessionImpl;
+import org.cometd.server.spi.CometDRequest;
+import org.cometd.server.spi.CometDResponse;
 import org.eclipse.jetty.util.thread.Scheduler.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +52,18 @@ import org.slf4j.LoggerFactory;
  * HTTP as transport or to initiate a transport connection.</p>
  */
 public abstract class AbstractHttpTransport extends AbstractServerTransport {
+    public static AbstractHttpTransport find(BayeuxServer bayeuxServer, CometDRequest request) {
+        for (String transportName : bayeuxServer.getAllowedTransports()) {
+            ServerTransport serverTransport = bayeuxServer.getTransport(transportName);
+            if (serverTransport instanceof AbstractHttpTransport transport) {
+                if (transport.accept(request)) {
+                    return transport;
+                }
+            }
+        }
+        return null;
+    }
+
     public final static String PREFIX = "long-polling";
     public static final String JSON_DEBUG_OPTION = "jsonDebug";
     public static final String MESSAGE_PARAM = "message";
@@ -102,8 +116,10 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         _trustClientSession = getOption(TRUST_CLIENT_SESSION_OPTION, false);
         _duplicateMetaConnectHttpResponseCode = getOption(DUPLICATE_META_CONNECT_HTTP_RESPONSE_CODE_OPTION, CometDResponse.SC_INTERNAL_SERVER_ERROR);
         if (_duplicateMetaConnectHttpResponseCode < 400) {
-            throw new IllegalArgumentException("Option '" + DUPLICATE_META_CONNECT_HTTP_RESPONSE_CODE_OPTION +
-                    "' must be greater or equal to 400, not " + _duplicateMetaConnectHttpResponseCode);
+            throw new IllegalArgumentException("Option '%s' must be greater or equal to 400, not %s".formatted(
+                    DUPLICATE_META_CONNECT_HTTP_RESPONSE_CODE_OPTION,
+                    _duplicateMetaConnectHttpResponseCode)
+            );
         }
     }
 
@@ -399,7 +415,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         if (_browserCookieHttpOnly) {
             builder.append("; HttpOnly");
         }
-        if (context.request().isSecure() && _browserCookieSecure) {
+        if (context.bayeuxContext().isSecure() && _browserCookieSecure) {
             builder.append("; Secure");
         }
         if (_browserCookieSameSite != null) {

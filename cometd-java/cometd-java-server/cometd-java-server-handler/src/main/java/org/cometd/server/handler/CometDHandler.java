@@ -16,6 +16,7 @@
 package org.cometd.server.handler;
 
 import java.util.Map;
+import java.util.Objects;
 
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -33,44 +34,47 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * <p>The CometD Servlet maps HTTP requests to the {@link AbstractHttpTransport}
+ * <p>{@code CometDHandler} maps HTTP requests to the HTTP server transports
  * of a {@link BayeuxServer} instance.</p>
- * <p>The {@link BayeuxServer} instance is searched in the servlet context under the {@link BayeuxServer#ATTRIBUTE}
- * attribute; if it is found then it is used without further configuration, otherwise a new {@link BayeuxServer}
- * instance is created and configured using the init parameters of this servlet.</p>
+ * <p>The {@link BayeuxServer} instance is created and configured using the
+ * given {@link #setOptions(Map) options}.</p>
  */
 public class CometDHandler extends Handler.Abstract {
     private static final Logger LOGGER = LoggerFactory.getLogger(CometDHandler.class);
 
-    private BayeuxServerImpl _bayeux;
-    private Map<String, String> options;
+    private Map<String, String> options = Map.of();
+    private BayeuxServer bayeux;
+
+    public Map<String, String> getOptions() {
+        return options;
+    }
 
     public void setOptions(Map<String, String> options) {
-        this.options = options;
+        this.options = Objects.requireNonNull(options);
     }
 
     @Override
     protected void doStart() throws Exception {
-        _bayeux = newBayeuxServer();
-        if (options != null) {
-            for (Map.Entry<String, String> entry : options.entrySet()) {
-                _bayeux.setOption(entry.getKey(), entry.getValue());
-            }
+        bayeux = newBayeuxServer();
+        addBean(bayeux);
+        // TODO: setup the AsyncJSONTransport for Handlers.
+        for (Map.Entry<String, String> entry : getOptions().entrySet()) {
+            bayeux.setOption(entry.getKey(), entry.getValue());
         }
-        _bayeux.start();
+        super.doStart();
     }
 
-    public BayeuxServerImpl getBayeux() {
-        return _bayeux;
+    public BayeuxServer getBayeuxServer() {
+        return bayeux;
     }
 
-    protected BayeuxServerImpl newBayeuxServer() {
+    protected BayeuxServer newBayeuxServer() {
         return new BayeuxServerImpl();
     }
 
     @Override
     public boolean handle(Request request, Response response, Callback callback) throws Exception {
-        request.getContext().setAttribute(BayeuxServer.ATTRIBUTE, _bayeux);
+        request.getContext().setAttribute(BayeuxServer.ATTRIBUTE, bayeux);
         if ("OPTIONS".equals(request.getMethod())) {
             serviceOptions(request, response, callback);
             return true;
@@ -101,7 +105,7 @@ public class CometDHandler extends Handler.Abstract {
             }
         };
 
-        AbstractHttpTransport transport = _bayeux.findHttpTransport(cometDRequest);
+        AbstractHttpTransport transport = AbstractHttpTransport.find(bayeux, cometDRequest);
         if (transport == null) {
             Response.writeError(request, response, callback, HttpStatus.BAD_REQUEST_400, "Unknown Bayeux Transport");
         } else {
@@ -113,11 +117,12 @@ public class CometDHandler extends Handler.Abstract {
     protected void serviceOptions(Request request, Response response, Callback callback) {
         // OPTIONS requests are made by browsers that are CORS compliant
         // (see http://www.w3.org/TR/cors/) during a "preflight request".
-        // Preflight requests happen for each different new URL, then results are cached
-        // by the browser.
-        // For the Bayeux protocol, preflight requests happen for URLs such as
-        // "/cometd/handshake", "/cometd/connect", etc, since the Bayeux clients append
-        // the Bayeux message type to the base Bayeux server URL.
+        // Preflight requests happen for each different new URL, then
+        // results are cached by the browser.
+        // For the Bayeux protocol, preflight requests happen for URLs
+        // such as "/cometd/handshake", "/cometd/connect", etc., since
+        // the Bayeux clients append the Bayeux message type to the base
+        // Bayeux server URL.
         // Just return 200 OK, there is nothing more to add to such requests.
         callback.succeeded();
     }
@@ -127,19 +132,11 @@ public class CometDHandler extends Handler.Abstract {
     }
 
     @Override
-    protected void doStop() {
-        for (ServerSession session : _bayeux.getSessions()) {
+    protected void doStop() throws Exception {
+        for (ServerSession session : bayeux.getSessions()) {
             ((ServerSessionImpl)session).destroyScheduler();
         }
-
-        try {
-            _bayeux.stop();
-        } catch (Exception x) {
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("", x);
-            }
-        } finally {
-            _bayeux = null;
-        }
+        super.doStop();
+        removeBean(bayeux);
     }
 }

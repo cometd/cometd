@@ -17,7 +17,6 @@ package org.cometd.server.servlet;
 
 import java.io.IOException;
 import java.util.Collections;
-
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletContext;
@@ -25,6 +24,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -125,7 +125,7 @@ public class CometDServlet extends HttpServlet {
             }
         };
 
-        AbstractHttpTransport transport = _bayeux.findHttpTransport(cometDRequest);
+        AbstractHttpTransport transport = AbstractHttpTransport.find(_bayeux, cometDRequest);
         if (transport == null) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Unknown Bayeux Transport");
         } else {

@@ -19,9 +19,9 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
-
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+
 import org.cometd.server.spi.CometDInput;
 import org.cometd.server.spi.CometDRequest;
 
@@ -91,11 +91,6 @@ class ServletCometDRequest implements CometDRequest {
     @Override
     public String getProtocol() {
         return request.getProtocol();
-    }
-
-    @Override
-    public boolean isSecure() {
-        return request.isSecure();
     }
 
     @Override
