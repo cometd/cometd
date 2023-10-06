@@ -62,11 +62,6 @@ class ServletCometDRequest implements CometDRequest {
     }
 
     @Override
-    public String getParameter(String name) {
-        return request.getParameter(name);
-    }
-
-    @Override
     public String[] getParameterValues(String name) {
         return request.getParameterValues(name);
     }

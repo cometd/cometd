@@ -64,11 +64,6 @@ class HandlerCometDRequest implements CometDRequest {
     }
 
     @Override
-    public String getParameter(String name) {
-        throw new UnsupportedOperationException("REMOVE API?");
-    }
-
-    @Override
     public String[] getParameterValues(String name) {
         throw new UnsupportedOperationException("REMOVE API?");
     }

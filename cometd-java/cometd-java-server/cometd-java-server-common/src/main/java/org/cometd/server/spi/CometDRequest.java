@@ -25,7 +25,6 @@ public interface CometDRequest
     String getCharacterEncoding(); // TODO change API so that it sets the encoding to UTF8 when none is present?
     void setCharacterEncoding(String encoding) throws UnsupportedEncodingException; // TODO only needed to set the encoding to UTF8 when getCharacterEncoding() returns null
     List<CometDCookie> getCookies();
-    String getParameter(String name); // TODO only needed by blocking transport
     String[] getParameterValues(String name); // TODO only needed by blocking transport
     String getMethod();
     String getProtocol();

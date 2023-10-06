@@ -18,13 +18,13 @@ package org.cometd.server.servlet.transport;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.regex.Pattern;
+
+import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.spi.CometDOutput;
 import org.cometd.server.spi.CometDRequest;
 import org.cometd.server.spi.CometDResponse;
-import org.cometd.bayeux.server.ServerMessage;
-import org.cometd.server.BayeuxServerImpl;
 
-// TODO remove blocking transports?
 public class JSONPTransport extends AbstractStreamHttpTransport {
     public final static String PREFIX = "long-polling.jsonp";
     public final static String NAME = "callback-polling";
@@ -54,7 +54,7 @@ public class JSONPTransport extends AbstractStreamHttpTransport {
 
     @Override
     public boolean accept(CometDRequest request) {
-        String callbackValue = request.getParameter(getCallbackParameter());
+        String[] callbackValue = request.getParameterValues(getCallbackParameter());
         return "GET".equals(request.getMethod()) && isCallbackValueValid(callbackValue);
     }
 
@@ -70,7 +70,7 @@ public class JSONPTransport extends AbstractStreamHttpTransport {
     @Override
     protected CometDOutput beginWrite(CometDRequest request, CometDResponse response) throws IOException {
         response.setContentType("text/javascript;charset=UTF-8");
-        String callback = request.getParameter(_callbackParam);
+        String callback = request.getParameterValues(_callbackParam)[0];
         CometDOutput output = response.getOutput();
         output.write(callback.getBytes(response.getCharacterEncoding()));
         output.write(MESSAGE_BEGIN);
@@ -83,9 +83,11 @@ public class JSONPTransport extends AbstractStreamHttpTransport {
         output.close();
     }
 
-    private boolean isCallbackValueValid(String callbackValue) {
-        return callbackValue != null &&
-                callbackValue.length() <= _callbackMaxLength &&
-                CALLBACK_PATTERN.matcher(callbackValue).matches();
+    private boolean isCallbackValueValid(String[] callbackValues) {
+        if (callbackValues == null || callbackValues.length != 1) {
+            return false;
+        }
+        String callbackValue = callbackValues[0];
+        return callbackValue.length() <= _callbackMaxLength && CALLBACK_PATTERN.matcher(callbackValue).matches();
     }
 }
