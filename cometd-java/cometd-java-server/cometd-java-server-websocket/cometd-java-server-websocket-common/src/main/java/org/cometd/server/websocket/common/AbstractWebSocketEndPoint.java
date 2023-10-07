@@ -16,7 +16,7 @@
 package org.cometd.server.websocket.common;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
 import java.text.ParseException;
 import java.util.ArrayDeque;
@@ -38,7 +38,6 @@ import org.cometd.common.AsyncFoldLeft;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.ServerMessageImpl;
 import org.cometd.server.ServerSessionImpl;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -58,7 +57,7 @@ public abstract class AbstractWebSocketEndPoint {
         this._bayeuxContext = context;
     }
 
-    protected abstract void send(ServerSession session, String data, Callback callback);
+    protected abstract void send(ServerSession session, String data, Promise<Void> promise);
 
     public abstract void close(int code, String reason);
 
@@ -109,7 +108,7 @@ public abstract class AbstractWebSocketEndPoint {
                     _logger.debug("WebSocket timeout on {}", this, failure);
                 }
             } else {
-                InetSocketAddress address = _bayeuxContext == null ? null : _bayeuxContext.getRemoteAddress();
+                SocketAddress address = _bayeuxContext == null ? null : _bayeuxContext.getRemoteAddress();
                 if (_logger.isDebugEnabled()) {
                     _logger.debug("WebSocket failure, address {} on {}", address, this, failure);
                 }
@@ -454,7 +453,7 @@ public abstract class AbstractWebSocketEndPoint {
         }
     }
 
-    private class Flusher extends IteratingCallback {
+    private class Flusher extends IteratingCallback implements Promise<Void> {
         private final AutoLock _lock = new AutoLock();
         private final Queue<Entry> _entries = new ArrayDeque<>();
         private State _state = State.IDLE;
@@ -589,6 +588,16 @@ public abstract class AbstractWebSocketEndPoint {
                     }
                 }
             }
+        }
+
+        @Override
+        public void succeed(Void result) {
+            succeeded();
+        }
+
+        @Override
+        public void fail(Throwable failure) {
+            failed(failure);
         }
 
         @Override

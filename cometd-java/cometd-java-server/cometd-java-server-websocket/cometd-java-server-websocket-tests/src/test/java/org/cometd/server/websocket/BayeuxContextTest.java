@@ -44,9 +44,10 @@ import org.cometd.server.websocket.jakarta.WebSocketTransport;
 import org.cometd.server.websocket.jetty.JettyWebSocketTransport;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
-import org.eclipse.jetty.ee10.websocket.server.JettyServerUpgradeRequest;
-import org.eclipse.jetty.ee10.websocket.server.JettyServerUpgradeResponse;
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.server.Session;
+import org.eclipse.jetty.websocket.server.ServerUpgradeRequest;
+import org.eclipse.jetty.websocket.server.ServerUpgradeResponse;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -233,8 +234,7 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
         bayeux.addListener(new BayeuxServer.SessionListener() {
             @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
-                Assertions.assertNotNull(message.getBayeuxContext().getHttpSessionId());
-                Assertions.assertEquals(SessionConstants.ATTRIBUTE_VALUE, message.getBayeuxContext().getHttpSessionAttribute(SessionConstants.ATTRIBUTE_NAME));
+                Assertions.assertEquals(SessionConstants.ATTRIBUTE_VALUE, message.getBayeuxContext().getSessionAttribute(SessionConstants.ATTRIBUTE_NAME));
                 latch.countDown();
             }
         });
@@ -363,8 +363,8 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
         }
 
         @Override
-        protected void modifyUpgrade(JettyServerUpgradeRequest request, JettyServerUpgradeResponse response) {
-            response.setHeader("Set-Cookie", COOKIE_NAME + "=" + COOKIE_VALUE);
+        protected void modifyUpgrade(ServerUpgradeRequest request, ServerUpgradeResponse response) {
+            response.getHeaders().put("Set-Cookie", COOKIE_NAME + "=" + COOKIE_VALUE);
         }
     }
 
@@ -392,8 +392,8 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
         }
 
         @Override
-        protected void modifyUpgrade(JettyServerUpgradeRequest request, JettyServerUpgradeResponse response) {
-            HttpSession session = (HttpSession)request.getSession();
+        protected void modifyUpgrade(ServerUpgradeRequest request, ServerUpgradeResponse response) {
+            Session session = request.getSession(false);
             Assertions.assertNotNull(session);
             Assertions.assertEquals(ATTRIBUTE_VALUE, session.getAttribute(ATTRIBUTE_NAME));
         }
@@ -425,7 +425,7 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
         }
 
         @Override
-        protected void modifyUpgrade(JettyServerUpgradeRequest request, JettyServerUpgradeResponse response) {
+        protected void modifyUpgrade(ServerUpgradeRequest request, ServerUpgradeResponse response) {
             onUpgrade(handshakes, enterLatch, proceedLatch);
             super.modifyUpgrade(request, response);
         }

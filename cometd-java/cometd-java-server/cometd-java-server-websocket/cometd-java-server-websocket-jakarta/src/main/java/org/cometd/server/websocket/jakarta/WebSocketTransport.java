@@ -15,7 +15,7 @@
  */
 package org.cometd.server.websocket.jakarta;
 
-import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -23,7 +23,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import jakarta.servlet.ServletContext;
-import jakarta.servlet.http.HttpSession;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.Extension;
 import jakarta.websocket.HandshakeResponse;
@@ -107,13 +106,29 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
 
     private static class WebSocketContext extends AbstractBayeuxContext {
         private WebSocketContext(ServletContext context, HandshakeRequest request, Map<String, Object> userProperties) {
-            super(context, request.getRequestURI().toString(), request.getQueryString(), request.getHeaders(),
-                    request.getParameterMap(), request.getUserPrincipal(), (HttpSession)request.getHttpSession(),
+            super(request.getRequestURI().toString(), context.getContextPath(), request.getQueryString(), request.getHeaders(),
+                    request.getParameterMap(), request.getUserPrincipal(),
                     // Hopefully these will become a standard, for now they are Jetty specific.
-                    (InetSocketAddress)userProperties.get("jakarta.websocket.endpoint.localAddress"),
-                    (InetSocketAddress)userProperties.get("jakarta.websocket.endpoint.remoteAddress"),
+                    (SocketAddress)userProperties.get("jakarta.websocket.endpoint.localAddress"),
+                    (SocketAddress)userProperties.get("jakarta.websocket.endpoint.remoteAddress"),
                     WebSocketTransport.retrieveLocales(userProperties), "HTTP/1.1",
                     WebSocketTransport.isSecure(request));
+            // TODO: attributes.
+        }
+
+        @Override
+        public Object getContextAttribute(String name) {
+            return super.getContextAttribute(name);
+        }
+
+        @Override
+        public Object getRequestAttribute(String name) {
+            return super.getRequestAttribute(name);
+        }
+
+        @Override
+        public Object getSessionAttribute(String name) {
+            return super.getSessionAttribute(name);
         }
     }
 

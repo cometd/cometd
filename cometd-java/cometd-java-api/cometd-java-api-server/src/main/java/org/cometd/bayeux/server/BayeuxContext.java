@@ -15,7 +15,7 @@
  */
 package org.cometd.bayeux.server;
 
-import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.security.Principal;
 import java.util.List;
 import java.util.Locale;
@@ -25,6 +25,7 @@ import java.util.Locale;
  * <p>This information may be from an associated HTTP request, or a HTTP request used to
  * originally establish the connection (for example in a websocket handshake).</p>
  */
+// TODO: review javadocs and remove Servlet references.
 public interface BayeuxContext {
     /**
      * @return The user Principal (if any)
@@ -40,12 +41,12 @@ public interface BayeuxContext {
     /**
      * @return the remote socket address
      */
-    InetSocketAddress getRemoteAddress();
+    SocketAddress getRemoteAddress();
 
     /**
      * @return the local socket address
      */
-    InetSocketAddress getLocalAddress();
+    SocketAddress getLocalAddress();
 
     /**
      * Get a transport header.<p>
@@ -98,36 +99,12 @@ public interface BayeuxContext {
     String getCookie(String name);
 
     /**
-     * Access the HTTP Session (if any) ID.
-     * The {@link ServerSession#getId()} should be used in preference to the HTTP Session.
-     *
-     * @return HTTP session ID or null
-     */
-    String getHttpSessionId();
-
-    /**
-     * Access the HTTP Session (if any) attributes.
-     * The {@link ServerSession#getAttribute(String)} should be used in preference to the HTTP Session.
+     * Access the ServletContext (if any) attributes.
      *
      * @param name the attribute name
      * @return The attribute value
      */
-    Object getHttpSessionAttribute(String name);
-
-    /**
-     * Access the HTTP Session (if any) attributes.
-     * The {@link ServerSession#setAttribute(String, Object)} should be used in preference to the HTTP Session.
-     *
-     * @param name  the attribute name
-     * @param value the attribute value
-     */
-    void setHttpSessionAttribute(String name, Object value);
-
-    /**
-     * Invalidate the HTTP Session.
-     * The {@link ServerSession#getId()} should be used in preference to the HTTP Session.
-     */
-    void invalidateHttpSession();
+    Object getContextAttribute(String name);
 
     /**
      * Access the Request (if any) attributes.
@@ -138,12 +115,13 @@ public interface BayeuxContext {
     Object getRequestAttribute(String name);
 
     /**
-     * Access the ServletContext (if any) attributes.
+     * Access the HTTP Session (if any) attributes.
+     * The {@link ServerSession#getAttribute(String)} should be used in preference to the HTTP Session.
      *
      * @param name the attribute name
      * @return The attribute value
      */
-    Object getContextAttribute(String name);
+    Object getSessionAttribute(String name);
 
     /**
      * Access the ServletContext (if any) init parameter.

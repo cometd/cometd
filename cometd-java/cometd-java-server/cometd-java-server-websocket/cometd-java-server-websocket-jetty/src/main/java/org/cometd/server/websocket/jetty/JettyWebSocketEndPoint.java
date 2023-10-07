@@ -19,7 +19,6 @@ import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.websocket.common.AbstractWebSocketEndPoint;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,21 +58,20 @@ public class JettyWebSocketEndPoint extends AbstractWebSocketEndPoint implements
     }
 
     @Override
-    protected void send(ServerSession session, String data, Callback callback) {
+    protected void send(ServerSession session, String data, Promise<Void> promise) {
         if (_logger.isDebugEnabled()) {
             _logger.debug("Sending {} on {}", data, this);
         }
 
-        // Async version.
         _wsSession.sendText(data, new org.eclipse.jetty.websocket.api.Callback() {
             @Override
             public void succeed() {
-                callback.succeeded();
+                promise.succeed(null);
             }
 
             @Override
             public void fail(Throwable x) {
-                callback.failed(x);
+                promise.fail(x);
             }
         });
     }

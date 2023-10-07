@@ -38,15 +38,17 @@ import org.cometd.client.websocket.jakarta.WebSocketTransport;
 import org.cometd.client.websocket.jetty.JettyWebSocketTransport;
 import org.cometd.client.websocket.okhttp.OkHttpWebSocketTransport;
 import org.cometd.server.BayeuxServerImpl;
+import org.cometd.server.handler.CometDHandler;
+import org.cometd.server.handler.transport.HandlerJSONTransport;
 import org.cometd.server.servlet.CometDServlet;
 import org.cometd.server.servlet.transport.ServletJSONTransport;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
-import org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.junit.jupiter.api.AfterEach;
@@ -66,7 +68,7 @@ public abstract class AbstractClientServerTest {
     protected final Logger logger = LoggerFactory.getLogger(getClass());
     protected Server server;
     protected ServerConnector connector;
-    protected ServletContextHandler context;
+    protected ContextHandler context;
     protected String cometdServletPath = "/cometd";
     protected String cometdURL;
     protected BayeuxServer bayeux;
@@ -87,59 +89,66 @@ public abstract class AbstractClientServerTest {
 
     private void startServer(Transport transport, Map<String, String> initParams) throws Exception {
         server = new Server();
-
         connector = new ServerConnector(server, 1, 1);
-        connector.setIdleTimeout(30000);
         server.addConnector(connector);
 
-        context = new ServletContextHandler("/", ServletContextHandler.SESSIONS); // JETTY_WEBSOCKET requires sessions
-        server.setHandler(context);
-
         switch (transport) {
-            case JAKARTA_WEBSOCKET, OKHTTP_WEBSOCKET ->
-                    JakartaWebSocketServletContainerInitializer.configure(context, null);
-            case JETTY_WEBSOCKET -> JettyWebSocketServletContainerInitializer.configure(context, null);
-            default -> {
+            case JAKARTA_HTTP, JAKARTA_WEBSOCKET, OKHTTP_WEBSOCKET -> {
+                ServletContextHandler servletContext = new ServletContextHandler("/");
+                context = servletContext;
+                server.setHandler(context);
+                ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);
+                cometdServletHolder.setInitParameter("timeout", "10000");
+                cometdServletHolder.setInitOrder(1);
+                if (initParams != null) {
+                    for (Map.Entry<String, String> entry : initParams.entrySet()) {
+                        cometdServletHolder.setInitParameter(entry.getKey(), entry.getValue());
+                    }
+                }
+                servletContext.addServlet(cometdServletHolder, cometdServletPath + "/*");
+                if (transport == Transport.JAKARTA_WEBSOCKET || transport == Transport.OKHTTP_WEBSOCKET) {
+                    JakartaWebSocketServletContainerInitializer.configure(servletContext, null);
+                }
+            }
+            case JETTY_HTTP, JETTY_WEBSOCKET -> {
+                context = new ContextHandler("/");
+                server.setHandler(context);
+                CometDHandler cometdHandler = new CometDHandler();
+                cometdHandler.setOptions(initParams);
+                context.setHandler(cometdHandler);
+                if (transport == Transport.JETTY_WEBSOCKET) {
+                    // TODO: use WSUH?
+//                    JettyWebSocketServletContainerInitializer.configure(context, null);
+                }
             }
         }
-
-        // CometD servlet
-        ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);
-        cometdServletHolder.setInitParameter("timeout", "10000");
-        cometdServletHolder.setInitOrder(1);
-        if (initParams != null) {
-            for (Map.Entry<String, String> entry : initParams.entrySet()) {
-                cometdServletHolder.setInitParameter(entry.getKey(), entry.getValue());
-            }
-        }
-
-        context.addServlet(cometdServletHolder, cometdServletPath + "/*");
 
         server.start();
         int port = connector.getLocalPort();
         cometdURL = "http://localhost:" + port + cometdServletPath;
-
-        bayeux = (BayeuxServer)context.getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
+        bayeux = (BayeuxServer)context.getAttribute(BayeuxServer.ATTRIBUTE);
     }
 
     protected void startClient(Transport transport) throws Exception {
         scheduler = Executors.newSingleThreadScheduledExecutor();
         switch (transport) {
-            case JETTY_HTTP, ASYNC_HTTP -> {
+            case JETTY_HTTP, JAKARTA_HTTP -> {
                 httpClient = new HttpClient();
                 httpClient.start();
             }
-            case JAKARTA_WEBSOCKET -> wsContainer = ContainerProvider.getWebSocketContainer();
+            case JAKARTA_WEBSOCKET -> {
+                wsContainer = ContainerProvider.getWebSocketContainer();
+            }
             case JETTY_WEBSOCKET -> {
                 httpClient = new HttpClient();
                 httpClient.start();
                 wsClient = new WebSocketClient(httpClient);
                 wsClient.start();
             }
-            case OKHTTP_HTTP, OKHTTP_WEBSOCKET ->
+            case OKHTTP_HTTP, OKHTTP_WEBSOCKET -> {
                 // There's no lifecycle of OkHttp client.
-                    okHttpClient = new OkHttpClient();
-            default -> throw new IllegalArgumentException();
+                okHttpClient = new OkHttpClient();
+            }
         }
     }
 
@@ -152,8 +161,8 @@ public abstract class AbstractClientServerTest {
 
     protected String serverTransport(Transport transport) {
         return switch (transport) {
-            case JETTY_HTTP -> ServletJSONTransport.class.getName();
-            case ASYNC_HTTP, OKHTTP_HTTP -> ServletJSONTransport.class.getName();
+            case JETTY_HTTP -> HandlerJSONTransport.class.getName();
+            case JAKARTA_HTTP, OKHTTP_HTTP -> ServletJSONTransport.class.getName();
             case JAKARTA_WEBSOCKET, OKHTTP_WEBSOCKET ->
                     org.cometd.server.websocket.jakarta.WebSocketTransport.class.getName();
             case JETTY_WEBSOCKET -> org.cometd.server.websocket.jetty.JettyWebSocketTransport.class.getName();
@@ -166,7 +175,7 @@ public abstract class AbstractClientServerTest {
 
     protected ClientTransport newClientTransport(Transport transport, Map<String, Object> options) {
         return switch (transport) {
-            case JETTY_HTTP, ASYNC_HTTP -> new JettyHttpClientTransport(options, httpClient);
+            case JETTY_HTTP, JAKARTA_HTTP -> new JettyHttpClientTransport(options, httpClient);
             case OKHTTP_HTTP -> new OkHttpClientTransport(options, okHttpClient);
             case JAKARTA_WEBSOCKET -> new WebSocketTransport(options, scheduler, wsContainer);
             case JETTY_WEBSOCKET -> new JettyWebSocketTransport(options, scheduler, wsClient);
@@ -220,6 +229,6 @@ public abstract class AbstractClientServerTest {
     }
 
     public enum Transport {
-        JETTY_HTTP, ASYNC_HTTP, OKHTTP_HTTP, JAKARTA_WEBSOCKET, JETTY_WEBSOCKET, OKHTTP_WEBSOCKET
+        JAKARTA_HTTP, JETTY_HTTP, OKHTTP_HTTP, JAKARTA_WEBSOCKET, JETTY_WEBSOCKET, OKHTTP_WEBSOCKET
     }
 }

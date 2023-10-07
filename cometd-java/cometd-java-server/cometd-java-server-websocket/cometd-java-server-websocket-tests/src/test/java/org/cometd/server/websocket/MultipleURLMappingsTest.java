@@ -26,11 +26,10 @@ import org.cometd.client.transport.ClientTransport;
 import org.cometd.server.servlet.CometDServlet;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.ee10.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
-import org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -62,7 +61,8 @@ public class MultipleURLMappingsTest {
 
         switch (wsTransportClass) {
             case JAKARTA_WS_TRANSPORT -> JakartaWebSocketServletContainerInitializer.configure(context, null);
-            case JETTY_WS_TRANSPORT -> JettyWebSocketServletContainerInitializer.configure(context, null);
+            // TODO: use WSUH?
+//            case JETTY_WS_TRANSPORT -> ServerWebSocketContainer.configure(context, null);
             default -> throw new IllegalArgumentException("Unsupported transport " + wsTransportClass);
         }
 

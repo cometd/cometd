@@ -24,6 +24,7 @@ import java.util.Locale;
 import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.server.CometDRequest;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Session;
 
 class HandlerBayeuxContext implements BayeuxContext {
     private final HandlerCometDRequest cometDRequest;
@@ -45,7 +46,7 @@ class HandlerBayeuxContext implements BayeuxContext {
     }
 
     @Override
-    public InetSocketAddress getRemoteAddress() {
+    public SocketAddress getRemoteAddress() {
         SocketAddress socketAddress = request.getConnectionMetaData().getRemoteSocketAddress();
         if (socketAddress instanceof InetSocketAddress inetSocketAddress)
             return inetSocketAddress;
@@ -53,7 +54,7 @@ class HandlerBayeuxContext implements BayeuxContext {
     }
 
     @Override
-    public InetSocketAddress getLocalAddress() {
+    public SocketAddress getLocalAddress() {
         SocketAddress socketAddress = request.getConnectionMetaData().getLocalSocketAddress();
         if (socketAddress instanceof InetSocketAddress inetSocketAddress)
             return inetSocketAddress;
@@ -90,21 +91,8 @@ class HandlerBayeuxContext implements BayeuxContext {
     }
 
     @Override
-    public String getHttpSessionId() {
-        return null;
-    }
-
-    @Override
-    public Object getHttpSessionAttribute(String name) {
-        return null;
-    }
-
-    @Override
-    public void setHttpSessionAttribute(String name, Object value) {
-    }
-
-    @Override
-    public void invalidateHttpSession() {
+    public Object getContextAttribute(String name) {
+        return request.getContext().getAttribute(name);
     }
 
     @Override
@@ -113,8 +101,9 @@ class HandlerBayeuxContext implements BayeuxContext {
     }
 
     @Override
-    public Object getContextAttribute(String name) {
-        return request.getContext().getAttribute(name);
+    public Object getSessionAttribute(String name) {
+        Session session = request.getSession(false);
+        return session == null ? null : session.getAttribute(name);
     }
 
     @Override

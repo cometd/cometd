@@ -21,10 +21,9 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee10.websocket</groupId>
-      <artifactId>jetty-ee10-websocket-jetty-server</artifactId>
+      <groupId>org.eclipse.jetty.websocket</groupId>
+      <artifactId>jetty-websocket-jetty-server</artifactId>
       <version>${jetty-version}</version>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>

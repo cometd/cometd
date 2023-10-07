@@ -16,15 +16,16 @@
 package org.cometd.server.servlet;
 
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.security.Principal;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+
 import org.cometd.bayeux.server.BayeuxContext;
 
 class ServletBayeuxContext implements BayeuxContext {
@@ -45,12 +46,12 @@ class ServletBayeuxContext implements BayeuxContext {
     }
 
     @Override
-    public InetSocketAddress getRemoteAddress() {
+    public SocketAddress getRemoteAddress() {
         return new InetSocketAddress(request.getRemoteHost(), request.getRemotePort());
     }
 
     @Override
-    public InetSocketAddress getLocalAddress() {
+    public SocketAddress getLocalAddress() {
         return new InetSocketAddress(request.getLocalName(), request.getLocalPort());
     }
 
@@ -88,44 +89,24 @@ class ServletBayeuxContext implements BayeuxContext {
     }
 
     @Override
-    public String getHttpSessionId() {
-        HttpSession session = request.getSession(false);
-        if (session != null) {
-            return session.getId();
-        }
-        return null;
-    }
-
-    @Override
-    public Object getHttpSessionAttribute(String name) {
-        HttpSession session = request.getSession(false);
-        if (session != null) {
-            return session.getAttribute(name);
-        }
-        return null;
-    }
-
-    @Override
-    public void setHttpSessionAttribute(String name, Object value) {
-        HttpSession session = request.getSession(false);
-        if (session != null) {
-            session.setAttribute(name, value);
-        } else {
-            throw new IllegalStateException("!session");
-        }
-    }
-
-    @Override
-    public void invalidateHttpSession() {
-        HttpSession session = request.getSession(false);
-        if (session != null) {
-            session.invalidate();
-        }
+    public Object getContextAttribute(String name) {
+        return getServletContext().getAttribute(name);
     }
 
     @Override
     public Object getRequestAttribute(String name) {
         return request.getAttribute(name);
+    }
+
+    @Override
+    public Object getSessionAttribute(String name) {
+        HttpSession session = request.getSession(false);
+        return session != null ? session.getAttribute(name) : null;
+    }
+
+    @Override
+    public String getContextInitParameter(String name) {
+        return getServletContext().getInitParameter(name);
     }
 
     private ServletContext getServletContext() {
@@ -138,16 +119,6 @@ class ServletBayeuxContext implements BayeuxContext {
             s.invalidate();
             return servletContext;
         }
-    }
-
-    @Override
-    public Object getContextAttribute(String name) {
-        return getServletContext().getAttribute(name);
-    }
-
-    @Override
-    public String getContextInitParameter(String name) {
-        return getServletContext().getInitParameter(name);
     }
 
     @Override

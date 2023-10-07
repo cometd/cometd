@@ -180,8 +180,7 @@ public class BayeuxContextTest extends AbstractBayeuxClientServerTest
         bayeux.addListener(new BayeuxServer.SessionListener() {
             @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
-                Assertions.assertNotNull(message.getBayeuxContext().getHttpSessionId());
-                Assertions.assertEquals(value, message.getBayeuxContext().getHttpSessionAttribute(name));
+                Assertions.assertEquals(value, message.getBayeuxContext().getSessionAttribute(name));
                 latch.countDown();
             }
         });

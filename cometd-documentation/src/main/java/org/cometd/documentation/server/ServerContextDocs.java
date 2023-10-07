@@ -15,8 +15,11 @@
  */
 package org.cometd.documentation.server;
 
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.HashSet;
 import java.util.Set;
+
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -36,7 +39,8 @@ public class ServerContextDocs {
             BayeuxContext context = message.getBayeuxContext();
 
             // Get the remote address of the client.
-            String remoteAddress = context.getRemoteAddress().getHostString();
+            SocketAddress remoteSocketAddress = context.getRemoteAddress();
+            String remoteAddress = remoteSocketAddress instanceof InetSocketAddress inet ? inet.getHostName() : null;
 
             // Only allow clients from different remote addresses.
 

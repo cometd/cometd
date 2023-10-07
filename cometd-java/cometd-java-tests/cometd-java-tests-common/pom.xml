@@ -60,8 +60,8 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee10.websocket</groupId>
-      <artifactId>jetty-ee10-websocket-jetty-server</artifactId>
+      <groupId>org.eclipse.jetty.websocket</groupId>
+      <artifactId>jetty-websocket-jetty-server</artifactId>
       <version>${jetty-version}</version>
       <scope>test</scope>
     </dependency>
@@ -79,7 +79,13 @@
     </dependency>
     <dependency>
       <groupId>org.cometd.java</groupId>
-      <artifactId>cometd-java-server-common</artifactId>
+      <artifactId>cometd-java-server-servlet</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.cometd.java</groupId>
+      <artifactId>cometd-java-server-handler</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
