@@ -20,7 +20,7 @@
     <servlet-class>org.cometd.server.servlet.CometDServlet</servlet-class>
     <init-param>
       <param-name>transports</param-name>
-      <param-value>org.cometd.server.servlet.transport.AsyncJSONTransport</param-value>
+      <param-value>org.cometd.server.servlet.transport.ServletJSONTransport</param-value>
     </init-param>
     <load-on-startup>1</load-on-startup>
     <async-supported>true</async-supported>

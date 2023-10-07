@@ -16,8 +16,8 @@
 package org.cometd.server.servlet;
 
 import java.io.IOException;
-
 import jakarta.servlet.http.HttpServletResponse;
+
 import org.cometd.server.spi.CometDOutput;
 import org.cometd.server.spi.CometDResponse;
 
@@ -32,11 +32,6 @@ class ServletCometDResponse implements CometDResponse {
     @Override
     public void addHeader(String name, String value) {
         response.addHeader(name, value);
-    }
-
-    @Override
-    public String getCharacterEncoding() {
-        return response.getCharacterEncoding();
     }
 
     @Override

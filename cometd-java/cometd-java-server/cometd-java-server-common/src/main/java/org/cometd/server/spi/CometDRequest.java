@@ -15,30 +15,24 @@
  */
 package org.cometd.server.spi;
 
-import java.io.UnsupportedEncodingException;
 import java.util.List;
 
-public interface CometDRequest
-{
-    // HTTP metadata
-    String getContentType(); // TODO only needed by blocking transport
-    String getCharacterEncoding(); // TODO change API so that it sets the encoding to UTF8 when none is present?
-    void setCharacterEncoding(String encoding) throws UnsupportedEncodingException; // TODO only needed to set the encoding to UTF8 when getCharacterEncoding() returns null
-    List<CometDCookie> getCookies();
-    String[] getParameterValues(String name); // TODO only needed by blocking transport
+public interface CometDRequest {
     String getMethod();
+
     String getProtocol();
 
-    // input reading
+    String[] getParameterValues(String name);
+
+    String getCharacterEncoding();
+
+    List<CometDCookie> getCookies();
+
     CometDInput getInput();
 
-    // in-memory data
     Object getAttribute(String name);
-    void setAttribute(String name, Object value);
 
-    // underlying impl
-    // TODO: this is only necessary to retrieve AsyncContext - store it as attribute.
-    <T> T unwrap(Class<T> clazz);
+    void setAttribute(String name, Object value);
 
     record CometDCookie(String name, String value) {
     }

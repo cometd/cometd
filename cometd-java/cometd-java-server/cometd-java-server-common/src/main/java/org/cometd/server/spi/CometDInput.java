@@ -16,21 +16,36 @@
 package org.cometd.server.spi;
 
 import java.io.IOException;
-import java.io.Reader;
+import java.nio.ByteBuffer;
 
-public interface CometDInput
-{
-    Reader asReader(); // TODO remove API? This requires abandoning blocking transports
+public interface CometDInput {
+    void demand(Runnable demandCallback);
 
-    void demand(Runnable r);
+    Chunk read() throws IOException;
 
-    // TODO: the APis must be based on ByteBuffer to make them very efficient with Jetty 12 Chunks
-    //  byte[] can be wrapped into ByteBuffers without copy, but not the other way around.
+    interface Chunk {
+        Chunk EOF = new Chunk() {
+            private static final ByteBuffer EMPTY = ByteBuffer.allocate(0);
 
-    default int read(byte[] buffer) throws IOException
-    {
-        return read(buffer, 0, buffer.length);
+            @Override
+            public ByteBuffer byteBuffer() {
+                return EMPTY;
+            }
+
+            @Override
+            public boolean isLast() {
+                return true;
+            }
+
+            @Override
+            public void release() {
+            }
+        };
+
+        ByteBuffer byteBuffer();
+
+        boolean isLast();
+
+        void release();
     }
-
-    int read(byte[] buffer, int off, int len) throws IOException;
 }

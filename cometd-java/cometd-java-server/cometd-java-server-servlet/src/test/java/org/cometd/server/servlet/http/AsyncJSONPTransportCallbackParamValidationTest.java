@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.cometd.server.handler.http;
+package org.cometd.server.servlet.http;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -24,21 +24,21 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.cometd.server.handler.AbstractBayeuxClientServerTest;
-import org.cometd.server.handler.transport.AsyncJSONTransport;
+import org.cometd.server.servlet.AbstractBayeuxClientServerTest;
+import org.cometd.server.servlet.transport.AsyncJSONPTransport;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.http.HttpMethod;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class JSONPTransportCallbackParamValidationTest extends AbstractBayeuxClientServerTest {
-    // We want to test only the JSONPTransport.
-    private final String serverTransport = AsyncJSONTransport.class.getName();
+public class AsyncJSONPTransportCallbackParamValidationTest extends AbstractBayeuxClientServerTest {
+    // We want to test only the AsyncJSONPTransport.
+    private final String serverTransport = AsyncJSONPTransport.class.getName();
     private final Map<String, String> initParams = new HashMap<>();
     private final String jsonpPath = "/?jsonp=";
 
-    public JSONPTransportCallbackParamValidationTest() {
+    public AsyncJSONPTransportCallbackParamValidationTest() {
         initParams.put("long-polling.jsonp.callbackParameterMaxLength", "10");
     }
 

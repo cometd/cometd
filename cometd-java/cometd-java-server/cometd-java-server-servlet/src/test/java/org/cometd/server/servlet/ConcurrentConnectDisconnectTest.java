@@ -26,8 +26,8 @@ import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.common.JettyJSONContextClient;
-import org.cometd.server.http.TransportContext;
-import org.cometd.server.servlet.transport.JSONTransport;
+import org.cometd.server.servlet.transport.ServletJSONTransport;
+import org.cometd.server.transport.TransportContext;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.FutureResponseListener;
 import org.eclipse.jetty.client.Request;
@@ -142,7 +142,7 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
         CountDownLatch connectLatch = new CountDownLatch(2);
         CountDownLatch disconnectLatch = new CountDownLatch(1);
         CountDownLatch suspendLatch = new CountDownLatch(1);
-        JSONTransport transport = new JSONTransport(bayeux) {
+        ServletJSONTransport transport = new ServletJSONTransport(bayeux) {
             @Override
             protected void handleMessage(TransportContext context, ServerMessage.Mutable message, Promise<ServerMessage.Mutable> promise) {
                 super.handleMessage(context, message, Promise.from(reply -> {

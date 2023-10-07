@@ -39,17 +39,16 @@ import org.cometd.client.websocket.jetty.JettyWebSocketTransport;
 import org.cometd.client.websocket.okhttp.OkHttpWebSocketTransport;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.servlet.CometDServlet;
-import org.cometd.server.servlet.transport.AsyncJSONTransport;
-import org.cometd.server.servlet.transport.JSONTransport;
+import org.cometd.server.servlet.transport.ServletJSONTransport;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.ee10.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -153,8 +152,8 @@ public abstract class AbstractClientServerTest {
 
     protected String serverTransport(Transport transport) {
         return switch (transport) {
-            case JETTY_HTTP -> JSONTransport.class.getName();
-            case ASYNC_HTTP, OKHTTP_HTTP -> AsyncJSONTransport.class.getName();
+            case JETTY_HTTP -> ServletJSONTransport.class.getName();
+            case ASYNC_HTTP, OKHTTP_HTTP -> ServletJSONTransport.class.getName();
             case JAKARTA_WEBSOCKET, OKHTTP_WEBSOCKET ->
                     org.cometd.server.websocket.jakarta.WebSocketTransport.class.getName();
             case JETTY_WEBSOCKET -> org.cometd.server.websocket.jetty.JettyWebSocketTransport.class.getName();

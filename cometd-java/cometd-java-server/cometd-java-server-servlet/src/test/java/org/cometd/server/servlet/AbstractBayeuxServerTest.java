@@ -20,9 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.servlet.CometDServlet;
-import org.cometd.server.servlet.transport.AsyncJSONTransport;
-import org.cometd.server.servlet.transport.JSONTransport;
+import org.cometd.server.servlet.transport.ServletJSONTransport;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.server.Server;
@@ -34,7 +32,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 public abstract class AbstractBayeuxServerTest {
     public static List<String> transports() {
-        return List.of(JSONTransport.class.getName(), AsyncJSONTransport.class.getName());
+        return List.of(ServletJSONTransport.class.getName(), ServletJSONTransport.class.getName());
     }
 
     @RegisterExtension

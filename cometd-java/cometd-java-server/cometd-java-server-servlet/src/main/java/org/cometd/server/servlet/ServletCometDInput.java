@@ -16,93 +16,69 @@
 package org.cometd.server.servlet;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.nio.charset.Charset;
+import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicReference;
-
 import jakarta.servlet.ReadListener;
 import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.HttpServletRequest;
+
 import org.cometd.server.spi.CometDInput;
-import org.eclipse.jetty.util.thread.SerializedInvoker;
+import org.eclipse.jetty.util.IO;
 
 class ServletCometDInput implements CometDInput, ReadListener {
+    private static final Runnable DATA_AVAILABLE = () -> {};
+
     private final ServletInputStream inputStream;
-    private final HttpServletRequest request;
-    private final SerializedInvoker serializedInvoker = new SerializedInvoker();
-    private final AtomicReference<NextRead> nextReadRef = new AtomicReference<>();
-    private volatile Throwable error;
+    private final AtomicReference<Runnable> state = new AtomicReference<>();
+    private volatile Throwable failure;
 
     ServletCometDInput(HttpServletRequest request) throws IOException {
-        this.request = request;
         this.inputStream = request.getInputStream();
+        // TODO: if method is GET, no need to read the body, no need to set the read listener.
         this.inputStream.setReadListener(this);
     }
 
     @Override
-    public Reader asReader() {
-        Charset charset = Charset.forName(request.getCharacterEncoding());
-        return new InputStreamReader(new InputStream() {
-            @Override
-            public int read(byte[] b, int off, int len) throws IOException {
-                return ServletCometDInput.this.read(b, off, len);
-            }
-
-            @Override
-            public int read() throws IOException {
-                return ServletCometDInput.this.read();
-            }
-        }, charset);
-    }
-
-    @Override
-    public void demand(Runnable r) {
-        if (error != null || inputStream.isFinished() || inputStream.isReady()) {
-            serializedInvoker.run(r);
-        } else {
-            nextReadRef.set(new NextRead(r));
+    public void demand(Runnable demandCallback) {
+        // This method races with onDataAvailable() and onAllDataRead().
+        Runnable dataAvailable = state.getAndUpdate(existing -> existing == null ? demandCallback : null);
+        if (dataAvailable != null) {
+            // Lost the race with onDataAvailable(), but there
+            // is data available, so run the demandCallback.
+            demandCallback.run();
         }
     }
 
     @Override
-    public int read(byte[] buffer, int off, int len) throws IOException {
-        if (error != null) {
-            throw errorToIOException();
+    public Chunk read() throws IOException {
+        if (failure != null) {
+            throw IO.rethrow(failure);
         } else if (inputStream.isFinished()) {
-            return -1;
+            return Chunk.EOF;
         } else if (inputStream.isReady()) {
-            return inputStream.read(buffer, off, len);
+            // TODO: the chunks can be pooled.
+            Chunk chunk = new ServletChunk();
+            ByteBuffer byteBuffer = chunk.byteBuffer();
+            int read = inputStream.read(byteBuffer.array(), byteBuffer.arrayOffset(), byteBuffer.remaining());
+            if (read < 0) {
+                chunk.release();
+                return Chunk.EOF;
+            } else if (read == 0) {
+                chunk.release();
+                return null;
+            } else {
+                byteBuffer.limit(read);
+                return chunk;
+            }
         } else {
-            return 0;
-        }
-    }
-
-    private int read() throws IOException
-    {
-        if (error != null) {
-            throw errorToIOException();
-        } else if (inputStream.isFinished()) {
-            return -1;
-        } else if (inputStream.isReady()) {
-            return inputStream.read();
-        } else {
-            return 0;
-        }
-    }
-
-    private IOException errorToIOException() {
-        if (error instanceof IOException) {
-            return (IOException)error;
-        } else {
-            return new IOException(error);
+            return null;
         }
     }
 
     @Override
     public void onDataAvailable() {
-        NextRead nextRead = nextReadRef.getAndSet(null);
+        // This method races with demand(Runnable).
+        Runnable nextRead = state.getAndUpdate(existing -> existing == null ? DATA_AVAILABLE : null);
         if (nextRead != null) {
             nextRead.run();
         }
@@ -110,24 +86,30 @@ class ServletCometDInput implements CometDInput, ReadListener {
 
     @Override
     public void onAllDataRead() {
-        NextRead nextRead = nextReadRef.getAndSet(null);
-        if (nextRead != null) {
-            nextRead.run();
-        }
+        onDataAvailable();
     }
 
     @Override
-    public void onError(Throwable t) {
-        error = t;
-        NextRead nextRead = nextReadRef.getAndSet(null);
-        if (nextRead != null) {
-            nextRead.run();
-        }
+    public void onError(Throwable failure) {
+        this.failure = failure;
+        onDataAvailable();
     }
 
-    private record NextRead(Runnable runnable) {
-        public void run() {
-            runnable.run();
+    private static class ServletChunk implements Chunk {
+        private final ByteBuffer byteBuffer = ByteBuffer.allocate(512);
+
+        @Override
+        public ByteBuffer byteBuffer() {
+            return byteBuffer;
+        }
+
+        @Override
+        public boolean isLast() {
+            return false;
+        }
+
+        @Override
+        public void release() {
         }
     }
 }

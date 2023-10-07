@@ -15,8 +15,6 @@
  */
 package org.cometd.server.servlet;
 
-import java.io.IOException;
-import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.URI;
@@ -27,8 +25,6 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.cometd.server.spi.CometDOutput;
-import org.cometd.server.spi.CometDResponse;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
@@ -37,8 +33,9 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.common.JettyJSONContextClient;
 import org.cometd.server.AbstractServerTransport;
-import org.cometd.server.ServerSessionImpl;
-import org.cometd.server.servlet.transport.JSONTransport;
+import org.cometd.server.servlet.transport.ServletJSONTransport;
+import org.cometd.server.spi.CometDOutput;
+import org.cometd.server.transport.TransportContext;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.io.EofException;
@@ -114,17 +111,24 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
         startServer(serverTransport, options);
 
         String channelName = "/test";
-        JSONTransport transport = new JSONTransport(bayeux) {
+        ServletJSONTransport transport = new ServletJSONTransport(bayeux) {
+            private TransportContext context;
+
             @Override
-            protected void writeMessage(CometDResponse response, CometDOutput output, ServerSessionImpl session, ServerMessage message) throws IOException {
+            protected void writePrepare(TransportContext context, Promise<Void> promise) {
+                this.context = context;
+            }
+
+            @Override
+            protected void writeMessage(CometDOutput output, ServerMessage message, Promise<Void> promise) {
                 try {
                     if (channelName.equals(message.getChannel())) {
-                        session.scheduleExpiration(0, maxInterval, session.getMetaConnectCycle());
+                        context.session().scheduleExpiration(0, maxInterval, context.session().getMetaConnectCycle());
                         TimeUnit.MILLISECONDS.sleep(2 * maxInterval);
                     }
-                    super.writeMessage(response, output, session, message);
+                    super.writeMessage(output, message, promise);
                 } catch (InterruptedException x) {
-                    throw new InterruptedIOException();
+                    promise.fail(x);
                 }
             }
         };
@@ -183,16 +187,17 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
 
         CountDownLatch sendLatch = new CountDownLatch(1);
         CountDownLatch closeLatch = new CountDownLatch(1);
-        JSONTransport transport = new JSONTransport(bayeux) {
+        ServletJSONTransport transport = new ServletJSONTransport(bayeux) {
             @Override
-            protected void writeMessage(CometDResponse response, CometDOutput output, ServerSessionImpl session, ServerMessage message) throws IOException {
+            protected void writeMessage(CometDOutput output, ServerMessage message, Promise<Void> promise) {
                 if (!message.isMeta() && !message.isPublishReply()) {
                     sendLatch.countDown();
                     await(closeLatch);
-                    // Simulate that an exception is being thrown while writing
-                    throw new EofException("test_exception");
+                    // Simulate that an exception is being thrown while writing.
+                    promise.fail(new EofException("test_exception"));
+                } else {
+                    super.writeMessage(output, message, promise);
                 }
-                super.writeMessage(response, output, session, message);
             }
         };
         transport.init();

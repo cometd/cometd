@@ -18,9 +18,9 @@ module org.cometd.server {
     exports org.cometd.server.authorizer;
     exports org.cometd.server.ext;
     exports org.cometd.server.filter;
-    exports org.cometd.server.http;
     exports org.cometd.server.jmx;
     exports org.cometd.server.spi;
+    exports org.cometd.server.transport;
 
     requires transitive org.cometd.api.server;
     requires transitive org.cometd.common;

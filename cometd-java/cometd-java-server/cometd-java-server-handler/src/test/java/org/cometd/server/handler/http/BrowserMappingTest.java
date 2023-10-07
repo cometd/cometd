@@ -24,9 +24,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.cometd.server.ServerSessionImpl;
-import org.cometd.server.handler.transport.AsyncJSONTransport;
-import org.cometd.server.http.AbstractHttpTransport;
 import org.cometd.server.handler.AbstractBayeuxClientServerTest;
+import org.cometd.server.handler.transport.HandlerJSONTransport;
+import org.cometd.server.transport.AbstractHttpTransport;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.http.HttpFields;
@@ -41,7 +41,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
     public void testBayeuxBrowserMapping(String serverTransport) throws Exception {
         startServer(serverTransport, null);
 
-        AbstractHttpTransport transport = new AsyncJSONTransport(bayeux);
+        AbstractHttpTransport transport = new HandlerJSONTransport(bayeux);
         transport.init();
 
         ServerSessionImpl session = new ServerSessionImpl(bayeux);
@@ -243,10 +243,10 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
         String cookieSameSite = "Lax";
 
         Map<String, String> options = new HashMap<>();
-        options.put(AsyncJSONTransport.BROWSER_COOKIE_NAME_OPTION, cookieName);
-        options.put(AsyncJSONTransport.BROWSER_COOKIE_DOMAIN_OPTION, cookieDomain);
-        options.put(AsyncJSONTransport.BROWSER_COOKIE_PATH_OPTION, cookiePath);
-        options.put(AsyncJSONTransport.BROWSER_COOKIE_SAME_SITE_OPTION, cookieSameSite);
+        options.put(HandlerJSONTransport.BROWSER_COOKIE_NAME_OPTION, cookieName);
+        options.put(HandlerJSONTransport.BROWSER_COOKIE_DOMAIN_OPTION, cookieDomain);
+        options.put(HandlerJSONTransport.BROWSER_COOKIE_PATH_OPTION, cookiePath);
+        options.put(HandlerJSONTransport.BROWSER_COOKIE_SAME_SITE_OPTION, cookieSameSite);
         startServer(serverTransport, options);
 
         Request handshake = newBayeuxRequest("" +

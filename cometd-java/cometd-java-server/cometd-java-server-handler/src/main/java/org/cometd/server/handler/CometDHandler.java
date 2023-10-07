@@ -23,8 +23,8 @@ import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerSessionImpl;
-import org.cometd.server.http.AbstractHttpTransport;
 import org.cometd.server.spi.HttpException;
+import org.cometd.server.transport.AbstractHttpTransport;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -57,7 +57,7 @@ public class CometDHandler extends Handler.Abstract {
     protected void doStart() throws Exception {
         bayeux = newBayeuxServer();
         addBean(bayeux);
-        // TODO: setup the AsyncJSONTransport for Handlers.
+        // TODO: setup the HandlerJSONTransport for Handlers.
         for (Map.Entry<String, String> entry : getOptions().entrySet()) {
             bayeux.setOption(entry.getKey(), entry.getValue());
         }

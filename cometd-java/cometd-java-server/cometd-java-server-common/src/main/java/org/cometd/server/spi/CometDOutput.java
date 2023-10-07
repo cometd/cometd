@@ -15,49 +15,8 @@
  */
 package org.cometd.server.spi;
 
-import java.io.IOException;
-import java.util.concurrent.ExecutionException;
-
 import org.cometd.bayeux.Promise;
 
-// TODO simplify API?
-//  abandoning blocking transports would get rid of blocking write()
 public interface CometDOutput {
-    default void write(char c) throws IOException {
-        if ((c & 0xFF) != c)
-            throw new IllegalArgumentException("Non-ASCII character: " + c);
-        Promise.Completable<Void> promise = new Promise.Completable<>();
-        write((byte)c, promise);
-        try {
-            promise.get();
-        } catch (InterruptedException | ExecutionException e) {
-            if (e.getCause() instanceof IOException)
-                throw (IOException)e.getCause();
-            throw new IOException(e.getCause());
-        }
-    }
-
-    default void write(char c, Promise<Void> promise) {
-        if ((c & 0xFF) != c)
-            throw new IllegalArgumentException("Non-ASCII character: " + c);
-        write((byte) c, promise);
-    }
-
-    default void write(byte[] jsonBytes) throws IOException {
-        Promise.Completable<Void> promise = new Promise.Completable<>();
-        write(jsonBytes, promise);
-        try {
-            promise.get();
-        } catch (InterruptedException | ExecutionException e) {
-            if (e.getCause() instanceof IOException)
-                throw (IOException)e.getCause();
-            throw new IOException(e.getCause());
-        }
-    }
-
-    void write(byte jsonByte, Promise<Void> promise);
-
-    void write(byte[] jsonBytes, Promise<Void> promise);
-
-    void close() throws IOException; // TODO close() is never called by the non-blocking transports, so there is no way to know when they are finished (ie: when to set the last flag to true?)
+    void write(boolean last, byte[] bytes, Promise<Void> promise);
 }

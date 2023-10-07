@@ -16,10 +16,10 @@
         <bean id="ws" class="org.cometd.server.websocket.jakarta.WebSocketTransport">
           <constructor-arg ref="bayeux" />
         </bean>
-        <bean id="json" class="org.cometd.server.servlet.transport.JSONTransport">
+        <bean id="json" class="org.cometd.server.servlet.transport.ServletJSONTransport">
           <constructor-arg ref="bayeux" />
         </bean>
-        <bean id="jsonp" class="org.cometd.server.servlet.transport.JSONPTransport">
+        <bean id="jsonp" class="org.cometd.server.servlet.transport.AsyncJSONPTransport">
           <constructor-arg ref="bayeux" />
         </bean>
       </list>

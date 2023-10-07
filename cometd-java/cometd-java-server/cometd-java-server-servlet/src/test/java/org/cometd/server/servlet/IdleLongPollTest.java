@@ -26,8 +26,9 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.common.JSONContext;
 import org.cometd.common.JettyJSONContextClient;
 import org.cometd.server.AbstractServerTransport;
-import org.cometd.server.http.TransportContext;
-import org.cometd.server.servlet.transport.JSONTransport;
+import org.cometd.server.servlet.transport.ServletHttpScheduler;
+import org.cometd.server.servlet.transport.ServletJSONTransport;
+import org.cometd.server.transport.TransportContext;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Request;
 import org.junit.jupiter.api.Assertions;
@@ -43,10 +44,10 @@ public class IdleLongPollTest extends AbstractBayeuxClientServerTest
 
         long timeout = 2000;
         long sleep = 500;
-        JSONTransport transport = new JSONTransport(bayeux) {
+        ServletJSONTransport transport = new ServletJSONTransport(bayeux) {
             @Override
             protected HttpScheduler newHttpScheduler(TransportContext context, Promise<Void> promise, ServerMessage.Mutable message, long timeout) {
-                return new DispatchingLongPollScheduler(context, promise, message, timeout) {
+                return new ServletHttpScheduler(this, context, message, timeout) {
                     private final AtomicInteger decrements = new AtomicInteger();
 
                     @Override

@@ -21,8 +21,8 @@ import java.util.Map;
 import java.util.Set;
 
 import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.servlet.transport.JSONPTransport;
-import org.cometd.server.servlet.transport.JSONTransport;
+import org.cometd.server.servlet.transport.AsyncJSONPTransport;
+import org.cometd.server.servlet.transport.ServletJSONTransport;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -34,8 +34,8 @@ public class BayeuxServerCreationTest {
 
         Set<String> knownTransports = bayeuxServer.getKnownTransportNames();
         Assertions.assertEquals(2, knownTransports.size());
-        Assertions.assertTrue(knownTransports.contains(JSONTransport.NAME));
-        Assertions.assertTrue(knownTransports.contains(JSONPTransport.NAME));
+        Assertions.assertTrue(knownTransports.contains(ServletJSONTransport.NAME));
+        Assertions.assertTrue(knownTransports.contains(AsyncJSONPTransport.NAME));
         Assertions.assertEquals(knownTransports, new HashSet<>(bayeuxServer.getAllowedTransports()));
     }
 
@@ -67,26 +67,26 @@ public class BayeuxServerCreationTest {
         bayeuxServer.start();
 
         Assertions.assertEquals(timeoutValue, bayeuxServer.getOption(timeoutKey));
-        Assertions.assertEquals(jsonTimeoutValue, bayeuxServer.getTransport(JSONTransport.NAME).getOption(timeoutKey));
-        Assertions.assertEquals(jsonpTimeoutValue, bayeuxServer.getTransport(JSONPTransport.NAME).getOption(timeoutKey));
+        Assertions.assertEquals(jsonTimeoutValue, bayeuxServer.getTransport(ServletJSONTransport.NAME).getOption(timeoutKey));
+        Assertions.assertEquals(jsonpTimeoutValue, bayeuxServer.getTransport(AsyncJSONPTransport.NAME).getOption(timeoutKey));
     }
 
     @Test
     public void testCreationWithTransports() throws Exception {
         BayeuxServerImpl bayeuxServer = new BayeuxServerImpl();
 
-        JSONTransport jsonTransport = new JSONTransport(bayeuxServer);
+        ServletJSONTransport jsonTransport = new ServletJSONTransport(bayeuxServer);
         long timeout = 13003L;
         jsonTransport.setTimeout(timeout);
         bayeuxServer.setTransports(jsonTransport);
-        bayeuxServer.setAllowedTransports(JSONTransport.NAME);
+        bayeuxServer.setAllowedTransports(ServletJSONTransport.NAME);
 
         bayeuxServer.start();
 
         Assertions.assertEquals(1, bayeuxServer.getAllowedTransports().size());
         Assertions.assertEquals(1, bayeuxServer.getKnownTransportNames().size());
-        Assertions.assertEquals(JSONTransport.NAME, bayeuxServer.getAllowedTransports().get(0));
-        Assertions.assertEquals(JSONTransport.NAME, bayeuxServer.getKnownTransportNames().iterator().next());
-        Assertions.assertEquals(timeout, bayeuxServer.getTransport(JSONTransport.NAME).getTimeout());
+        Assertions.assertEquals(ServletJSONTransport.NAME, bayeuxServer.getAllowedTransports().get(0));
+        Assertions.assertEquals(ServletJSONTransport.NAME, bayeuxServer.getKnownTransportNames().iterator().next());
+        Assertions.assertEquals(timeout, bayeuxServer.getTransport(ServletJSONTransport.NAME).getTimeout());
     }
 }

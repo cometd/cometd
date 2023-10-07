@@ -34,15 +34,6 @@ class HandlerCometDResponse implements CometDResponse {
     }
 
     @Override
-    public String getCharacterEncoding() {
-        // TODO improve impl or change API
-        String[] split = response.getHeaders().get(HttpHeader.CONTENT_TYPE).split(";");
-        if (split.length == 2)
-            return split[1].split("=")[1];
-        return "iso-8859-1";
-    }
-
-    @Override
     public CometDOutput getOutput() {
         if (cometDOutput == null) {
             cometDOutput = new HandlerCometDOutput(response);

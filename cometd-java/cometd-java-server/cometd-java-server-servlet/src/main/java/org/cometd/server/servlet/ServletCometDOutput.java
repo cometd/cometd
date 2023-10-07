@@ -17,12 +17,12 @@ package org.cometd.server.servlet;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
-
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.HttpServletResponse;
-import org.cometd.server.spi.CometDOutput;
+
 import org.cometd.bayeux.Promise;
+import org.cometd.server.spi.CometDOutput;
 
 class ServletCometDOutput implements CometDOutput, WriteListener {
     private final ServletOutputStream outputStream;
@@ -31,14 +31,6 @@ class ServletCometDOutput implements CometDOutput, WriteListener {
     ServletCometDOutput(HttpServletResponse response) throws IOException {
         this.outputStream = response.getOutputStream();
         this.outputStream.setWriteListener(this);
-    }
-
-    @Override
-    public void close() throws IOException {
-        outputStream.close();
-        NextWrite nextWrite = nextWriteRef.get();
-        if (nextWrite != null)
-            throw new IOException("Closed stream with pending write: " + nextWrite);
     }
 
     @Override
@@ -56,32 +48,16 @@ class ServletCometDOutput implements CometDOutput, WriteListener {
     }
 
     @Override
-    public void write(byte[] jsonBytes, Promise<Void> promise) {
+    public void write(boolean last, byte[] bytes, Promise<Void> promise) {
         if (outputStream.isReady()) {
             try {
-                outputStream.write(jsonBytes);
+                outputStream.write(bytes);
                 promise.succeed(null);
             } catch (IOException e) {
                 promise.fail(e);
             }
         } else {
-            if (!nextWriteRef.compareAndSet(null, new NextWrite(jsonBytes, promise))) {
-                throw new IllegalStateException("Write pending");
-            }
-        }
-    }
-
-    @Override
-    public void write(byte jsonByte, Promise<Void> promise) {
-        if (outputStream.isReady()) {
-            try {
-                outputStream.write(jsonByte);
-                promise.succeed(null);
-            } catch (IOException e) {
-                promise.fail(e);
-            }
-        } else {
-            if (!nextWriteRef.compareAndSet(null, new NextWrite(new byte[]{jsonByte}, promise))) {
+            if (!nextWriteRef.compareAndSet(null, new NextWrite(bytes, promise))) {
                 throw new IllegalStateException("Write pending");
             }
         }

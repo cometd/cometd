@@ -58,7 +58,7 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     private JSONContextServer _jsonContext;
     private boolean _handshakeReconnect;
     private boolean _allowHandshakeDelivery;
-    private long _maxMessageSize;
+    private int _maxMessageSize;
 
     /**
      * <p>The constructor is passed the {@link BayeuxServerImpl} instance for
@@ -139,7 +139,7 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
         _allowHandshakeDelivery = allow;
     }
 
-    public long getMaxMessageSize() {
+    public int getMaxMessageSize() {
         return _maxMessageSize;
     }
 

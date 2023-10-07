@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.handler.transport.AsyncJSONTransport;
+import org.cometd.server.handler.transport.HandlerJSONTransport;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -34,7 +34,7 @@ public class BayeuxServerCreationTest
 
         Set<String> knownTransports = bayeuxServer.getKnownTransportNames();
         Assertions.assertEquals(1, knownTransports.size());
-        Assertions.assertTrue(knownTransports.contains(AsyncJSONTransport.NAME));
+        Assertions.assertTrue(knownTransports.contains(HandlerJSONTransport.NAME));
         Assertions.assertEquals(knownTransports, new HashSet<>(bayeuxServer.getAllowedTransports()));
     }
 
@@ -66,24 +66,24 @@ public class BayeuxServerCreationTest
         bayeuxServer.start();
 
         Assertions.assertEquals(timeoutValue, bayeuxServer.getOption(timeoutKey));
-        Assertions.assertEquals(jsonTimeoutValue, bayeuxServer.getTransport(AsyncJSONTransport.NAME).getOption(timeoutKey));
+        Assertions.assertEquals(jsonTimeoutValue, bayeuxServer.getTransport(HandlerJSONTransport.NAME).getOption(timeoutKey));
     }
 
     @Test
     public void testCreationWithTransports() throws Exception {
         BayeuxServerImpl bayeuxServer = new BayeuxServerImpl();
 
-        AsyncJSONTransport jsonTransport = new AsyncJSONTransport(bayeuxServer);
+        HandlerJSONTransport jsonTransport = new HandlerJSONTransport(bayeuxServer);
         long timeout = 13003L;
         jsonTransport.setTimeout(timeout);
         bayeuxServer.setTransports(jsonTransport);
-        bayeuxServer.setAllowedTransports(AsyncJSONTransport.NAME);
+        bayeuxServer.setAllowedTransports(HandlerJSONTransport.NAME);
 
         bayeuxServer.start();
 
         Assertions.assertEquals(1, bayeuxServer.getAllowedTransports().size());
         Assertions.assertEquals(1, bayeuxServer.getKnownTransportNames().size());
-        Assertions.assertEquals(AsyncJSONTransport.NAME, bayeuxServer.getAllowedTransports().get(0));
-        Assertions.assertEquals(timeout, bayeuxServer.getTransport(AsyncJSONTransport.NAME).getTimeout());
+        Assertions.assertEquals(HandlerJSONTransport.NAME, bayeuxServer.getAllowedTransports().get(0));
+        Assertions.assertEquals(timeout, bayeuxServer.getTransport(HandlerJSONTransport.NAME).getTimeout());
     }
 }

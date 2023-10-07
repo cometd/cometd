@@ -48,11 +48,11 @@ import org.cometd.client.websocket.okhttp.OkHttpWebSocketTransport;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
-import org.cometd.server.servlet.transport.JSONTransport;
+import org.cometd.server.servlet.transport.ServletJSONTransport;
 import org.cometd.server.websocket.jakarta.WebSocketTransport;
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -621,9 +621,9 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         initParams.put("timeout", String.valueOf(timeout));
         switch (wsType) {
             case WEBSOCKET_JAKARTA, WEBSOCKET_OKHTTP ->
-                    initParams.put("transports", CloseLatchWebSocketTransport.class.getName() + "," + JSONTransport.class.getName());
+                    initParams.put("transports", CloseLatchWebSocketTransport.class.getName() + "," + ServletJSONTransport.class.getName());
             case WEBSOCKET_JETTY ->
-                    initParams.put("transports", CloseLatchJettyWebSocketTransport.class.getName() + "," + JSONTransport.class.getName());
+                    initParams.put("transports", CloseLatchJettyWebSocketTransport.class.getName() + "," + ServletJSONTransport.class.getName());
             default -> throw new IllegalArgumentException();
         }
         prepareAndStart(wsType, initParams);
@@ -717,9 +717,9 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         Map<String, String> initParams = new HashMap<>();
         switch (wsType) {
             case WEBSOCKET_JAKARTA, WEBSOCKET_OKHTTP ->
-                    initParams.put("transports", CloseLatchWebSocketTransport.class.getName() + "," + JSONTransport.class.getName());
+                    initParams.put("transports", CloseLatchWebSocketTransport.class.getName() + "," + ServletJSONTransport.class.getName());
             case WEBSOCKET_JETTY ->
-                    initParams.put("transports", CloseLatchJettyWebSocketTransport.class.getName() + "," + JSONTransport.class.getName());
+                    initParams.put("transports", CloseLatchJettyWebSocketTransport.class.getName() + "," + ServletJSONTransport.class.getName());
             default -> throw new IllegalArgumentException();
         }
         prepareAndStart(wsType, initParams);
@@ -750,9 +750,9 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         Map<String, String> initParams = new HashMap<>();
         switch (wsType) {
             case WEBSOCKET_JAKARTA, WEBSOCKET_OKHTTP ->
-                    initParams.put("transports", CloseLatchWebSocketTransport.class.getName() + "," + JSONTransport.class.getName());
+                    initParams.put("transports", CloseLatchWebSocketTransport.class.getName() + "," + ServletJSONTransport.class.getName());
             case WEBSOCKET_JETTY ->
-                    initParams.put("transports", CloseLatchJettyWebSocketTransport.class.getName() + "," + JSONTransport.class.getName());
+                    initParams.put("transports", CloseLatchJettyWebSocketTransport.class.getName() + "," + ServletJSONTransport.class.getName());
             default -> throw new IllegalArgumentException();
         }
         prepareAndStart(wsType, initParams);

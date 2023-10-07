@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
 import org.cometd.bayeux.Message;
@@ -33,7 +34,7 @@ import org.cometd.common.JSONContext;
 import org.cometd.common.JacksonJSONContextClient;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.JacksonJSONContextServer;
-import org.cometd.server.http.AbstractHttpTransport;
+import org.cometd.server.transport.AbstractHttpTransport;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 

@@ -24,7 +24,7 @@ import java.util.concurrent.TimeoutException;
 import org.cometd.bayeux.Message;
 import org.cometd.common.JSONContext;
 import org.cometd.common.JettyJSONContextClient;
-import org.cometd.server.http.AbstractHttpTransport;
+import org.cometd.server.transport.AbstractHttpTransport;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.http.HttpCookie;

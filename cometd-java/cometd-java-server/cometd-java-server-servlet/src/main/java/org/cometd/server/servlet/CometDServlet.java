@@ -31,15 +31,15 @@ import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerSessionImpl;
-import org.cometd.server.http.AbstractHttpTransport;
 import org.cometd.server.spi.CometDRequest;
 import org.cometd.server.spi.CometDResponse;
 import org.cometd.server.spi.HttpException;
+import org.cometd.server.transport.AbstractHttpTransport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * <p>The CometD Servlet maps HTTP requests to the {@link org.cometd.server.http.AbstractHttpTransport}
+ * <p>The CometD Servlet maps HTTP requests to the {@link AbstractHttpTransport}
  * of a {@link BayeuxServer} instance.</p>
  * <p>The {@link BayeuxServer} instance is searched in the servlet context under the {@link BayeuxServer#ATTRIBUTE}
  * attribute; if it is found then it is used without further configuration, otherwise a new {@link BayeuxServer}
@@ -100,6 +100,7 @@ public class CometDServlet extends HttpServlet {
         asyncContext.setTimeout(0);
 
         CometDRequest cometDRequest = new ServletCometDRequest(request);
+        cometDRequest.setAttribute(AsyncContext.class.getName(), asyncContext);
         CometDResponse cometDResponse = new ServletCometDResponse(response);
         BayeuxContext bayeuxContext = new ServletBayeuxContext(request);
 

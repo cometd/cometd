@@ -16,7 +16,6 @@
 package org.cometd.server.servlet;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 import jakarta.servlet.http.Cookie;
@@ -36,16 +35,6 @@ class ServletCometDRequest implements CometDRequest {
     @Override
     public String getCharacterEncoding() {
         return request.getCharacterEncoding();
-    }
-
-    @Override
-    public String getContentType() {
-        return request.getContentType();
-    }
-
-    @Override
-    public void setCharacterEncoding(String encoding) throws UnsupportedEncodingException {
-        request.setCharacterEncoding(encoding);
     }
 
     @Override
@@ -96,13 +85,5 @@ class ServletCometDRequest implements CometDRequest {
     @Override
     public void setAttribute(String name, Object value) {
         request.setAttribute(name, value);
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public <T> T unwrap(Class<T> clazz) {
-        if (HttpServletRequest.class.isAssignableFrom(clazz))
-            return (T)request;
-        return null;
     }
 }

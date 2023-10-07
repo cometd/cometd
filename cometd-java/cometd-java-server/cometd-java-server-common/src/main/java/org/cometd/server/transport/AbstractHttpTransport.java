@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.cometd.server.http;
+package org.cometd.server.transport;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -26,7 +26,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
@@ -41,9 +40,11 @@ import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerMessageImpl;
 import org.cometd.server.ServerSessionImpl;
+import org.cometd.server.spi.CometDOutput;
 import org.cometd.server.spi.CometDRequest;
 import org.cometd.server.spi.CometDResponse;
-import org.eclipse.jetty.util.thread.Scheduler.Task;
+import org.cometd.server.spi.HttpException;
+import org.eclipse.jetty.util.IteratingCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,6 +80,9 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
     public final static String TRUST_CLIENT_SESSION_OPTION = "trustClientSession";
     public final static String DUPLICATE_META_CONNECT_HTTP_RESPONSE_CODE_OPTION = "duplicateMetaConnectHttpResponseCode";
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractHttpTransport.class);
+    private static final byte[] OPEN_BRACKET = new byte[]{'['};
+    private static final byte[] COMMA = new byte[]{','};
+    private static final byte[] CLOSE_BRACKET = new byte[]{']'};
 
     private final ConcurrentMap<String, Collection<ServerSessionImpl>> _sessions = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, AtomicInteger> _browserMap = new ConcurrentHashMap<>();
@@ -114,7 +118,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         _http2MaxSessionsPerBrowser = getOption(HTTP2_MAX_SESSIONS_PER_BROWSER_OPTION, -1);
         _multiSessionInterval = getOption(MULTI_SESSION_INTERVAL_OPTION, 2000);
         _trustClientSession = getOption(TRUST_CLIENT_SESSION_OPTION, false);
-        _duplicateMetaConnectHttpResponseCode = getOption(DUPLICATE_META_CONNECT_HTTP_RESPONSE_CODE_OPTION, CometDResponse.SC_INTERNAL_SERVER_ERROR);
+        _duplicateMetaConnectHttpResponseCode = getOption(DUPLICATE_META_CONNECT_HTTP_RESPONSE_CODE_OPTION, 500);
         if (_duplicateMetaConnectHttpResponseCode < 400) {
             throw new IllegalArgumentException("Option '%s' must be greater or equal to 400, not %s".formatted(
                     DUPLICATE_META_CONNECT_HTTP_RESPONSE_CODE_OPTION,
@@ -133,15 +137,50 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
 
     public abstract boolean accept(CometDRequest request);
 
-    public abstract void handle(BayeuxContext bayeuxContext, CometDRequest request, CometDResponse response, Promise<Void> promise) throws IOException;
+    public void handle(BayeuxContext bayeuxContext, CometDRequest request, CometDResponse response, Promise<Void> promise) {
+        promise = new Promise.Wrapper<>(promise) {
+            @Override
+            public void fail(Throwable failure) {
+                int code = failure instanceof TimeoutException ? getDuplicateMetaConnectHttpResponseCode() : 500;
+                super.fail(new HttpException(code, failure));
+            }
+        };
 
-    protected abstract HttpScheduler suspend(TransportContext context, Promise<Void> promise, ServerMessage.Mutable message, long timeout);
+        TransportContext context = new TransportContext(bayeuxContext, request, response, promise);
+        handle(context);
+    }
 
-    protected abstract void write(TransportContext context, List<ServerMessage> messages, Promise<Void> promise);
+    protected abstract void handle(TransportContext context);
 
-    protected void processMessages(TransportContext context, List<ServerMessage.Mutable> messages, Promise<Void> promise) {
+    protected HttpScheduler suspend(TransportContext context, Promise<Void> promise, ServerMessage.Mutable message, long timeout) {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Suspended {}", message);
+        }
+        context.scheduler(newHttpScheduler(context, promise, message, timeout));
+        context.session().notifySuspended(message, timeout);
+        return context.scheduler();
+    }
+
+    protected abstract HttpScheduler newHttpScheduler(TransportContext context, Promise<Void> promise, ServerMessage.Mutable reply, long timeout);
+
+    protected void write(TransportContext context, List<ServerMessage> messages) {
+        try {
+            Writer writer = new Writer(context, messages);
+            writer.iterate();
+        } catch (Throwable x) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Exception while writing messages", x);
+            }
+            if (context.scheduleExpiration()) {
+                scheduleExpiration(context.session(), context.metaConnectCycle());
+            }
+            context.promise().fail(x);
+        }
+    }
+
+    protected void processMessages(TransportContext context, List<ServerMessage.Mutable> messages) {
         if (messages.isEmpty()) {
-            promise.fail(new IOException("protocol violation"));
+            context.promise().fail(new IOException("protocol violation"));
         } else {
             Collection<ServerSessionImpl> sessions = findCurrentSessions(context.request());
             ServerMessage.Mutable message = messages.get(0);
@@ -158,9 +197,9 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
             context.session(session);
             AsyncFoldLeft.run(messages, null, (result, item, loop) -> processMessage(context, (ServerMessageImpl)item, Promise.from(loop::proceed, loop::fail)), Promise.complete((r, x) -> {
                 if (x == null) {
-                    flush(context, promise);
+                    flush(context);
                 } else {
-                    promise.fail(x);
+                    context.promise().fail(x);
                 }
                 if (batch) {
                     session.endBatch();
@@ -345,7 +384,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         return "HTTP/2.0".equals(request.getProtocol());
     }
 
-    protected void flush(TransportContext context, Promise<Void> promise) {
+    protected void flush(TransportContext context) {
         List<ServerMessage> messages = List.of();
         ServerSessionImpl session = context.session();
         if (context.sendQueue() && session != null) {
@@ -354,7 +393,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("Flushing {}, replies={}, messages={}", session, context.replies(), messages);
         }
-        write(context, messages, promise);
+        write(context, messages);
     }
 
     protected void resume(TransportContext context, ServerMessage.Mutable message, Promise<Void> promise) {
@@ -493,6 +532,28 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         getBayeux().handle(context.session(), message, promise);
     }
 
+    protected void writePrepare(TransportContext context, Promise<Void> promise) {
+        context.response().setContentType("application/json");
+        promise.succeed(null);
+    }
+
+    protected void writeBegin(CometDOutput output, Promise<Void> promise) {
+        output.write(false, OPEN_BRACKET, promise);
+    }
+
+    protected void writeMessage(CometDOutput output, ServerMessage message, Promise<Void> promise) {
+        output.write(false, toJSONBytes(message), promise);
+    }
+
+    protected void writeEnd(CometDOutput output, Promise<Void> promise) {
+        output.write(true, CLOSE_BRACKET, promise);
+    }
+
+    protected void writeComplete(TransportContext context, List<ServerMessage> messages) {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Messages/replies {}/{} written for {}", messages.size(), context.replies().size(), context.session());
+        }
+    }
 
     /**
      * Sweeps the transport for old Browser IDs
@@ -542,101 +603,160 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         ServerMessage.Mutable getMessage();
     }
 
-    protected abstract class LongPollScheduler implements Runnable, HttpScheduler {
-        private final AtomicReference<Task> task = new AtomicReference<>();
+
+    protected class Writer extends IteratingCallback implements Promise<Void> {
         private final TransportContext context;
-        private final Promise<Void> promise;
-        private final ServerMessage.Mutable message;
+        private final List<ServerMessage> messages;
+        private Writer.State state = Writer.State.BEGIN;
+        private int replyIndex;
+        private int messageIndex;
+        private boolean needsComma;
 
-        protected LongPollScheduler(TransportContext context, Promise<Void> promise, ServerMessage.Mutable message, long timeout) {
+        protected Writer(TransportContext context, List<ServerMessage> messages) {
             this.context = context;
-            this.promise = promise;
-            this.message = message;
-            this.task.set(getBayeux().schedule(this, timeout));
-            context.metaConnectCycle(newMetaConnectCycle());
-        }
-
-        public TransportContext getContext() {
-            return context;
-        }
-
-        public Promise<Void> getPromise() {
-            return promise;
+            this.messages = messages;
         }
 
         @Override
-        public ServerMessage.Mutable getMessage() {
-            return message;
-        }
+        protected Action process() throws Throwable {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Processing write {} for messages/replies {}/{} for {}", state, messages.size(), context.replies().size(), context.session());
+            }
 
-        @Override
-        public long getMetaConnectCycle() {
-            return context.metaConnectCycle();
-        }
-
-        @Override
-        public void schedule() {
-            if (cancelTimeout()) {
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("Resuming suspended {} for {}", message, context.session());
+            CometDOutput output = context.response().getOutput();
+            return switch (state) {
+                case PREPARE -> {
+                    state = State.BEGIN;
+                    writePrepare(context, this);
+                    yield Action.SCHEDULED;
                 }
-                resume(false);
+                case BEGIN -> {
+                    state = Writer.State.HANDSHAKE;
+                    writeBegin(output, this);
+                    yield Action.SCHEDULED;
+                }
+                case HANDSHAKE -> {
+                    state = Writer.State.MESSAGES;
+                    writeHandshakeReply(output, this);
+                    yield Action.SCHEDULED;
+                }
+                case MESSAGES -> {
+                    if (writeMessages(output, this)) {
+                        state = Writer.State.REPLIES;
+                    }
+                    yield Action.SCHEDULED;
+                }
+                case REPLIES -> {
+                    if (writeReplies(output, this)) {
+                        state = Writer.State.END;
+                    }
+                    yield Action.SCHEDULED;
+                }
+                case END -> {
+                    state = Writer.State.COMPLETE;
+                    writeEnd(output, this);
+                    yield Action.SCHEDULED;
+                }
+                case COMPLETE -> {
+                    yield Action.SUCCEEDED;
+                }
+            };
+        }
+
+        @Override
+        public void succeed(Void result) {
+            succeeded();
+        }
+
+        @Override
+        public void fail(Throwable failure) {
+            failed(failure);
+        }
+
+        @Override
+        protected void onCompleteSuccess() {
+            context.promise().succeed(null);
+            writeComplete(context, messages);
+        }
+
+        @Override
+        protected void onCompleteFailure(Throwable failure) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Failure writing messages", failure);
+            }
+            // Start the interval timeout also in case of
+            // errors to ensure the session can be swept.
+            startExpiration();
+            context.promise().fail(failure);
+        }
+
+        private void startExpiration() {
+            if (context.scheduleExpiration()) {
+                scheduleExpiration(context.session(), context.metaConnectCycle());
             }
         }
 
-        @Override
-        public void cancel() {
-            if (cancelTimeout()) {
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("Cancelling suspended {} for {}", message, context.session());
+        private void writeHandshakeReply(CometDOutput output, Promise<Void> promise) {
+            List<ServerMessage.Mutable> replies = context.replies();
+            if (replies.isEmpty()) {
+                return;
+            }
+            ServerMessage.Mutable reply = replies.get(0);
+            if (Channel.META_HANDSHAKE.equals(reply.getChannel())) {
+                if (allowMessageDeliveryDuringHandshake(context.session()) && !messages.isEmpty()) {
+                    reply.put("x-messages", messages.size());
                 }
-                error(new TimeoutException());
+                getBayeux().freeze(reply);
+                output.write(false, toJSONBytes(reply), promise);
+                needsComma = true;
+                ++replyIndex;
             }
         }
 
-        @Override
-        public void destroy() {
-            cancel();
-        }
-
-        private boolean cancelTimeout() {
-            // Cannot rely on the return value of task.cancel()
-            // since it may be invoked when the task is in run()
-            // where cancellation is not possible (it's too late).
-            Task task = this.task.getAndSet(null);
-            if (task == null) {
+        private boolean writeMessages(CometDOutput output, Promise<Void> promise) {
+            int size = messages.size();
+            if (messageIndex == size) {
+                // Start the interval timeout after writing the
+                // messages since they may take time to be written.
+                startExpiration();
+                return true;
+            } else {
+                // TODO: this relies on buffering which we may not have in Handlers.
+                if (needsComma) {
+                    needsComma = false;
+                    output.write(false, COMMA, promise);
+                } else {
+                    ServerMessage message = messages.get(messageIndex);
+                    needsComma = true;
+                    ++messageIndex;
+                    writeMessage(output, message, promise);
+                }
                 return false;
             }
-            task.cancel();
-            return true;
         }
 
-        @Override
-        public void run() {
-            if (cancelTimeout()) {
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("Timing out suspended {} for {}", message, context.session());
+        private boolean writeReplies(CometDOutput output, Promise<Void> promise) {
+            List<ServerMessage.Mutable> replies = context.replies();
+            int size = replies.size();
+            if (replyIndex == size) {
+                return true;
+            } else {
+                ServerMessage.Mutable reply = replies.get(replyIndex);
+                if (needsComma) {
+                    needsComma = false;
+                    output.write(false, COMMA, promise);
+                } else {
+                    getBayeux().freeze(reply);
+                    needsComma = replyIndex < size;
+                    ++replyIndex;
+                    output.write(false, toJSONBytes(reply), promise);
                 }
-                resume(true);
+                return false;
             }
         }
 
-        private void resume(boolean timeout) {
-            decBrowserId(context.session(), isHTTP2(context.request()));
-            dispatch(timeout);
-        }
-
-        protected abstract void dispatch(boolean timeout);
-
-        protected void error(Throwable failure) {
-            CometDRequest request = context.request();
-            decBrowserId(context.session(), isHTTP2(request));
-            promise.fail(failure);
-        }
-
-        @Override
-        public String toString() {
-            return String.format("%s@%x[cycle=%d]", getClass().getSimpleName(), hashCode(), getMetaConnectCycle());
+        private enum State {
+            PREPARE, BEGIN, HANDSHAKE, MESSAGES, REPLIES, END, COMPLETE
         }
     }
 }

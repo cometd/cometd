@@ -535,7 +535,7 @@ API method name changes and parameter list changes.
 
 In CometD 5.0.x a new, more performant, non-blocking, JSON parser has been introduced with class `JSONContext.AsyncParser`.
 
-`JSONContext.AsyncParser` is the default parser on the client when using `JettyHttpClientTransport`, and the default parser on the server when using `AsyncJSONTransport`.
+`JSONContext.AsyncParser` is the default parser on the client when using `JettyHttpClientTransport`, and the default parser on the server when using `ServletJSONTransport`.
 
 If you are using the Jetty `JSONContext` implementation, and you have custom ``JSON.Convertor``s to convert your application classes to/from JSON, use the new APIs indicated in the following table.
 

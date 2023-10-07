@@ -13,11 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.cometd.server.http;
+package org.cometd.server.transport;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.ServerSessionImpl;
@@ -29,6 +30,7 @@ public class TransportContext
     private final BayeuxContext bayeuxContext;
     private final CometDRequest cometDRequest;
     private final CometDResponse cometDResponse;
+    private final Promise<Void> promise;
     private final List<ServerMessage.Mutable> replies = new ArrayList<>();
 
     private List<ServerMessage.Mutable> messages;
@@ -38,11 +40,12 @@ public class TransportContext
     private boolean sendQueue;
     private ServerSessionImpl session;
 
-    public TransportContext(BayeuxContext bayeuxContext, CometDRequest cometDRequest, CometDResponse cometDResponse)
+    public TransportContext(BayeuxContext bayeuxContext, CometDRequest cometDRequest, CometDResponse cometDResponse, Promise<Void> promise)
     {
         this.bayeuxContext = bayeuxContext;
         this.cometDRequest = cometDRequest;
         this.cometDResponse = cometDResponse;
+        this.promise = promise;
     }
 
     public BayeuxContext bayeuxContext()
@@ -58,6 +61,10 @@ public class TransportContext
     public CometDResponse response()
     {
         return cometDResponse;
+    }
+
+    public Promise<Void> promise() {
+        return promise;
     }
 
     public List<ServerMessage.Mutable> messages()

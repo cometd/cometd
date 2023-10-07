@@ -15,16 +15,10 @@
  */
 package org.cometd.server.spi;
 
-public interface CometDResponse
-{
-    int SC_INTERNAL_SERVER_ERROR = 500;
-    int SC_BAD_REQUEST = 400;
-
-    void addHeader(String name, String value); // TODO only needed to set cookie; rework API?
-
-    String getCharacterEncoding(); // TODO only needed by blocking transport
+public interface CometDResponse {
+    void addHeader(String name, String value);
 
     CometDOutput getOutput();
 
-    void setContentType(String contentType); // TODO only needed to set content type to application/json;charset=UTF-8 (except blocking impl); rework API?
+    void setContentType(String contentType);
 }

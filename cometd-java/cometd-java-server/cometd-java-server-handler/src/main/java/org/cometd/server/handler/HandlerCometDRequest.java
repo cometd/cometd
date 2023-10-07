@@ -38,21 +38,11 @@ class HandlerCometDRequest implements CometDRequest {
     }
 
     @Override
-    public String getContentType() {
-        return request.getHeaders().get(HttpHeader.CONTENT_TYPE);
-    }
-
-    @Override
     public String getCharacterEncoding() {
         String[] split = request.getHeaders().get(HttpHeader.CONTENT_TYPE).split(";");
         if (split.length == 2)
             return split[1].split("=")[1];
         return "iso-8859-1";
-    }
-
-    @Override
-    public void setCharacterEncoding(String encoding) {
-        LOGGER.warn("ignored; REMOVE API?");
     }
 
     @Override
@@ -94,13 +84,5 @@ class HandlerCometDRequest implements CometDRequest {
     @Override
     public void setAttribute(String name, Object value) {
         request.setAttribute(name, value);
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public <T> T unwrap(Class<T> clazz) {
-        if (Request.class.isAssignableFrom(clazz))
-            return (T)request;
-        return null;
     }
 }

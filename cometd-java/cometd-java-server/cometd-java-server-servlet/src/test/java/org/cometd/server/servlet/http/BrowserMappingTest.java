@@ -23,10 +23,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.cometd.server.servlet.AbstractBayeuxClientServerTest;
 import org.cometd.server.ServerSessionImpl;
-import org.cometd.server.http.AbstractHttpTransport;
-import org.cometd.server.servlet.transport.JSONTransport;
+import org.cometd.server.servlet.AbstractBayeuxClientServerTest;
+import org.cometd.server.servlet.transport.ServletJSONTransport;
+import org.cometd.server.transport.AbstractHttpTransport;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.http.HttpFields;
@@ -41,7 +41,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
     public void testBayeuxBrowserMapping(String serverTransport) throws Exception {
         startServer(serverTransport, null);
 
-        AbstractHttpTransport transport = new JSONTransport(bayeux);
+        ServletJSONTransport transport = new ServletJSONTransport(bayeux);
         transport.init();
 
         ServerSessionImpl session = new ServerSessionImpl(bayeux);
@@ -243,10 +243,10 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
         String cookieSameSite = "Lax";
 
         Map<String, String> options = new HashMap<>();
-        options.put(JSONTransport.BROWSER_COOKIE_NAME_OPTION, cookieName);
-        options.put(JSONTransport.BROWSER_COOKIE_DOMAIN_OPTION, cookieDomain);
-        options.put(JSONTransport.BROWSER_COOKIE_PATH_OPTION, cookiePath);
-        options.put(JSONTransport.BROWSER_COOKIE_SAME_SITE_OPTION, cookieSameSite);
+        options.put(AbstractHttpTransport.BROWSER_COOKIE_NAME_OPTION, cookieName);
+        options.put(AbstractHttpTransport.BROWSER_COOKIE_DOMAIN_OPTION, cookieDomain);
+        options.put(AbstractHttpTransport.BROWSER_COOKIE_PATH_OPTION, cookiePath);
+        options.put(AbstractHttpTransport.BROWSER_COOKIE_SAME_SITE_OPTION, cookieSameSite);
         startServer(serverTransport, options);
 
         Request handshake = newBayeuxRequest("" +
