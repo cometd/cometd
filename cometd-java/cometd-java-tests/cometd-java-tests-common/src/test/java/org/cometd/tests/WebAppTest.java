@@ -43,6 +43,7 @@ import org.cometd.client.BayeuxClient;
 import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.client.websocket.jakarta.WebSocketTransport;
 import org.cometd.client.websocket.jetty.JettyWebSocketTransport;
+import org.cometd.server.CometDRequest;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -122,7 +123,7 @@ public class WebAppTest {
         copyWebAppDependency(org.eclipse.jetty.websocket.core.client.WebSocketCoreClient.class, webINF);
         copyWebAppDependency(org.eclipse.jetty.websocket.core.Configuration.class, webINF);
         copyWebAppDependency(org.cometd.server.servlet.CometDServlet.class, webINF);
-        copyWebAppDependency(org.cometd.server.spi.CometDRequest.class, webINF);
+        copyWebAppDependency(CometDRequest.class, webINF);
         copyWebAppDependency(org.cometd.bayeux.server.BayeuxContext.class, webINF);
         copyWebAppDependency(org.cometd.bayeux.Promise.class, webINF);
         copyWebAppDependency(org.cometd.common.JSONContext.class, webINF);

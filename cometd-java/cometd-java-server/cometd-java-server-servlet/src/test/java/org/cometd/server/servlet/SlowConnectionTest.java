@@ -33,8 +33,8 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.common.JettyJSONContextClient;
 import org.cometd.server.AbstractServerTransport;
+import org.cometd.server.CometDResponse;
 import org.cometd.server.servlet.transport.ServletJSONTransport;
-import org.cometd.server.spi.CometDOutput;
 import org.cometd.server.transport.TransportContext;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Request;
@@ -120,7 +120,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
             }
 
             @Override
-            protected void writeMessage(CometDOutput output, ServerMessage message, Promise<Void> promise) {
+            protected void writeMessage(CometDResponse.Output output, ServerMessage message, Promise<Void> promise) {
                 try {
                     if (channelName.equals(message.getChannel())) {
                         context.session().scheduleExpiration(0, maxInterval, context.session().getMetaConnectCycle());
@@ -189,7 +189,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
         CountDownLatch closeLatch = new CountDownLatch(1);
         ServletJSONTransport transport = new ServletJSONTransport(bayeux) {
             @Override
-            protected void writeMessage(CometDOutput output, ServerMessage message, Promise<Void> promise) {
+            protected void writeMessage(CometDResponse.Output output, ServerMessage message, Promise<Void> promise) {
                 if (!message.isMeta() && !message.isPublishReply()) {
                     sendLatch.countDown();
                     await(closeLatch);

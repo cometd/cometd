@@ -25,10 +25,9 @@ import java.util.regex.Pattern;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.spi.CometDOutput;
-import org.cometd.server.spi.CometDRequest;
-import org.cometd.server.spi.CometDResponse;
-import org.cometd.server.spi.HttpException;
+import org.cometd.server.CometDRequest;
+import org.cometd.server.CometDResponse;
+import org.cometd.server.HttpException;
 import org.cometd.server.transport.AbstractHttpTransport;
 import org.cometd.server.transport.AbstractJSONTransport;
 import org.cometd.server.transport.TransportContext;
@@ -137,12 +136,12 @@ public class AsyncJSONPTransport extends AbstractHttpTransport {
     }
 
     @Override
-    protected void writeBegin(CometDOutput output, Promise<Void> promise) {
+    protected void writeBegin(CometDResponse.Output output, Promise<Void> promise) {
         output.write(false, MESSAGE_BEGIN, promise);
     }
 
     @Override
-    protected void writeEnd(CometDOutput output, Promise<Void> promise) {
+    protected void writeEnd(CometDResponse.Output output, Promise<Void> promise) {
         output.write(true, MESSAGE_END, promise);
     }
 }

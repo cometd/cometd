@@ -16,10 +16,13 @@
 package org.cometd.server.servlet;
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicReference;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.HttpServletResponse;
 
-import org.cometd.server.spi.CometDOutput;
-import org.cometd.server.spi.CometDResponse;
+import org.cometd.bayeux.Promise;
+import org.cometd.server.CometDResponse;
 
 class ServletCometDResponse implements CometDResponse {
     private final HttpServletResponse response;
@@ -35,7 +38,7 @@ class ServletCometDResponse implements CometDResponse {
     }
 
     @Override
-    public CometDOutput getOutput() {
+    public Output getOutput() {
         if (output == null) {
             try {
                 output = new ServletCometDOutput(response);
@@ -49,5 +52,60 @@ class ServletCometDResponse implements CometDResponse {
     @Override
     public void setContentType(String contentType) {
         response.setContentType(contentType);
+    }
+
+    private static class ServletCometDOutput implements Output, WriteListener {
+        private final ServletOutputStream outputStream;
+        private final AtomicReference<NextWrite> nextWriteRef = new AtomicReference<>();
+
+        private ServletCometDOutput(HttpServletResponse response) throws IOException {
+            this.outputStream = response.getOutputStream();
+            this.outputStream.setWriteListener(this);
+        }
+
+        @Override
+        public void onWritePossible() {
+            NextWrite nextWrite = nextWriteRef.getAndSet(null);
+            if (nextWrite != null)
+                nextWrite.write(outputStream);
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            NextWrite nextWrite = nextWriteRef.getAndSet(null);
+            if (nextWrite != null)
+                nextWrite.fail(t);
+        }
+
+        @Override
+        public void write(boolean last, byte[] bytes, Promise<Void> promise) {
+            if (outputStream.isReady()) {
+                try {
+                    outputStream.write(bytes);
+                    promise.succeed(null);
+                } catch (IOException e) {
+                    promise.fail(e);
+                }
+            } else {
+                if (!nextWriteRef.compareAndSet(null, new NextWrite(bytes, promise))) {
+                    throw new IllegalStateException("Write pending");
+                }
+            }
+        }
+
+        private record NextWrite(byte[] jsonBytes, Promise<Void> promise) {
+            public void fail(Throwable t) {
+                promise.fail(t);
+            }
+
+            void write(ServletOutputStream servletOutputStream) {
+                try {
+                    servletOutputStream.write(jsonBytes);
+                    promise.succeed(null);
+                } catch (Throwable x) {
+                    promise.fail(x);
+                }
+            }
+        }
     }
 }

@@ -15,14 +15,17 @@
  */
 package org.cometd.server.handler;
 
-import org.cometd.server.spi.CometDOutput;
-import org.cometd.server.spi.CometDResponse;
+import java.nio.ByteBuffer;
+
+import org.cometd.bayeux.Promise;
+import org.cometd.server.CometDResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 
 class HandlerCometDResponse implements CometDResponse {
     private final Response response;
-    private CometDOutput cometDOutput;
+    private Output cometDOutput;
 
     HandlerCometDResponse(Response response) {
         this.response = response;
@@ -34,7 +37,7 @@ class HandlerCometDResponse implements CometDResponse {
     }
 
     @Override
-    public CometDOutput getOutput() {
+    public Output getOutput() {
         if (cometDOutput == null) {
             cometDOutput = new HandlerCometDOutput(response);
         }
@@ -42,8 +45,30 @@ class HandlerCometDResponse implements CometDResponse {
     }
 
     @Override
-    public void setContentType(String contentType)
-    {
+    public void setContentType(String contentType) {
         response.getHeaders().put(HttpHeader.CONTENT_TYPE, contentType);
+    }
+
+    private static class HandlerCometDOutput implements Output {
+        private final Response response;
+
+        private HandlerCometDOutput(Response response) {
+            this.response = response;
+        }
+
+        @Override
+        public void write(boolean last, byte[] bytes, Promise<Void> promise) {
+            response.write(last, ByteBuffer.wrap(bytes), new Callback() {
+                @Override
+                public void succeeded() {
+                    promise.succeed(null);
+                }
+
+                @Override
+                public void failed(Throwable x) {
+                    promise.fail(x);
+                }
+            });
+        }
     }
 }

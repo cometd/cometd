@@ -21,9 +21,9 @@ import java.util.List;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.server.CometDRequest;
+import org.cometd.server.CometDResponse;
 import org.cometd.server.ServerSessionImpl;
-import org.cometd.server.spi.CometDRequest;
-import org.cometd.server.spi.CometDResponse;
 
 public class TransportContext
 {

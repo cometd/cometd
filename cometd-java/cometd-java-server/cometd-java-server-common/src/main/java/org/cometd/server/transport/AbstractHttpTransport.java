@@ -38,12 +38,11 @@ import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.common.AsyncFoldLeft;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
+import org.cometd.server.CometDRequest;
+import org.cometd.server.CometDResponse;
+import org.cometd.server.HttpException;
 import org.cometd.server.ServerMessageImpl;
 import org.cometd.server.ServerSessionImpl;
-import org.cometd.server.spi.CometDOutput;
-import org.cometd.server.spi.CometDRequest;
-import org.cometd.server.spi.CometDResponse;
-import org.cometd.server.spi.HttpException;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -537,15 +536,15 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         promise.succeed(null);
     }
 
-    protected void writeBegin(CometDOutput output, Promise<Void> promise) {
+    protected void writeBegin(CometDResponse.Output output, Promise<Void> promise) {
         output.write(false, OPEN_BRACKET, promise);
     }
 
-    protected void writeMessage(CometDOutput output, ServerMessage message, Promise<Void> promise) {
+    protected void writeMessage(CometDResponse.Output output, ServerMessage message, Promise<Void> promise) {
         output.write(false, toJSONBytes(message), promise);
     }
 
-    protected void writeEnd(CometDOutput output, Promise<Void> promise) {
+    protected void writeEnd(CometDResponse.Output output, Promise<Void> promise) {
         output.write(true, CLOSE_BRACKET, promise);
     }
 
@@ -623,7 +622,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
                 LOGGER.debug("Processing write {} for messages/replies {}/{} for {}", state, messages.size(), context.replies().size(), context.session());
             }
 
-            CometDOutput output = context.response().getOutput();
+            CometDResponse.Output output = context.response().getOutput();
             return switch (state) {
                 case PREPARE -> {
                     state = State.BEGIN;
@@ -696,7 +695,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
             }
         }
 
-        private void writeHandshakeReply(CometDOutput output, Promise<Void> promise) {
+        private void writeHandshakeReply(CometDResponse.Output output, Promise<Void> promise) {
             List<ServerMessage.Mutable> replies = context.replies();
             if (replies.isEmpty()) {
                 return;
@@ -713,7 +712,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
             }
         }
 
-        private boolean writeMessages(CometDOutput output, Promise<Void> promise) {
+        private boolean writeMessages(CometDResponse.Output output, Promise<Void> promise) {
             int size = messages.size();
             if (messageIndex == size) {
                 // Start the interval timeout after writing the
@@ -735,7 +734,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
             }
         }
 
-        private boolean writeReplies(CometDOutput output, Promise<Void> promise) {
+        private boolean writeReplies(CometDResponse.Output output, Promise<Void> promise) {
             List<ServerMessage.Mutable> replies = context.replies();
             int size = replies.size();
             if (replyIndex == size) {

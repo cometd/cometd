@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Locale;
 
 import org.cometd.bayeux.server.BayeuxContext;
-import org.cometd.server.spi.CometDRequest;
+import org.cometd.server.CometDRequest;
 import org.eclipse.jetty.server.Request;
 
 class HandlerBayeuxContext implements BayeuxContext {

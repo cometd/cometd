@@ -21,8 +21,8 @@ import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.spi.CometDRequest;
-import org.cometd.server.spi.CometDResponse;
+import org.cometd.server.CometDRequest;
+import org.cometd.server.CometDResponse;
 import org.cometd.server.transport.AbstractJSONTransport;
 import org.cometd.server.transport.TransportContext;
 

@@ -13,27 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.cometd.server.spi;
+package org.cometd.server;
 
-import java.util.List;
+public class HttpException extends Exception {
+    private final int code;
 
-public interface CometDRequest {
-    String getMethod();
+    public HttpException(int code, Throwable cause) {
+        super(cause);
+        this.code = code;
+    }
 
-    String getProtocol();
-
-    String[] getParameterValues(String name);
-
-    String getCharacterEncoding();
-
-    List<CometDCookie> getCookies();
-
-    CometDInput getInput();
-
-    Object getAttribute(String name);
-
-    void setAttribute(String name, Object value);
-
-    record CometDCookie(String name, String value) {
+    public int getCode() {
+        return code;
     }
 }

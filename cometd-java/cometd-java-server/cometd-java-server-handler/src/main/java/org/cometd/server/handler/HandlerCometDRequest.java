@@ -15,23 +15,22 @@
  */
 package org.cometd.server.handler;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.List;
 
-import org.cometd.server.spi.CometDInput;
-import org.cometd.server.spi.CometDRequest;
+import org.cometd.server.CometDRequest;
 import org.eclipse.jetty.http.CookieCache;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Request;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.eclipse.jetty.util.IO;
 
 class HandlerCometDRequest implements CometDRequest {
-    private static final Logger LOGGER = LoggerFactory.getLogger(HandlerCometDRequest.class);
-
-    final Request request;
+    private final Request request;
     private final CookieCache cookieCache = new CookieCache();
-    private CometDInput cometDInput;
+    private Input cometDInput;
 
     public HandlerCometDRequest(Request request) {
         this.request = request;
@@ -69,9 +68,9 @@ class HandlerCometDRequest implements CometDRequest {
     }
 
     @Override
-    public CometDInput getInput() {
+    public Input getInput() {
         if (cometDInput == null) {
-            cometDInput = new HandlerCometDInput(this);
+            cometDInput = new HandlerInput(this);
         }
         return cometDInput;
     }
@@ -84,5 +83,53 @@ class HandlerCometDRequest implements CometDRequest {
     @Override
     public void setAttribute(String name, Object value) {
         request.setAttribute(name, value);
+    }
+
+    private static class HandlerInput implements Input {
+        private final HandlerCometDRequest request;
+
+        private HandlerInput(HandlerCometDRequest request) {
+            this.request = request;
+        }
+
+        @Override
+        public void demand(Runnable r) {
+            request.request.demand(r);
+        }
+
+        @Override
+        public Chunk read() throws IOException {
+            Content.Chunk chunk = request.request.read();
+            if (chunk == null) {
+                return null;
+            }
+            if (Content.Chunk.isFailure(chunk)) {
+                throw IO.rethrow(chunk.getFailure());
+            }
+            return new HandlerChunk(chunk);
+        }
+
+        private static class HandlerChunk implements Chunk {
+            private final Content.Chunk chunk;
+
+            private HandlerChunk(Content.Chunk chunk) {
+                this.chunk = chunk;
+            }
+
+            @Override
+            public ByteBuffer byteBuffer() {
+                return chunk.getByteBuffer();
+            }
+
+            @Override
+            public boolean isLast() {
+                return chunk.isLast();
+            }
+
+            @Override
+            public void release() {
+                chunk.release();
+            }
+        }
     }
 }

@@ -19,7 +19,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.cometd.bayeux.server.ServerMessage;
-import org.cometd.server.spi.CometDRequest;
+import org.cometd.server.CometDRequest;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

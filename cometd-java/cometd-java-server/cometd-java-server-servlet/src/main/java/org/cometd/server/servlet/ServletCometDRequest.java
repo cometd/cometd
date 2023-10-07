@@ -16,13 +16,17 @@
 package org.cometd.server.servlet;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+import jakarta.servlet.ReadListener;
+import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 
-import org.cometd.server.spi.CometDInput;
-import org.cometd.server.spi.CometDRequest;
+import org.cometd.server.CometDRequest;
+import org.eclipse.jetty.util.IO;
 
 class ServletCometDRequest implements CometDRequest {
     private final HttpServletRequest request;
@@ -61,7 +65,7 @@ class ServletCometDRequest implements CometDRequest {
     }
 
     @Override
-    public CometDInput getInput() {
+    public Input getInput() {
         if (input == null) {
             try {
                 input = new ServletCometDInput(request);
@@ -85,5 +89,94 @@ class ServletCometDRequest implements CometDRequest {
     @Override
     public void setAttribute(String name, Object value) {
         request.setAttribute(name, value);
+    }
+
+    private static class ServletCometDInput implements Input, ReadListener {
+        private static final Runnable DATA_AVAILABLE = () -> {};
+
+        private final ServletInputStream inputStream;
+        private final AtomicReference<Runnable> state = new AtomicReference<>();
+        private volatile Throwable failure;
+
+        private ServletCometDInput(HttpServletRequest request) throws IOException {
+            this.inputStream = request.getInputStream();
+            // TODO: if method is GET, no need to read the body, no need to set the read listener.
+            this.inputStream.setReadListener(this);
+        }
+
+        @Override
+        public void demand(Runnable demandCallback) {
+            // This method races with onDataAvailable() and onAllDataRead().
+            Runnable dataAvailable = state.getAndUpdate(existing -> existing == null ? demandCallback : null);
+            if (dataAvailable != null) {
+                // Lost the race with onDataAvailable(), but there
+                // is data available, so run the demandCallback.
+                demandCallback.run();
+            }
+        }
+
+        @Override
+        public Chunk read() throws IOException {
+            if (failure != null) {
+                throw IO.rethrow(failure);
+            } else if (inputStream.isFinished()) {
+                return Chunk.EOF;
+            } else if (inputStream.isReady()) {
+                // TODO: the chunks can be pooled.
+                Chunk chunk = new ServletChunk();
+                ByteBuffer byteBuffer = chunk.byteBuffer();
+                int read = inputStream.read(byteBuffer.array(), byteBuffer.arrayOffset(), byteBuffer.remaining());
+                if (read < 0) {
+                    chunk.release();
+                    return Chunk.EOF;
+                } else if (read == 0) {
+                    chunk.release();
+                    return null;
+                } else {
+                    byteBuffer.limit(read);
+                    return chunk;
+                }
+            } else {
+                return null;
+            }
+        }
+
+        @Override
+        public void onDataAvailable() {
+            // This method races with demand(Runnable).
+            Runnable nextRead = state.getAndUpdate(existing -> existing == null ? DATA_AVAILABLE : null);
+            if (nextRead != null) {
+                nextRead.run();
+            }
+        }
+
+        @Override
+        public void onAllDataRead() {
+            onDataAvailable();
+        }
+
+        @Override
+        public void onError(Throwable failure) {
+            this.failure = failure;
+            onDataAvailable();
+        }
+
+        private static class ServletChunk implements Chunk {
+            private final ByteBuffer byteBuffer = ByteBuffer.allocate(512);
+
+            @Override
+            public ByteBuffer byteBuffer() {
+                return byteBuffer;
+            }
+
+            @Override
+            public boolean isLast() {
+                return false;
+            }
+
+            @Override
+            public void release() {
+            }
+        }
     }
 }
