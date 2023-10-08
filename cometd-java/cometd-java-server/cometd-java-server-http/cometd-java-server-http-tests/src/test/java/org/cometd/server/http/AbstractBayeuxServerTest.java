@@ -21,7 +21,7 @@ import java.util.Map;
 
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.http.jetty.CometDHandler;
-import org.cometd.server.http.jetty.transport.JettyJSONTransport;
+import org.cometd.server.http.jetty.JettyJSONTransport;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;

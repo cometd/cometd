@@ -26,7 +26,7 @@ import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.common.JettyJSONContextClient;
-import org.cometd.server.http.jetty.transport.JettyJSONTransport;
+import org.cometd.server.http.jetty.JettyJSONTransport;
 import org.cometd.server.transport.AbstractHttpTransport;
 import org.cometd.server.transport.TransportContext;
 import org.eclipse.jetty.client.ContentResponse;

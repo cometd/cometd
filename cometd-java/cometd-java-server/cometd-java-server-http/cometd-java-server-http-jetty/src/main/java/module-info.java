@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-module org.cometd.server.servlet {
+module org.cometd.server.http.jetty {
     exports org.cometd.server.http.jetty;
-    exports org.cometd.server.http.jetty.transport;
 
     requires transitive org.eclipse.jetty.server;
     requires org.cometd.server;

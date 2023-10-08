@@ -124,6 +124,11 @@ public interface CometDRequest {
                 @Override
                 public void release() {
                 }
+
+                @Override
+                public String toString() {
+                    return "%s@%x[EOF]".formatted(Chunk.class.getSimpleName(), hashCode());
+                }
             };
 
             /**

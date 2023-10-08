@@ -28,7 +28,7 @@ import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.websocket.okhttp.OkHttpWebSocketTransport;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.http.jakarta.CometDServlet;
-import org.cometd.server.http.jakarta.transport.JakartaJSONTransport;
+import org.cometd.server.http.jakarta.JakartaJSONTransport;
 import org.cometd.server.websocket.jakarta.WebSocketTransport;
 import org.cometd.server.websocket.jetty.JettyWebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;
@@ -118,7 +118,6 @@ public abstract class ClientServerWebSocketTest {
             default -> throw new IllegalArgumentException("Unsupported transport " + wsType);
         }
 
-        // CometD servlet
         cometdServletPath = servletPath;
         if (cometdServletPath.endsWith("/*")) {
             cometdServletPath = cometdServletPath.substring(0, cometdServletPath.length() - 2);

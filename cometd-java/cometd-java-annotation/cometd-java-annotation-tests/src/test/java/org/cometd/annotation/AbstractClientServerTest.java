@@ -50,7 +50,6 @@ public abstract class AbstractClientServerTest {
         ServletContextHandler context = new ServletContextHandler("/");
         server.setHandler(context);
 
-        // CometD servlet
         ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);
         cometdServletHolder.setInitParameter("timeout", "10000");
         cometdServletHolder.setInitOrder(1);

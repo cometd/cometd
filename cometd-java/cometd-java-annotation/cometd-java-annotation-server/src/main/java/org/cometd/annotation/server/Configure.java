@@ -47,5 +47,4 @@ public @interface Configure {
      * @return if true, then the configuration method is called even if it already exists
      */
     boolean configureIfExists() default false;
-
 }

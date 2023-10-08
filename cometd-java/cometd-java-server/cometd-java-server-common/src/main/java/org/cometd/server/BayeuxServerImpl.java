@@ -213,13 +213,8 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
         if (_transports.isEmpty()) {
             String option = (String)getOption(TRANSPORTS_OPTION);
             if (option == null) {
-                // Order is important.
+                // Order is important: first websocket, then http.
                 ServerTransport transport;
-
-                transport = newAsyncJSONTransport();
-                if (transport != null) {
-                    addTransport(transport);
-                }
                 transport = newWebSocketTransport();
                 if (transport != null) {
                     addTransport(transport);
@@ -232,7 +227,6 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
                 if (transport != null) {
                     addTransport(transport);
                 }
-
                 if (_transports.isEmpty()) {
                     throw new IllegalArgumentException("No transport found");
                 }
@@ -243,10 +237,8 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
                         addTransport(transport);
                     }
                 }
-
                 if (_transports.isEmpty()) {
-                    throw new IllegalArgumentException("Option '" + TRANSPORTS_OPTION +
-                            "' does not contain a valid list of server transport class names");
+                    throw new IllegalArgumentException("Option '%s' does not contain a valid list of server transport class names".formatted(TRANSPORTS_OPTION));
                 }
             }
         }
@@ -263,8 +255,7 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
                 }
 
                 if (_allowedTransports.isEmpty()) {
-                    throw new IllegalArgumentException("Option '" + ALLOWED_TRANSPORTS_OPTION +
-                            "' does not contain at least one configured server transport name");
+                    throw new IllegalArgumentException("Option '%s' does not contain at least one configured server transport name".formatted(ALLOWED_TRANSPORTS_OPTION));
                 }
             }
         }
@@ -290,7 +281,7 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
             ServerTransport transport = newServerTransport(transportClass);
             if (transport == null) {
                 _logger.info("Jakarta WebSocket classes available, but " + transportClass +
-                        " unavailable: Jakarta WebSocket transport disabled");
+                             " unavailable: Jakarta WebSocket transport disabled");
             }
             return transport;
         } catch (Exception x) {
@@ -300,31 +291,15 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
 
     private ServerTransport newJSONTransport() {
         try {
-            ClassLoader loader = Thread.currentThread().getContextClassLoader();
-            loader.loadClass("jakarta.servlet.ReadListener");
-            return newServerTransport("org.cometd.server.servlet.transport.AsyncJSONTransport");
-        } catch (Exception x) {
-            try {
-                return newServerTransport("org.cometd.server.servlet.transport.JSONTransport");
-            } catch (Exception e) {
-                return null;
-            }
-        }
-    }
-
-    private ServerTransport newJSONPTransport() {
-        try {
-            ClassLoader loader = Thread.currentThread().getContextClassLoader();
-            loader.loadClass("jakarta.servlet.ReadListener");
-            return newServerTransport("org.cometd.server.servlet.transport.JSONPTransport");
+            return newServerTransport("org.cometd.server.http.jakarta.JakartaJSONTransport");
         } catch (Exception x) {
             return null;
         }
     }
 
-    private ServerTransport newAsyncJSONTransport() {
+    private ServerTransport newJSONPTransport() {
         try {
-            return newServerTransport("org.cometd.server.handler.transport.AsyncJSONTransport");
+            return newServerTransport("org.cometd.server.http.jakarta.JakartaJSONPTransport");
         } catch (Exception x) {
             return null;
         }
@@ -744,7 +719,7 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
 
         ServerMessage.Mutable reply = message.getAssociated();
         if (session == null || session.isDisconnected() ||
-                (!session.getId().equals(message.getClientId()) && !Channel.META_HANDSHAKE.equals(message.getChannel()))) {
+            (!session.getId().equals(message.getClientId()) && !Channel.META_HANDSHAKE.equals(message.getChannel()))) {
             unknownSession(reply);
             promise.succeed(reply);
         } else {
@@ -1313,13 +1288,11 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
     }
 
     @ManagedAttribute("The period, in milliseconds, of the sweeping activity performed by the server")
-    public long getSweepPeriod()
-    {
+    public long getSweepPeriod() {
         return _sweepPeriod;
     }
 
-    public void setSweepPeriod(long sweepPeriod)
-    {
+    public void setSweepPeriod(long sweepPeriod) {
         if (sweepPeriod < 0) {
             sweepPeriod = DEFAULT_SWEEP_PERIOD;
         }
@@ -1327,13 +1300,11 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
     }
 
     @ManagedAttribute("The maximum number of threads that can be used by the sweeping activity performed by the server")
-    public int getSweepThreads()
-    {
+    public int getSweepThreads() {
         return _sweepThreads;
     }
 
-    public void setSweepThreads(int sweepThreads)
-    {
+    public void setSweepThreads(int sweepThreads) {
         if (sweepThreads < 1) {
             sweepThreads = DEFAULT_SWEEP_THREADS;
         }
@@ -1614,53 +1585,56 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
             }
 
             return CompletableFuture.runAsync(BayeuxServerImpl.this::sweepTransports, getExecutor())
-                .thenCompose(unused -> {
-                    long now = System.nanoTime();
-                    sweeperInfo.transportSweepDuration = TimeUnit.NANOSECONDS.toMillis(now - previousNanoTime.getAndSet(now));
-                    if (_logger.isDebugEnabled()) {
-                        _logger.debug("Swept transports, took {}ms", sweeperInfo.transportSweepDuration);
-                    }
-                    return runAsync(_channels.values(), serverChannel -> {
-                        if (serverChannel.sweep())
-                            serverChannelSweepCounter.incrementAndGet();
+                    .thenCompose(unused -> {
+                        long now = System.nanoTime();
+                        sweeperInfo.transportSweepDuration = TimeUnit.NANOSECONDS.toMillis(now - previousNanoTime.getAndSet(now));
+                        if (_logger.isDebugEnabled()) {
+                            _logger.debug("Swept transports, took {}ms", sweeperInfo.transportSweepDuration);
+                        }
+                        return runAsync(_channels.values(), serverChannel -> {
+                            if (serverChannel.sweep()) {
+                                serverChannelSweepCounter.incrementAndGet();
+                            }
+                        });
+                    })
+                    .thenCompose(unused -> {
+                        long now = System.nanoTime();
+                        sweeperInfo.serverChannelSweepCount = serverChannelSweepCounter.get();
+                        sweeperInfo.serverChannelSweepDuration = TimeUnit.NANOSECONDS.toMillis(now - previousNanoTime.getAndSet(now));
+                        if (_logger.isDebugEnabled()) {
+                            _logger.debug("Swept server channels, {} in {}ms", sweeperInfo.serverChannelSweepCount, sweeperInfo.serverChannelSweepDuration);
+                        }
+                        return runAsync(_sessions.values(), serverSession -> {
+                            if (serverSession.sweep(now)) {
+                                serverSessionSweepCounter.incrementAndGet();
+                            }
+                        });
+                    })
+                    .thenRun(() -> {
+                        long now = System.nanoTime();
+                        sweeperInfo.serverSessionSweepCount = serverSessionSweepCounter.get();
+                        sweeperInfo.serverSessionSweepDuration = TimeUnit.NANOSECONDS.toMillis(now - previousNanoTime.getAndSet(now));
+                        sweeperInfo.sweepDurationNanos = now - beginNanoTime;
+                        if (sweeperInfo.sweepDurationNanos >= _lastSweepInfo.sweepDurationNanos) {
+                            _longestSweepInfo = sweeperInfo;
+                        }
+                        _lastSweepInfo = sweeperInfo;
+                        if (_logger.isDebugEnabled()) {
+                            _logger.debug("Swept server sessions, {} in {}ms", sweeperInfo.serverSessionSweepCount, sweeperInfo.serverSessionSweepDuration);
+                            _logger.debug("End of async sweep in {}ns at {}", sweeperInfo.sweepDurationNanos, Instant.now());
+                        }
                     });
-                })
-                .thenCompose(unused -> {
-                    long now = System.nanoTime();
-                    sweeperInfo.serverChannelSweepCount = serverChannelSweepCounter.get();
-                    sweeperInfo.serverChannelSweepDuration = TimeUnit.NANOSECONDS.toMillis(now - previousNanoTime.getAndSet(now));
-                    if (_logger.isDebugEnabled()) {
-                        _logger.debug("Swept server channels, {} in {}ms", sweeperInfo.serverChannelSweepCount, sweeperInfo.serverChannelSweepDuration);
-                    }
-                    return runAsync(_sessions.values(), serverSession -> {
-                        if (serverSession.sweep(now))
-                            serverSessionSweepCounter.incrementAndGet();
-                    });
-                })
-                .thenRun(() -> {
-                    long now = System.nanoTime();
-                    sweeperInfo.serverSessionSweepCount = serverSessionSweepCounter.get();
-                    sweeperInfo.serverSessionSweepDuration = TimeUnit.NANOSECONDS.toMillis(now - previousNanoTime.getAndSet(now));
-                    sweeperInfo.sweepDurationNanos = now - beginNanoTime;
-                    if (sweeperInfo.sweepDurationNanos >= _lastSweepInfo.sweepDurationNanos) {
-                        _longestSweepInfo = sweeperInfo;
-                    }
-                    _lastSweepInfo = sweeperInfo;
-                    if (_logger.isDebugEnabled()) {
-                        _logger.debug("Swept server sessions, {} in {}ms", sweeperInfo.serverSessionSweepCount, sweeperInfo.serverSessionSweepDuration);
-                        _logger.debug("End of async sweep in {}ns at {}", sweeperInfo.sweepDurationNanos, Instant.now());
-                    }
-                });
         }
 
         /**
          * <p>Asynchronously run an action on every element of a collection.</p>
          * <p>This is equivalent to {@code CompletableFuture.runAsync(() -> elements.forEach(action), getExecutor())} but parallelized
          * up to {@link #getSweepThreads()} threads. </p>
+         *
          * @param elements the collection of elements to act upon
-         * @param action the action to run on each entry of the collection
+         * @param action   the action to run on each entry of the collection
+         * @param <T>      the type of the collection's elements
          * @return a CompletableFuture that completes when all the actions returned
-         * @param <T> the type of the collection's elements
          */
         private <T> CompletableFuture<Void> runAsync(Collection<T> elements, Consumer<T> action) {
             int threadCount = getSweepThreads();

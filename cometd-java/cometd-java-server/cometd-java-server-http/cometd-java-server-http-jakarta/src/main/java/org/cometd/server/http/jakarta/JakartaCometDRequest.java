@@ -92,7 +92,7 @@ class JakartaCometDRequest implements CometDRequest {
     }
 
     private static class JakartaCometDInput implements Input, ReadListener {
-        private static final Runnable DATA_AVAILABLE = () -> {};
+        private static final Runnable READ_READY = () -> {};
 
         private final ServletInputStream inputStream;
         private final AtomicReference<Runnable> state = new AtomicReference<>();
@@ -100,15 +100,16 @@ class JakartaCometDRequest implements CometDRequest {
 
         private JakartaCometDInput(HttpServletRequest request) throws IOException {
             this.inputStream = request.getInputStream();
-            // TODO: if method is GET, no need to read the body, no need to set the read listener.
-            this.inputStream.setReadListener(this);
+            if ("POST".equals(request.getMethod())) {
+                this.inputStream.setReadListener(this);
+            }
         }
 
         @Override
         public void demand(Runnable demandCallback) {
             // This method races with onDataAvailable() and onAllDataRead().
-            Runnable dataAvailable = state.getAndUpdate(existing -> existing == null ? demandCallback : null);
-            if (dataAvailable != null) {
+            Runnable readReady = state.getAndUpdate(existing -> existing == null ? demandCallback : null);
+            if (readReady != null) {
                 // Lost the race with onDataAvailable(), but there
                 // is data available, so run the demandCallback.
                 demandCallback.run();
@@ -116,19 +117,19 @@ class JakartaCometDRequest implements CometDRequest {
         }
 
         @Override
-        public Chunk read() throws IOException {
+        public Input.Chunk read() throws IOException {
             if (failure != null) {
                 throw IO.rethrow(failure);
             } else if (inputStream.isFinished()) {
-                return Chunk.EOF;
+                return Input.Chunk.EOF;
             } else if (inputStream.isReady()) {
                 // TODO: the chunks can be pooled.
-                Chunk chunk = new ServletChunk();
+                Input.Chunk chunk = new Chunk();
                 ByteBuffer byteBuffer = chunk.byteBuffer();
                 int read = inputStream.read(byteBuffer.array(), byteBuffer.arrayOffset(), byteBuffer.remaining());
                 if (read < 0) {
                     chunk.release();
-                    return Chunk.EOF;
+                    return Input.Chunk.EOF;
                 } else if (read == 0) {
                     chunk.release();
                     return null;
@@ -144,9 +145,9 @@ class JakartaCometDRequest implements CometDRequest {
         @Override
         public void onDataAvailable() {
             // This method races with demand(Runnable).
-            Runnable nextRead = state.getAndUpdate(existing -> existing == null ? DATA_AVAILABLE : null);
-            if (nextRead != null) {
-                nextRead.run();
+            Runnable readCallback = state.getAndUpdate(existing -> existing == null ? READ_READY : null);
+            if (readCallback != null) {
+                readCallback.run();
             }
         }
 
@@ -161,7 +162,7 @@ class JakartaCometDRequest implements CometDRequest {
             onDataAvailable();
         }
 
-        private static class ServletChunk implements Chunk {
+        private static class Chunk implements Input.Chunk {
             private final ByteBuffer byteBuffer = ByteBuffer.allocate(512);
 
             @Override
@@ -176,6 +177,11 @@ class JakartaCometDRequest implements CometDRequest {
 
             @Override
             public void release() {
+            }
+
+            @Override
+            public String toString() {
+                return "%s@%x[last=%b,%s]".formatted(getClass().getSimpleName(), hashCode(), isLast(), byteBuffer());
             }
         }
     }

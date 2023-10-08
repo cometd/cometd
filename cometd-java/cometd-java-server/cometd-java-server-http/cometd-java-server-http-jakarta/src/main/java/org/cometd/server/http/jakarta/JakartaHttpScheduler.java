@@ -13,20 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.cometd.server.http.jakarta.transport;
+package org.cometd.server.http.jakarta;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.AsyncEvent;
 import jakarta.servlet.AsyncListener;
 
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.transport.AbstractHttpScheduler;
 import org.cometd.server.transport.AbstractHttpTransport;
 import org.cometd.server.transport.TransportContext;
 
 public class JakartaHttpScheduler extends AbstractHttpScheduler implements AsyncListener {
-    public JakartaHttpScheduler(AbstractHttpTransport transport, TransportContext context, ServerMessage.Mutable reply, long timeout) {
-        super(transport, context, reply, timeout);
+    public JakartaHttpScheduler(AbstractHttpTransport transport, TransportContext context, Promise<Void> promise, ServerMessage.Mutable reply, long timeout) {
+        super(transport, context, promise, reply, timeout);
         AsyncContext asyncContext = (AsyncContext)context.request().getAttribute(AsyncContext.class.getName());
         if (asyncContext != null) {
             asyncContext.addListener(this);
@@ -55,6 +56,6 @@ public class JakartaHttpScheduler extends AbstractHttpScheduler implements Async
         // Directly succeeding the callback to write messages and replies.
         // Since the write is async, we will never block and thus never delay other sessions.
         getContext().session().notifyResumed(getMessage(), timeout);
-        getContext().promise().succeed(null);
+        getPromise().succeed(null);
     }
 }

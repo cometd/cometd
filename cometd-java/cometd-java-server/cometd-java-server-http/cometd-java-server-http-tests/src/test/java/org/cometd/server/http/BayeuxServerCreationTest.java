@@ -21,19 +21,18 @@ import java.util.Map;
 import java.util.Set;
 
 import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.http.jetty.transport.JettyJSONTransport;
+import org.cometd.server.http.jetty.JettyJSONTransport;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class BayeuxServerCreationTest
-{
+public class BayeuxServerCreationTest {
     @Test
     public void testCreationWithoutOptions() throws Exception {
         BayeuxServerImpl bayeuxServer = new BayeuxServerImpl();
         bayeuxServer.start();
 
         Set<String> knownTransports = bayeuxServer.getKnownTransportNames();
-        Assertions.assertEquals(1, knownTransports.size());
+        Assertions.assertEquals(2, knownTransports.size());
         Assertions.assertTrue(knownTransports.contains(JettyJSONTransport.NAME));
         Assertions.assertEquals(knownTransports, new HashSet<>(bayeuxServer.getAllowedTransports()));
     }

@@ -48,7 +48,7 @@ import org.cometd.client.websocket.okhttp.OkHttpWebSocketTransport;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
-import org.cometd.server.http.jakarta.transport.JakartaJSONTransport;
+import org.cometd.server.http.jakarta.JakartaJSONTransport;
 import org.cometd.server.websocket.jakarta.WebSocketTransport;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;

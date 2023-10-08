@@ -21,7 +21,7 @@ import jakarta.inject.Inject;
 import org.cometd.annotation.server.ServerAnnotationProcessor;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.http.jakarta.transport.JakartaJSONTransport;
+import org.cometd.server.http.jakarta.JakartaJSONTransport;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.DestructionAwareBeanPostProcessor;
 import org.springframework.context.annotation.Bean;

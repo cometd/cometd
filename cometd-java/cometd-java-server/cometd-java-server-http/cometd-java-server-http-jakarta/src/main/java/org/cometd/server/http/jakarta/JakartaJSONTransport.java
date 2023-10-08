@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.cometd.server.http.jakarta.transport;
+package org.cometd.server.http.jakarta;
 
 import jakarta.servlet.RequestDispatcher;
 
@@ -44,6 +44,6 @@ public class JakartaJSONTransport extends AbstractJSONTransport {
 
     @Override
     protected HttpScheduler newHttpScheduler(TransportContext context, Promise<Void> promise, ServerMessage.Mutable reply, long timeout) {
-        return new JakartaHttpScheduler(this, context, reply, timeout);
+        return new JakartaHttpScheduler(this, context, promise, reply, timeout);
     }
 }

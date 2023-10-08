@@ -25,7 +25,7 @@ import java.util.regex.Pattern;
 
 import org.cometd.server.ServerSessionImpl;
 import org.cometd.server.http.AbstractBayeuxClientServerTest;
-import org.cometd.server.http.jetty.transport.JettyJSONTransport;
+import org.cometd.server.http.jetty.JettyJSONTransport;
 import org.cometd.server.transport.AbstractHttpTransport;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Request;

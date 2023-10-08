@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.cometd.server.http.jetty.transport;
+package org.cometd.server.http.jetty;
 
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.ServerMessage;
@@ -30,12 +30,12 @@ public class JettyJSONTransport extends AbstractJSONTransport {
 
     @Override
     protected HttpScheduler newHttpScheduler(TransportContext context, Promise<Void> promise, ServerMessage.Mutable reply, long timeout) {
-        return new HandlerHttpScheduler(this, context, reply, timeout);
+        return new HandlerHttpScheduler(this, context, promise, reply, timeout);
     }
 
     private static class HandlerHttpScheduler extends AbstractHttpScheduler {
-        private HandlerHttpScheduler(AbstractHttpTransport transport, TransportContext context, ServerMessage.Mutable reply, long timeout) {
-            super(transport, context, reply, timeout);
+        private HandlerHttpScheduler(AbstractHttpTransport transport, TransportContext context, Promise<Void> promise, ServerMessage.Mutable reply, long timeout) {
+            super(transport, context, promise, reply, timeout);
         }
 
         @Override
@@ -43,7 +43,7 @@ public class JettyJSONTransport extends AbstractJSONTransport {
             // Directly succeeding the callback to write messages and replies.
             // Since the write is async, we will never block and thus never delay other sessions.
             getContext().session().notifyResumed(getMessage(), timeout);
-            getContext().promise().succeed(null);
+            getPromise().succeed(null);
         }
     }
 }

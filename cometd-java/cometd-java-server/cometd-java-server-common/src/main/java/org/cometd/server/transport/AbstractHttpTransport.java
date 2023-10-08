@@ -698,6 +698,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         private void writeHandshakeReply(CometDResponse.Output output, Promise<Void> promise) {
             List<ServerMessage.Mutable> replies = context.replies();
             if (replies.isEmpty()) {
+                promise.succeed(null);
                 return;
             }
             ServerMessage.Mutable reply = replies.get(0);
@@ -709,6 +710,8 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
                 output.write(false, toJSONBytes(reply), promise);
                 needsComma = true;
                 ++replyIndex;
+            } else {
+                promise.succeed(null);
             }
         }
 
@@ -718,6 +721,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
                 // Start the interval timeout after writing the
                 // messages since they may take time to be written.
                 startExpiration();
+                promise.succeed(null);
                 return true;
             } else {
                 // TODO: this relies on buffering which we may not have in Handlers.
@@ -738,6 +742,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
             List<ServerMessage.Mutable> replies = context.replies();
             int size = replies.size();
             if (replyIndex == size) {
+                promise.succeed(null);
                 return true;
             } else {
                 ServerMessage.Mutable reply = replies.get(replyIndex);

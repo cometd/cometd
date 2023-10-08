@@ -103,10 +103,10 @@ Below you can find a Spring's `applicationContext.xml` that configures the `Baye
         <bean id="websocketTransport" class="org.cometd.server.websocket.jakarta.WebSocketTransport">
           <constructor-arg ref="bayeux" />
         </bean>
-        <bean id="jsonTransport" class="org.cometd.server.http.jakarta.transport.JakartaJSONTransport">
+        <bean id="jsonTransport" class="org.cometd.server.http.jakarta.JakartaJSONTransport">
           <constructor-arg ref="bayeux" />
         </bean>
-        <bean id="jsonpTransport" class="org.cometd.server.http.jakarta.transport.JakartaJSONPTransport">
+        <bean id="jsonpTransport" class="org.cometd.server.http.jakarta.JakartaJSONPTransport">
           <constructor-arg ref="bayeux" />
         </bean>
       </list>

@@ -21,7 +21,6 @@ import jakarta.servlet.ServletException;
 
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.server.http.jakarta.CometDServlet;
-import org.eclipse.jetty.util.Loader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,7 +85,7 @@ public class AnnotationCometDServlet extends CometDServlet {
     }
 
     protected Object newService(String serviceClassName) throws Exception {
-        Class<?> serviceClass = Loader.loadClass(getClass(), serviceClassName);
+        Class<?> serviceClass = Thread.currentThread().getContextClassLoader().loadClass(serviceClassName);
         return serviceClass.getConstructor().newInstance();
     }
 

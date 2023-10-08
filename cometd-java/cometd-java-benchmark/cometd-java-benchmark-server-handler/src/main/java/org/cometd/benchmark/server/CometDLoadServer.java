@@ -45,7 +45,7 @@ import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.JacksonJSONContextServer;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.cometd.server.http.jetty.CometDHandler;
-import org.cometd.server.http.jetty.transport.JettyJSONTransport;
+import org.cometd.server.http.jetty.JettyJSONTransport;
 import org.cometd.server.transport.TransportContext;
 import org.cometd.server.websocket.common.AbstractWebSocketEndPoint;
 import org.cometd.server.websocket.common.AbstractWebSocketTransport;

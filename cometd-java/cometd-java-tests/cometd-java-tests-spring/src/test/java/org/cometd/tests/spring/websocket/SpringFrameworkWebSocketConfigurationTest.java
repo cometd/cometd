@@ -28,7 +28,7 @@ import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.websocket.okhttp.OkHttpWebSocketTransport;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.http.jakarta.CometDServlet;
-import org.cometd.server.http.jakarta.transport.JakartaJSONTransport;
+import org.cometd.server.http.jakarta.JakartaJSONTransport;
 import org.cometd.server.websocket.jakarta.WebSocketTransport;
 import org.cometd.server.websocket.jetty.JettyWebSocketTransport;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
@@ -75,7 +75,6 @@ public class SpringFrameworkWebSocketConfigurationTest {
         context.addEventListener(new ContextLoaderListener());
         context.getInitParams().put(ContextLoader.CONFIG_LOCATION_PARAM, "classpath:" + springConfig);
 
-        // CometD servlet
         String cometdServletPath = "/cometd";
         String cometdURLMapping = cometdServletPath + "/*";
 

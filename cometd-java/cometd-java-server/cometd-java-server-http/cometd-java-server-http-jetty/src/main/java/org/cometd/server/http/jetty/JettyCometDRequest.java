@@ -98,7 +98,7 @@ class JettyCometDRequest implements CometDRequest {
         }
 
         @Override
-        public Chunk read() throws IOException {
+        public Input.Chunk read() throws IOException {
             Content.Chunk chunk = request.request.read();
             if (chunk == null) {
                 return null;
@@ -106,13 +106,13 @@ class JettyCometDRequest implements CometDRequest {
             if (Content.Chunk.isFailure(chunk)) {
                 throw IO.rethrow(chunk.getFailure());
             }
-            return new HandlerChunk(chunk);
+            return new Chunk(chunk);
         }
 
-        private static class HandlerChunk implements Chunk {
+        private static class Chunk implements Input.Chunk {
             private final Content.Chunk chunk;
 
-            private HandlerChunk(Content.Chunk chunk) {
+            private Chunk(Content.Chunk chunk) {
                 this.chunk = chunk;
             }
 
@@ -129,6 +129,11 @@ class JettyCometDRequest implements CometDRequest {
             @Override
             public void release() {
                 chunk.release();
+            }
+
+            @Override
+            public String toString() {
+                return "%s@%x[%s]".formatted(getClass().getSimpleName(), hashCode(), chunk);
             }
         }
     }

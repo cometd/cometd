@@ -72,7 +72,6 @@ public class OortDemo {
                 URI.create(base + "/../../cometd-demo/target/cometd-demo-2.4.0-SNAPSHOT/")
         )));
 
-        // CometD servlet
         ServletHolder cometd_holder = new ServletHolder(CometDServlet.class);
         cometd_holder.setInitParameter("timeout", "200000");
         cometd_holder.setInitParameter("interval", "100");

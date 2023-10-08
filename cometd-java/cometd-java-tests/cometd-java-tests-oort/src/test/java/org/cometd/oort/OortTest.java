@@ -36,7 +36,7 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.server.http.jakarta.CometDServlet;
-import org.cometd.server.http.jakarta.transport.JakartaJSONTransport;
+import org.cometd.server.http.jakarta.JakartaJSONTransport;
 import org.cometd.server.websocket.jakarta.WebSocketTransport;
 import org.cometd.server.websocket.jetty.JettyWebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;
@@ -89,7 +89,6 @@ public abstract class OortTest {
             throw new IllegalArgumentException("Unsupported transport " + serverTransport);
         }
 
-        // CometD servlet
         String cometdServletPath = "/cometd";
         String cometdURLMapping = cometdServletPath + "/*";
         ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);

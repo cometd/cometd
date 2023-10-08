@@ -79,7 +79,6 @@ public class CometDDemo {
         ServletHolder dftServlet = context.addServlet(DefaultServlet.class, "/");
         dftServlet.setInitOrder(1);
 
-        // CometD servlet
         AnnotationCometDServlet cometdServlet = new AnnotationCometDServlet();
         ServletHolder cometd = new ServletHolder(cometdServlet);
         context.addServlet(cometd, "/cometd/*");

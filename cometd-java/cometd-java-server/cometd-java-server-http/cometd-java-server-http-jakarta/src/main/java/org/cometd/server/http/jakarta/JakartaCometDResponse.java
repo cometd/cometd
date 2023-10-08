@@ -55,8 +55,10 @@ class JakartaCometDResponse implements CometDResponse {
     }
 
     private static class JakartaCometDOutput implements Output, WriteListener {
+        public static final Promise<Void> WRITE_READY = new Promise<>() {};
+
+        private final AtomicReference<Promise<Void>> state = new AtomicReference<>();
         private final ServletOutputStream outputStream;
-        private final AtomicReference<NextWrite> nextWriteRef = new AtomicReference<>();
 
         private JakartaCometDOutput(HttpServletResponse response) throws IOException {
             this.outputStream = response.getOutputStream();
@@ -65,46 +67,39 @@ class JakartaCometDResponse implements CometDResponse {
 
         @Override
         public void onWritePossible() {
-            NextWrite nextWrite = nextWriteRef.getAndSet(null);
-            if (nextWrite != null)
-                nextWrite.write(outputStream);
+            // This method races with write().
+            Promise<Void> pendingPromise = state.getAndUpdate(existing -> existing == null ? WRITE_READY : null);
+            if (pendingPromise != null) {
+                pendingPromise.succeed(null);
+            }
         }
 
         @Override
-        public void onError(Throwable t) {
-            NextWrite nextWrite = nextWriteRef.getAndSet(null);
-            if (nextWrite != null)
-                nextWrite.fail(t);
+        public void onError(Throwable failure) {
+            // This method races with write().
+            Promise<Void> pendingPromise = state.getAndUpdate(existing -> existing == null ? WRITE_READY : null);
+            if (pendingPromise != null) {
+                pendingPromise.fail(failure);
+            }
         }
 
         @Override
         public void write(boolean last, byte[] bytes, Promise<Void> promise) {
-            if (outputStream.isReady()) {
-                try {
-                    outputStream.write(bytes);
+            try {
+                outputStream.write(bytes);
+                if (outputStream.isReady()) {
                     promise.succeed(null);
-                } catch (IOException e) {
-                    promise.fail(e);
+                } else {
+                    // In a race with onWritePossible().
+                    Promise<Void> writeReady = state.getAndUpdate(existing -> existing == null ? promise : null);
+                    if (writeReady != null) {
+                        // Lost the race with onWritePossible(), but it
+                        // is possible to write, so succeed the promise.
+                        promise.succeed(null);
+                    }
                 }
-            } else {
-                if (!nextWriteRef.compareAndSet(null, new NextWrite(bytes, promise))) {
-                    throw new IllegalStateException("Write pending");
-                }
-            }
-        }
-
-        private record NextWrite(byte[] jsonBytes, Promise<Void> promise) {
-            public void fail(Throwable t) {
-                promise.fail(t);
-            }
-
-            void write(ServletOutputStream servletOutputStream) {
-                try {
-                    servletOutputStream.write(jsonBytes);
-                    promise.succeed(null);
-                } catch (Throwable x) {
-                    promise.fail(x);
-                }
+            } catch (Throwable x) {
+                promise.fail(x);
             }
         }
     }

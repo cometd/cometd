@@ -57,7 +57,10 @@ public class CometDHandler extends Handler.Abstract {
     protected void doStart() throws Exception {
         bayeux = newBayeuxServer();
         addBean(bayeux);
-        // TODO: setup the JettyJSONTransport for Handlers.
+        bayeux.setOption(BayeuxServerImpl.TRANSPORTS_OPTION, """
+                org.cometd.server.http.jetty.JettyJSONTransport,
+                org.cometd.server.websocket.jetty.JettyWebSocketTransport
+                """);
         for (Map.Entry<String, String> entry : getOptions().entrySet()) {
             bayeux.setOption(entry.getKey(), entry.getValue());
         }

@@ -64,7 +64,6 @@ public class TransportFailureTest {
 
         cometdServletPath = "/cometd";
 
-        // CometD servlet
         ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);
         cometdServletHolder.setInitParameter("timeout", "10000");
         cometdServletHolder.setInitParameter("ws.cometdURLMapping", cometdServletPath);

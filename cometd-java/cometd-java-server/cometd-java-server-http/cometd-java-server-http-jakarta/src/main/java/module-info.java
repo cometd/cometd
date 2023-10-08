@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-module org.cometd.server.servlet {
+module org.cometd.server.http.jakarta {
     exports org.cometd.server.http.jakarta;
-    exports org.cometd.server.http.jakarta.transport;
 
     requires jakarta.servlet;
     requires org.cometd.server;
@@ -25,5 +24,4 @@ module org.cometd.server.servlet {
     requires static org.eclipse.jetty.jmx;
     // Only required when using Jetty's JSON.
     requires static org.eclipse.jetty.util.ajax;
-
 }

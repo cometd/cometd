@@ -18,6 +18,7 @@ package org.cometd.server.transport;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.CometDRequest;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -30,11 +31,13 @@ public abstract class AbstractHttpScheduler implements Runnable, AbstractHttpTra
     private final AtomicReference<Scheduler.Task> task = new AtomicReference<>();
     private final AbstractHttpTransport transport;
     private final TransportContext context;
+    private final Promise<Void> promise;
     private final ServerMessage.Mutable message;
 
-    protected AbstractHttpScheduler(AbstractHttpTransport transport, TransportContext context, ServerMessage.Mutable message, long timeout) {
+    protected AbstractHttpScheduler(AbstractHttpTransport transport, TransportContext context, Promise<Void> promise, ServerMessage.Mutable message, long timeout) {
         this.transport = transport;
         this.context = context;
+        this.promise = promise;
         this.message = message;
         this.task.set(transport.getBayeux().schedule(this, timeout));
         context.metaConnectCycle(transport.newMetaConnectCycle());
@@ -42,6 +45,10 @@ public abstract class AbstractHttpScheduler implements Runnable, AbstractHttpTra
 
     public TransportContext getContext() {
         return context;
+    }
+
+    public Promise<Void> getPromise() {
+        return promise;
     }
 
     @Override
@@ -111,7 +118,7 @@ public abstract class AbstractHttpScheduler implements Runnable, AbstractHttpTra
     protected void error(Throwable failure) {
         CometDRequest request = context.request();
         transport.decBrowserId(context.session(), transport.isHTTP2(request));
-        context.promise().fail(failure);
+        getPromise().fail(failure);
     }
 
     @Override
