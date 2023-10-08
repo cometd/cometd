@@ -44,6 +44,7 @@ import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.client.websocket.jakarta.WebSocketTransport;
 import org.cometd.client.websocket.jetty.JettyWebSocketTransport;
 import org.cometd.server.CometDRequest;
+import org.cometd.server.http.jakarta.CometDServlet;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -122,7 +123,7 @@ public class WebAppTest {
         copyWebAppDependency(org.eclipse.jetty.websocket.client.WebSocketClient.class, webINF);
         copyWebAppDependency(org.eclipse.jetty.websocket.core.client.WebSocketCoreClient.class, webINF);
         copyWebAppDependency(org.eclipse.jetty.websocket.core.Configuration.class, webINF);
-        copyWebAppDependency(org.cometd.server.servlet.CometDServlet.class, webINF);
+        copyWebAppDependency(CometDServlet.class, webINF);
         copyWebAppDependency(CometDRequest.class, webINF);
         copyWebAppDependency(org.cometd.bayeux.server.BayeuxContext.class, webINF);
         copyWebAppDependency(org.cometd.bayeux.Promise.class, webINF);
@@ -183,7 +184,8 @@ public class WebAppTest {
         addServerDependency(org.eclipse.jetty.ee10.websocket.jakarta.client.JakartaWebSocketClientContainerProvider.class, serverClassPath);
         addServerDependency(org.eclipse.jetty.ee10.websocket.jakarta.common.JakartaWebSocketContainer.class, serverClassPath);
         addServerDependency(org.eclipse.jetty.ee10.websocket.jakarta.server.config.JakartaWebSocketConfiguration.class, serverClassPath);
-        addServerDependency(org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketConfiguration.class, serverClassPath);
+        // TODO
+//        addServerDependency(org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketConfiguration.class, serverClassPath);
         addServerDependency(org.eclipse.jetty.ee10.websocket.servlet.WebSocketUpgradeFilter.class, serverClassPath);
         addServerDependency(org.eclipse.jetty.xml.XmlConfiguration.class, serverClassPath);
         addServerDependency(org.objectweb.asm.ClassVisitor.class, serverClassPath);

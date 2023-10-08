@@ -27,14 +27,13 @@ import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.websocket.okhttp.OkHttpWebSocketTransport;
 import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.servlet.CometDServlet;
-import org.cometd.server.servlet.transport.ServletJSONTransport;
+import org.cometd.server.http.jakarta.CometDServlet;
+import org.cometd.server.http.jakarta.transport.ServletJSONTransport;
 import org.cometd.server.websocket.jakarta.WebSocketTransport;
 import org.cometd.server.websocket.jetty.JettyWebSocketTransport;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
-import org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -67,7 +66,8 @@ public class SpringFrameworkWebSocketConfigurationTest {
         if (WebSocketTransport.class.equals(wsTransportClass)) {
             JakartaWebSocketServletContainerInitializer.configure(context, null);
         } else if (JettyWebSocketTransport.class.equals(wsTransportClass)) {
-            JettyWebSocketServletContainerInitializer.configure(context, null);
+            // TODO:
+//            JettyWebSocketServletContainerInitializer.configure(context, null);
         } else {
             throw new IllegalArgumentException();
         }

@@ -35,15 +35,14 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.http.jetty.JettyHttpClientTransport;
-import org.cometd.server.servlet.CometDServlet;
-import org.cometd.server.servlet.transport.ServletJSONTransport;
+import org.cometd.server.http.jakarta.CometDServlet;
+import org.cometd.server.http.jakarta.transport.ServletJSONTransport;
 import org.cometd.server.websocket.jakarta.WebSocketTransport;
 import org.cometd.server.websocket.jetty.JettyWebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
-import org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -84,7 +83,8 @@ public abstract class OortTest {
         if (serverTransport.equals(WebSocketTransport.class.getName())) {
             JakartaWebSocketServletContainerInitializer.configure(context, null);
         } else if (serverTransport.equals(JettyWebSocketTransport.class.getName())) {
-            JettyWebSocketServletContainerInitializer.configure(context, null);
+            // TODO
+//            JettyWebSocketServletContainerInitializer.configure(context, null);
         } else {
             throw new IllegalArgumentException("Unsupported transport " + serverTransport);
         }

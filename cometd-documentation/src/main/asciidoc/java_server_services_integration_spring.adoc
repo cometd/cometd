@@ -24,7 +24,7 @@ The `web.xml` file is as follows:
 
   <servlet>
     <servlet-name>cometd</servlet-name>
-    <servlet-class>org.cometd.server.servlet.CometDServlet</servlet-class>
+    <servlet-class>org.cometd.server.http.jakarta.CometDServlet</servlet-class>
     <async-supported>true</async-supported>
   </servlet>
   <servlet-mapping>
@@ -103,10 +103,10 @@ Below you can find a Spring's `applicationContext.xml` that configures the `Baye
         <bean id="websocketTransport" class="org.cometd.server.websocket.jakarta.WebSocketTransport">
           <constructor-arg ref="bayeux" />
         </bean>
-        <bean id="jsonTransport" class="org.cometd.server.servlet.transport.ServletJSONTransport">
+        <bean id="jsonTransport" class="org.cometd.server.http.jakarta.transport.ServletJSONTransport">
           <constructor-arg ref="bayeux" />
         </bean>
-        <bean id="jsonpTransport" class="org.cometd.server.servlet.transport.AsyncJSONPTransport">
+        <bean id="jsonpTransport" class="org.cometd.server.http.jakarta.transport.AsyncJSONPTransport">
           <constructor-arg ref="bayeux" />
         </bean>
       </list>

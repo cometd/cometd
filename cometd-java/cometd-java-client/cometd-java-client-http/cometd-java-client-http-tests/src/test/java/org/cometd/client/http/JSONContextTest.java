@@ -41,7 +41,7 @@ import org.cometd.server.JSONContextServer;
 import org.cometd.server.JacksonJSONContextServer;
 import org.cometd.server.JettyJSONContextServer;
 import org.cometd.server.ServerMessageImpl;
-import org.cometd.server.servlet.transport.ServletJSONTransport;
+import org.cometd.server.http.jakarta.transport.ServletJSONTransport;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.http.HttpMethod;

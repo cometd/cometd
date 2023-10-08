@@ -17,10 +17,10 @@
 
   <servlet>
     <servlet-name>cometd</servlet-name>
-    <servlet-class>org.cometd.server.servlet.CometDServlet</servlet-class>
+    <servlet-class>org.cometd.server.http.jakarta.CometDServlet</servlet-class>
     <init-param>
       <param-name>transports</param-name>
-      <param-value>org.cometd.server.servlet.transport.ServletJSONTransport</param-value>
+      <param-value>org.cometd.server.http.jakarta.transport.ServletJSONTransport</param-value>
     </init-param>
     <load-on-startup>1</load-on-startup>
     <async-supported>true</async-supported>

@@ -12,7 +12,7 @@
       <map>
         <entry key="sweepPeriod" value-ref="sweepPeriod" />
         <!-- Don't initialize WebSocket transports -->
-        <entry key="transports" value="org.cometd.server.servlet.transport.ServletJSONTransport" />
+        <entry key="transports" value="org.cometd.server.http.jakarta.transport.ServletJSONTransport" />
       </map>
     </property>
   </bean>

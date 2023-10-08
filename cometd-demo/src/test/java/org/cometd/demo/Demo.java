@@ -18,7 +18,7 @@ package org.cometd.demo;
 import java.lang.management.ManagementFactory;
 
 import org.cometd.bayeux.server.BayeuxServer;
-import org.cometd.server.servlet.CometDServlet;
+import org.cometd.server.http.jakarta.CometDServlet;
 import org.eclipse.jetty.ee10.servlet.DefaultServlet;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
