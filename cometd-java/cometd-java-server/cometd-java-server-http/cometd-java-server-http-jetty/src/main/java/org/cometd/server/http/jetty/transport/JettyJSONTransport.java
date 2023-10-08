@@ -23,8 +23,8 @@ import org.cometd.server.transport.AbstractHttpTransport;
 import org.cometd.server.transport.AbstractJSONTransport;
 import org.cometd.server.transport.TransportContext;
 
-public class HandlerJSONTransport extends AbstractJSONTransport {
-    public HandlerJSONTransport(BayeuxServerImpl bayeux) {
+public class JettyJSONTransport extends AbstractJSONTransport {
+    public JettyJSONTransport(BayeuxServerImpl bayeux) {
         super(bayeux);
     }
 

@@ -28,11 +28,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.cometd.server.CometDRequest;
 import org.eclipse.jetty.util.IO;
 
-class ServletCometDRequest implements CometDRequest {
+class JakartaCometDRequest implements CometDRequest {
     private final HttpServletRequest request;
-    private ServletCometDInput input;
+    private JakartaCometDInput input;
 
-    ServletCometDRequest(HttpServletRequest request) {
+    JakartaCometDRequest(HttpServletRequest request) {
         this.request = request;
     }
 
@@ -68,7 +68,7 @@ class ServletCometDRequest implements CometDRequest {
     public Input getInput() {
         if (input == null) {
             try {
-                input = new ServletCometDInput(request);
+                input = new JakartaCometDInput(request);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -91,14 +91,14 @@ class ServletCometDRequest implements CometDRequest {
         request.setAttribute(name, value);
     }
 
-    private static class ServletCometDInput implements Input, ReadListener {
+    private static class JakartaCometDInput implements Input, ReadListener {
         private static final Runnable DATA_AVAILABLE = () -> {};
 
         private final ServletInputStream inputStream;
         private final AtomicReference<Runnable> state = new AtomicReference<>();
         private volatile Throwable failure;
 
-        private ServletCometDInput(HttpServletRequest request) throws IOException {
+        private JakartaCometDInput(HttpServletRequest request) throws IOException {
             this.inputStream = request.getInputStream();
             // TODO: if method is GET, no need to read the body, no need to set the read listener.
             this.inputStream.setReadListener(this);

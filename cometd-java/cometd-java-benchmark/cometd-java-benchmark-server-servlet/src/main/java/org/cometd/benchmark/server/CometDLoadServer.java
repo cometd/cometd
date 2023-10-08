@@ -46,7 +46,7 @@ import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.JacksonJSONContextServer;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.cometd.server.http.jakarta.CometDServlet;
-import org.cometd.server.http.jakarta.transport.ServletJSONTransport;
+import org.cometd.server.http.jakarta.transport.JakartaJSONTransport;
 import org.cometd.server.transport.TransportContext;
 import org.cometd.server.websocket.common.AbstractWebSocketEndPoint;
 import org.cometd.server.websocket.common.AbstractWebSocketTransport;
@@ -214,7 +214,7 @@ public class CometDLoadServer {
                     bayeuxServer.addTransport(serverTransport);
                 }
                 case "http" -> {
-                    bayeuxServer.addTransport(new ServletJSONTransport(bayeuxServer) {
+                    bayeuxServer.addTransport(new JakartaJSONTransport(bayeuxServer) {
                         @Override
                         protected void writeComplete(TransportContext context, List<ServerMessage> messages) {
                             messageLatencyExtension.complete(messages);
@@ -222,7 +222,7 @@ public class CometDLoadServer {
                     });
                 }
                 case "asynchttp" -> {
-                    bayeuxServer.addTransport(new ServletJSONTransport(bayeuxServer) {
+                    bayeuxServer.addTransport(new JakartaJSONTransport(bayeuxServer) {
                         @Override
                         protected void writeComplete(TransportContext context, List<ServerMessage> messages) {
                             messageLatencyExtension.complete(messages);

@@ -99,10 +99,10 @@ public class CometDServlet extends HttpServlet {
         // that the timeout fires in case of slow reads.
         asyncContext.setTimeout(0);
 
-        CometDRequest cometDRequest = new ServletCometDRequest(request);
+        CometDRequest cometDRequest = new JakartaCometDRequest(request);
         cometDRequest.setAttribute(AsyncContext.class.getName(), asyncContext);
-        CometDResponse cometDResponse = new ServletCometDResponse(response);
-        BayeuxContext bayeuxContext = new ServletBayeuxContext(request);
+        CometDResponse cometDResponse = new JakartaCometDResponse(response);
+        BayeuxContext bayeuxContext = new JakartaBayeuxContext(request);
 
         Promise<Void> promise = new Promise<>() {
             @Override

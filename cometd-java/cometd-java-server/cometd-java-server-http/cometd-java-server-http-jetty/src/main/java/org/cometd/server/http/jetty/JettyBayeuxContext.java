@@ -26,11 +26,11 @@ import org.cometd.server.CometDRequest;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Session;
 
-class HandlerBayeuxContext implements BayeuxContext {
-    private final HandlerCometDRequest cometDRequest;
+class JettyBayeuxContext implements BayeuxContext {
+    private final JettyCometDRequest cometDRequest;
     private final Request request;
 
-    HandlerBayeuxContext(HandlerCometDRequest cometDRequest, Request request) {
+    JettyBayeuxContext(JettyCometDRequest cometDRequest, Request request) {
         this.cometDRequest = cometDRequest;
         this.request = request;
     }

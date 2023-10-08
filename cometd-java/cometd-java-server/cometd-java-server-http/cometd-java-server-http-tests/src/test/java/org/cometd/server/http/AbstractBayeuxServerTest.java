@@ -21,7 +21,7 @@ import java.util.Map;
 
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.http.jetty.CometDHandler;
-import org.cometd.server.http.jetty.transport.HandlerJSONTransport;
+import org.cometd.server.http.jetty.transport.JettyJSONTransport;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -33,7 +33,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 public abstract class AbstractBayeuxServerTest
 {
     public static List<String> transports() {
-        return List.of(HandlerJSONTransport.class.getName());
+        return List.of(JettyJSONTransport.class.getName());
     }
 
     @RegisterExtension

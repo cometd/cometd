@@ -24,8 +24,8 @@ import org.cometd.server.transport.AbstractHttpScheduler;
 import org.cometd.server.transport.AbstractHttpTransport;
 import org.cometd.server.transport.TransportContext;
 
-public class ServletHttpScheduler extends AbstractHttpScheduler implements AsyncListener {
-    public ServletHttpScheduler(AbstractHttpTransport transport, TransportContext context, ServerMessage.Mutable reply, long timeout) {
+public class JakartaHttpScheduler extends AbstractHttpScheduler implements AsyncListener {
+    public JakartaHttpScheduler(AbstractHttpTransport transport, TransportContext context, ServerMessage.Mutable reply, long timeout) {
         super(transport, context, reply, timeout);
         AsyncContext asyncContext = (AsyncContext)context.request().getAttribute(AsyncContext.class.getName());
         if (asyncContext != null) {

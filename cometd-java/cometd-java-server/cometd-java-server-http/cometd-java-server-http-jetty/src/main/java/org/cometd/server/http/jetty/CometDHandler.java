@@ -57,7 +57,7 @@ public class CometDHandler extends Handler.Abstract {
     protected void doStart() throws Exception {
         bayeux = newBayeuxServer();
         addBean(bayeux);
-        // TODO: setup the HandlerJSONTransport for Handlers.
+        // TODO: setup the JettyJSONTransport for Handlers.
         for (Map.Entry<String, String> entry : getOptions().entrySet()) {
             bayeux.setOption(entry.getKey(), entry.getValue());
         }
@@ -80,9 +80,9 @@ public class CometDHandler extends Handler.Abstract {
             return true;
         }
 
-        HandlerCometDRequest cometDRequest = new HandlerCometDRequest(request);
-        HandlerCometDResponse cometDResponse = new HandlerCometDResponse(response);
-        HandlerBayeuxContext bayeuxContext = new HandlerBayeuxContext(cometDRequest, request);
+        JettyCometDRequest cometDRequest = new JettyCometDRequest(request);
+        JettyCometDResponse cometDResponse = new JettyCometDResponse(response);
+        JettyBayeuxContext bayeuxContext = new JettyBayeuxContext(cometDRequest, request);
 
         Promise<Void> promise = new Promise<>() {
             @Override

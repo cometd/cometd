@@ -27,12 +27,12 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.IO;
 
-class HandlerCometDRequest implements CometDRequest {
+class JettyCometDRequest implements CometDRequest {
     private final Request request;
     private final CookieCache cookieCache = new CookieCache();
     private Input cometDInput;
 
-    public HandlerCometDRequest(Request request) {
+    public JettyCometDRequest(Request request) {
         this.request = request;
     }
 
@@ -70,7 +70,7 @@ class HandlerCometDRequest implements CometDRequest {
     @Override
     public Input getInput() {
         if (cometDInput == null) {
-            cometDInput = new HandlerInput(this);
+            cometDInput = new JettyCometDInput(this);
         }
         return cometDInput;
     }
@@ -85,10 +85,10 @@ class HandlerCometDRequest implements CometDRequest {
         request.setAttribute(name, value);
     }
 
-    private static class HandlerInput implements Input {
-        private final HandlerCometDRequest request;
+    private static class JettyCometDInput implements Input {
+        private final JettyCometDRequest request;
 
-        private HandlerInput(HandlerCometDRequest request) {
+        private JettyCometDInput(JettyCometDRequest request) {
             this.request = request;
         }
 

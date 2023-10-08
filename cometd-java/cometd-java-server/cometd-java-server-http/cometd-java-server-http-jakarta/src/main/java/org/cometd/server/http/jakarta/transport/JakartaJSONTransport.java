@@ -26,8 +26,8 @@ import org.cometd.server.CometDResponse;
 import org.cometd.server.transport.AbstractJSONTransport;
 import org.cometd.server.transport.TransportContext;
 
-public class ServletJSONTransport extends AbstractJSONTransport {
-    public ServletJSONTransport(BayeuxServerImpl bayeux) {
+public class JakartaJSONTransport extends AbstractJSONTransport {
+    public JakartaJSONTransport(BayeuxServerImpl bayeux) {
         super(bayeux);
     }
 
@@ -44,6 +44,6 @@ public class ServletJSONTransport extends AbstractJSONTransport {
 
     @Override
     protected HttpScheduler newHttpScheduler(TransportContext context, Promise<Void> promise, ServerMessage.Mutable reply, long timeout) {
-        return new ServletHttpScheduler(this, context, reply, timeout);
+        return new JakartaHttpScheduler(this, context, reply, timeout);
     }
 }

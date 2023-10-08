@@ -24,11 +24,11 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.cometd.bayeux.Promise;
 import org.cometd.server.CometDResponse;
 
-class ServletCometDResponse implements CometDResponse {
+class JakartaCometDResponse implements CometDResponse {
     private final HttpServletResponse response;
-    private ServletCometDOutput output;
+    private JakartaCometDOutput output;
 
-    ServletCometDResponse(HttpServletResponse response) {
+    JakartaCometDResponse(HttpServletResponse response) {
         this.response = response;
     }
 
@@ -41,7 +41,7 @@ class ServletCometDResponse implements CometDResponse {
     public Output getOutput() {
         if (output == null) {
             try {
-                output = new ServletCometDOutput(response);
+                output = new JakartaCometDOutput(response);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -54,11 +54,11 @@ class ServletCometDResponse implements CometDResponse {
         response.setContentType(contentType);
     }
 
-    private static class ServletCometDOutput implements Output, WriteListener {
+    private static class JakartaCometDOutput implements Output, WriteListener {
         private final ServletOutputStream outputStream;
         private final AtomicReference<NextWrite> nextWriteRef = new AtomicReference<>();
 
-        private ServletCometDOutput(HttpServletResponse response) throws IOException {
+        private JakartaCometDOutput(HttpServletResponse response) throws IOException {
             this.outputStream = response.getOutputStream();
             this.outputStream.setWriteListener(this);
         }

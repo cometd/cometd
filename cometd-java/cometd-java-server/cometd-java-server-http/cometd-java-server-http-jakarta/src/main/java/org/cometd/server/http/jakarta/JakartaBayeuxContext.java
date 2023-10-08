@@ -28,10 +28,10 @@ import jakarta.servlet.http.HttpSession;
 
 import org.cometd.bayeux.server.BayeuxContext;
 
-class ServletBayeuxContext implements BayeuxContext {
+class JakartaBayeuxContext implements BayeuxContext {
     private final HttpServletRequest request;
 
-    ServletBayeuxContext(HttpServletRequest request) {
+    JakartaBayeuxContext(HttpServletRequest request) {
         this.request = request;
     }
 

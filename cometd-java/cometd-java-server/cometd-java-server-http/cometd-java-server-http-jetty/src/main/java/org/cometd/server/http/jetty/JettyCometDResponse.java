@@ -23,11 +23,11 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 
-class HandlerCometDResponse implements CometDResponse {
+class JettyCometDResponse implements CometDResponse {
     private final Response response;
     private Output cometDOutput;
 
-    HandlerCometDResponse(Response response) {
+    JettyCometDResponse(Response response) {
         this.response = response;
     }
 
@@ -39,7 +39,7 @@ class HandlerCometDResponse implements CometDResponse {
     @Override
     public Output getOutput() {
         if (cometDOutput == null) {
-            cometDOutput = new HandlerCometDOutput(response);
+            cometDOutput = new JettyCometDOutput(response);
         }
         return cometDOutput;
     }
@@ -49,10 +49,10 @@ class HandlerCometDResponse implements CometDResponse {
         response.getHeaders().put(HttpHeader.CONTENT_TYPE, contentType);
     }
 
-    private static class HandlerCometDOutput implements Output {
+    private static class JettyCometDOutput implements Output {
         private final Response response;
 
-        private HandlerCometDOutput(Response response) {
+        private JettyCometDOutput(Response response) {
             this.response = response;
         }
 

@@ -33,7 +33,7 @@ import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.JettyJSONContextServer;
 import org.cometd.server.http.jakarta.CometDServlet;
-import org.cometd.server.http.jakarta.transport.ServletJSONTransport;
+import org.cometd.server.http.jakarta.transport.JakartaJSONTransport;
 import org.cometd.server.websocket.jakarta.WebSocketTransport;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
@@ -200,8 +200,8 @@ public class OortStartupTest {
         return Stream.of(
                 Arguments.of(WebSocketTransport.class.getName(), org.cometd.client.websocket.jakarta.WebSocketTransport.Factory.class.getName()),
                 Arguments.of(WebSocketTransport.class.getName(), OkHttpWebSocketTransport.Factory.class.getName()),
-                Arguments.of(ServletJSONTransport.class.getName(), JettyHttpClientTransport.Factory.class.getName()),
-                Arguments.of(ServletJSONTransport.class.getName(), OkHttpClientTransport.Factory.class.getName())
+                Arguments.of(JakartaJSONTransport.class.getName(), JettyHttpClientTransport.Factory.class.getName()),
+                Arguments.of(JakartaJSONTransport.class.getName(), OkHttpClientTransport.Factory.class.getName())
         );
     }
 

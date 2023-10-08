@@ -34,7 +34,7 @@ import org.cometd.server.transport.TransportContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class AsyncJSONPTransport extends AbstractHttpTransport {
+public class JakartaJSONPTransport extends AbstractHttpTransport {
     public final static String NAME = "callback-polling";
     public final static String CALLBACK_PARAMETER_OPTION = "callbackParameter";
     public final static String CALLBACK_PARAMETER_MAX_LENGTH_OPTION = "callbackParameterMaxLength";
@@ -48,7 +48,7 @@ public class AsyncJSONPTransport extends AbstractHttpTransport {
     private String callbackParam = "jsonp";
     private int callbackMaxLength = 64;
 
-    public AsyncJSONPTransport(BayeuxServerImpl bayeux) {
+    public JakartaJSONPTransport(BayeuxServerImpl bayeux) {
         super(bayeux, NAME);
         setOptionPrefix(PREFIX);
     }
@@ -124,7 +124,7 @@ public class AsyncJSONPTransport extends AbstractHttpTransport {
 
     @Override
     protected HttpScheduler newHttpScheduler(TransportContext context, Promise<Void> promise, ServerMessage.Mutable reply, long timeout) {
-        return new ServletHttpScheduler(this, context, reply, timeout);
+        return new JakartaHttpScheduler(this, context, reply, timeout);
     }
 
     @Override
