@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import org.cometd.server.BayeuxServerImpl;
+import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.server.http.jakarta.CometDServlet;
 import org.eclipse.jetty.ee10.servlet.DefaultServlet;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
@@ -54,7 +54,7 @@ public abstract class AbstractCometDTest {
     protected int port;
     protected String contextURL;
     protected String cometdURL;
-    protected BayeuxServerImpl bayeuxServer;
+    protected BayeuxServer bayeuxServer;
     protected int expirationPeriod = 2500;
     protected JavaScript javaScript;
     private XMLHttpRequestClient xhrClient;
@@ -112,7 +112,7 @@ public abstract class AbstractCometDTest {
         connector.setPort(port);
         server.start();
         port = connector.getLocalPort();
-        bayeuxServer = cometdServlet.getBayeux();
+        bayeuxServer = cometdServlet.getBayeuxServer();
     }
 
     @AfterEach

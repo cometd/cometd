@@ -29,12 +29,11 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public class CometDServiceTest extends AbstractBayeuxClientServerTest
-{
+public class CometDServiceTest extends AbstractBayeuxClientServerTest {
     @ParameterizedTest
     @MethodSource("transports")
-    public void testRemoveService(String serverTransport) throws Exception {
-        startServer(serverTransport, null);
+    public void testRemoveService(Transport transport) throws Exception {
+        startServer(transport, null);
 
         String channel1 = "/foo";
         String channel2 = "/bar";
@@ -43,30 +42,30 @@ public class CometDServiceTest extends AbstractBayeuxClientServerTest
         AbstractService service = new OneTwoService(bayeux, channel1, channel2, publishLatch1, publishLatch2);
 
         Request handshake = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"minimumVersion\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}]");
+                                             "\"channel\": \"/meta/handshake\"," +
+                                             "\"version\": \"1.0\"," +
+                                             "\"minimumVersion\": \"1.0\"," +
+                                             "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                                             "}]");
         ContentResponse response = handshake.send();
         Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
         Request publish1 = newBayeuxRequest("[{" +
-                "\"channel\": \"" + channel1 + "\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"data\": {}" +
-                "}]");
+                                            "\"channel\": \"" + channel1 + "\"," +
+                                            "\"clientId\": \"" + clientId + "\"," +
+                                            "\"data\": {}" +
+                                            "}]");
         response = publish1.send();
         Assertions.assertTrue(publishLatch1.get().await(5, TimeUnit.SECONDS));
         Assertions.assertEquals(200, response.getStatus());
 
         Request publish2 = newBayeuxRequest("[{" +
-                "\"channel\": \"" + channel2 + "\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"data\": {}" +
-                "}]");
+                                            "\"channel\": \"" + channel2 + "\"," +
+                                            "\"clientId\": \"" + clientId + "\"," +
+                                            "\"data\": {}" +
+                                            "}]");
         response = publish2.send();
         Assertions.assertTrue(publishLatch2.get().await(5, TimeUnit.SECONDS));
         Assertions.assertEquals(200, response.getStatus());
@@ -76,19 +75,19 @@ public class CometDServiceTest extends AbstractBayeuxClientServerTest
         publishLatch2.set(new CountDownLatch(1));
 
         publish1 = newBayeuxRequest("[{" +
-                "\"channel\": \"" + channel1 + "\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"data\": {}" +
-                "}]");
+                                    "\"channel\": \"" + channel1 + "\"," +
+                                    "\"clientId\": \"" + clientId + "\"," +
+                                    "\"data\": {}" +
+                                    "}]");
         response = publish1.send();
         Assertions.assertFalse(publishLatch1.get().await(1, TimeUnit.SECONDS));
         Assertions.assertEquals(200, response.getStatus());
 
         publish2 = newBayeuxRequest("[{" +
-                "\"channel\": \"" + channel2 + "\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"data\": {}" +
-                "}]");
+                                    "\"channel\": \"" + channel2 + "\"," +
+                                    "\"clientId\": \"" + clientId + "\"," +
+                                    "\"data\": {}" +
+                                    "}]");
         response = publish2.send();
         Assertions.assertTrue(publishLatch2.get().await(5, TimeUnit.SECONDS));
         Assertions.assertEquals(200, response.getStatus());
@@ -97,18 +96,18 @@ public class CometDServiceTest extends AbstractBayeuxClientServerTest
         publishLatch2.set(new CountDownLatch(1));
 
         publish2 = newBayeuxRequest("[{" +
-                "\"channel\": \"" + channel2 + "\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"data\": {}" +
-                "}]");
+                                    "\"channel\": \"" + channel2 + "\"," +
+                                    "\"clientId\": \"" + clientId + "\"," +
+                                    "\"data\": {}" +
+                                    "}]");
         response = publish2.send();
         Assertions.assertFalse(publishLatch2.get().await(1, TimeUnit.SECONDS));
         Assertions.assertEquals(200, response.getStatus());
 
         Request disconnect = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/disconnect\"," +
-                "\"clientId\": \"" + clientId + "\"" +
-                "}]");
+                                              "\"channel\": \"/meta/disconnect\"," +
+                                              "\"clientId\": \"" + clientId + "\"" +
+                                              "}]");
         response = disconnect.send();
         Assertions.assertEquals(200, response.getStatus());
     }

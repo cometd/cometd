@@ -24,77 +24,69 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public class BadJSONTest extends AbstractBayeuxClientServerTest
-{
-// TODO
-//    @Test
-//    public void testBadJSON() throws Exception {
-//        startServer(JSONTransport.class.getName(), null);
-//
-//        JSONTransport transport = new JSONTransport(bayeux) {
-//            @Override
-//            protected void handleJSONParseException(HttpServletRequest request, HttpServletResponse response, String json, Throwable exception) throws IOException {
-//                // Suppress logging during tests
-//                if (!response.isCommitted()) {
-//                    response.sendError(HttpServletResponse.SC_BAD_REQUEST);
-//                }
-//            }
-//        };
-//        transport.init();
-//        bayeux.setTransports(transport);
-//
-//        Request handshake = newBayeuxRequest("[{" +
-//                "\"channel\": \"/meta/handshake\"," +
-//                "\"version\": \"1.0\"," +
-//                "\"minimumVersion\": \"1.0\"," +
-//                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-//                "}]");
-//        ContentResponse response = handshake.send();
-//        Assertions.assertEquals(200, response.getStatus());
-//
-//        String clientId = extractClientId(response);
-//
-//        Request connect = newBayeuxRequest("[{" +
-//                "\"channel\": \"/meta/connect\"," +
-//                "\"clientId\": \"" + clientId + "\"," +
-//                "\"connectionType\": \"long-polling\"" +
-//                "}]");
-//        response = connect.send();
-//
-//        Assertions.assertEquals(200, response.getStatus());
-//
-//        // Forge a bad JSON message
-//        Request badConnect = newBayeuxRequest("[{" +
-//                "\"channel\": \"/meta/connect\"," +
-//                "\"clientId\": \"" + clientId + "\"," +
-//                "\"connectionType\": \"long-polling\"");
-//        //"}]"); Bad JSON, missing this line
-//        response = badConnect.send();
-//        Assertions.assertEquals(400, response.getStatus());
-//    }
+public class BadJSONTest extends AbstractBayeuxClientServerTest {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testBadJSON(Transport transport) throws Exception {
+        startServer(transport, null);
+
+        Request handshake = newBayeuxRequest("""
+                [{
+                "channel": "/meta/handshake",
+                "version": "1.0",
+                "minimumVersion": "1.0",
+                "supportedConnectionTypes": ["long-polling"]
+                }]
+                """);
+        ContentResponse response = handshake.send();
+        Assertions.assertEquals(200, response.getStatus());
+
+        String clientId = extractClientId(response);
+
+        Request connect = newBayeuxRequest("""
+                [{
+                "channel": "/meta/connect",
+                "clientId": "%s",
+                "connectionType": "long-polling"
+                }]
+                """.formatted(clientId));
+        response = connect.send();
+
+        Assertions.assertEquals(200, response.getStatus());
+
+        // Forge a bad JSON message, missing the closing brackets.
+        Request badConnect = newBayeuxRequest("""
+                [{
+                "channel": "/meta/connect",
+                "clientId": "%s",
+                "connectionType": "long-polling"
+                """.formatted(clientId));
+        response = badConnect.send();
+        Assertions.assertEquals(400, response.getStatus());
+    }
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testValidation(String serverTransport) throws Exception {
-        startServer(serverTransport, null);
+    public void testValidation(Transport transport) throws Exception {
+        startServer(transport, null);
 
         Request handshake = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"minimumVersion\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}]");
+                                             "\"channel\": \"/meta/handshake\"," +
+                                             "\"version\": \"1.0\"," +
+                                             "\"minimumVersion\": \"1.0\"," +
+                                             "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                                             "}]");
         ContentResponse response = handshake.send();
         Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
         Request connect = newBayeuxRequest("[{" +
-                "\"id\": \"<script>alert();</script>\"," +
-                "\"channel\": \"/meta/connect\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"connectionType\": \"long-polling\"" +
-                "}]");
+                                           "\"id\": \"<script>alert();</script>\"," +
+                                           "\"channel\": \"/meta/connect\"," +
+                                           "\"clientId\": \"" + clientId + "\"," +
+                                           "\"connectionType\": \"long-polling\"" +
+                                           "}]");
         response = connect.send();
         Assertions.assertEquals(200, response.getStatus());
         JSONContext.Client jsonContext = new JettyJSONContextClient();
@@ -103,10 +95,10 @@ public class BadJSONTest extends AbstractBayeuxClientServerTest
         Assertions.assertFalse(reply.isSuccessful());
 
         Request subscribe = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/subscribe\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"subscription\": \"/bar<script>\"" +
-                "}]");
+                                             "\"channel\": \"/meta/subscribe\"," +
+                                             "\"clientId\": \"" + clientId + "\"," +
+                                             "\"subscription\": \"/bar<script>\"" +
+                                             "}]");
         response = subscribe.send();
         Assertions.assertEquals(200, response.getStatus());
         replies = jsonContext.parse(response.getContentAsString());
@@ -114,10 +106,10 @@ public class BadJSONTest extends AbstractBayeuxClientServerTest
         Assertions.assertFalse(reply.isSuccessful());
 
         Request publish = newBayeuxRequest("[{" +
-                "\"channel\": \"/foo<>\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"data\": \"{}\"" +
-                "}]");
+                                           "\"channel\": \"/foo<>\"," +
+                                           "\"clientId\": \"" + clientId + "\"," +
+                                           "\"data\": \"{}\"" +
+                                           "}]");
         response = publish.send();
         Assertions.assertEquals(200, response.getStatus());
         replies = jsonContext.parse(response.getContentAsString());
@@ -125,10 +117,10 @@ public class BadJSONTest extends AbstractBayeuxClientServerTest
         Assertions.assertFalse(reply.isSuccessful());
 
         Request unsubscribe = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/unsubscribe\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"subscription\": \"/bar<script>\"" +
-                "}]");
+                                               "\"channel\": \"/meta/unsubscribe\"," +
+                                               "\"clientId\": \"" + clientId + "\"," +
+                                               "\"subscription\": \"/bar<script>\"" +
+                                               "}]");
         response = unsubscribe.send();
         Assertions.assertEquals(200, response.getStatus());
         replies = jsonContext.parse(response.getContentAsString());

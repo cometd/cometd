@@ -31,12 +31,11 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClientServerTest
-{
+public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClientServerTest {
     @ParameterizedTest
     @MethodSource("transports")
-    public void testDisconnectSubscribe(String serverTransport) throws Exception {
-        startServer(serverTransport, null);
+    public void testDisconnectSubscribe(Transport transport) throws Exception {
+        startServer(transport, null);
 
         AtomicBoolean subscribed = new AtomicBoolean(false);
         bayeux.addListener(new BayeuxServer.SubscriptionListener() {
@@ -50,34 +49,34 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
         new MetaSubscribeService(bayeux, serviced);
 
         Request handshake = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"minimumVersion\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}]");
+                                             "\"channel\": \"/meta/handshake\"," +
+                                             "\"version\": \"1.0\"," +
+                                             "\"minimumVersion\": \"1.0\"," +
+                                             "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                                             "}]");
         ContentResponse response = handshake.send();
         Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
         Request connect = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/connect\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"connectionType\": \"long-polling\"" +
-                "}]");
+                                           "\"channel\": \"/meta/connect\"," +
+                                           "\"clientId\": \"" + clientId + "\"," +
+                                           "\"connectionType\": \"long-polling\"" +
+                                           "}]");
         response = connect.send();
         Assertions.assertEquals(200, response.getStatus());
 
         // Forge a bad sequence of messages to simulate concurrent arrival of disconnect and subscribe messages
         String channel = "/foo";
         Request disconnect = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/disconnect\"," +
-                "\"clientId\": \"" + clientId + "\"" +
-                "},{" +
-                "\"channel\": \"/meta/subscribe\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"subscription\": \"" + channel + "\"" +
-                "}]");
+                                              "\"channel\": \"/meta/disconnect\"," +
+                                              "\"clientId\": \"" + clientId + "\"" +
+                                              "},{" +
+                                              "\"channel\": \"/meta/subscribe\"," +
+                                              "\"clientId\": \"" + clientId + "\"," +
+                                              "\"subscription\": \"" + channel + "\"" +
+                                              "}]");
         response = disconnect.send();
         Assertions.assertEquals(200, response.getStatus());
 
@@ -89,53 +88,53 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testDisconnectPublish(String serverTransport) throws Exception {
-        startServer(serverTransport, null);
+    public void testDisconnectPublish(Transport transport) throws Exception {
+        startServer(transport, null);
 
         String channel = "/foo";
         AtomicInteger publishes = new AtomicInteger();
         new BroadcastChannelService(bayeux, channel, publishes);
 
         Request handshake = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"minimumVersion\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}]");
+                                             "\"channel\": \"/meta/handshake\"," +
+                                             "\"version\": \"1.0\"," +
+                                             "\"minimumVersion\": \"1.0\"," +
+                                             "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                                             "}]");
         ContentResponse response = handshake.send();
         Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
         Request connect = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/connect\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"connectionType\": \"long-polling\"" +
-                "}]");
+                                           "\"channel\": \"/meta/connect\"," +
+                                           "\"clientId\": \"" + clientId + "\"," +
+                                           "\"connectionType\": \"long-polling\"" +
+                                           "}]");
         response = connect.send();
         Assertions.assertEquals(200, response.getStatus());
 
         Request subscribe = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/subscribe\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"subscription\": \"" + channel + "\"" +
-                "}]");
+                                             "\"channel\": \"/meta/subscribe\"," +
+                                             "\"clientId\": \"" + clientId + "\"," +
+                                             "\"subscription\": \"" + channel + "\"" +
+                                             "}]");
         response = subscribe.send();
         Assertions.assertEquals(200, response.getStatus());
 
         // Forge a bad sequence of messages to simulate concurrent arrival of disconnect and publish messages
         Request disconnect = newBayeuxRequest("[{" +
-                "\"channel\": \"" + channel + "\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"data\": {}" +
-                "},{" +
-                "\"channel\": \"/meta/disconnect\"," +
-                "\"clientId\": \"" + clientId + "\"" +
-                "},{" +
-                "\"channel\": \"" + channel + "\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"data\": {}" +
-                "}]");
+                                              "\"channel\": \"" + channel + "\"," +
+                                              "\"clientId\": \"" + clientId + "\"," +
+                                              "\"data\": {}" +
+                                              "},{" +
+                                              "\"channel\": \"/meta/disconnect\"," +
+                                              "\"clientId\": \"" + clientId + "\"" +
+                                              "},{" +
+                                              "\"channel\": \"" + channel + "\"," +
+                                              "\"clientId\": \"" + clientId + "\"," +
+                                              "\"data\": {}" +
+                                              "}]");
         response = disconnect.send();
         Assertions.assertEquals(200, response.getStatus());
         Assertions.assertEquals(1, publishes.get());

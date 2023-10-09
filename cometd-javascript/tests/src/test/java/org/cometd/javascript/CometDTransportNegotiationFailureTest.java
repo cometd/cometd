@@ -20,6 +20,7 @@ import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
+import org.cometd.server.BayeuxServerImpl;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -32,7 +33,7 @@ public class CometDTransportNegotiationFailureTest extends AbstractCometDTranspo
         initCometDServer(transport);
 
         // Only callback-polling on server (via extension), only long-polling on client.
-        bayeuxServer.setAllowedTransports("long-polling", "callback-polling");
+        ((BayeuxServerImpl)bayeuxServer).setAllowedTransports("long-polling", "callback-polling");
         bayeuxServer.addExtension(new BayeuxServer.Extension() {
             @Override
             public boolean sendMeta(ServerSession to, ServerMessage.Mutable message) {
@@ -70,7 +71,7 @@ public class CometDTransportNegotiationFailureTest extends AbstractCometDTranspo
         initCometDServer(transport);
 
         // Only websocket on server, only long-polling on client.
-        bayeuxServer.setAllowedTransports("websocket");
+        ((BayeuxServerImpl)bayeuxServer).setAllowedTransports("websocket");
 
         evaluateScript("""
                 cometd.unregisterTransports();
@@ -100,7 +101,7 @@ public class CometDTransportNegotiationFailureTest extends AbstractCometDTranspo
         initCometDServer(transport);
 
         // Only long-polling on server, only websocket on client.
-        bayeuxServer.setAllowedTransports("long-polling");
+        ((BayeuxServerImpl)bayeuxServer).setAllowedTransports("long-polling");
 
         evaluateScript("""
                 cometd.unregisterTransports();

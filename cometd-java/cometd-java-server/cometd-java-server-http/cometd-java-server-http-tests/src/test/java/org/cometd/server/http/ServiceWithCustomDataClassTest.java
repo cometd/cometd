@@ -33,14 +33,13 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public class ServiceWithCustomDataClassTest extends AbstractBayeuxClientServerTest
-{
+public class ServiceWithCustomDataClassTest extends AbstractBayeuxClientServerTest {
     @ParameterizedTest
     @MethodSource("transports")
-    public void testServiceWithCustomDataClass(String serverTransport) throws Exception {
+    public void testServiceWithCustomDataClass(Transport transport) throws Exception {
         Map<String, String> options = new HashMap<>();
         options.put(AbstractServerTransport.JSON_CONTEXT_OPTION, TestJettyJSONContextServer.class.getName());
-        startServer(serverTransport, options);
+        startServer(transport, options);
 
         String channelName = "/foo";
         CountDownLatch latch = new CountDownLatch(1);
@@ -51,11 +50,11 @@ public class ServiceWithCustomDataClassTest extends AbstractBayeuxClientServerTe
         jsonContext.getJSON().addConvertor(Holder.class, new HolderConvertor());
 
         Request handshake = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"minimumVersion\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}]");
+                                             "\"channel\": \"/meta/handshake\"," +
+                                             "\"version\": \"1.0\"," +
+                                             "\"minimumVersion\": \"1.0\"," +
+                                             "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                                             "}]");
         ContentResponse response = handshake.send();
         Assertions.assertEquals(200, response.getStatus());
 
@@ -63,13 +62,13 @@ public class ServiceWithCustomDataClassTest extends AbstractBayeuxClientServerTe
 
         String value = "bar";
         Request publish = newBayeuxRequest("[{" +
-                "\"channel\": \"" + channelName + "\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"data\": {" +
-                "    \"class\": \"" + Holder.class.getName() + "\"," +
-                "    \"field\":\"" + value + "\"" +
-                "}" +
-                "}]");
+                                           "\"channel\": \"" + channelName + "\"," +
+                                           "\"clientId\": \"" + clientId + "\"," +
+                                           "\"data\": {" +
+                                           "    \"class\": \"" + Holder.class.getName() + "\"," +
+                                           "    \"field\":\"" + value + "\"" +
+                                           "}" +
+                                           "}]");
         response = publish.send();
         Assertions.assertEquals(200, response.getStatus());
 

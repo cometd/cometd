@@ -28,12 +28,11 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public class BayeuxContextTest extends AbstractBayeuxClientServerTest
-{
+public class BayeuxContextTest extends AbstractBayeuxClientServerTest {
     @ParameterizedTest
     @MethodSource("transports")
-    public void testAddresses(String serverTransport) throws Exception {
-        startServer(serverTransport, null);
+    public void testAddresses(Transport transport) throws Exception {
+        startServer(transport, null);
 
         CountDownLatch latch = new CountDownLatch(1);
         bayeux.addListener(new BayeuxServer.SessionListener() {
@@ -46,11 +45,11 @@ public class BayeuxContextTest extends AbstractBayeuxClientServerTest
         });
 
         Request handshake = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"minimumVersion\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}]");
+                                             "\"channel\": \"/meta/handshake\"," +
+                                             "\"version\": \"1.0\"," +
+                                             "\"minimumVersion\": \"1.0\"," +
+                                             "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                                             "}]");
         ContentResponse response = handshake.send();
         Assertions.assertEquals(200, response.getStatus());
 
@@ -59,8 +58,8 @@ public class BayeuxContextTest extends AbstractBayeuxClientServerTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testRequestHeader(String serverTransport) throws Exception {
-        startServer(serverTransport, null);
+    public void testRequestHeader(Transport transport) throws Exception {
+        startServer(transport, null);
 
         String name = "test";
         String value1 = "foo";
@@ -76,11 +75,11 @@ public class BayeuxContextTest extends AbstractBayeuxClientServerTest
         });
 
         Request handshake = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"minimumVersion\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}]");
+                                             "\"channel\": \"/meta/handshake\"," +
+                                             "\"version\": \"1.0\"," +
+                                             "\"minimumVersion\": \"1.0\"," +
+                                             "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                                             "}]");
         handshake.headers(headers -> headers.put(name, value1));
         handshake.headers(headers -> headers.add(name, value2));
         ContentResponse response = handshake.send();
@@ -90,11 +89,10 @@ public class BayeuxContextTest extends AbstractBayeuxClientServerTest
     }
 
 
-
     @ParameterizedTest
     @MethodSource("transports")
-    public void testContextAttribute(String serverTransport) throws Exception {
-        startServer(serverTransport, null);
+    public void testContextAttribute(Transport transport) throws Exception {
+        startServer(transport, null);
 
         CountDownLatch latch = new CountDownLatch(1);
         bayeux.addListener(new BayeuxServer.SessionListener() {
@@ -106,11 +104,11 @@ public class BayeuxContextTest extends AbstractBayeuxClientServerTest
         });
 
         Request handshake = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"minimumVersion\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}]");
+                                             "\"channel\": \"/meta/handshake\"," +
+                                             "\"version\": \"1.0\"," +
+                                             "\"minimumVersion\": \"1.0\"," +
+                                             "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                                             "}]");
         ContentResponse response = handshake.send();
         Assertions.assertEquals(200, response.getStatus());
 

@@ -15,7 +15,7 @@
  */
 package org.cometd.server;
 
-public class HttpException extends Exception {
+public class HttpException extends RuntimeException {
     private final int code;
 
     public HttpException(int code, Throwable cause) {

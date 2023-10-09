@@ -21,46 +21,45 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public class ConcurrentHandshakeFailureSubscribePublishTest extends AbstractBayeuxClientServerTest
-{
+public class ConcurrentHandshakeFailureSubscribePublishTest extends AbstractBayeuxClientServerTest {
     @ParameterizedTest
     @MethodSource("transports")
-    public void testConcurrentHandshakeFailureAndSubscribe(String serverTransport) throws Exception {
-        startServer(serverTransport, null);
+    public void testConcurrentHandshakeFailureAndSubscribe(Transport transport) throws Exception {
+        startServer(transport, null);
 
         // A bad sequence of messages results in the server rejecting them.
         String channelName = "/foo";
         Request handshake = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"minimumVersion\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}, {" +
-                "\"clientId\": null," +
-                "\"channel\": \"/meta/subscribe\"," +
-                "\"subscription\": \"" + channelName + "\"" +
-                "}]");
+                                             "\"channel\": \"/meta/handshake\"," +
+                                             "\"version\": \"1.0\"," +
+                                             "\"minimumVersion\": \"1.0\"," +
+                                             "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                                             "}, {" +
+                                             "\"clientId\": null," +
+                                             "\"channel\": \"/meta/subscribe\"," +
+                                             "\"subscription\": \"" + channelName + "\"" +
+                                             "}]");
         ContentResponse response = handshake.send();
         Assertions.assertEquals(500, response.getStatus());
     }
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testConcurrentHandshakeFailureAndPublish(String serverTransport) throws Exception {
-        startServer(serverTransport, null);
+    public void testConcurrentHandshakeFailureAndPublish(Transport transport) throws Exception {
+        startServer(transport, null);
 
         // A bad sequence of messages results in the server rejecting them.
         String channelName = "/foo";
         Request handshake = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"minimumVersion\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}, {" +
-                "\"clientId\": null," +
-                "\"channel\": \"" + channelName + "\"," +
-                "\"data\": {}" +
-                "}]");
+                                             "\"channel\": \"/meta/handshake\"," +
+                                             "\"version\": \"1.0\"," +
+                                             "\"minimumVersion\": \"1.0\"," +
+                                             "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                                             "}, {" +
+                                             "\"clientId\": null," +
+                                             "\"channel\": \"" + channelName + "\"," +
+                                             "\"data\": {}" +
+                                             "}]");
         ContentResponse response = handshake.send();
         Assertions.assertEquals(500, response.getStatus());
     }

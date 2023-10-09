@@ -24,29 +24,28 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public class SubscriptionsWithMultipleChannelsTest extends AbstractBayeuxClientServerTest
-{
+public class SubscriptionsWithMultipleChannelsTest extends AbstractBayeuxClientServerTest {
     @ParameterizedTest
     @MethodSource("transports")
-    public void testSubscribeWithMultipleChannels(String serverTransport) throws Exception {
-        startServer(serverTransport, null);
+    public void testSubscribeWithMultipleChannels(Transport transport) throws Exception {
+        startServer(transport, null);
 
         Request handshake = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"minimumVersion\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}]");
+                                             "\"channel\": \"/meta/handshake\"," +
+                                             "\"version\": \"1.0\"," +
+                                             "\"minimumVersion\": \"1.0\"," +
+                                             "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                                             "}]");
         ContentResponse response = handshake.send();
         Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
         Request subscribe = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/subscribe\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"subscription\": [\"/foo\",\"/bar\"]" +
-                "}]");
+                                             "\"channel\": \"/meta/subscribe\"," +
+                                             "\"clientId\": \"" + clientId + "\"," +
+                                             "\"subscription\": [\"/foo\",\"/bar\"]" +
+                                             "}]");
         response = subscribe.send();
         Assertions.assertEquals(200, response.getStatus());
 
@@ -61,33 +60,33 @@ public class SubscriptionsWithMultipleChannelsTest extends AbstractBayeuxClientS
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testUnsubscribeWithMultipleChannels(String serverTransport) throws Exception {
-        startServer(serverTransport, null);
+    public void testUnsubscribeWithMultipleChannels(Transport transport) throws Exception {
+        startServer(transport, null);
 
         Request handshake = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"minimumVersion\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}]");
+                                             "\"channel\": \"/meta/handshake\"," +
+                                             "\"version\": \"1.0\"," +
+                                             "\"minimumVersion\": \"1.0\"," +
+                                             "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                                             "}]");
         ContentResponse response = handshake.send();
         Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
         Request subscribe = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/subscribe\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"subscription\": [\"/foo\",\"/bar\"]" +
-                "}]");
+                                             "\"channel\": \"/meta/subscribe\"," +
+                                             "\"clientId\": \"" + clientId + "\"," +
+                                             "\"subscription\": [\"/foo\",\"/bar\"]" +
+                                             "}]");
         response = subscribe.send();
         Assertions.assertEquals(200, response.getStatus());
 
         Request unsubscribe = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/unsubscribe\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"subscription\": [\"/foo\",\"/bar\"]" +
-                "}]");
+                                               "\"channel\": \"/meta/unsubscribe\"," +
+                                               "\"clientId\": \"" + clientId + "\"," +
+                                               "\"subscription\": [\"/foo\",\"/bar\"]" +
+                                               "}]");
         response = unsubscribe.send();
         Assertions.assertEquals(200, response.getStatus());
 

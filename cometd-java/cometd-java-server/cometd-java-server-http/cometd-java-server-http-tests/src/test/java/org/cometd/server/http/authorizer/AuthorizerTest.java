@@ -34,8 +34,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 public class AuthorizerTest extends AbstractBayeuxClientServerTest {
     @ParameterizedTest
     @MethodSource("transports")
-    public void testAuthorizersOnSlashStarStar(String serverTransport) throws Exception {
-        startServer(serverTransport, null);
+    public void testAuthorizersOnSlashStarStar(Transport transport) throws Exception {
+        startServer(transport, null);
 
         bayeux.createChannelIfAbsent("/**", channel -> {
             // Grant create and subscribe to all and publishes only to service channels
@@ -49,21 +49,21 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest {
         });
 
         Request handshake = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"minimumVersion\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}]");
+                                             "\"channel\": \"/meta/handshake\"," +
+                                             "\"version\": \"1.0\"," +
+                                             "\"minimumVersion\": \"1.0\"," +
+                                             "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                                             "}]");
         ContentResponse response = handshake.send();
         Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
         Request publish = newBayeuxRequest("[{" +
-                "\"channel\": \"/foo\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"data\": {}" +
-                "}]");
+                                           "\"channel\": \"/foo\"," +
+                                           "\"clientId\": \"" + clientId + "\"," +
+                                           "\"data\": {}" +
+                                           "}]");
         response = publish.send();
         Assertions.assertEquals(200, response.getStatus());
 
@@ -74,10 +74,10 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest {
         Assertions.assertFalse(message.isSuccessful());
 
         publish = newBayeuxRequest("[{" +
-                "\"channel\": \"/service/foo\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"data\": {}" +
-                "}]");
+                                   "\"channel\": \"/service/foo\"," +
+                                   "\"clientId\": \"" + clientId + "\"," +
+                                   "\"data\": {}" +
+                                   "}]");
         response = publish.send();
         Assertions.assertEquals(200, response.getStatus());
 
@@ -89,29 +89,29 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testIgnoringAuthorizerDenies(String serverTransport) throws Exception {
-        startServer(serverTransport, null);
+    public void testIgnoringAuthorizerDenies(Transport transport) throws Exception {
+        startServer(transport, null);
 
         String channelName = "/test";
         bayeux.createChannelIfAbsent(channelName, channel ->
                 channel.addAuthorizer((operation, channel1, session, message) -> Authorizer.Result.ignore()));
 
         Request handshake = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"minimumVersion\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}]");
+                                             "\"channel\": \"/meta/handshake\"," +
+                                             "\"version\": \"1.0\"," +
+                                             "\"minimumVersion\": \"1.0\"," +
+                                             "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                                             "}]");
         ContentResponse response = handshake.send();
         Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
         Request publish = newBayeuxRequest("[{" +
-                "\"channel\": \"" + channelName + "\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"data\": {}" +
-                "}]");
+                                           "\"channel\": \"" + channelName + "\"," +
+                                           "\"clientId\": \"" + clientId + "\"," +
+                                           "\"data\": {}" +
+                                           "}]");
         response = publish.send();
         Assertions.assertEquals(200, response.getStatus());
 
@@ -123,10 +123,10 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest {
 
         // Check that publishing to another channel does not involve authorizers
         Request grantedPublish = newBayeuxRequest("[{" +
-                "\"channel\": \"/foo\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"data\": {}" +
-                "}]");
+                                                  "\"channel\": \"/foo\"," +
+                                                  "\"clientId\": \"" + clientId + "\"," +
+                                                  "\"data\": {}" +
+                                                  "}]");
         response = grantedPublish.send();
         Assertions.assertEquals(200, response.getStatus());
 
@@ -138,25 +138,25 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testNoAuthorizersGrant(String serverTransport) throws Exception {
-        startServer(serverTransport, null);
+    public void testNoAuthorizersGrant(Transport transport) throws Exception {
+        startServer(transport, null);
 
         Request handshake = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"minimumVersion\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}]");
+                                             "\"channel\": \"/meta/handshake\"," +
+                                             "\"version\": \"1.0\"," +
+                                             "\"minimumVersion\": \"1.0\"," +
+                                             "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                                             "}]");
         ContentResponse response = handshake.send();
         Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
         Request publish = newBayeuxRequest("[{" +
-                "\"channel\": \"/test\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"data\": {}" +
-                "}]");
+                                           "\"channel\": \"/test\"," +
+                                           "\"clientId\": \"" + clientId + "\"," +
+                                           "\"data\": {}" +
+                                           "}]");
         response = publish.send();
         Assertions.assertEquals(200, response.getStatus());
 
@@ -169,8 +169,8 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testDenyAuthorizerDenies(String serverTransport) throws Exception {
-        startServer(serverTransport, null);
+    public void testDenyAuthorizerDenies(Transport transport) throws Exception {
+        startServer(transport, null);
 
         bayeux.createChannelIfAbsent("/test/*", channel -> channel.addAuthorizer(GrantAuthorizer.GRANT_ALL));
         String channelName = "/test/denied";
@@ -178,21 +178,21 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest {
                 channel.addAuthorizer((operation, channel1, session, message) -> Authorizer.Result.deny("test")));
 
         Request handshake = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"minimumVersion\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}]");
+                                             "\"channel\": \"/meta/handshake\"," +
+                                             "\"version\": \"1.0\"," +
+                                             "\"minimumVersion\": \"1.0\"," +
+                                             "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                                             "}]");
         ContentResponse response = handshake.send();
         Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
         Request publish = newBayeuxRequest("[{" +
-                "\"channel\": \"" + channelName + "\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"data\": {}" +
-                "}]");
+                                           "\"channel\": \"" + channelName + "\"," +
+                                           "\"clientId\": \"" + clientId + "\"," +
+                                           "\"data\": {}" +
+                                           "}]");
         response = publish.send();
         Assertions.assertEquals(200, response.getStatus());
 
@@ -204,10 +204,10 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest {
 
         // Check that publishing to another channel does not involve authorizers
         Request grantedPublish = newBayeuxRequest("[{" +
-                "\"channel\": \"/foo\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"data\": {}" +
-                "}]");
+                                                  "\"channel\": \"/foo\"," +
+                                                  "\"clientId\": \"" + clientId + "\"," +
+                                                  "\"data\": {}" +
+                                                  "}]");
         response = grantedPublish.send();
         Assertions.assertEquals(200, response.getStatus());
 
@@ -219,8 +219,8 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testAddRemoveAuthorizer(String serverTransport) throws Exception {
-        startServer(serverTransport, null);
+    public void testAddRemoveAuthorizer(Transport transport) throws Exception {
+        startServer(transport, null);
 
         bayeux.createChannelIfAbsent("/test/*", channel -> channel.addAuthorizer(GrantAuthorizer.GRANT_NONE));
         String channelName = "/test/granted";
@@ -238,21 +238,21 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest {
         });
 
         Request handshake = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"minimumVersion\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}]");
+                                             "\"channel\": \"/meta/handshake\"," +
+                                             "\"version\": \"1.0\"," +
+                                             "\"minimumVersion\": \"1.0\"," +
+                                             "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                                             "}]");
         ContentResponse response = handshake.send();
         Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
         Request publish = newBayeuxRequest("[{" +
-                "\"channel\": \"" + channelName + "\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"data\": {}" +
-                "}]");
+                                           "\"channel\": \"" + channelName + "\"," +
+                                           "\"clientId\": \"" + clientId + "\"," +
+                                           "\"data\": {}" +
+                                           "}]");
         response = publish.send();
         Assertions.assertEquals(200, response.getStatus());
 
@@ -264,10 +264,10 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest {
 
         // Check that publishing again fails (the authorizer has been removed)
         Request grantedPublish = newBayeuxRequest("[{" +
-                "\"channel\": \"" + channelName + "\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"data\": {}" +
-                "}]");
+                                                  "\"channel\": \"" + channelName + "\"," +
+                                                  "\"clientId\": \"" + clientId + "\"," +
+                                                  "\"data\": {}" +
+                                                  "}]");
         response = grantedPublish.send();
         Assertions.assertEquals(200, response.getStatus());
 

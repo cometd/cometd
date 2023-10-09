@@ -43,7 +43,7 @@ public class CometDHandler extends Handler.Abstract {
     private static final Logger LOGGER = LoggerFactory.getLogger(CometDHandler.class);
 
     private Map<String, String> options = Map.of();
-    private BayeuxServer bayeux;
+    private BayeuxServer bayeuxServer;
 
     public Map<String, String> getOptions() {
         return options;
@@ -55,20 +55,29 @@ public class CometDHandler extends Handler.Abstract {
 
     @Override
     protected void doStart() throws Exception {
-        bayeux = newBayeuxServer();
-        addBean(bayeux);
-        bayeux.setOption(BayeuxServerImpl.TRANSPORTS_OPTION, """
+        bayeuxServer = newBayeuxServer();
+        addBean(bayeuxServer);
+        bayeuxServer.setOption(BayeuxServerImpl.TRANSPORTS_OPTION, """
                 org.cometd.server.http.jetty.JettyJSONTransport,
                 org.cometd.server.websocket.jetty.JettyWebSocketTransport
                 """);
         for (Map.Entry<String, String> entry : getOptions().entrySet()) {
-            bayeux.setOption(entry.getKey(), entry.getValue());
+            bayeuxServer.setOption(entry.getKey(), entry.getValue());
         }
         super.doStart();
     }
 
+    @Override
+    protected void doStop() throws Exception {
+        for (ServerSession session : bayeuxServer.getSessions()) {
+            ((ServerSessionImpl)session).destroyScheduler();
+        }
+        super.doStop();
+        removeBean(bayeuxServer);
+    }
+
     public BayeuxServer getBayeuxServer() {
-        return bayeux;
+        return bayeuxServer;
     }
 
     protected BayeuxServer newBayeuxServer() {
@@ -76,8 +85,8 @@ public class CometDHandler extends Handler.Abstract {
     }
 
     @Override
-    public boolean handle(Request request, Response response, Callback callback) throws Exception {
-        request.getContext().setAttribute(BayeuxServer.ATTRIBUTE, bayeux);
+    public boolean handle(Request request, Response response, Callback callback) {
+        request.getContext().setAttribute(BayeuxServer.ATTRIBUTE, bayeuxServer);
         if ("OPTIONS".equals(request.getMethod())) {
             serviceOptions(request, response, callback);
             return true;
@@ -98,9 +107,7 @@ public class CometDHandler extends Handler.Abstract {
 
             @Override
             public void fail(Throwable failure) {
-                int code = failure instanceof HttpException ?
-                    ((HttpException)failure).getCode() :
-                    HttpStatus.INTERNAL_SERVER_ERROR_500;
+                int code = failure instanceof HttpException http ? http.getCode() : HttpStatus.INTERNAL_SERVER_ERROR_500;
                 sendError(request, response, callback, code, failure);
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("Handling failed", failure);
@@ -108,7 +115,7 @@ public class CometDHandler extends Handler.Abstract {
             }
         };
 
-        AbstractHttpTransport transport = AbstractHttpTransport.find(bayeux, cometDRequest);
+        AbstractHttpTransport transport = AbstractHttpTransport.find(bayeuxServer, cometDRequest);
         if (transport == null) {
             Response.writeError(request, response, callback, HttpStatus.BAD_REQUEST_400, "Unknown Bayeux Transport");
         } else {
@@ -132,14 +139,5 @@ public class CometDHandler extends Handler.Abstract {
 
     protected void sendError(Request request, Response response, Callback callback, int code, Throwable failure) {
         Response.writeError(request, response, callback, code);
-    }
-
-    @Override
-    protected void doStop() throws Exception {
-        for (ServerSession session : bayeux.getSessions()) {
-            ((ServerSessionImpl)session).destroyScheduler();
-        }
-        super.doStop();
-        removeBean(bayeux);
     }
 }

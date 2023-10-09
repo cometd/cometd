@@ -37,12 +37,11 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerTest
-{
+public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerTest {
     @ParameterizedTest
     @MethodSource("transports")
-    public void testConnectListenerThenDisconnectThenConnectHandler(String serverTransport) throws Exception {
-        startServer(serverTransport, null);
+    public void testConnectListenerThenDisconnectThenConnectHandler(Transport transport) throws Exception {
+        startServer(transport, null);
 
         CountDownLatch connectLatch = new CountDownLatch(2);
         CountDownLatch disconnectLatch = new CountDownLatch(1);
@@ -58,11 +57,11 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
         });
 
         Request handshake = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"minimumVersion\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}]");
+                                             "\"channel\": \"/meta/handshake\"," +
+                                             "\"version\": \"1.0\"," +
+                                             "\"minimumVersion\": \"1.0\"," +
+                                             "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                                             "}]");
         ContentResponse response = handshake.send();
         Assertions.assertEquals(200, response.getStatus());
 
@@ -70,26 +69,26 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
 
         String channelName = "/foo";
         Request subscribe = newBayeuxRequest("[{" +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"channel\": \"/meta/subscribe\"," +
-                "\"subscription\": \"" + channelName + "\"" +
-                "}]");
+                                             "\"clientId\": \"" + clientId + "\"," +
+                                             "\"channel\": \"/meta/subscribe\"," +
+                                             "\"subscription\": \"" + channelName + "\"" +
+                                             "}]");
         response = subscribe.send();
         Assertions.assertEquals(200, response.getStatus());
 
         Request connect1 = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/connect\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"connectionType\": \"long-polling\"" +
-                "}]");
+                                            "\"channel\": \"/meta/connect\"," +
+                                            "\"clientId\": \"" + clientId + "\"," +
+                                            "\"connectionType\": \"long-polling\"" +
+                                            "}]");
         response = connect1.send();
         Assertions.assertEquals(200, response.getStatus());
 
         Request connect2 = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/connect\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"connectionType\": \"long-polling\"" +
-                "}]");
+                                            "\"channel\": \"/meta/connect\"," +
+                                            "\"clientId\": \"" + clientId + "\"," +
+                                            "\"connectionType\": \"long-polling\"" +
+                                            "}]");
         FutureResponseListener futureResponse = new FutureResponseListener(connect2);
         connect2.send(futureResponse);
 
@@ -97,9 +96,9 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
         Assertions.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
 
         Request disconnect = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/disconnect\"," +
-                "\"clientId\": \"" + clientId + "\"" +
-                "}]");
+                                              "\"channel\": \"/meta/disconnect\"," +
+                                              "\"clientId\": \"" + clientId + "\"" +
+                                              "}]");
         response = disconnect.send();
         Assertions.assertEquals(200, response.getStatus());
 
@@ -122,10 +121,10 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
         // Test that sending a connect for an expired session
         // will return an advice with reconnect:"handshake"
         Request connect3 = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/connect\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"connectionType\": \"long-polling\"" +
-                "}]");
+                                            "\"channel\": \"/meta/connect\"," +
+                                            "\"clientId\": \"" + clientId + "\"," +
+                                            "\"connectionType\": \"long-polling\"" +
+                                            "}]");
         response = connect3.send();
         Assertions.assertEquals(200, response.getStatus());
         Message.Mutable connectReply3 = parser.parse(response.getContentAsString())[0];
@@ -137,13 +136,13 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
     @ParameterizedTest
     @MethodSource("transports")
     @Disabled("fix this test using session suspend listener")
-    public void testConnectHandlerThenDisconnect(String serverTransport) throws Exception {
-        startServer(serverTransport, null);
+    public void testConnectHandlerThenDisconnect(Transport transport) throws Exception {
+        startServer(transport, null);
 
         CountDownLatch connectLatch = new CountDownLatch(2);
         CountDownLatch disconnectLatch = new CountDownLatch(1);
         CountDownLatch suspendLatch = new CountDownLatch(1);
-        JettyJSONTransport transport = new JettyJSONTransport(bayeux) {
+        JettyJSONTransport serverTransport = new JettyJSONTransport(bayeux) {
             @Override
             protected void handleMessage(TransportContext context, ServerMessage.Mutable message, Promise<ServerMessage.Mutable> promise) {
                 super.handleMessage(context, message, Promise.from(reply -> {
@@ -163,15 +162,15 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
                 return super.suspend(context, promise, message, timeout);
             }
         };
-        transport.init();
-        bayeux.setTransports(transport);
+        serverTransport.init();
+        bayeux.setTransports(serverTransport);
 
         Request handshake = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"minimumVersion\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}]");
+                                             "\"channel\": \"/meta/handshake\"," +
+                                             "\"version\": \"1.0\"," +
+                                             "\"minimumVersion\": \"1.0\"," +
+                                             "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                                             "}]");
         ContentResponse response = handshake.send();
         Assertions.assertEquals(200, response.getStatus());
 
@@ -179,26 +178,26 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
 
         String channelName = "/foo";
         Request subscribe = newBayeuxRequest("[{" +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"channel\": \"/meta/subscribe\"," +
-                "\"subscription\": \"" + channelName + "\"" +
-                "}]");
+                                             "\"clientId\": \"" + clientId + "\"," +
+                                             "\"channel\": \"/meta/subscribe\"," +
+                                             "\"subscription\": \"" + channelName + "\"" +
+                                             "}]");
         response = subscribe.send();
         Assertions.assertEquals(200, response.getStatus());
 
         Request connect1 = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/connect\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"connectionType\": \"long-polling\"" +
-                "}]");
+                                            "\"channel\": \"/meta/connect\"," +
+                                            "\"clientId\": \"" + clientId + "\"," +
+                                            "\"connectionType\": \"long-polling\"" +
+                                            "}]");
         response = connect1.send();
         Assertions.assertEquals(200, response.getStatus());
 
         Request connect2 = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/connect\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"connectionType\": \"long-polling\"" +
-                "}]");
+                                            "\"channel\": \"/meta/connect\"," +
+                                            "\"clientId\": \"" + clientId + "\"," +
+                                            "\"connectionType\": \"long-polling\"" +
+                                            "}]");
         FutureResponseListener futureResponse = new FutureResponseListener(connect2);
         connect2.send(futureResponse);
 
@@ -206,9 +205,9 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
         Assertions.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
 
         Request disconnect = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/disconnect\"," +
-                "\"clientId\": \"" + clientId + "\"" +
-                "}]");
+                                              "\"channel\": \"/meta/disconnect\"," +
+                                              "\"clientId\": \"" + clientId + "\"" +
+                                              "}]");
         response = disconnect.send();
         Assertions.assertEquals(200, response.getStatus());
 

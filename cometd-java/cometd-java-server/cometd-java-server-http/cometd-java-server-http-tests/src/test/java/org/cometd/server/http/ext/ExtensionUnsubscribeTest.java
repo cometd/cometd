@@ -35,17 +35,17 @@ public class ExtensionUnsubscribeTest extends AbstractBayeuxClientServerTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testExtension(String serverTransport) throws Exception {
-        startServer(serverTransport, null);
+    public void testExtension(Transport transport) throws Exception {
+        startServer(transport, null);
 
         bayeux.addExtension(extension);
 
         Request handshake = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"minimumVersion\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}]");
+                                             "\"channel\": \"/meta/handshake\"," +
+                                             "\"version\": \"1.0\"," +
+                                             "\"minimumVersion\": \"1.0\"," +
+                                             "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                                             "}]");
         ContentResponse response = handshake.send();
         Assertions.assertEquals(200, response.getStatus());
 
@@ -53,18 +53,18 @@ public class ExtensionUnsubscribeTest extends AbstractBayeuxClientServerTest {
 
         String channel = "/foo";
         Request subscribe = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/subscribe\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"subscription\": \"" + channel + "\"" +
-                "}]");
+                                             "\"channel\": \"/meta/subscribe\"," +
+                                             "\"clientId\": \"" + clientId + "\"," +
+                                             "\"subscription\": \"" + channel + "\"" +
+                                             "}]");
         response = subscribe.send();
         Assertions.assertEquals(200, response.getStatus());
 
         Request unsubscribe = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/unsubscribe\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"subscription\": \"" + channel + "\"" +
-                "}]");
+                                               "\"channel\": \"/meta/unsubscribe\"," +
+                                               "\"clientId\": \"" + clientId + "\"," +
+                                               "\"subscription\": \"" + channel + "\"" +
+                                               "}]");
         response = unsubscribe.send();
         Assertions.assertEquals(200, response.getStatus());
 

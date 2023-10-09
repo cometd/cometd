@@ -33,8 +33,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 
-public abstract class AbstractBayeuxClientServerTest extends AbstractBayeuxServerTest
-{
+public abstract class AbstractBayeuxClientServerTest extends AbstractBayeuxServerTest {
     protected HttpClient httpClient;
 
     @BeforeEach

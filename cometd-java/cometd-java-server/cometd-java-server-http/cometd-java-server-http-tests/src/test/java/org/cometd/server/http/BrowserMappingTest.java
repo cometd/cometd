@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.cometd.server.http.http;
+package org.cometd.server.http;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -24,7 +24,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.cometd.server.ServerSessionImpl;
-import org.cometd.server.http.AbstractBayeuxClientServerTest;
 import org.cometd.server.http.jetty.JettyJSONTransport;
 import org.cometd.server.transport.AbstractHttpTransport;
 import org.eclipse.jetty.client.ContentResponse;
@@ -38,33 +37,33 @@ import org.junit.jupiter.params.provider.MethodSource;
 public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
     @ParameterizedTest
     @MethodSource("transports")
-    public void testBayeuxBrowserMapping(String serverTransport) throws Exception {
-        startServer(serverTransport, null);
+    public void testBayeuxBrowserMapping(Transport transport) throws Exception {
+        startServer(transport, null);
 
-        AbstractHttpTransport transport = new JettyJSONTransport(bayeux);
-        transport.init();
+        AbstractHttpTransport serverTransport = (AbstractHttpTransport)bayeux.getTransport("long-polling");
 
         ServerSessionImpl session = new ServerSessionImpl(bayeux);
         session.setBrowserId("browser1");
-        Assertions.assertTrue(transport.incBrowserId(session, false));
-        Assertions.assertFalse(transport.incBrowserId(session, false));
-        transport.decBrowserId(session, false);
-        Assertions.assertTrue(transport.incBrowserId(session, false));
-        transport.decBrowserId(session, false);
+        Assertions.assertTrue(serverTransport.incBrowserId(session, false));
+        Assertions.assertFalse(serverTransport.incBrowserId(session, false));
+        serverTransport.decBrowserId(session, false);
+        Assertions.assertTrue(serverTransport.incBrowserId(session, false));
+        serverTransport.decBrowserId(session, false);
     }
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testSameDomainWithCookieHoldsConnect(String serverTransport) throws Exception {
-        startServer(serverTransport, null);
+    public void testSameDomainWithCookieHoldsConnect(Transport transport) throws Exception {
+        startServer(transport, null);
 
-        Request handshake = newBayeuxRequest("" +
-                "[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"minimumVersion\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}]");
+        Request handshake = newBayeuxRequest("""
+                [{
+                "channel": "/meta/handshake",
+                "version": "1.0",
+                "minimumVersion": "1.0",
+                "supportedConnectionTypes": ["long-polling"]
+                }]
+                """);
         ContentResponse response = handshake.send();
         Assertions.assertEquals(200, response.getStatus());
         Assertions.assertTrue(isSuccessful(response));
@@ -72,21 +71,25 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
         String clientId = extractClientId(response);
 
         // First connect always returns immediately
-        Request connect1 = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/connect\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"connectionType\": \"long-polling\"" +
-                "}]");
+        Request connect1 = newBayeuxRequest("""
+                [{
+                "channel": "/meta/connect",
+                "clientId": "%s",
+                "connectionType": "long-polling"
+                }]
+                """.formatted(clientId));
         response = connect1.send();
         Assertions.assertEquals(200, response.getStatus());
         Assertions.assertTrue(isSuccessful(response));
 
         long begin = System.nanoTime();
-        Request connect2 = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/connect\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"connectionType\": \"long-polling\"" +
-                "}]");
+        Request connect2 = newBayeuxRequest("""
+                [{
+                "channel": "/meta/connect",
+                "clientId": "%s",
+                "connectionType": "long-polling"
+                }]
+                """.formatted(clientId));
         response = connect2.timeout(timeout * 2, TimeUnit.SECONDS).send();
         Assertions.assertEquals(200, response.getStatus());
         Assertions.assertTrue(isSuccessful(response));
@@ -96,16 +99,17 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testSameDomainWithoutCookieYieldsUnknownClient(String serverTransport) throws Exception {
-        startServer(serverTransport, null);
+    public void testSameDomainWithoutCookieYieldsUnknownClient(Transport transport) throws Exception {
+        startServer(transport, null);
 
-        Request handshake = newBayeuxRequest("" +
-                "[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"minimumVersion\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}]");
+        Request handshake = newBayeuxRequest("""
+                [{
+                "channel": "/meta/handshake",
+                "version": "1.0",
+                "minimumVersion": "1.0",
+                "supportedConnectionTypes": ["long-polling"]
+                }]
+                """);
         ContentResponse response = handshake.send();
         Assertions.assertEquals(200, response.getStatus());
         Assertions.assertTrue(isSuccessful(response));
@@ -113,11 +117,13 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
         String clientId = extractClientId(response);
 
         // First connect always returns immediately
-        Request connect1 = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/connect\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"connectionType\": \"long-polling\"" +
-                "}]");
+        Request connect1 = newBayeuxRequest("""
+                [{
+                "channel": "/meta/connect",
+                "clientId": "%s",
+                "connectionType": "long-polling"
+                }]
+                """.formatted(clientId));
         response = connect1.send();
         Assertions.assertEquals(200, response.getStatus());
         Assertions.assertTrue(isSuccessful(response));
@@ -126,11 +132,13 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
         httpClient.getHttpCookieStore().clear();
 
         long begin = System.nanoTime();
-        Request connect2 = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/connect\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"connectionType\": \"long-polling\"" +
-                "}]");
+        Request connect2 = newBayeuxRequest("""
+                [{
+                "channel": "/meta/connect",
+                "clientId": "%s",
+                "connectionType": "long-polling"
+                }]
+                """.formatted(clientId));
         response = connect2.timeout(timeout * 2, TimeUnit.SECONDS).send();
         Assertions.assertEquals(200, response.getStatus());
         Assertions.assertFalse(isSuccessful(response));
@@ -140,18 +148,19 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testSameDomainWithoutCookieTrustClientSessionHoldsConnect(String serverTransport) throws Exception {
+    public void testSameDomainWithoutCookieTrustClientSessionHoldsConnect(Transport transport) throws Exception {
         Map<String, String> options = new HashMap<>();
         options.put(AbstractHttpTransport.TRUST_CLIENT_SESSION_OPTION, String.valueOf(true));
-        startServer(serverTransport, options);
+        startServer(transport, options);
 
-        Request handshake = newBayeuxRequest("" +
-                "[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"minimumVersion\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}]");
+        Request handshake = newBayeuxRequest("""
+                [{
+                "channel": "/meta/handshake",
+                "version": "1.0",
+                "minimumVersion": "1.0",
+                "supportedConnectionTypes": ["long-polling"]
+                }]
+                """);
         ContentResponse response = handshake.send();
         Assertions.assertEquals(200, response.getStatus());
         Assertions.assertTrue(isSuccessful(response));
@@ -159,11 +168,13 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
         String clientId = extractClientId(response);
 
         // First connect always returns immediately
-        Request connect1 = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/connect\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"connectionType\": \"long-polling\"" +
-                "}]");
+        Request connect1 = newBayeuxRequest("""
+                [{
+                "channel": "/meta/connect",
+                "clientId": "%s",
+                "connectionType": "long-polling"
+                }]
+                """.formatted(clientId));
         response = connect1.send();
         Assertions.assertEquals(200, response.getStatus());
         Assertions.assertTrue(isSuccessful(response));
@@ -172,11 +183,13 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
         httpClient.getHttpCookieStore().clear();
 
         long begin = System.nanoTime();
-        Request connect2 = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/connect\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"connectionType\": \"long-polling\"" +
-                "}]");
+        Request connect2 = newBayeuxRequest("""
+                [{
+                "channel": "/meta/connect",
+                "clientId": "%s",
+                "connectionType": "long-polling"
+                }]
+                """.formatted(clientId));
         response = connect2.timeout(timeout * 2, TimeUnit.SECONDS).send();
         Assertions.assertEquals(200, response.getStatus());
         Assertions.assertTrue(isSuccessful(response));
@@ -186,18 +199,19 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testDifferentDomainWithoutCookieTrustClientSessionHoldsConnect(String serverTransport) throws Exception {
+    public void testDifferentDomainWithoutCookieTrustClientSessionHoldsConnect(Transport transport) throws Exception {
         Map<String, String> options = new HashMap<>();
         options.put(AbstractHttpTransport.TRUST_CLIENT_SESSION_OPTION, String.valueOf(true));
-        startServer(serverTransport, options);
+        startServer(transport, options);
 
-        Request handshake = newBayeuxRequest("" +
-                "[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"minimumVersion\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}]");
+        Request handshake = newBayeuxRequest("""
+                [{
+                "channel": "/meta/handshake",
+                "version": "1.0",
+                "minimumVersion": "1.0",
+                "supportedConnectionTypes": ["long-polling"]
+                }]
+                """);
         ContentResponse response = handshake.send();
         Assertions.assertEquals(200, response.getStatus());
         Assertions.assertTrue(isSuccessful(response));
@@ -208,11 +222,13 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
         httpClient.getHttpCookieStore().clear();
 
         // First connect always returns immediately
-        Request connect1 = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/connect\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"connectionType\": \"long-polling\"" +
-                "}]");
+        Request connect1 = newBayeuxRequest("""
+                [{
+                "channel": "/meta/connect",
+                "clientId": "%s",
+                "connectionType": "long-polling"
+                }]
+                """.formatted(clientId));
         connect1.headers(headers -> headers.put(HttpHeader.HOST, "127.0.0.1:" + port));
         connect1.headers(headers -> headers.put("Origin", "http://localhost:" + port));
         response = connect1.send();
@@ -220,11 +236,13 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
         Assertions.assertTrue(isSuccessful(response));
 
         long begin = System.nanoTime();
-        Request connect2 = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/connect\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"connectionType\": \"long-polling\"" +
-                "}]");
+        Request connect2 = newBayeuxRequest("""
+                [{
+                "channel": "/meta/connect",
+                "clientId": "%s",
+                "connectionType": "long-polling"
+                }]
+                """.formatted(clientId));
         connect2.headers(headers -> headers.put(HttpHeader.HOST, "127.0.0.1:" + port));
         connect2.headers(headers -> headers.put("Origin", "http://localhost:" + port));
         response = connect2.timeout(timeout * 2, TimeUnit.SECONDS).send();
@@ -236,7 +254,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testCookieConfiguration(String serverTransport) throws Exception {
+    public void testCookieConfiguration(Transport transport) throws Exception {
         String cookieName = "cookie_name";
         String cookieDomain = "cookie_domain";
         String cookiePath = "cookie_path";
@@ -247,15 +265,16 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
         options.put(JettyJSONTransport.BROWSER_COOKIE_DOMAIN_OPTION, cookieDomain);
         options.put(JettyJSONTransport.BROWSER_COOKIE_PATH_OPTION, cookiePath);
         options.put(JettyJSONTransport.BROWSER_COOKIE_SAME_SITE_OPTION, cookieSameSite);
-        startServer(serverTransport, options);
+        startServer(transport, options);
 
-        Request handshake = newBayeuxRequest("" +
-                "[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"minimumVersion\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}]");
+        Request handshake = newBayeuxRequest("""
+                [{
+                "channel": "/meta/handshake",
+                "version": "1.0",
+                "minimumVersion": "1.0",
+                "supportedConnectionTypes": ["long-polling"]
+                }]
+                """);
         ContentResponse response = handshake.send();
         Assertions.assertEquals(200, response.getStatus());
         Assertions.assertTrue(isSuccessful(response));

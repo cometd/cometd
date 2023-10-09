@@ -39,15 +39,14 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public class SlowConnectionTest extends AbstractBayeuxClientServerTest
-{
+public class SlowConnectionTest extends AbstractBayeuxClientServerTest {
     @ParameterizedTest
     @MethodSource("transports")
-    public void testSessionSweptDoesNotSendReconnectNoneAdvice(String serverTransport) throws Exception {
+    public void testSessionSweptDoesNotSendReconnectNoneAdvice(Transport transport) throws Exception {
         long maxInterval = 1000;
         Map<String, String> options = new HashMap<>();
         options.put(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(maxInterval));
-        startServer(serverTransport, options);
+        startServer(transport, options);
 
         CountDownLatch sweeperLatch = new CountDownLatch(1);
         bayeux.addListener(new BayeuxServer.SessionListener() {
@@ -60,21 +59,21 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
         });
 
         Request handshake = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"minimumVersion\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}]");
+                                             "\"channel\": \"/meta/handshake\"," +
+                                             "\"version\": \"1.0\"," +
+                                             "\"minimumVersion\": \"1.0\"," +
+                                             "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                                             "}]");
         ContentResponse response = handshake.send();
         Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
         Request connect1 = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/connect\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"connectionType\": \"long-polling\"" +
-                "}]");
+                                            "\"channel\": \"/meta/connect\"," +
+                                            "\"clientId\": \"" + clientId + "\"," +
+                                            "\"connectionType\": \"long-polling\"" +
+                                            "}]");
         response = connect1.send();
         Assertions.assertEquals(200, response.getStatus());
 
@@ -83,10 +82,10 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
 
         // Send the second connect, we should not get the reconnect:"none" advice
         Request connect2 = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/connect\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"connectionType\": \"long-polling\"" +
-                "}]");
+                                            "\"channel\": \"/meta/connect\"," +
+                                            "\"clientId\": \"" + clientId + "\"," +
+                                            "\"connectionType\": \"long-polling\"" +
+                                            "}]");
         response = connect2.send();
         Assertions.assertEquals(200, response.getStatus());
 
@@ -100,19 +99,19 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testLargeMessageOnSlowConnection(String serverTransport) throws Exception {
+    public void testLargeMessageOnSlowConnection(Transport transport) throws Exception {
         Map<String, String> options = new HashMap<>();
         long maxInterval = 5000;
         options.put(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(maxInterval));
-        startServer(serverTransport, options);
+        startServer(transport, options);
         connector.setIdleTimeout(1000);
 
         Request handshake = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"minimumVersion\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}]");
+                                             "\"channel\": \"/meta/handshake\"," +
+                                             "\"version\": \"1.0\"," +
+                                             "\"minimumVersion\": \"1.0\"," +
+                                             "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                                             "}]");
         ContentResponse response = handshake.send();
         Assertions.assertEquals(200, response.getStatus());
 
@@ -122,18 +121,18 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
 
         String channelName = "/foo";
         Request subscribe = newBayeuxRequest("[{" +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"channel\": \"/meta/subscribe\"," +
-                "\"subscription\": \"" + channelName + "\"" +
-                "}]");
+                                             "\"clientId\": \"" + clientId + "\"," +
+                                             "\"channel\": \"/meta/subscribe\"," +
+                                             "\"subscription\": \"" + channelName + "\"" +
+                                             "}]");
         response = subscribe.send();
         Assertions.assertEquals(200, response.getStatus());
 
         Request connect1 = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/connect\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"connectionType\": \"long-polling\"" +
-                "}]");
+                                            "\"channel\": \"/meta/connect\"," +
+                                            "\"clientId\": \"" + clientId + "\"," +
+                                            "\"connectionType\": \"long-polling\"" +
+                                            "}]");
         response = connect1.send();
         Assertions.assertEquals(200, response.getStatus());
 
@@ -146,17 +145,17 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
         try (Socket socket = new Socket("localhost", port)) {
             OutputStream output = socket.getOutputStream();
             byte[] content = ("[{" +
-                    "\"channel\": \"/meta/connect\"," +
-                    "\"clientId\": \"" + clientId + "\"," +
-                    "\"connectionType\": \"long-polling\"" +
-                    "}]").getBytes(StandardCharsets.UTF_8);
+                              "\"channel\": \"/meta/connect\"," +
+                              "\"clientId\": \"" + clientId + "\"," +
+                              "\"connectionType\": \"long-polling\"" +
+                              "}]").getBytes(StandardCharsets.UTF_8);
             String request = "" +
-                    "POST " + new URI(cometdURL).getPath() + "/connect HTTP/1.1\r\n" +
-                    "Host: localhost:" + port + "\r\n" +
-                    "Content-Type: application/json;charset=UTF-8\r\n" +
-                    "Content-Length: " + content.length + "\r\n" +
-                    "Cookie: " + cookieName + "=" + browserId + "\r\n" +
-                    "\r\n";
+                             "POST " + new URI(cometdURL).getPath() + "/connect HTTP/1.1\r\n" +
+                             "Host: localhost:" + port + "\r\n" +
+                             "Content-Type: application/json;charset=UTF-8\r\n" +
+                             "Content-Length: " + content.length + "\r\n" +
+                             "Cookie: " + cookieName + "=" + browserId + "\r\n" +
+                             "\r\n";
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.write(content);
             output.flush();

@@ -30,29 +30,28 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public class DisconnectTest extends AbstractBayeuxClientServerTest
-{
+public class DisconnectTest extends AbstractBayeuxClientServerTest {
     @ParameterizedTest
     @MethodSource("transports")
-    public void testDisconnect(String serverTransport) throws Exception {
-        startServer(serverTransport, null);
+    public void testDisconnect(Transport transport) throws Exception {
+        startServer(transport, null);
 
         Request handshake = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"minimumVersion\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}]");
+                                             "\"channel\": \"/meta/handshake\"," +
+                                             "\"version\": \"1.0\"," +
+                                             "\"minimumVersion\": \"1.0\"," +
+                                             "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                                             "}]");
         ContentResponse response = handshake.send();
         Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
         Request connect = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/connect\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"connectionType\": \"long-polling\"" +
-                "}]");
+                                           "\"channel\": \"/meta/connect\"," +
+                                           "\"clientId\": \"" + clientId + "\"," +
+                                           "\"connectionType\": \"long-polling\"" +
+                                           "}]");
         response = connect.send();
         Assertions.assertEquals(200, response.getStatus());
 
@@ -60,10 +59,10 @@ public class DisconnectTest extends AbstractBayeuxClientServerTest
         Assertions.assertNotNull(serverSession);
 
         Request connect2 = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/connect\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"connectionType\": \"long-polling\"" +
-                "}]");
+                                            "\"channel\": \"/meta/connect\"," +
+                                            "\"clientId\": \"" + clientId + "\"," +
+                                            "\"connectionType\": \"long-polling\"" +
+                                            "}]");
 
         FutureResponseListener listener = new FutureResponseListener(connect2);
         connect2.send(listener);
@@ -75,9 +74,9 @@ public class DisconnectTest extends AbstractBayeuxClientServerTest
         serverSession.addListener((ServerSession.RemovedListener)(s, m, t) -> latch.countDown());
 
         Request disconnect = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/disconnect\"," +
-                "\"clientId\": \"" + clientId + "\"" +
-                "}]");
+                                              "\"channel\": \"/meta/disconnect\"," +
+                                              "\"clientId\": \"" + clientId + "\"" +
+                                              "}]");
         response = disconnect.send();
         Assertions.assertEquals(200, response.getStatus());
 

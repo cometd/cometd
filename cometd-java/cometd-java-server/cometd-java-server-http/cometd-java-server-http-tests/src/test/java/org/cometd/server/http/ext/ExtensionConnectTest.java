@@ -35,27 +35,27 @@ public class ExtensionConnectTest extends AbstractBayeuxClientServerTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testExtension(String serverTransport) throws Exception {
-        startServer(serverTransport, null);
+    public void testExtension(Transport transport) throws Exception {
+        startServer(transport, null);
 
         bayeux.addExtension(extension);
 
         Request handshake = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"minimumVersion\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}]");
+                                             "\"channel\": \"/meta/handshake\"," +
+                                             "\"version\": \"1.0\"," +
+                                             "\"minimumVersion\": \"1.0\"," +
+                                             "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                                             "}]");
         ContentResponse response = handshake.send();
         Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
         Request connect = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/connect\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"connectionType\": \"long-polling\"" +
-                "}]");
+                                           "\"channel\": \"/meta/connect\"," +
+                                           "\"clientId\": \"" + clientId + "\"," +
+                                           "\"connectionType\": \"long-polling\"" +
+                                           "}]");
         response = connect.send();
         Assertions.assertEquals(200, response.getStatus());
 

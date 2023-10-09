@@ -91,7 +91,7 @@ public class SpringFrameworkConfigurationTest {
         Assertions.assertTrue(bayeuxServer.isStarted());
         Assertions.assertEquals(sweepPeriod, bayeuxServer.getOption("sweepPeriod"));
 
-        Assertions.assertSame(bayeuxServer, cometdServlet.getBayeux());
+        Assertions.assertSame(bayeuxServer, cometdServlet.getBayeuxServer());
 
         CountDownLatch latch = new CountDownLatch(1);
         BayeuxClient bayeuxClient = new BayeuxClient(url, new JettyHttpClientTransport(null, httpClient));

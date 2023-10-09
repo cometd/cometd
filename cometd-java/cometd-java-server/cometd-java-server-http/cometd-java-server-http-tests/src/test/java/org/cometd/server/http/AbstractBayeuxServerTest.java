@@ -16,69 +16,86 @@
 package org.cometd.server.http;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
+import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.server.BayeuxServerImpl;
+import org.cometd.server.http.jakarta.CometDServlet;
+import org.cometd.server.http.jakarta.JakartaJSONTransport;
 import org.cometd.server.http.jetty.CometDHandler;
 import org.cometd.server.http.jetty.JettyJSONTransport;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-public abstract class AbstractBayeuxServerTest
-{
-    public static List<String> transports() {
-        return List.of(JettyJSONTransport.class.getName());
+public abstract class AbstractBayeuxServerTest {
+    public static Transport[] transports() {
+        return Transport.values();
     }
 
     @RegisterExtension
-    final BeforeTestExecutionCallback printMethodName = context ->
+    public final BeforeTestExecutionCallback printMethodName = context ->
             System.err.printf("Running %s.%s() %s%n", context.getRequiredTestClass().getSimpleName(), context.getRequiredTestMethod().getName(), context.getDisplayName());
     protected Server server;
     protected ServerConnector connector;
     protected int port;
     protected ContextHandler context;
-    protected CometDHandler cometDHandler;
     protected String cometdURL;
     protected BayeuxServerImpl bayeux;
     protected long timeout = 2000;
 
-    public void startServer(String serverTransport, Map<String, String> options) throws Exception {
+    public void startServer(Transport transport, Map<String, String> options) throws Exception {
         server = new Server();
         connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        ContextHandlerCollection handlers = new ContextHandlerCollection();
-        server.setHandler(handlers);
-
-        String contextPath = "/cometd";
-        context = new ContextHandler(contextPath);
-        handlers.addHandler(context);
-
-        // Setup comet handler
-        cometDHandler = new CometDHandler();
-        context.setHandler(cometDHandler);
-
-        if (options == null) {
-            options = new HashMap<>();
-        }
-        options.put("timeout", String.valueOf(timeout));
-        options.put("transports", serverTransport);
-        cometDHandler.setOptions(options);
-        String cometdServletPath = "/cometd";
+        String contextPath = "/";
+        String cometdPath = "/cometd";
+        Supplier<BayeuxServer> getBayeuxServer = switch (transport) {
+            case JAKARTA -> {
+                ServletContextHandler servletContext = new ServletContextHandler(contextPath);
+                context = servletContext;
+                server.setHandler(context);
+                CometDServlet cometdServlet = new CometDServlet();
+                ServletHolder cometdServletHolder = new ServletHolder(cometdServlet);
+                if (options == null) {
+                    options = new HashMap<>();
+                }
+                options.put("timeout", String.valueOf(timeout));
+                options.put("transports", JakartaJSONTransport.class.getName());
+                for (Map.Entry<String, String> entry : options.entrySet()) {
+                    cometdServletHolder.setInitParameter(entry.getKey(), entry.getValue());
+                }
+                servletContext.addServlet(cometdServletHolder, cometdPath + "/*");
+                yield cometdServlet::getBayeuxServer;
+            }
+            case JETTY -> {
+                context = new ContextHandler(contextPath);
+                server.setHandler(context);
+                CometDHandler cometdHandler = new CometDHandler();
+                context.setHandler(cometdHandler);
+                if (options == null) {
+                    options = new HashMap<>();
+                }
+                options.put("timeout", String.valueOf(timeout));
+                options.put("transports", JettyJSONTransport.class.getName());
+                cometdHandler.setOptions(options);
+                yield cometdHandler::getBayeuxServer;
+            }
+        };
 
         server.start();
         port = connector.getLocalPort();
 
-        String contextURL = "http://localhost:" + port + contextPath;
-        cometdURL = contextURL + cometdServletPath;
+        cometdURL = "http://localhost:" + port + cometdPath;
 
-        bayeux = (BayeuxServerImpl)cometDHandler.getBayeuxServer();
+        bayeux = (BayeuxServerImpl)getBayeuxServer.get();
     }
 
     @AfterEach
@@ -86,5 +103,9 @@ public abstract class AbstractBayeuxServerTest
         if (server != null) {
             server.stop();
         }
+    }
+
+    public enum Transport {
+        JAKARTA, JETTY
     }
 }

@@ -35,6 +35,7 @@ import org.cometd.server.CometDResponse;
 import org.cometd.server.HttpException;
 import org.cometd.server.ServerSessionImpl;
 import org.cometd.server.transport.AbstractHttpTransport;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,41 +49,41 @@ import org.slf4j.LoggerFactory;
 public class CometDServlet extends HttpServlet {
     private static final Logger LOGGER = LoggerFactory.getLogger(CometDServlet.class);
 
-    private BayeuxServerImpl _bayeux;
+    private BayeuxServer bayeuxServer;
 
     @Override
     public void init() throws ServletException {
         try {
             boolean export = false;
-            _bayeux = (BayeuxServerImpl)getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
-            if (_bayeux == null) {
+            bayeuxServer = (BayeuxServerImpl)getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
+            if (bayeuxServer == null) {
                 export = true;
-                _bayeux = newBayeuxServer();
+                bayeuxServer = newBayeuxServer();
 
                 // Transfer all servlet init parameters to the BayeuxServer implementation
                 for (String initParamName : Collections.list(getInitParameterNames())) {
-                    _bayeux.setOption(initParamName, getInitParameter(initParamName));
+                    bayeuxServer.setOption(initParamName, getInitParameter(initParamName));
                 }
 
                 // Add the ServletContext to the options
-                _bayeux.setOption(ServletContext.class.getName(), getServletContext());
+                bayeuxServer.setOption(ServletContext.class.getName(), getServletContext());
             }
 
-            _bayeux.start();
+            LifeCycle.start(bayeuxServer);
 
             if (export) {
-                getServletContext().setAttribute(BayeuxServer.ATTRIBUTE, _bayeux);
+                getServletContext().setAttribute(BayeuxServer.ATTRIBUTE, bayeuxServer);
             }
         } catch (Exception x) {
             throw new ServletException(x);
         }
     }
 
-    public BayeuxServerImpl getBayeux() {
-        return _bayeux;
+    public BayeuxServer getBayeuxServer() {
+        return bayeuxServer;
     }
 
-    protected BayeuxServerImpl newBayeuxServer() {
+    protected BayeuxServer newBayeuxServer() {
         return new BayeuxServerImpl();
     }
 
@@ -115,9 +116,7 @@ public class CometDServlet extends HttpServlet {
 
             @Override
             public void fail(Throwable failure) {
-                int code = failure instanceof HttpException ?
-                    ((HttpException)failure).getCode() :
-                    HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
+                int code = failure instanceof HttpException http ? http.getCode() : HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
                 sendError(request, response, code, failure);
                 asyncContext.complete();
                 if (LOGGER.isDebugEnabled()) {
@@ -126,7 +125,7 @@ public class CometDServlet extends HttpServlet {
             }
         };
 
-        AbstractHttpTransport transport = AbstractHttpTransport.find(_bayeux, cometDRequest);
+        AbstractHttpTransport transport = AbstractHttpTransport.find(bayeuxServer, cometDRequest);
         if (transport == null) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Unknown Bayeux Transport");
         } else {
@@ -158,18 +157,18 @@ public class CometDServlet extends HttpServlet {
 
     @Override
     public void destroy() {
-        for (ServerSession session : _bayeux.getSessions()) {
+        for (ServerSession session : bayeuxServer.getSessions()) {
             ((ServerSessionImpl)session).destroyScheduler();
         }
 
         try {
-            _bayeux.stop();
+            LifeCycle.start(bayeuxServer);
         } catch (Exception x) {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("", x);
             }
         } finally {
-            _bayeux = null;
+            bayeuxServer = null;
             getServletContext().removeAttribute(BayeuxServer.ATTRIBUTE);
         }
     }

@@ -33,12 +33,11 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public class CustomResponseOnSecurityPolicyDenyTest extends AbstractBayeuxClientServerTest
-{
+public class CustomResponseOnSecurityPolicyDenyTest extends AbstractBayeuxClientServerTest {
     @ParameterizedTest
     @MethodSource("transports")
-    public void testCanHandshakeDenies(String serverTransport) throws Exception {
-        startServer(serverTransport, null);
+    public void testCanHandshakeDenies(Transport transport) throws Exception {
+        startServer(transport, null);
 
         bayeux.setSecurityPolicy(new DefaultSecurityPolicy() {
             @Override
@@ -55,11 +54,11 @@ public class CustomResponseOnSecurityPolicyDenyTest extends AbstractBayeuxClient
         });
 
         Request handshake = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"minimumVersion\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}]");
+                                             "\"channel\": \"/meta/handshake\"," +
+                                             "\"version\": \"1.0\"," +
+                                             "\"minimumVersion\": \"1.0\"," +
+                                             "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                                             "}]");
         ContentResponse response = handshake.send();
         Assertions.assertEquals(200, response.getStatus());
 
@@ -68,8 +67,8 @@ public class CustomResponseOnSecurityPolicyDenyTest extends AbstractBayeuxClient
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testCanCreateDenies(String serverTransport) throws Exception {
-        startServer(serverTransport, null);
+    public void testCanCreateDenies(Transport transport) throws Exception {
+        startServer(transport, null);
 
         bayeux.setSecurityPolicy(new DefaultSecurityPolicy() {
             @Override
@@ -91,8 +90,8 @@ public class CustomResponseOnSecurityPolicyDenyTest extends AbstractBayeuxClient
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testCanPublishDenies(String serverTransport) throws Exception {
-        startServer(serverTransport, null);
+    public void testCanPublishDenies(Transport transport) throws Exception {
+        startServer(transport, null);
 
         bayeux.setSecurityPolicy(new DefaultSecurityPolicy() {
             @Override
@@ -113,8 +112,8 @@ public class CustomResponseOnSecurityPolicyDenyTest extends AbstractBayeuxClient
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testCanSubscribeDenies(String serverTransport) throws Exception {
-        startServer(serverTransport, null);
+    public void testCanSubscribeDenies(Transport transport) throws Exception {
+        startServer(transport, null);
 
         bayeux.setSecurityPolicy(new DefaultSecurityPolicy() {
             @Override
@@ -131,21 +130,21 @@ public class CustomResponseOnSecurityPolicyDenyTest extends AbstractBayeuxClient
         });
 
         Request handshake = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"minimumVersion\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}]");
+                                             "\"channel\": \"/meta/handshake\"," +
+                                             "\"version\": \"1.0\"," +
+                                             "\"minimumVersion\": \"1.0\"," +
+                                             "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                                             "}]");
         ContentResponse response = handshake.send();
         Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
         Request subscribe = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/subscribe\"," +
-                "\"subscription\": \"/test\"," +
-                "\"clientId\": \"" + clientId + "\"" +
-                "}]");
+                                             "\"channel\": \"/meta/subscribe\"," +
+                                             "\"subscription\": \"/test\"," +
+                                             "\"clientId\": \"" + clientId + "\"" +
+                                             "}]");
         response = subscribe.send();
         Assertions.assertEquals(200, response.getStatus());
 
@@ -154,21 +153,21 @@ public class CustomResponseOnSecurityPolicyDenyTest extends AbstractBayeuxClient
 
     private ContentResponse publish() throws Exception {
         Request handshake = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"minimumVersion\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}]");
+                                             "\"channel\": \"/meta/handshake\"," +
+                                             "\"version\": \"1.0\"," +
+                                             "\"minimumVersion\": \"1.0\"," +
+                                             "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                                             "}]");
         ContentResponse response = handshake.send();
         Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
         Request publish = newBayeuxRequest("[{" +
-                "\"channel\": \"/test\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"data\": {}" +
-                "}]");
+                                           "\"channel\": \"/test\"," +
+                                           "\"clientId\": \"" + clientId + "\"," +
+                                           "\"data\": {}" +
+                                           "}]");
         response = publish.send();
         Assertions.assertEquals(200, response.getStatus());
 

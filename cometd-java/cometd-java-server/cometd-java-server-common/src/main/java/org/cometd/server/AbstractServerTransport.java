@@ -16,7 +16,6 @@
 package org.cometd.server;
 
 import java.io.IOException;
-import java.io.Reader;
 import java.text.ParseException;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -169,38 +168,8 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
         return _jsonContext;
     }
 
-    protected ServerMessage.Mutable[] parseMessages(Reader reader, boolean jsonDebug) throws ParseException, IOException {
-        if (jsonDebug || getMaxMessageSize() > 0) {
-            return parseMessages(read(reader));
-        } else {
-            return _jsonContext.parse(reader);
-        }
-    }
-
     public ServerMessage.Mutable[] parseMessages(String json) throws ParseException {
         return _jsonContext.parse(json);
-    }
-
-    private String read(Reader reader) throws IOException {
-        long maxMessageSize = getMaxMessageSize();
-        StringBuilder builder = new StringBuilder();
-        long total = 0;
-        char[] buffer = new char[1024];
-        while (true) {
-            int read = reader.read(buffer);
-            if (read < 0) {
-                break;
-            } else {
-                if (maxMessageSize > 0) {
-                    total += read;
-                    if (total > maxMessageSize) {
-                        throw new IOException("Max message size " + maxMessageSize + " exceeded");
-                    }
-                }
-                builder.append(buffer, 0, read);
-            }
-        }
-        return builder.toString();
     }
 
     /**

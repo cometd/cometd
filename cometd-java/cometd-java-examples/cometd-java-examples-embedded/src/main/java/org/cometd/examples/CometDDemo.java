@@ -94,7 +94,7 @@ public class CometDDemo {
 
         server.start();
 
-        BayeuxServer bayeux = cometdServlet.getBayeux();
+        BayeuxServer bayeux = cometdServlet.getBayeuxServer();
         bayeux.setSecurityPolicy(new DefaultSecurityPolicy());
 
         // Demo lazy messages

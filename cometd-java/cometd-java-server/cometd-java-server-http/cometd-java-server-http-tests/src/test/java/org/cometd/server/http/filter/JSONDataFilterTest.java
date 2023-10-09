@@ -33,8 +33,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 public class JSONDataFilterTest extends AbstractBayeuxClientServerTest {
     @ParameterizedTest
     @MethodSource("transports")
-    public void testImmutableData(String serverTransport) throws Exception {
-        startServer(serverTransport, null);
+    public void testImmutableData(Transport transport) throws Exception {
+        startServer(transport, null);
 
         String filtered = "/filtered";
         bayeux.createChannelIfAbsent(filtered, channel -> channel.addListener(new DataFilterMessageListener(new NoScriptsFilter())));
@@ -49,39 +49,39 @@ public class JSONDataFilterTest extends AbstractBayeuxClientServerTest {
         });
 
         Request handshake = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}]");
+                                             "\"channel\": \"/meta/handshake\"," +
+                                             "\"version\": \"1.0\"," +
+                                             "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                                             "}]");
         ContentResponse response = handshake.send();
         Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
         Request connect = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/connect\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"connectionType\": \"long-polling\"" +
-                "}]");
+                                           "\"channel\": \"/meta/connect\"," +
+                                           "\"clientId\": \"" + clientId + "\"," +
+                                           "\"connectionType\": \"long-polling\"" +
+                                           "}]");
         response = connect.send();
         Assertions.assertEquals(200, response.getStatus());
 
         Request subscribe = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/subscribe\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"subscription\": \"" + filtered + "\"" +
-                "}]");
+                                             "\"channel\": \"/meta/subscribe\"," +
+                                             "\"clientId\": \"" + clientId + "\"," +
+                                             "\"subscription\": \"" + filtered + "\"" +
+                                             "}]");
         response = subscribe.send();
         Assertions.assertEquals(200, response.getStatus());
 
         String script = "<script>alert()</script>";
         Request publish = newBayeuxRequest("[{" +
-                "\"channel\": \"" + unfiltered + "\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"data\": {" +
-                "    \"message\": \"" + script + "\"" +
-                "}" +
-                "}]");
+                                           "\"channel\": \"" + unfiltered + "\"," +
+                                           "\"clientId\": \"" + clientId + "\"," +
+                                           "\"data\": {" +
+                                           "    \"message\": \"" + script + "\"" +
+                                           "}" +
+                                           "}]");
         response = publish.send();
         Assertions.assertEquals(200, response.getStatus());
 

@@ -97,11 +97,15 @@ public abstract class AbstractJSONTransport extends AbstractHttpTransport {
             this.context = context;
         }
 
+        protected TransportContext context() {
+            return context;
+        }
+
         private void read() {
             try {
                 onDataAvailable();
-            } catch (IOException e) {
-                context.promise().fail(e);
+            } catch (Throwable x) {
+                context().promise().fail(x);
             }
         }
 
@@ -128,19 +132,35 @@ public abstract class AbstractJSONTransport extends AbstractHttpTransport {
                             throw new IOException("Max message size " + maxMessageSize + " exceeded");
                         }
                     }
-                    append(chunk);
+                    processChunk(chunk);
                 }
                 chunk.release();
                 if (chunk.isLast()) {
-                    onAllDataRead();
+                    processEOF();
                     break;
                 }
             }
         }
 
-        protected abstract void onAllDataRead();
+        private void processChunk(CometDRequest.Input.Chunk chunk) {
+            try {
+                onChunk(chunk);
+            } catch (Throwable x) {
+                throw new HttpException(400, x);
+            }
+        }
 
-        protected abstract void append(CometDRequest.Input.Chunk chunk);
+        private void processEOF() {
+            try {
+                onEOF();
+            } catch (Throwable x) {
+                throw new HttpException(400, x);
+            }
+        }
+
+        protected abstract void onChunk(CometDRequest.Input.Chunk chunk);
+
+        protected abstract void onEOF();
 
         protected void finish(List<ServerMessage.Mutable> messages) {
             if (LOGGER.isDebugEnabled()) {
@@ -171,12 +191,12 @@ public abstract class AbstractJSONTransport extends AbstractHttpTransport {
         }
 
         @Override
-        protected void append(CometDRequest.Input.Chunk chunk) {
+        protected void onChunk(CometDRequest.Input.Chunk chunk) {
             parser.parse(chunk.byteBuffer());
         }
 
         @Override
-        public void onAllDataRead() {
+        public void onEOF() {
             List<ServerMessage.Mutable> messages = parser.complete();
             finish(messages);
         }
@@ -192,7 +212,7 @@ public abstract class AbstractJSONTransport extends AbstractHttpTransport {
         }
 
         @Override
-        protected void append(CometDRequest.Input.Chunk chunk) {
+        protected void onChunk(CometDRequest.Input.Chunk chunk) {
             ByteBuffer byteBuffer = chunk.byteBuffer();
             int remaining = byteBuffer.remaining();
             if (aggregator.remaining() < remaining) {
@@ -204,7 +224,7 @@ public abstract class AbstractJSONTransport extends AbstractHttpTransport {
         }
 
         @Override
-        public void onAllDataRead() {
+        public void onEOF() {
             String json = charset.decode(aggregator.flip()).toString();
             finish(json);
         }

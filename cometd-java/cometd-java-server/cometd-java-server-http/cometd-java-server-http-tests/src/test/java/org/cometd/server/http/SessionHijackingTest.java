@@ -32,14 +32,13 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public class SessionHijackingTest extends AbstractBayeuxClientServerTest
-{
+public class SessionHijackingTest extends AbstractBayeuxClientServerTest {
     @ParameterizedTest
     @MethodSource("transports")
-    public void testSessionHijackingAllowed(String serverTransport) throws Exception {
+    public void testSessionHijackingAllowed(Transport transport) throws Exception {
         Map<String, String> settings = new HashMap<>();
         settings.put(AbstractHttpTransport.TRUST_CLIENT_SESSION_OPTION, String.valueOf(true));
-        startServer(serverTransport, settings);
+        startServer(transport, settings);
 
         // Message should succeed.
         Message.Mutable[] messages = testSessionHijacking();
@@ -52,10 +51,10 @@ public class SessionHijackingTest extends AbstractBayeuxClientServerTest
         String cookieName = "BAYEUX_BROWSER";
 
         Request handshake1 = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}]");
+                                              "\"channel\": \"/meta/handshake\"," +
+                                              "\"version\": \"1.0\"," +
+                                              "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                                              "}]");
         ContentResponse response1 = handshake1.send();
         Assertions.assertEquals(200, response1.getStatus());
 
@@ -64,10 +63,10 @@ public class SessionHijackingTest extends AbstractBayeuxClientServerTest
         httpClient.getHttpCookieStore().clear();
 
         Request handshake2 = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}]");
+                                              "\"channel\": \"/meta/handshake\"," +
+                                              "\"version\": \"1.0\"," +
+                                              "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                                              "}]");
         ContentResponse response2 = handshake2.send();
         Assertions.assertEquals(200, response2.getStatus());
 
@@ -77,10 +76,10 @@ public class SessionHijackingTest extends AbstractBayeuxClientServerTest
 
         // Client1 tries to impersonate Client2.
         Request publish1 = newBayeuxRequest("[{" +
-                "\"channel\": \"/session_mismatch\"," +
-                "\"data\": \"publish_data\"," +
-                "\"clientId\": \"" + clientId2 + "\"" +
-                "}]");
+                                            "\"channel\": \"/session_mismatch\"," +
+                                            "\"data\": \"publish_data\"," +
+                                            "\"clientId\": \"" + clientId2 + "\"" +
+                                            "}]");
         publish1.cookie(HttpCookie.from(cookieName, cookie1));
         response1 = publish1.send();
         Assertions.assertEquals(200, response1.getStatus());

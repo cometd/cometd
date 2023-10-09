@@ -140,8 +140,12 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         promise = new Promise.Wrapper<>(promise) {
             @Override
             public void fail(Throwable failure) {
-                int code = failure instanceof TimeoutException ? getDuplicateMetaConnectHttpResponseCode() : 500;
-                super.fail(new HttpException(code, failure));
+                if (failure instanceof HttpException) {
+                    super.fail(failure);
+                } else {
+                    int code = failure instanceof TimeoutException ? getDuplicateMetaConnectHttpResponseCode() : 500;
+                    super.fail(new HttpException(code, failure));
+                }
             }
         };
 
@@ -601,7 +605,6 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
     public interface HttpScheduler extends Scheduler {
         ServerMessage.Mutable getMessage();
     }
-
 
     protected class Writer extends IteratingCallback implements Promise<Void> {
         private final TransportContext context;

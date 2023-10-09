@@ -30,41 +30,40 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public class CometDServiceWithThreadPoolTest extends AbstractBayeuxClientServerTest
-{
+public class CometDServiceWithThreadPoolTest extends AbstractBayeuxClientServerTest {
     @ParameterizedTest
     @MethodSource("transports")
-    public void testBayeuxServiceWithThreadPool(String serverTransport) throws Exception {
-        startServer(serverTransport, null);
+    public void testBayeuxServiceWithThreadPool(Transport transport) throws Exception {
+        startServer(transport, null);
 
         String channel = "/foo";
 
         TestService service = new TestService(bayeux, channel);
 
         Request handshake = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"minimumVersion\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}]");
+                                             "\"channel\": \"/meta/handshake\"," +
+                                             "\"version\": \"1.0\"," +
+                                             "\"minimumVersion\": \"1.0\"," +
+                                             "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                                             "}]");
         ContentResponse response = handshake.send();
         Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
         Request subscribe = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/subscribe\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"subscription\": \"" + channel + "\"" +
-                "}]");
+                                             "\"channel\": \"/meta/subscribe\"," +
+                                             "\"clientId\": \"" + clientId + "\"," +
+                                             "\"subscription\": \"" + channel + "\"" +
+                                             "}]");
         response = subscribe.send();
         Assertions.assertEquals(200, response.getStatus());
 
         Request publish = newBayeuxRequest("[{" +
-                "\"channel\": \"" + channel + "\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"data\": {}" +
-                "}]");
+                                           "\"channel\": \"" + channel + "\"," +
+                                           "\"clientId\": \"" + clientId + "\"," +
+                                           "\"data\": {}" +
+                                           "}]");
         response = publish.send();
         Assertions.assertEquals(200, response.getStatus());
 

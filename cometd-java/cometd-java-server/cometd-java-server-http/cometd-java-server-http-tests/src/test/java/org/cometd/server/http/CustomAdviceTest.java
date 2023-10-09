@@ -34,12 +34,11 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public class CustomAdviceTest extends AbstractBayeuxClientServerTest
-{
+public class CustomAdviceTest extends AbstractBayeuxClientServerTest {
     @ParameterizedTest
     @MethodSource("transports")
-    public void testCustomTimeoutViaMessage(String serverTransport) throws Exception {
-        startServer(serverTransport, null);
+    public void testCustomTimeoutViaMessage(Transport transport) throws Exception {
+        startServer(transport, null);
 
         CountDownLatch connectLatch = new CountDownLatch(2);
         bayeux.getChannel(Channel.META_CONNECT).addListener(new ServerChannel.MessageListener() {
@@ -61,38 +60,38 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest
         }));
 
         Request handshake = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"minimumVersion\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}]");
+                                             "\"channel\": \"/meta/handshake\"," +
+                                             "\"version\": \"1.0\"," +
+                                             "\"minimumVersion\": \"1.0\"," +
+                                             "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                                             "}]");
         ContentResponse response = handshake.send();
         Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
         Request connect1 = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/connect\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"connectionType\": \"long-polling\"" +
-                "}]");
+                                            "\"channel\": \"/meta/connect\"," +
+                                            "\"clientId\": \"" + clientId + "\"," +
+                                            "\"connectionType\": \"long-polling\"" +
+                                            "}]");
         response = connect1.send();
         Assertions.assertEquals(200, response.getStatus());
 
         Request connect2 = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/connect\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"connectionType\": \"long-polling\"" +
-                "}]");
+                                            "\"channel\": \"/meta/connect\"," +
+                                            "\"clientId\": \"" + clientId + "\"," +
+                                            "\"connectionType\": \"long-polling\"" +
+                                            "}]");
         FutureResponseListener futureResponse = new FutureResponseListener(connect2);
         connect2.send(futureResponse);
         Assertions.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
 
         Request publish = newBayeuxRequest("[{" +
-                "\"channel\":\"" + channelName + "\"," +
-                "\"clientId\":\"" + clientId + "\"," +
-                "\"data\": {}" +
-                "}]");
+                                           "\"channel\":\"" + channelName + "\"," +
+                                           "\"clientId\":\"" + clientId + "\"," +
+                                           "\"data\": {}" +
+                                           "}]");
         response = publish.send();
         Assertions.assertEquals(200, response.getStatus());
 
@@ -112,8 +111,8 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testCustomIntervalViaMessage(String serverTransport) throws Exception {
-        startServer(serverTransport, null);
+    public void testCustomIntervalViaMessage(Transport transport) throws Exception {
+        startServer(transport, null);
 
         CountDownLatch connectLatch = new CountDownLatch(2);
         bayeux.getChannel(Channel.META_CONNECT).addListener(new ServerChannel.MessageListener() {
@@ -135,38 +134,38 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest
         }));
 
         Request handshake = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"minimumVersion\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}]");
+                                             "\"channel\": \"/meta/handshake\"," +
+                                             "\"version\": \"1.0\"," +
+                                             "\"minimumVersion\": \"1.0\"," +
+                                             "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                                             "}]");
         ContentResponse response = handshake.send();
         Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
         Request connect1 = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/connect\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"connectionType\": \"long-polling\"" +
-                "}]");
+                                            "\"channel\": \"/meta/connect\"," +
+                                            "\"clientId\": \"" + clientId + "\"," +
+                                            "\"connectionType\": \"long-polling\"" +
+                                            "}]");
         response = connect1.send();
         Assertions.assertEquals(200, response.getStatus());
 
         Request connect2 = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/connect\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"connectionType\": \"long-polling\"" +
-                "}]");
+                                            "\"channel\": \"/meta/connect\"," +
+                                            "\"clientId\": \"" + clientId + "\"," +
+                                            "\"connectionType\": \"long-polling\"" +
+                                            "}]");
         FutureResponseListener futureResponse = new FutureResponseListener(connect2);
         connect2.send(futureResponse);
         Assertions.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
 
         Request publish = newBayeuxRequest("[{" +
-                "\"channel\":\"" + channelName + "\"," +
-                "\"clientId\":\"" + clientId + "\"," +
-                "\"data\": {}" +
-                "}]");
+                                           "\"channel\":\"" + channelName + "\"," +
+                                           "\"clientId\":\"" + clientId + "\"," +
+                                           "\"data\": {}" +
+                                           "}]");
         response = publish.send();
         Assertions.assertEquals(200, response.getStatus());
 
@@ -186,25 +185,25 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testCustomIntervalViaAdvice(String serverTransport) throws Exception {
-        startServer(serverTransport, null);
+    public void testCustomIntervalViaAdvice(Transport transport) throws Exception {
+        startServer(transport, null);
 
         Request handshake = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"minimumVersion\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}]");
+                                             "\"channel\": \"/meta/handshake\"," +
+                                             "\"version\": \"1.0\"," +
+                                             "\"minimumVersion\": \"1.0\"," +
+                                             "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                                             "}]");
         ContentResponse response = handshake.send();
         Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
         Request connect1 = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/connect\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"connectionType\": \"long-polling\"" +
-                "}]");
+                                            "\"channel\": \"/meta/connect\"," +
+                                            "\"clientId\": \"" + clientId + "\"," +
+                                            "\"connectionType\": \"long-polling\"" +
+                                            "}]");
         response = connect1.send();
         Assertions.assertEquals(200, response.getStatus());
 
@@ -212,14 +211,14 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest
         // The server must adjust to not expire its session
         long newInterval = 1000;
         Request connect2 = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/connect\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"connectionType\": \"long-polling\"," +
-                "\"advice\":{" +
-                "    \"timeout\": 0," +
-                "    \"interval\": " + newInterval +
-                "}" +
-                "}]");
+                                            "\"channel\": \"/meta/connect\"," +
+                                            "\"clientId\": \"" + clientId + "\"," +
+                                            "\"connectionType\": \"long-polling\"," +
+                                            "\"advice\":{" +
+                                            "    \"timeout\": 0," +
+                                            "    \"interval\": " + newInterval +
+                                            "}" +
+                                            "}]");
         response = connect2.send();
         Assertions.assertEquals(200, response.getStatus());
 

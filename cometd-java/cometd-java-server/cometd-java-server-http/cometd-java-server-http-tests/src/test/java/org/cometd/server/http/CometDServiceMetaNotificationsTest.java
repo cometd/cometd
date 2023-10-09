@@ -29,12 +29,11 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public class CometDServiceMetaNotificationsTest extends AbstractBayeuxClientServerTest
-{
+public class CometDServiceMetaNotificationsTest extends AbstractBayeuxClientServerTest {
     @ParameterizedTest
     @MethodSource("transports")
-    public void testMetaNotifications(String serverTransport) throws Exception {
-        startServer(serverTransport, null);
+    public void testMetaNotifications(Transport transport) throws Exception {
+        startServer(transport, null);
 
         CountDownLatch handshakeLatch = new CountDownLatch(1);
         CountDownLatch connectLatch = new CountDownLatch(1);
@@ -44,11 +43,11 @@ public class CometDServiceMetaNotificationsTest extends AbstractBayeuxClientServ
         new MetaChannelsService(bayeux, handshakeLatch, connectLatch, subscribeLatch, unsubscribeLatch, disconnectLatch);
 
         Request handshake = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"minimumVersion\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}]");
+                                             "\"channel\": \"/meta/handshake\"," +
+                                             "\"version\": \"1.0\"," +
+                                             "\"minimumVersion\": \"1.0\"," +
+                                             "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                                             "}]");
         ContentResponse response = handshake.send();
         Assertions.assertTrue(handshakeLatch.await(5, TimeUnit.SECONDS));
         Assertions.assertEquals(200, response.getStatus());
@@ -56,10 +55,10 @@ public class CometDServiceMetaNotificationsTest extends AbstractBayeuxClientServ
         String clientId = extractClientId(response);
 
         Request connect = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/connect\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"connectionType\": \"long-polling\"" +
-                "}]");
+                                           "\"channel\": \"/meta/connect\"," +
+                                           "\"clientId\": \"" + clientId + "\"," +
+                                           "\"connectionType\": \"long-polling\"" +
+                                           "}]");
         response = connect.send();
 
         Assertions.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
@@ -67,27 +66,27 @@ public class CometDServiceMetaNotificationsTest extends AbstractBayeuxClientServ
 
         String channel = "/foo";
         Request subscribe = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/subscribe\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"subscription\": \"" + channel + "\"" +
-                "}]");
+                                             "\"channel\": \"/meta/subscribe\"," +
+                                             "\"clientId\": \"" + clientId + "\"," +
+                                             "\"subscription\": \"" + channel + "\"" +
+                                             "}]");
         response = subscribe.send();
         Assertions.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
         Assertions.assertEquals(200, response.getStatus());
 
         Request unsubscribe = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/unsubscribe\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"subscription\": \"" + channel + "\"" +
-                "}]");
+                                               "\"channel\": \"/meta/unsubscribe\"," +
+                                               "\"clientId\": \"" + clientId + "\"," +
+                                               "\"subscription\": \"" + channel + "\"" +
+                                               "}]");
         response = unsubscribe.send();
         Assertions.assertTrue(unsubscribeLatch.await(5, TimeUnit.SECONDS));
         Assertions.assertEquals(200, response.getStatus());
 
         Request disconnect = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/disconnect\"," +
-                "\"clientId\": \"" + clientId + "\"" +
-                "}]");
+                                              "\"channel\": \"/meta/disconnect\"," +
+                                              "\"clientId\": \"" + clientId + "\"" +
+                                              "}]");
         response = disconnect.send();
         Assertions.assertTrue(disconnectLatch.await(5, TimeUnit.SECONDS));
         Assertions.assertEquals(200, response.getStatus());

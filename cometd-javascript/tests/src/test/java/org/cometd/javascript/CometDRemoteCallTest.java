@@ -36,7 +36,7 @@ public class CometDRemoteCallTest extends AbstractCometDTransportsTest {
     public void testRemoteCallWithResult(String transport) throws Exception {
         initCometDServer(transport);
 
-        ServerAnnotationProcessor processor = new ServerAnnotationProcessor(cometdServlet.getBayeux());
+        ServerAnnotationProcessor processor = new ServerAnnotationProcessor(cometdServlet.getBayeuxServer());
         String response = "response";
         processor.process(new RemoteCallWithResultService(response));
 
@@ -83,7 +83,7 @@ public class CometDRemoteCallTest extends AbstractCometDTransportsTest {
     public void testRemoteCallWithFailure(String transport) throws Exception {
         initCometDServer(transport);
 
-        ServerAnnotationProcessor processor = new ServerAnnotationProcessor(cometdServlet.getBayeux());
+        ServerAnnotationProcessor processor = new ServerAnnotationProcessor(cometdServlet.getBayeuxServer());
         String failure = "response";
         processor.process(new RemoteCallWithFailureService(failure));
 
@@ -130,7 +130,7 @@ public class CometDRemoteCallTest extends AbstractCometDTransportsTest {
         initCometDServer(transport);
 
         long timeout = 1000;
-        ServerAnnotationProcessor processor = new ServerAnnotationProcessor(cometdServlet.getBayeux());
+        ServerAnnotationProcessor processor = new ServerAnnotationProcessor(cometdServlet.getBayeuxServer());
         boolean processed = processor.process(new RemoteCallTimeoutService(timeout));
         Assertions.assertTrue(processed);
 
@@ -194,7 +194,7 @@ public class CometDRemoteCallTest extends AbstractCometDTransportsTest {
         String request = "request";
         String response = "response";
 
-        ServerAnnotationProcessor processor = new ServerAnnotationProcessor(cometdServlet.getBayeux());
+        ServerAnnotationProcessor processor = new ServerAnnotationProcessor(cometdServlet.getBayeuxServer());
         boolean processed = processor.process(new RemoteCallWithCustomDataClassService(request, response));
         Assertions.assertTrue(processed);
 

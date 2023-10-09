@@ -32,6 +32,7 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
+import org.cometd.server.BayeuxServerImpl;
 import org.eclipse.jetty.ee10.servlet.FilterHolder;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlets.CrossOriginFilter;
@@ -89,7 +90,7 @@ public class CometDCrossOriginReHandshakeTest extends AbstractCometDLongPollingT
                 int connects = this.connects.incrementAndGet();
                 if (connects == 1) {
                     // Fake the removal of the session due to timeout
-                    bayeuxServer.removeServerSession(session, true);
+                    ((BayeuxServerImpl)bayeuxServer).removeServerSession(session, true);
                 }
             }
             return true;

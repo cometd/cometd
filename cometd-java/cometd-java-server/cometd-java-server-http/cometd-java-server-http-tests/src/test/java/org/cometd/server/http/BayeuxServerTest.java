@@ -42,8 +42,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class BayeuxServerTest
-{
+public class BayeuxServerTest {
     private final Queue<Object> _events = new ConcurrentLinkedQueue<>();
     private final BayeuxServerImpl _bayeux = new BayeuxServerImpl();
 
@@ -102,19 +101,15 @@ public class BayeuxServerTest
         Set<String> removedSessionIds = ConcurrentHashMap.newKeySet();
         _bayeux.addListener(new BayeuxServer.SessionListener() {
             @Override
-            public void sessionAdded(ServerSession session, ServerMessage message)
-            {
+            public void sessionAdded(ServerSession session, ServerMessage message) {
                 sessionIds.add(session.getId());
             }
+
             @Override
-            public void sessionRemoved(ServerSession session, ServerMessage message, boolean timeout)
-            {
-                try
-                {
+            public void sessionRemoved(ServerSession session, ServerMessage message, boolean timeout) {
+                try {
                     Thread.sleep(1);
-                }
-                catch (InterruptedException e)
-                {
+                } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
                 threads.add(Thread.currentThread());
@@ -133,8 +128,9 @@ public class BayeuxServerTest
             assertTrue(removedSessionIds.contains(sessionId));
         }
 
-        if (count >= 100)
+        if (count >= 100) {
             assertTrue(threads.size() >= 2);
+        }
     }
 
     @Test

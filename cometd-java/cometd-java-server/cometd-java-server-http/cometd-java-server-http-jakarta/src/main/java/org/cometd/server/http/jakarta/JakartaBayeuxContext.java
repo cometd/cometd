@@ -110,15 +110,7 @@ class JakartaBayeuxContext implements BayeuxContext {
     }
 
     private ServletContext getServletContext() {
-        HttpSession s = request.getSession(false);
-        if (s != null) {
-            return s.getServletContext();
-        } else {
-            s = request.getSession(true);
-            ServletContext servletContext = s.getServletContext();
-            s.invalidate();
-            return servletContext;
-        }
+        return request.getServletContext();
     }
 
     @Override

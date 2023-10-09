@@ -35,8 +35,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
-{
+public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest {
     private static final String CLIENT_MESSAGE_FIELD = "clientMessageField";
     private static final String CLIENT_EXT_FIELD = "clientExtField";
     private static final String CLIENT_DATA_FIELD = "clientDataField";
@@ -52,23 +51,23 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testBayeuxExtensionOnHandshake(String serverTransport) throws Exception {
-        startServer(serverTransport, null);
+    public void testBayeuxExtensionOnHandshake(Transport transport) throws Exception {
+        startServer(transport, null);
 
         bayeux.addExtension(new MetaExtension());
         AtomicReference<ServerMessage> handshakeRef = new AtomicReference<>();
         new MetaHandshakeService(bayeux, handshakeRef);
 
         Request handshake = newBayeuxRequest("" +
-                "[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"minimumVersion\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]," +
-                "\"" + CLIENT_MESSAGE_FIELD + "\": \"" + CLIENT_INFO + "\"," +
-                "\"ext\": { \"" + CLIENT_EXT_FIELD + "\": \"" + CLIENT_INFO + "\" }," +
-                "\"data\": { \"" + CLIENT_DATA_FIELD + "\": \"" + CLIENT_INFO + "\" }" +
-                "}]");
+                                             "[{" +
+                                             "\"channel\": \"/meta/handshake\"," +
+                                             "\"version\": \"1.0\"," +
+                                             "\"minimumVersion\": \"1.0\"," +
+                                             "\"supportedConnectionTypes\": [\"long-polling\"]," +
+                                             "\"" + CLIENT_MESSAGE_FIELD + "\": \"" + CLIENT_INFO + "\"," +
+                                             "\"ext\": { \"" + CLIENT_EXT_FIELD + "\": \"" + CLIENT_INFO + "\" }," +
+                                             "\"data\": { \"" + CLIENT_DATA_FIELD + "\": \"" + CLIENT_INFO + "\" }" +
+                                             "}]");
         ContentResponse response = handshake.send();
         Assertions.assertEquals(200, response.getStatus());
 
@@ -90,8 +89,8 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testBayeuxExtensionOnServiceChannel(String serverTransport) throws Exception {
-        startServer(serverTransport, null);
+    public void testBayeuxExtensionOnServiceChannel(Transport transport) throws Exception {
+        startServer(transport, null);
 
         String channel = "/service/test";
         bayeux.addExtension(new NonMetaExtension(channel));
@@ -99,25 +98,25 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
         new ServiceChannelService(bayeux, channel, publishRef);
 
         Request handshake = newBayeuxRequest("" +
-                "[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"minimumVersion\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}]");
+                                             "[{" +
+                                             "\"channel\": \"/meta/handshake\"," +
+                                             "\"version\": \"1.0\"," +
+                                             "\"minimumVersion\": \"1.0\"," +
+                                             "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                                             "}]");
         ContentResponse response = handshake.send();
         Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
         Request publish = newBayeuxRequest("" +
-                "[{" +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"channel\": \"" + channel + "\"," +
-                "\"" + CLIENT_MESSAGE_FIELD + "\": \"" + CLIENT_INFO + "\"," +
-                "\"ext\": { \"" + CLIENT_EXT_FIELD + "\": \"" + CLIENT_INFO + "\" }," +
-                "\"data\": { \"" + CLIENT_DATA_FIELD + "\": \"" + CLIENT_INFO + "\" }" +
-                "}]");
+                                           "[{" +
+                                           "\"clientId\": \"" + clientId + "\"," +
+                                           "\"channel\": \"" + channel + "\"," +
+                                           "\"" + CLIENT_MESSAGE_FIELD + "\": \"" + CLIENT_INFO + "\"," +
+                                           "\"ext\": { \"" + CLIENT_EXT_FIELD + "\": \"" + CLIENT_INFO + "\" }," +
+                                           "\"data\": { \"" + CLIENT_DATA_FIELD + "\": \"" + CLIENT_INFO + "\" }" +
+                                           "}]");
         response = publish.send();
         Assertions.assertEquals(200, response.getStatus());
 
@@ -142,8 +141,8 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testBayeuxExtensionOnBroadcastChannel(String serverTransport) throws Exception {
-        startServer(serverTransport, null);
+    public void testBayeuxExtensionOnBroadcastChannel(Transport transport) throws Exception {
+        startServer(transport, null);
 
         String channel = "/test";
         bayeux.addExtension(new NonMetaExtension(channel));
@@ -151,34 +150,34 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
         new BroadcastChannelService(bayeux, channel, publishRef);
 
         Request handshake = newBayeuxRequest("" +
-                "[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"minimumVersion\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}]");
+                                             "[{" +
+                                             "\"channel\": \"/meta/handshake\"," +
+                                             "\"version\": \"1.0\"," +
+                                             "\"minimumVersion\": \"1.0\"," +
+                                             "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                                             "}]");
         ContentResponse response = handshake.send();
         Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
         Request subscribe = newBayeuxRequest("" +
-                "[{" +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"channel\": \"/meta/subscribe\"," +
-                "\"subscription\": \"" + channel + "\"," +
-                "}]");
+                                             "[{" +
+                                             "\"clientId\": \"" + clientId + "\"," +
+                                             "\"channel\": \"/meta/subscribe\"," +
+                                             "\"subscription\": \"" + channel + "\"," +
+                                             "}]");
         response = subscribe.send();
         Assertions.assertEquals(200, response.getStatus());
 
         Request publish = newBayeuxRequest("" +
-                "[{" +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"channel\": \"" + channel + "\"," +
-                "\"" + CLIENT_MESSAGE_FIELD + "\": \"" + CLIENT_INFO + "\"," +
-                "\"ext\": { \"" + CLIENT_EXT_FIELD + "\": \"" + CLIENT_INFO + "\" }," +
-                "\"data\": { \"" + CLIENT_DATA_FIELD + "\": \"" + CLIENT_INFO + "\" }" +
-                "}]");
+                                           "[{" +
+                                           "\"clientId\": \"" + clientId + "\"," +
+                                           "\"channel\": \"" + channel + "\"," +
+                                           "\"" + CLIENT_MESSAGE_FIELD + "\": \"" + CLIENT_INFO + "\"," +
+                                           "\"ext\": { \"" + CLIENT_EXT_FIELD + "\": \"" + CLIENT_INFO + "\" }," +
+                                           "\"data\": { \"" + CLIENT_DATA_FIELD + "\": \"" + CLIENT_INFO + "\" }" +
+                                           "}]");
         response = publish.send();
         Assertions.assertEquals(200, response.getStatus());
 

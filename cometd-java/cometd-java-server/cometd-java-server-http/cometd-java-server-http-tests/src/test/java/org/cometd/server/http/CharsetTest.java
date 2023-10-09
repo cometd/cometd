@@ -27,19 +27,18 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public class CharsetTest extends AbstractBayeuxClientServerTest
-{
+public class CharsetTest extends AbstractBayeuxClientServerTest {
     @ParameterizedTest
     @MethodSource("transports")
-    public void testMissingContentTypeWithLongPolling(String serverTransport) throws Exception {
-        startServer(serverTransport, null);
+    public void testMissingContentTypeWithLongPolling(Transport transport) throws Exception {
+        startServer(transport, null);
 
         Request handshake = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"minimumVersion\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}]");
+                                             "\"channel\": \"/meta/handshake\"," +
+                                             "\"version\": \"1.0\"," +
+                                             "\"minimumVersion\": \"1.0\"," +
+                                             "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                                             "}]");
         ContentResponse response = handshake.send();
         Assertions.assertEquals(200, response.getStatus());
 
@@ -57,10 +56,10 @@ public class CharsetTest extends AbstractBayeuxClientServerTest
         });
 
         Request publish = newBayeuxRequest("[{" +
-                "\"channel\":\"" + channelName + "\"," +
-                "\"clientId\":\"" + clientId + "\"," +
-                "\"data\":\"" + data + "\"" +
-                "}]");
+                                           "\"channel\":\"" + channelName + "\"," +
+                                           "\"clientId\":\"" + clientId + "\"," +
+                                           "\"data\":\"" + data + "\"" +
+                                           "}]");
         // In some cross domain configuration (for example IE9 using XDomainRequest),
         // the Content-Type header is not sent, and we must behave well even if it's missing
         publish.onResponseBegin(r -> publish.headers(headers -> headers.remove(HttpHeader.CONTENT_TYPE)));
@@ -68,24 +67,24 @@ public class CharsetTest extends AbstractBayeuxClientServerTest
         Assertions.assertEquals(200, response.getStatus());
 
         Request disconnect = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/disconnect\"," +
-                "\"clientId\": \"" + clientId + "\"" +
-                "}]");
+                                              "\"channel\": \"/meta/disconnect\"," +
+                                              "\"clientId\": \"" + clientId + "\"" +
+                                              "}]");
         response = disconnect.send();
         Assertions.assertEquals(200, response.getStatus());
     }
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testContentTypeWithISO_8859_7(String serverTransport) throws Exception {
-        startServer(serverTransport, null);
+    public void testContentTypeWithISO_8859_7(Transport transport) throws Exception {
+        startServer(transport, null);
 
         Request handshake = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"minimumVersion\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}]");
+                                             "\"channel\": \"/meta/handshake\"," +
+                                             "\"version\": \"1.0\"," +
+                                             "\"minimumVersion\": \"1.0\"," +
+                                             "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                                             "}]");
         ContentResponse response = handshake.send();
         Assertions.assertEquals(200, response.getStatus());
 
@@ -107,17 +106,17 @@ public class CharsetTest extends AbstractBayeuxClientServerTest
 
         Request publish = httpClient.newRequest(cometdURL);
         configureBayeuxRequest(publish, "[{" +
-                "\"channel\":\"" + channelName + "\"," +
-                "\"clientId\":\"" + clientId + "\"," +
-                "\"data\":\"" + data + "\"" +
-                "}]", encoding);
+                                        "\"channel\":\"" + channelName + "\"," +
+                                        "\"clientId\":\"" + clientId + "\"," +
+                                        "\"data\":\"" + data + "\"" +
+                                        "}]", encoding);
         response = publish.send();
         Assertions.assertEquals(200, response.getStatus());
 
         Request disconnect = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/disconnect\"," +
-                "\"clientId\": \"" + clientId + "\"" +
-                "}]");
+                                              "\"channel\": \"/meta/disconnect\"," +
+                                              "\"clientId\": \"" + clientId + "\"" +
+                                              "}]");
         response = disconnect.send();
         Assertions.assertEquals(200, response.getStatus());
     }

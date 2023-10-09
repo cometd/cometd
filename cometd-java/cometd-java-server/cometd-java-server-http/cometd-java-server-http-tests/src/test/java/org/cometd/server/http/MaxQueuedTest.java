@@ -27,34 +27,33 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public class MaxQueuedTest extends AbstractBayeuxClientServerTest
-{
+public class MaxQueuedTest extends AbstractBayeuxClientServerTest {
     @ParameterizedTest
     @MethodSource("transports")
-    public void testMaxQueued(String serverTransport) throws Exception {
+    public void testMaxQueued(Transport transport) throws Exception {
         int maxQueue = 2;
         Map<String, String> options = new HashMap<>();
         options.put(AbstractServerTransport.MAX_QUEUE_OPTION, String.valueOf(maxQueue));
         // Makes the test simpler: publishes are only sent via /meta/connect.
         options.put(AbstractServerTransport.META_CONNECT_DELIVERY_OPTION, String.valueOf(true));
-        startServer(serverTransport, options);
+        startServer(transport, options);
 
         Request handshake = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"minimumVersion\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}]");
+                                             "\"channel\": \"/meta/handshake\"," +
+                                             "\"version\": \"1.0\"," +
+                                             "\"minimumVersion\": \"1.0\"," +
+                                             "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                                             "}]");
         ContentResponse response = handshake.send();
         Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
         Request connect1 = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/connect\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"connectionType\": \"long-polling\"" +
-                "}]");
+                                            "\"channel\": \"/meta/connect\"," +
+                                            "\"clientId\": \"" + clientId + "\"," +
+                                            "\"connectionType\": \"long-polling\"" +
+                                            "}]");
         response = connect1.send();
         Assertions.assertEquals(200, response.getStatus());
 

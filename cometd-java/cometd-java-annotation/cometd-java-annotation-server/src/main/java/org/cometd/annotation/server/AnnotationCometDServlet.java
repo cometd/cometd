@@ -53,7 +53,7 @@ public class AnnotationCometDServlet extends CometDServlet {
     public void init() throws ServletException {
         super.init();
 
-        processor = newServerAnnotationProcessor(getBayeux());
+        processor = newServerAnnotationProcessor(getBayeuxServer());
 
         String servicesParam = getInitParameter("services");
         if (servicesParam != null && servicesParam.length() > 0) {

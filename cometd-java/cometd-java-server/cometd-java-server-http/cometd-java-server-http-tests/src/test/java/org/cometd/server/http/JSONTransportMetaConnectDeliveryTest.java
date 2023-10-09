@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.cometd.server.http.http;
+package org.cometd.server.http;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -21,7 +21,6 @@ import java.util.Map;
 import org.cometd.bayeux.Message;
 import org.cometd.common.JSONContext;
 import org.cometd.common.JettyJSONContextClient;
-import org.cometd.server.http.AbstractBayeuxClientServerTest;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Request;
 import org.junit.jupiter.api.Assertions;
@@ -31,45 +30,45 @@ import org.junit.jupiter.params.provider.MethodSource;
 public class JSONTransportMetaConnectDeliveryTest extends AbstractBayeuxClientServerTest {
     @ParameterizedTest
     @MethodSource("transports")
-    public void testJSONTransportMetaConnectDelivery(String serverTransport) throws Exception {
+    public void testJSONTransportMetaConnectDelivery(Transport transport) throws Exception {
         Map<String, String> options = new HashMap<>();
         options.put("long-polling.json.metaConnectDeliverOnly", "true");
-        startServer(serverTransport, options);
+        startServer(transport, options);
 
         Request handshake = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/handshake\"," +
-                "\"version\": \"1.0\"," +
-                "\"minimumVersion\": \"1.0\"," +
-                "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                "}]");
+                                             "\"channel\": \"/meta/handshake\"," +
+                                             "\"version\": \"1.0\"," +
+                                             "\"minimumVersion\": \"1.0\"," +
+                                             "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                                             "}]");
         ContentResponse response = handshake.send();
         Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
         Request connect = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/connect\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"connectionType\": \"long-polling\"" +
-                "}]");
+                                           "\"channel\": \"/meta/connect\"," +
+                                           "\"clientId\": \"" + clientId + "\"," +
+                                           "\"connectionType\": \"long-polling\"" +
+                                           "}]");
         response = connect.send();
         Assertions.assertEquals(200, response.getStatus());
 
         String channel = "/foo";
 
         Request subscribe = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/subscribe\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"subscription\": \"" + channel + "\"" +
-                "}]");
+                                             "\"channel\": \"/meta/subscribe\"," +
+                                             "\"clientId\": \"" + clientId + "\"," +
+                                             "\"subscription\": \"" + channel + "\"" +
+                                             "}]");
         response = subscribe.send();
         Assertions.assertEquals(200, response.getStatus());
 
         Request publish = newBayeuxRequest("[{" +
-                "\"channel\": \"" + channel + "\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"data\": {}" +
-                "}]");
+                                           "\"channel\": \"" + channel + "\"," +
+                                           "\"clientId\": \"" + clientId + "\"," +
+                                           "\"data\": {}" +
+                                           "}]");
         response = publish.send();
         Assertions.assertEquals(200, response.getStatus());
 
@@ -79,10 +78,10 @@ public class JSONTransportMetaConnectDeliveryTest extends AbstractBayeuxClientSe
         Assertions.assertEquals(1, messages.length);
 
         connect = newBayeuxRequest("[{" +
-                "\"channel\": \"/meta/connect\"," +
-                "\"clientId\": \"" + clientId + "\"," +
-                "\"connectionType\": \"long-polling\"" +
-                "}]");
+                                   "\"channel\": \"/meta/connect\"," +
+                                   "\"clientId\": \"" + clientId + "\"," +
+                                   "\"connectionType\": \"long-polling\"" +
+                                   "}]");
         response = connect.send();
         Assertions.assertEquals(200, response.getStatus());
 
