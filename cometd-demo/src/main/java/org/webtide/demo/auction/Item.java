@@ -16,6 +16,7 @@
 package org.webtide.demo.auction;
 
 import java.util.Map;
+
 import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.ajax.JSON.Output;
 
@@ -100,7 +101,6 @@ public class Item implements Cloneable, JSON.Convertible {
 
         return id.hashCode();
     }
-
 
     @Override
     public Item clone() {

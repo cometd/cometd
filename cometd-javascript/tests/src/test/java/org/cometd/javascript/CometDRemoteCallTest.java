@@ -40,7 +40,6 @@ public class CometDRemoteCallTest extends AbstractCometDTransportsTest {
         String response = "response";
         processor.process(new RemoteCallWithResultService(response));
 
-
         evaluateScript("cometd.init({url: '$U', logLevel: '$L'});"
                 .replace("$U", cometdURL).replace("$L", getLogLevel()));
         Thread.sleep(1000); // Wait for /meta/connect

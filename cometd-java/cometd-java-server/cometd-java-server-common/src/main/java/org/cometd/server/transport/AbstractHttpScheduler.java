@@ -39,7 +39,7 @@ public abstract class AbstractHttpScheduler implements Runnable, AbstractHttpTra
         this.context = context;
         this.promise = promise;
         this.message = message;
-        this.task.set(transport.getBayeux().schedule(this, timeout));
+        this.task.set(transport.getBayeuxServer().schedule(this, timeout));
         context.metaConnectCycle(transport.newMetaConnectCycle());
     }
 

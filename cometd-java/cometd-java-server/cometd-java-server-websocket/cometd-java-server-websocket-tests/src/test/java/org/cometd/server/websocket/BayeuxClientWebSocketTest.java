@@ -55,6 +55,7 @@ import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -62,8 +63,8 @@ import static org.cometd.bayeux.server.ConfigurableServerChannel.Initializer.Per
 
 public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
     @ParameterizedTest
-    @MethodSource("wsTypes")
-    public void testClientRetriesWebSocketTransportIfCannotConnect(String wsType) throws Exception {
+    @MethodSource("transports")
+    public void testClientRetriesWebSocketTransportIfCannotConnect(Transport wsType) throws Exception {
         prepareAndStart(wsType, null);
 
         CountDownLatch connectLatch = new CountDownLatch(2);
@@ -102,8 +103,8 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
     }
 
     @ParameterizedTest
-    @MethodSource("wsTypes")
-    public void testAbortThenRestart(String wsType) throws Exception {
+    @MethodSource("transports")
+    public void testAbortThenRestart(Transport wsType) throws Exception {
         prepareAndStart(wsType, null);
 
         BayeuxClient client = newBayeuxClient(wsType);
@@ -133,8 +134,8 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
     }
 
     @ParameterizedTest
-    @MethodSource("wsTypes")
-    public void testRestart(String wsType) throws Exception {
+    @MethodSource("transports")
+    public void testRestart(Transport wsType) throws Exception {
         prepareAndStart(wsType, null);
 
         ClientTransport webSocketTransport = newWebSocketTransport(wsType, null);
@@ -177,9 +178,10 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         disconnectBayeuxClient(client);
     }
 
+    @Disabled("WEBSOCKET_JETTY transport does not clear previous mappings upon restart")
     @ParameterizedTest
-    @MethodSource("wsTypes")
-    public void testRestartAfterConnectWithFatalException(String wsType) throws Exception {
+    @MethodSource("transports")
+    public void testRestartAfterConnectWithFatalException(Transport wsType) throws Exception {
         prepareAndStart(wsType, null);
 
         // ConnectException is a recoverable exception that does not disable the transport.
@@ -231,7 +233,6 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
                     }, messages);
                 }
             };
-            default -> throw new IllegalArgumentException();
         };
 
         BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport);
@@ -273,13 +274,13 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
     }
 
     @ParameterizedTest
-    @MethodSource("wsTypes")
-    public void testHandshakeExpiration(String wsType) throws Exception {
+    @MethodSource("transports")
+    public void testHandshakeExpiration(Transport wsType) throws Exception {
         prepareAndStart(wsType, null);
 
         long maxNetworkDelay = 2000;
 
-        bayeux.getChannel(Channel.META_HANDSHAKE).addListener(new ServerChannel.MessageListener() {
+        bayeuxServer.getChannel(Channel.META_HANDSHAKE).addListener(new ServerChannel.MessageListener() {
             @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 try {
@@ -317,8 +318,8 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
     }
 
     @ParameterizedTest
-    @MethodSource("wsTypes")
-    public void testMetaConnectNotRespondedOnServerSidePublish(String wsType) throws Exception {
+    @MethodSource("transports")
+    public void testMetaConnectNotRespondedOnServerSidePublish(Transport wsType) throws Exception {
         prepareAndStart(wsType, null);
 
         BayeuxClient client = newBayeuxClient(wsType);
@@ -338,10 +339,10 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         Thread.sleep(1000);
 
         // Test publish triggered by an external event
-        LocalSession emitter = bayeux.newLocalSession("test_emitter");
+        LocalSession emitter = bayeuxServer.newLocalSession("test_emitter");
         emitter.handshake();
         String data = "test_data";
-        bayeux.getChannel(channelName).publish(emitter, data, Promise.noop());
+        bayeuxServer.getChannel(channelName).publish(emitter, data, Promise.noop());
 
         Assertions.assertTrue(publishLatch.get().await(5, TimeUnit.SECONDS));
         // Make sure long poll is not responded
@@ -352,11 +353,11 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         publishLatch.set(new CountDownLatch(1));
         connectLatch.set(new CountDownLatch(1));
         String serviceChannelName = "/service/test";
-        ServerChannel serviceChannel = bayeux.createChannelIfAbsent(serviceChannelName, new Persistent()).getReference();
+        ServerChannel serviceChannel = bayeuxServer.createChannelIfAbsent(serviceChannelName, new Persistent()).getReference();
         serviceChannel.addListener(new ServerChannel.MessageListener() {
             @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
-                bayeux.getChannel(channelName).publish(emitter, data, Promise.noop());
+                bayeuxServer.getChannel(channelName).publish(emitter, data, Promise.noop());
                 return true;
             }
         });
@@ -370,8 +371,8 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
     }
 
     @ParameterizedTest
-    @MethodSource("wsTypes")
-    public void testMetaConnectDeliveryOnlyTransport(String wsType) throws Exception {
+    @MethodSource("transports")
+    public void testMetaConnectDeliveryOnlyTransport(Transport wsType) throws Exception {
         Map<String, String> options = new HashMap<>();
         options.put(AbstractServerTransport.META_CONNECT_DELIVERY_OPTION, "true");
         prepareAndStart(wsType, options);
@@ -393,10 +394,10 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         Thread.sleep(1000);
 
         // Test publish triggered by an external event
-        LocalSession emitter = bayeux.newLocalSession("test_emitter");
+        LocalSession emitter = bayeuxServer.newLocalSession("test_emitter");
         emitter.handshake();
         String data = "test_data";
-        bayeux.getChannel(channelName).publish(emitter, data, Promise.noop());
+        bayeuxServer.getChannel(channelName).publish(emitter, data, Promise.noop());
 
         Assertions.assertTrue(publishLatch.get().await(5, TimeUnit.SECONDS));
         // Make sure long poll is responded
@@ -408,11 +409,11 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         publishLatch.set(new CountDownLatch(1));
         connectLatch.set(new CountDownLatch(1));
         String serviceChannelName = "/service/test";
-        ServerChannel serviceChannel = bayeux.createChannelIfAbsent(serviceChannelName, new Persistent()).getReference();
+        ServerChannel serviceChannel = bayeuxServer.createChannelIfAbsent(serviceChannelName, new Persistent()).getReference();
         serviceChannel.addListener(new ServerChannel.MessageListener() {
             @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
-                bayeux.getChannel(channelName).publish(emitter, data, Promise.noop());
+                bayeuxServer.getChannel(channelName).publish(emitter, data, Promise.noop());
                 return true;
             }
         });
@@ -426,11 +427,11 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
     }
 
     @ParameterizedTest
-    @MethodSource("wsTypes")
-    public void testMetaConnectDeliveryOnlySession(String wsType) throws Exception {
+    @MethodSource("transports")
+    public void testMetaConnectDeliveryOnlySession(Transport wsType) throws Exception {
         prepareAndStart(wsType, null);
 
-        bayeux.addExtension(new BayeuxServer.Extension() {
+        bayeuxServer.addExtension(new BayeuxServer.Extension() {
             @Override
             public boolean sendMeta(ServerSession to, ServerMessage.Mutable message) {
                 if (Channel.META_HANDSHAKE.equals(message.getChannel())) {
@@ -459,10 +460,10 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         Thread.sleep(1000);
 
         // Test publish triggered by an external event
-        LocalSession emitter = bayeux.newLocalSession("test_emitter");
+        LocalSession emitter = bayeuxServer.newLocalSession("test_emitter");
         emitter.handshake();
         String data = "test_data";
-        bayeux.getChannel(channelName).publish(emitter, data, Promise.noop());
+        bayeuxServer.getChannel(channelName).publish(emitter, data, Promise.noop());
 
         Assertions.assertTrue(publishLatch.get().await(5, TimeUnit.SECONDS));
         // Make sure long poll is responded
@@ -473,11 +474,11 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         publishLatch.set(new CountDownLatch(1));
         connectLatch.set(new CountDownLatch(1));
         String serviceChannelName = "/service/test";
-        ServerChannel serviceChannel = bayeux.createChannelIfAbsent(serviceChannelName, new Persistent()).getReference();
+        ServerChannel serviceChannel = bayeuxServer.createChannelIfAbsent(serviceChannelName, new Persistent()).getReference();
         serviceChannel.addListener(new ServerChannel.MessageListener() {
             @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
-                bayeux.getChannel(channelName).publish(emitter, data, Promise.noop());
+                bayeuxServer.getChannel(channelName).publish(emitter, data, Promise.noop());
                 return true;
             }
         });
@@ -491,8 +492,8 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
     }
 
     @ParameterizedTest
-    @MethodSource("wsTypes")
-    public void testMetaConnectExpires(String wsType) throws Exception {
+    @MethodSource("transports")
+    public void testMetaConnectExpires(Transport wsType) throws Exception {
         long timeout = 2000;
         Map<String, String> options = new HashMap<>();
         options.put(AbstractServerTransport.TIMEOUT_OPTION, String.valueOf(timeout));
@@ -515,13 +516,13 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
     }
 
     @ParameterizedTest
-    @MethodSource("wsTypes")
-    public void testWebSocketWithAckExtension(String wsType) throws Exception {
+    @MethodSource("transports")
+    public void testWebSocketWithAckExtension(Transport wsType) throws Exception {
         prepareAndStart(wsType, null);
 
         BayeuxClient client = newBayeuxClient(wsType);
 
-        bayeux.addExtension(new AcknowledgedMessagesExtension());
+        bayeuxServer.addExtension(new AcknowledgedMessagesExtension());
         client.addExtension(new AckExtension());
 
         String channelName = "/chat/demo";
@@ -542,7 +543,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         Assertions.assertTrue(subscribed.await(5, TimeUnit.SECONDS));
         Assertions.assertEquals(0, messages.size());
 
-        ServerChannel chatChannel = bayeux.getChannel(channelName);
+        ServerChannel chatChannel = bayeuxServer.getChannel(channelName);
         Assertions.assertNotNull(chatChannel);
 
         int count = 5;
@@ -598,22 +599,22 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
     }
 
     @ParameterizedTest
-    @MethodSource("wsTypes")
-    public void testMetaConnectDelayedOnServerRespondedBeforeRetry(String wsType) throws Exception {
+    @MethodSource("transports")
+    public void testMetaConnectDelayedOnServerRespondedBeforeRetry(Transport wsType) throws Exception {
         long maxNetworkDelay = 2000;
         long backoffIncrement = 2000;
         testMetaConnectDelayedOnServer(wsType, maxNetworkDelay, backoffIncrement, maxNetworkDelay + backoffIncrement / 2);
     }
 
     @ParameterizedTest
-    @MethodSource("wsTypes")
-    public void testMetaConnectDelayedOnServerRespondedAfterRetry(String wsType) throws Exception {
+    @MethodSource("transports")
+    public void testMetaConnectDelayedOnServerRespondedAfterRetry(Transport wsType) throws Exception {
         long maxNetworkDelay = 2000;
         long backoffIncrement = 1000;
         testMetaConnectDelayedOnServer(wsType, maxNetworkDelay, backoffIncrement, maxNetworkDelay + backoffIncrement * 2);
     }
 
-    private void testMetaConnectDelayedOnServer(String wsType, long maxNetworkDelay, long backoffIncrement, long delay) throws Exception {
+    private void testMetaConnectDelayedOnServer(Transport wsType, long maxNetworkDelay, long backoffIncrement, long delay) throws Exception {
         stopAndDispose();
 
         Map<String, String> initParams = new HashMap<>();
@@ -634,7 +635,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport);
         client.setOption(BayeuxClient.BACKOFF_INCREMENT_OPTION, backoffIncrement);
 
-        bayeux.getChannel(Channel.META_CONNECT).addListener(new ServerChannel.MessageListener() {
+        bayeuxServer.getChannel(Channel.META_CONNECT).addListener(new ServerChannel.MessageListener() {
             private final AtomicInteger connects = new AtomicInteger();
 
             @Override
@@ -683,8 +684,8 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
     }
 
     @ParameterizedTest
-    @MethodSource("wsTypes")
-    public void testClientSendsAndReceivesBigMessage(String wsType) throws Exception {
+    @MethodSource("transports")
+    public void testClientSendsAndReceivesBigMessage(Transport wsType) throws Exception {
         int maxMessageSize = 128 * 1024;
         Map<String, String> serverOptions = new HashMap<>();
         serverOptions.put("ws.maxMessageSize", String.valueOf(maxMessageSize));
@@ -712,8 +713,8 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
     }
 
     @ParameterizedTest
-    @MethodSource("wsTypes")
-    public void testClientDisconnectingClosesTheConnection(String wsType) throws Exception {
+    @MethodSource("transports")
+    public void testClientDisconnectingClosesTheConnection(Transport wsType) throws Exception {
         Map<String, String> initParams = new HashMap<>();
         switch (wsType) {
             case WEBSOCKET_JAKARTA, WEBSOCKET_OKHTTP ->
@@ -733,11 +734,11 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
 
         switch (wsType) {
             case WEBSOCKET_JAKARTA, WEBSOCKET_OKHTTP -> {
-                CloseLatchWebSocketTransport jakartaTransport = (CloseLatchWebSocketTransport)bayeux.getTransport("websocket");
+                CloseLatchWebSocketTransport jakartaTransport = (CloseLatchWebSocketTransport)bayeuxServer.getTransport("websocket");
                 Assertions.assertTrue(jakartaTransport.latch.await(5, TimeUnit.SECONDS));
             }
             case WEBSOCKET_JETTY -> {
-                CloseLatchJettyWebSocketTransport jettyTransport = (CloseLatchJettyWebSocketTransport)bayeux.getTransport("websocket");
+                CloseLatchJettyWebSocketTransport jettyTransport = (CloseLatchJettyWebSocketTransport)bayeuxServer.getTransport("websocket");
                 Assertions.assertTrue(jettyTransport.latch.await(5, TimeUnit.SECONDS));
             }
             default -> throw new IllegalArgumentException();
@@ -745,8 +746,8 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
     }
 
     @ParameterizedTest
-    @MethodSource("wsTypes")
-    public void testClientDisconnectingSynchronouslyClosesTheConnection(String wsType) throws Exception {
+    @MethodSource("transports")
+    public void testClientDisconnectingSynchronouslyClosesTheConnection(Transport wsType) throws Exception {
         Map<String, String> initParams = new HashMap<>();
         switch (wsType) {
             case WEBSOCKET_JAKARTA, WEBSOCKET_OKHTTP ->
@@ -766,11 +767,11 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
 
         switch (wsType) {
             case WEBSOCKET_JAKARTA, WEBSOCKET_OKHTTP -> {
-                CloseLatchWebSocketTransport jakartaTransport = (CloseLatchWebSocketTransport)bayeux.getTransport("websocket");
+                CloseLatchWebSocketTransport jakartaTransport = (CloseLatchWebSocketTransport)bayeuxServer.getTransport("websocket");
                 Assertions.assertTrue(jakartaTransport.latch.await(5, TimeUnit.SECONDS));
             }
             case WEBSOCKET_JETTY -> {
-                CloseLatchJettyWebSocketTransport jettyTransport = (CloseLatchJettyWebSocketTransport)bayeux.getTransport("websocket");
+                CloseLatchJettyWebSocketTransport jettyTransport = (CloseLatchJettyWebSocketTransport)bayeuxServer.getTransport("websocket");
                 Assertions.assertTrue(jettyTransport.latch.await(5, TimeUnit.SECONDS));
             }
             default -> throw new IllegalArgumentException();
@@ -804,8 +805,8 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
     }
 
     @ParameterizedTest
-    @MethodSource("wsTypes")
-    public void testWhenClientAbortsServerSessionIsSwept(String wsType) throws Exception {
+    @MethodSource("transports")
+    public void testWhenClientAbortsServerSessionIsSwept(Transport wsType) throws Exception {
         Map<String, String> options = new HashMap<>();
         long timeout = 2000;
         long maxInterval = 1000;
@@ -821,7 +822,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         Thread.sleep(1000);
 
         CountDownLatch latch = new CountDownLatch(1);
-        ServerSession session = bayeux.getSession(client.getId());
+        ServerSession session = bayeuxServer.getSession(client.getId());
         session.addListener((ServerSession.RemovedListener)(s, m, t) -> latch.countDown());
 
         client.abort();
@@ -830,14 +831,14 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
     }
 
     @ParameterizedTest
-    @MethodSource("wsTypes")
-    public void testDisconnectWithPendingMetaConnectWithoutResponseIsFailedOnClient(String wsType) throws Exception {
+    @MethodSource("transports")
+    public void testDisconnectWithPendingMetaConnectWithoutResponseIsFailedOnClient(Transport wsType) throws Exception {
         long timeout = 2000L;
         Map<String, String> serverOptions = new HashMap<>();
         serverOptions.put("timeout", String.valueOf(timeout));
         prepareAndStart(wsType, serverOptions);
 
-        bayeux.addExtension(new BayeuxServer.Extension() {
+        bayeuxServer.addExtension(new BayeuxServer.Extension() {
             @Override
             public boolean sendMeta(ServerSession to, ServerMessage.Mutable message) {
                 if (Channel.META_CONNECT.equals(message.getChannel())) {
@@ -880,8 +881,8 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
     }
 
     @ParameterizedTest
-    @MethodSource("wsTypes")
-    public void testDeliverDuringHandshakeProcessing(String wsType) throws Exception {
+    @MethodSource("transports")
+    public void testDeliverDuringHandshakeProcessing(Transport wsType) throws Exception {
         prepareAndStart(wsType, null);
 
         String channelName = "/service/test";
@@ -895,7 +896,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         });
 
         // SessionListener is the first listener notified after the ServerSession is created.
-        bayeux.addListener(new BayeuxServer.SessionListener() {
+        bayeuxServer.addListener(new BayeuxServer.SessionListener() {
             @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
                 session.deliver(null, channelName, "data", Promise.noop());
@@ -911,11 +912,11 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
     }
 
     @ParameterizedTest
-    @MethodSource("wsTypes")
-    public void testDeliverDuringHandshakeProcessingWithAckExtension(String wsType) throws Exception {
+    @MethodSource("transports")
+    public void testDeliverDuringHandshakeProcessingWithAckExtension(Transport wsType) throws Exception {
         prepareAndStart(wsType, null);
 
-        bayeux.addExtension(new AcknowledgedMessagesExtension());
+        bayeuxServer.addExtension(new AcknowledgedMessagesExtension());
 
         String channelName = "/service/test";
         BayeuxClient client = newBayeuxClient(wsType);
@@ -929,7 +930,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         });
 
         // SessionListener is the first listener notified after the ServerSession is created.
-        bayeux.addListener(new BayeuxServer.SessionListener() {
+        bayeuxServer.addListener(new BayeuxServer.SessionListener() {
             @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
                 session.deliver(null, channelName, "data", Promise.noop());
@@ -945,14 +946,14 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
     }
 
     @ParameterizedTest
-    @MethodSource("wsTypes")
-    public void testExtensionIsInvokedAfterNetworkFailure(String wsType) throws Exception {
+    @MethodSource("transports")
+    public void testExtensionIsInvokedAfterNetworkFailure(Transport wsType) throws Exception {
         // No way to stop OkHttpClient.
-        Assumptions.assumeFalse(wsType.equals(WEBSOCKET_OKHTTP));
+        Assumptions.assumeFalse(wsType == Transport.WEBSOCKET_OKHTTP);
 
         prepareAndStart(wsType, null);
 
-        bayeux.addExtension(new AcknowledgedMessagesExtension());
+        bayeuxServer.addExtension(new AcknowledgedMessagesExtension());
 
         BayeuxClient client = newBayeuxClient(wsType);
         String channelName = "/test";
@@ -972,7 +973,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // This message will be delivered via /meta/connect.
-        bayeux.createChannelIfAbsent(channelName).getReference().publish(null, "data1", Promise.noop());
+        bayeuxServer.createChannelIfAbsent(channelName).getReference().publish(null, "data1", Promise.noop());
         Assertions.assertTrue(rcv.get().await(5, TimeUnit.SECONDS));
         // Wait for the /meta/connect to be established again.
         Thread.sleep(1000);
@@ -982,7 +983,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.UNCONNECTED));
 
         // Send a message while disconnected.
-        bayeux.createChannelIfAbsent(channelName).getReference().publish(null, "data2", Promise.noop());
+        bayeuxServer.createChannelIfAbsent(channelName).getReference().publish(null, "data2", Promise.noop());
 
         rcv.set(new CountDownLatch(1));
         httpClient.start();

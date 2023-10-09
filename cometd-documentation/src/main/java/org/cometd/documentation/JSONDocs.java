@@ -22,6 +22,7 @@ import java.text.ParseException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.client.BayeuxClient;
@@ -84,7 +85,6 @@ public class JSONDocs {
         // CORRECT
         Object field = data.get("array");
         Object[] array = field instanceof List ? ((List<?>)field).toArray() : (Object[])field;
-
 
         // Expecting a long
 

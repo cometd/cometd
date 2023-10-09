@@ -43,9 +43,15 @@ import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.websocket.jakarta.WebSocketTransport;
 import org.cometd.server.websocket.jetty.JettyWebSocketTransport;
 import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Session;
+import org.eclipse.jetty.session.SessionHandler;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.server.ServerUpgradeRequest;
 import org.eclipse.jetty.websocket.server.ServerUpgradeResponse;
 import org.junit.jupiter.api.Assertions;
@@ -54,12 +60,12 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 public class BayeuxContextTest extends ClientServerWebSocketTest {
     @ParameterizedTest
-    @MethodSource("wsTypes")
-    public void testRequestHeaderIsCaseInsensitive(String wsType) throws Exception {
+    @MethodSource("transports")
+    public void testRequestHeaderIsCaseInsensitive(Transport wsType) throws Exception {
         prepareAndStart(wsType, null);
 
         CountDownLatch latch = new CountDownLatch(1);
-        bayeux.getChannel(Channel.META_HANDSHAKE).addListener(new ServerChannel.MessageListener() {
+        bayeuxServer.getChannel(Channel.META_HANDSHAKE).addListener(new ServerChannel.MessageListener() {
             @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 BayeuxContext context = message.getBayeuxContext();
@@ -79,14 +85,14 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
     }
 
     @ParameterizedTest
-    @MethodSource("wsTypes")
-    public void testCookiesSentToServer(String wsType) throws Exception {
+    @MethodSource("transports")
+    public void testCookiesSentToServer(Transport wsType) throws Exception {
         prepareAndStart(wsType, null);
 
         String cookieName = "name";
         String cookieValue = "value";
         CountDownLatch latch = new CountDownLatch(1);
-        bayeux.getChannel(Channel.META_HANDSHAKE).addListener(new ServerChannel.MessageListener() {
+        bayeuxServer.getChannel(Channel.META_HANDSHAKE).addListener(new ServerChannel.MessageListener() {
             @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 BayeuxContext context = message.getBayeuxContext();
@@ -106,12 +112,11 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
     }
 
     @ParameterizedTest
-    @MethodSource("wsTypes")
-    public void testCookiesSentToClient(String wsType) throws Exception {
+    @MethodSource("transports")
+    public void testCookiesSentToClient(Transport wsType) throws Exception {
         String wsTransportClass = switch (wsType) {
             case WEBSOCKET_JAKARTA, WEBSOCKET_OKHTTP -> CookieWebSocketTransport.class.getName();
             case WEBSOCKET_JETTY -> CookieJettyWebSocketTransport.class.getName();
-            default -> throw new IllegalArgumentException();
         };
         prepareServer(wsType, 0, "/cometd", null, wsTransportClass);
         startServer();
@@ -130,8 +135,8 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
     }
 
     @ParameterizedTest
-    @MethodSource("wsTypes")
-    public void testMultipleCookiesSentToServer(String wsType) throws Exception {
+    @MethodSource("transports")
+    public void testMultipleCookiesSentToServer(Transport wsType) throws Exception {
         prepareAndStart(wsType, null);
 
         List<String> cookieNames = List.of("a", "BAYEUX_BROWSER", "b");
@@ -142,7 +147,7 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
         }
 
         CountDownLatch latch = new CountDownLatch(1);
-        bayeux.getChannel(Channel.META_HANDSHAKE).addListener(new ServerChannel.MessageListener() {
+        bayeuxServer.getChannel(Channel.META_HANDSHAKE).addListener(new ServerChannel.MessageListener() {
             @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 BayeuxContext context = message.getBayeuxContext();
@@ -157,14 +162,14 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
         try (Socket socket = new Socket("localhost", connector.getLocalPort())) {
             OutputStream output = socket.getOutputStream();
             String upgrade = "" +
-                    "GET " + cometdServletPath + " HTTP/1.1\r\n" +
-                    "Host: localhost:" + connector.getLocalPort() + "\r\n" +
-                    "Connection: Upgrade\r\n" +
-                    "Upgrade: websocket\r\n" +
-                    "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n" +
-                    "Sec-WebSocket-Version: 13\r\n" +
-                    "Cookie: " + cookies + "\r\n" +
-                    "\r\n";
+                             "GET " + cometdPath + " HTTP/1.1\r\n" +
+                             "Host: localhost:" + connector.getLocalPort() + "\r\n" +
+                             "Connection: Upgrade\r\n" +
+                             "Upgrade: websocket\r\n" +
+                             "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n" +
+                             "Sec-WebSocket-Version: 13\r\n" +
+                             "Cookie: " + cookies + "\r\n" +
+                             "\r\n";
             output.write(upgrade.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
@@ -172,12 +177,12 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
             Thread.sleep(1000);
 
             String handshake = "" +
-                    "{" +
-                    "\"id\":\"1\"," +
-                    "\"channel\":\"/meta/handshake\"," +
-                    "\"version\":\"1.0\"," +
-                    "\"supportedConnectionTypes\":[\"websocket\"]" +
-                    "}";
+                               "{" +
+                               "\"id\":\"1\"," +
+                               "\"channel\":\"/meta/handshake\"," +
+                               "\"version\":\"1.0\"," +
+                               "\"supportedConnectionTypes\":[\"websocket\"]" +
+                               "}";
             byte[] handshakeBytes = handshake.getBytes(StandardCharsets.UTF_8);
             Assertions.assertTrue(handshakeBytes.length <= 125); // Max payload length
 
@@ -192,22 +197,44 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
     }
 
     @ParameterizedTest
-    @MethodSource("wsTypes")
-    public void testSessionAttribute(String wsType) throws Exception {
+    @MethodSource("transports")
+    public void testSessionAttribute(Transport wsType) throws Exception {
         String wsTransportClass = switch (wsType) {
             case WEBSOCKET_JAKARTA, WEBSOCKET_OKHTTP -> SessionWebSocketTransport.class.getName();
             case WEBSOCKET_JETTY -> SessionJettyWebSocketTransport.class.getName();
-            default -> throw new IllegalArgumentException();
         };
         prepareServer(wsType, 0, "/cometd", null, wsTransportClass);
 
-        context.addServlet(new ServletHolder(new HttpServlet() {
-            @Override
-            protected void service(HttpServletRequest request, HttpServletResponse resp) {
-                HttpSession session = request.getSession(true);
-                session.setAttribute(SessionConstants.ATTRIBUTE_NAME, SessionConstants.ATTRIBUTE_VALUE);
+        switch (wsType) {
+            case WEBSOCKET_JAKARTA, WEBSOCKET_OKHTTP -> {
+                context.insertHandler(new org.eclipse.jetty.ee10.servlet.SessionHandler());
+                ((ServletContextHandler)context).addServlet(new ServletHolder(new HttpServlet() {
+                    @Override
+                    protected void service(HttpServletRequest request, HttpServletResponse response) {
+                        HttpSession session = request.getSession(true);
+                        session.setAttribute(SessionConstants.ATTRIBUTE_NAME, SessionConstants.ATTRIBUTE_VALUE);
+                    }
+                }), "/session");
             }
-        }), "/session");
+            case WEBSOCKET_JETTY -> {
+                SessionHandler sessionHandler = new SessionHandler();
+                context.insertHandler(sessionHandler);
+                sessionHandler.insertHandler(new Handler.Wrapper() {
+                    @Override
+                    public boolean handle(Request request, Response response, Callback callback) throws Exception {
+                        if ("/session".equals(Request.getPathInContext(request))) {
+                            Session session = request.getSession(true);
+                            session.setAttribute(SessionConstants.ATTRIBUTE_NAME, SessionConstants.ATTRIBUTE_VALUE);
+                            callback.succeeded();
+                            return true;
+                        }
+                        return super.handle(request, response, callback);
+                    }
+                });
+            }
+            default -> throw new IllegalArgumentException();
+        }
+
         startServer();
         prepareClient(wsType);
         startClient();
@@ -231,7 +258,7 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
         Assertions.assertNotNull(sessionCookie);
 
         CountDownLatch latch = new CountDownLatch(1);
-        bayeux.addListener(new BayeuxServer.SessionListener() {
+        bayeuxServer.addListener(new BayeuxServer.SessionListener() {
             @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
                 Assertions.assertEquals(SessionConstants.ATTRIBUTE_VALUE, message.getBayeuxContext().getSessionAttribute(SessionConstants.ATTRIBUTE_NAME));
@@ -250,15 +277,15 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
     }
 
     @ParameterizedTest
-    @MethodSource("wsTypes")
-    public void testContextAttribute(String wsType) throws Exception {
+    @MethodSource("transports")
+    public void testContextAttribute(Transport wsType) throws Exception {
         prepareAndStart(wsType, null);
 
         CountDownLatch latch = new CountDownLatch(1);
-        bayeux.addListener(new BayeuxServer.SessionListener() {
+        bayeuxServer.addListener(new BayeuxServer.SessionListener() {
             @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
-                Assertions.assertSame(bayeux, message.getBayeuxContext().getContextAttribute(BayeuxServer.ATTRIBUTE));
+                Assertions.assertSame(bayeuxServer, message.getBayeuxContext().getContextAttribute(BayeuxServer.ATTRIBUTE));
                 latch.countDown();
             }
         });
@@ -273,12 +300,11 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
     }
 
     @ParameterizedTest
-    @MethodSource("wsTypes")
-    public void testConcurrentClientsHaveDifferentBayeuxContexts(String wsType) throws Exception {
+    @MethodSource("transports")
+    public void testConcurrentClientsHaveDifferentBayeuxContexts(Transport wsType) throws Exception {
         String wsTransportClass = switch (wsType) {
             case WEBSOCKET_JAKARTA, WEBSOCKET_OKHTTP -> ConcurrentBayeuxContextWebSocketTransport.class.getName();
             case WEBSOCKET_JETTY -> ConcurrentBayeuxContextJettyWebSocketTransport.class.getName();
-            default -> throw new IllegalArgumentException();
         };
         prepareServer(wsType, 0, "/cometd", null, wsTransportClass);
         startServer();
@@ -293,11 +319,11 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
         // Wait for the first client to arrive at the concurrency point.
         switch (wsType) {
             case WEBSOCKET_JAKARTA, WEBSOCKET_OKHTTP -> {
-                CountDownLatch enterLatch = ((ConcurrentBayeuxContextWebSocketTransport)bayeux.getTransport("websocket")).enterLatch;
+                CountDownLatch enterLatch = ((ConcurrentBayeuxContextWebSocketTransport)bayeuxServer.getTransport("websocket")).enterLatch;
                 Assertions.assertTrue(enterLatch.await(5, TimeUnit.SECONDS));
             }
             case WEBSOCKET_JETTY -> {
-                CountDownLatch enterLatch = ((ConcurrentBayeuxContextJettyWebSocketTransport)bayeux.getTransport("websocket")).enterLatch;
+                CountDownLatch enterLatch = ((ConcurrentBayeuxContextJettyWebSocketTransport)bayeuxServer.getTransport("websocket")).enterLatch;
                 Assertions.assertTrue(enterLatch.await(5, TimeUnit.SECONDS));
             }
             default -> throw new IllegalArgumentException();
@@ -311,9 +337,9 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
         // Release the first client.
         switch (wsType) {
             case WEBSOCKET_JAKARTA, WEBSOCKET_OKHTTP ->
-                    ((ConcurrentBayeuxContextWebSocketTransport)bayeux.getTransport("websocket")).proceedLatch.countDown();
+                    ((ConcurrentBayeuxContextWebSocketTransport)bayeuxServer.getTransport("websocket")).proceedLatch.countDown();
             case WEBSOCKET_JETTY ->
-                    ((ConcurrentBayeuxContextJettyWebSocketTransport)bayeux.getTransport("websocket")).proceedLatch.countDown();
+                    ((ConcurrentBayeuxContextJettyWebSocketTransport)bayeuxServer.getTransport("websocket")).proceedLatch.countDown();
             default -> throw new IllegalArgumentException();
         }
         Assertions.assertTrue(client1.waitFor(1000, BayeuxClient.State.CONNECTED));
@@ -321,7 +347,7 @@ public class BayeuxContextTest extends ClientServerWebSocketTest {
         String channelName = "/service/test";
         Map<String, BayeuxContext> contexts = new ConcurrentHashMap<>();
         CountDownLatch contextLatch = new CountDownLatch(2);
-        bayeux.createChannelIfAbsent(channelName).getReference().addListener(new ServerChannel.MessageListener() {
+        bayeuxServer.createChannelIfAbsent(channelName).getReference().addListener(new ServerChannel.MessageListener() {
             @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 contexts.put(from.getId(), message.getBayeuxContext());

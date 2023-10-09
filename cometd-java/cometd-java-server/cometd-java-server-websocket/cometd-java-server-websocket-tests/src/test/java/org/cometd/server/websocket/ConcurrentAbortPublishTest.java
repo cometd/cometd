@@ -54,8 +54,8 @@ public class ConcurrentAbortPublishTest extends ClientServerWebSocketTest {
     }
 
     @ParameterizedTest
-    @MethodSource("wsTypes")
-    public void testConcurrentAbortPublish(String wsType) throws Exception {
+    @MethodSource("transports")
+    public void testConcurrentAbortPublish(Transport wsType) throws Exception {
         prepareAndStart(wsType, null);
 
         BayeuxClient client = newBayeuxClient(wsType);

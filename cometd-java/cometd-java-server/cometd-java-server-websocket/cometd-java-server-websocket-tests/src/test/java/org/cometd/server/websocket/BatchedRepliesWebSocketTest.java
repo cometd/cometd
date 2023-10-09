@@ -32,8 +32,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 public class BatchedRepliesWebSocketTest extends ClientServerWebSocketTest {
     @ParameterizedTest
-    @MethodSource("wsTypes")
-    public void testBatchedReplies(String wsType) throws Exception {
+    @MethodSource("transports")
+    public void testBatchedReplies(Transport wsType) throws Exception {
         prepareAndStart(wsType, null);
 
         AtomicReference<List<Message.Mutable>> batch = new AtomicReference<>();
@@ -42,7 +42,6 @@ public class BatchedRepliesWebSocketTest extends ClientServerWebSocketTest {
             case WEBSOCKET_JAKARTA -> new WSTransport(batch, repliesLatch);
             case WEBSOCKET_JETTY -> new JettyWSTransport(batch, repliesLatch);
             case WEBSOCKET_OKHTTP -> new OkWSTransport(batch, repliesLatch);
-            default -> throw new IllegalArgumentException();
         };
 
         BayeuxClient client = new BayeuxClient(cometdURL, transport);

@@ -84,7 +84,6 @@ public class CustomResponseOnSecurityPolicyDenyTest extends AbstractBayeuxClient
             }
         });
 
-
         checkResponse(publish(), Message.RECONNECT_NONE_VALUE);
     }
 

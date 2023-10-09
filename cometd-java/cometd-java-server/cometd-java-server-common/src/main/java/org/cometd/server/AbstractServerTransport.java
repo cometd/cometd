@@ -175,7 +175,7 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     /**
      * @return the BayeuxServer object
      */
-    public BayeuxServerImpl getBayeux() {
+    public BayeuxServerImpl getBayeuxServer() {
         return _bayeux;
     }
 
@@ -214,7 +214,7 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     }
 
     public void processReply(ServerSessionImpl session, ServerMessage.Mutable reply, Promise<ServerMessage.Mutable> promise) {
-        getBayeux().extendReply(session, session, reply, promise);
+        getBayeuxServer().extendReply(session, session, reply, promise);
     }
 
     protected String toJSON(ServerMessage msg) {

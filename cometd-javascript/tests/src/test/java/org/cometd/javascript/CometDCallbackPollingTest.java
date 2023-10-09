@@ -177,7 +177,6 @@ public class CometDCallbackPollingTest extends AbstractCometDCallbackPollingTest
         Latch connectLatch = javaScript.get("connectLatch");
         Assertions.assertTrue(connectLatch.await(5000));
 
-
         evaluateScript("""
                 const subscribeLatch = new Latch(1);
                 const publishLatch = new Latch(12);

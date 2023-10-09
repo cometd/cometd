@@ -25,6 +25,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.Map;
 import jakarta.inject.Inject;
+
 import org.cometd.annotation.Listener;
 import org.cometd.annotation.Param;
 import org.cometd.annotation.Service;
@@ -118,7 +119,6 @@ public class ServerServiceDocs {
     }
     // end::dynamic[]
 
-
     @SuppressWarnings("InnerClassMayBeStatic")
     // tag::annotatedService[]
     @org.cometd.annotation.Service("echoService")
@@ -136,7 +136,6 @@ public class ServerServiceDocs {
         }
     }
     // end::inheritedService[]
-
 
     @SuppressWarnings("InnerClassMayBeStatic")
     // tag::annotatedConfigure[]

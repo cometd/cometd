@@ -1170,7 +1170,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
             }
         }
 
-
         /**
          * <p>A strategy that increases the wait time linearly up to a maximum.</p>
          */

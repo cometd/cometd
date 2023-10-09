@@ -88,7 +88,6 @@ public class BayeuxContextTest extends AbstractBayeuxClientServerTest {
         Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
-
     @ParameterizedTest
     @MethodSource("transports")
     public void testContextAttribute(Transport transport) throws Exception {

@@ -49,7 +49,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport {
     public void init() {
         super.init();
 
-        Context context = (Context)getOption(Context.class.getName());
+        Context context = (Context)getBayeuxServer().getOption(Context.class.getName());
         if (context == null) {
             throw new IllegalArgumentException("Missing Context");
         }
@@ -94,7 +94,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport {
 
                     modifyUpgrade(request, response);
 
-                    List<String> allowedTransports = getBayeux().getAllowedTransports();
+                    List<String> allowedTransports = getBayeuxServer().getAllowedTransports();
                     if (allowedTransports.contains(getName())) {
                         JettyWebSocketContext handshake = new JettyWebSocketContext(request);
                         Object instance = newWebSocketEndPoint(handshake);
@@ -138,10 +138,10 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport {
                     queryToMap(request), /*TODO*/null,
                     request.getConnectionMetaData().getLocalSocketAddress(), request.getConnectionMetaData().getRemoteSocketAddress(),
                     Request.getLocales(request), "HTTP/1.1", request.isSecure());
-            this.contextAttributes = new LinkedHashMap<>(request.getContext().asAttributeMap());
-            this.requestAttributes = new LinkedHashMap<>(request.asAttributeMap());
+            this.contextAttributes = Map.copyOf(request.getContext().asAttributeMap());
+            this.requestAttributes = Map.copyOf(request.asAttributeMap());
             Session session = request.getSession(false);
-            this.sessionAttributes = session == null ? Map.of() : new LinkedHashMap<>(session.asAttributeMap());
+            this.sessionAttributes = session == null ? Map.of() : Map.copyOf(session.asAttributeMap());
         }
 
         private static Map<String, List<String>> headersToMap(ServerUpgradeRequest request) {

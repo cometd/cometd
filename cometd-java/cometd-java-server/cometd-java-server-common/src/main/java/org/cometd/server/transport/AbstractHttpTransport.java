@@ -240,7 +240,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
 
     protected ServerSessionImpl findSession(Collection<ServerSessionImpl> sessions, ServerMessage.Mutable message) {
         if (Channel.META_HANDSHAKE.equals(message.getChannel())) {
-            ServerSessionImpl session = getBayeux().newServerSession();
+            ServerSessionImpl session = getBayeuxServer().newServerSession();
             session.setAllowMessageDeliveryDuringHandshake(isAllowMessageDeliveryDuringHandshake());
             return session;
         }
@@ -258,7 +258,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         }
 
         if (_trustClientSession) {
-            return (ServerSessionImpl)getBayeux().getSession(clientId);
+            return (ServerSessionImpl)getBayeuxServer().getSession(clientId);
         }
 
         return null;
@@ -440,7 +440,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
     protected String setBrowserId(TransportContext context) {
         StringBuilder builder = new StringBuilder();
         while (builder.length() < 16) {
-            builder.append(Long.toString(getBayeux().randomLong(), 36));
+            builder.append(Long.toString(getBayeuxServer().randomLong(), 36));
         }
         builder.setLength(16);
         String browserId = builder.toString();
@@ -532,7 +532,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
     }
 
     protected void handleMessage(TransportContext context, ServerMessage.Mutable message, Promise<ServerMessage.Mutable> promise) {
-        getBayeux().handle(context.session(), message, promise);
+        getBayeuxServer().handle(context.session(), message, promise);
     }
 
     protected void writePrepare(TransportContext context, Promise<Void> promise) {
@@ -591,7 +591,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
     }
 
     protected byte[] toJSONBytes(ServerMessage msg) {
-        ServerMessageImpl message = (ServerMessageImpl)(msg instanceof ServerMessageImpl ? msg : getBayeux().newMessage(msg));
+        ServerMessageImpl message = (ServerMessageImpl)(msg instanceof ServerMessageImpl ? msg : getBayeuxServer().newMessage(msg));
         byte[] bytes = message.getJSONBytes();
         if (bytes == null) {
             bytes = toJSON(message).getBytes(StandardCharsets.UTF_8);
@@ -709,7 +709,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
                 if (allowMessageDeliveryDuringHandshake(context.session()) && !messages.isEmpty()) {
                     reply.put("x-messages", messages.size());
                 }
-                getBayeux().freeze(reply);
+                getBayeuxServer().freeze(reply);
                 output.write(false, toJSONBytes(reply), promise);
                 needsComma = true;
                 ++replyIndex;
@@ -753,7 +753,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
                     needsComma = false;
                     output.write(false, COMMA, promise);
                 } else {
-                    getBayeux().freeze(reply);
+                    getBayeuxServer().freeze(reply);
                     needsComma = replyIndex < size;
                     ++replyIndex;
                     output.write(false, toJSONBytes(reply), promise);

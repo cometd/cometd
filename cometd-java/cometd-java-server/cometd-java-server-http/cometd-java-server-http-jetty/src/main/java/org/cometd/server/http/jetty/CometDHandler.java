@@ -26,9 +26,11 @@ import org.cometd.server.HttpException;
 import org.cometd.server.ServerSessionImpl;
 import org.cometd.server.transport.AbstractHttpTransport;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,6 +59,7 @@ public class CometDHandler extends Handler.Abstract {
     protected void doStart() throws Exception {
         bayeuxServer = newBayeuxServer();
         addBean(bayeuxServer);
+
         bayeuxServer.setOption(BayeuxServerImpl.TRANSPORTS_OPTION, """
                 org.cometd.server.http.jetty.JettyJSONTransport,
                 org.cometd.server.websocket.jetty.JettyWebSocketTransport
@@ -64,6 +67,11 @@ public class CometDHandler extends Handler.Abstract {
         for (Map.Entry<String, String> entry : getOptions().entrySet()) {
             bayeuxServer.setOption(entry.getKey(), entry.getValue());
         }
+
+        Context context = ContextHandler.getCurrentContext(getServer());
+        bayeuxServer.setOption(Context.class.getName(), context);
+        context.setAttribute(BayeuxServer.ATTRIBUTE, bayeuxServer);
+
         super.doStart();
     }
 
@@ -86,7 +94,6 @@ public class CometDHandler extends Handler.Abstract {
 
     @Override
     public boolean handle(Request request, Response response, Callback callback) {
-        request.getContext().setAttribute(BayeuxServer.ATTRIBUTE, bayeuxServer);
         if ("OPTIONS".equals(request.getMethod())) {
             serviceOptions(request, response, callback);
             return true;

@@ -301,7 +301,6 @@ public class AsyncFoldLeft {
         }
     }
 
-
     private static class IndexedLoop<T, R> extends AbstractLoop<T, R> {
         private final IntFunction<T> element;
         private final int size;

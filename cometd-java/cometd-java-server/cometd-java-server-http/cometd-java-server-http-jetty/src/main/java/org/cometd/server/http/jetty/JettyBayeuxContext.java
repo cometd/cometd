@@ -15,7 +15,6 @@
  */
 package org.cometd.server.http.jetty;
 
-import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.security.Principal;
 import java.util.List;
@@ -47,18 +46,12 @@ class JettyBayeuxContext implements BayeuxContext {
 
     @Override
     public SocketAddress getRemoteAddress() {
-        SocketAddress socketAddress = request.getConnectionMetaData().getRemoteSocketAddress();
-        if (socketAddress instanceof InetSocketAddress inetSocketAddress)
-            return inetSocketAddress;
-        return null;
+        return request.getConnectionMetaData().getRemoteSocketAddress();
     }
 
     @Override
     public SocketAddress getLocalAddress() {
-        SocketAddress socketAddress = request.getConnectionMetaData().getLocalSocketAddress();
-        if (socketAddress instanceof InetSocketAddress inetSocketAddress)
-            return inetSocketAddress;
-        return null;
+        return request.getConnectionMetaData().getLocalSocketAddress();
     }
 
     @Override
