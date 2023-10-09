@@ -33,6 +33,8 @@ updates:
     ignore:
       - dependency-name: "com.google.inject:guice"
         versions: [ ">=7.0.0" ]
+      - dependency-name: "org.graalvm.js:js"
+        versions: [ ">=23.0.0" ]
       - dependency-name: "org.springframework:*"
         versions: [ ">=6.0.0" ]
       - dependency-name: "org.springframework.boot:*"
@@ -44,6 +46,8 @@ updates:
     target-branch: "7.0.x"
     schedule:
       interval: "daily"
+    ignore:
+      - dependency-name: "*:*"
 
   - package-ecosystem: "github-actions"
     directory: "/"
