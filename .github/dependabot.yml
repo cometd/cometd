@@ -49,6 +49,13 @@ updates:
     ignore:
       - dependency-name: "*:*"
 
+  - package-ecosystem: "maven"
+    directory: "/"
+    open-pull-requests-limit: 50
+    target-branch: "8.0.x"
+    schedule:
+      interval: "daily"
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
