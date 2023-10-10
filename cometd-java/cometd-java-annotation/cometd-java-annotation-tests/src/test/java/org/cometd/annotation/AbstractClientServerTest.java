@@ -32,7 +32,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 public abstract class AbstractClientServerTest {
     @RegisterExtension
-    final BeforeTestExecutionCallback printMethodName = context ->
+    public final BeforeTestExecutionCallback printMethodName = context ->
             System.err.printf("Running %s.%s() %s%n", context.getRequiredTestClass().getSimpleName(), context.getRequiredTestMethod().getName(), context.getDisplayName());
     protected Server server;
     protected String cometdURL;

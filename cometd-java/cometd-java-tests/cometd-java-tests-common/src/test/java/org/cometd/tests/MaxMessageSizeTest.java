@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.ServerChannel;
@@ -86,7 +87,7 @@ public class MaxMessageSizeTest extends AbstractClientServerTest {
         BayeuxClient client = new BayeuxClient(cometdURL, newClientTransport(transport, clientOptions));
         client.handshake(message -> {
             ClientSessionChannel channel = client.getChannel(channelName);
-            channel.subscribe((c, m) -> messageLatch.countDown(), m -> bayeux.getChannel(channelName).publish(null, data, Promise.noop()));
+            channel.subscribe((c, m) -> messageLatch.countDown(), m -> bayeuxServer.getChannel(channelName).publish(null, data, Promise.noop()));
         });
 
         Assertions.assertFalse(messageLatch.await(1, TimeUnit.SECONDS));
@@ -111,7 +112,7 @@ public class MaxMessageSizeTest extends AbstractClientServerTest {
         String channelName = "/max_msg";
 
         CountDownLatch serverLatch = new CountDownLatch(1);
-        bayeux.createChannelIfAbsent(channelName).getReference().addListener(new ServerChannel.MessageListener() {
+        bayeuxServer.createChannelIfAbsent(channelName).getReference().addListener(new ServerChannel.MessageListener() {
             @Override
             public boolean onMessage(ServerSession sender, ServerChannel channel, ServerMessage.Mutable message) {
                 serverLatch.countDown();

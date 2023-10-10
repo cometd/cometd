@@ -20,6 +20,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
@@ -54,7 +55,7 @@ public class HandshakeWithExpiredSessionTest extends AbstractClientServerTest {
         metaHandshake.addListener(new ClientSessionChannel.MessageListener() {
             @Override
             public void onMessage(ClientSessionChannel channel, Message message) {
-                sessionRef1.set(bayeux.getSession(message.getClientId()));
+                sessionRef1.set(bayeuxServer.getSession(message.getClientId()));
                 handshakeLatch1.countDown();
                 metaHandshake.removeListener(this);
             }
@@ -81,7 +82,7 @@ public class HandshakeWithExpiredSessionTest extends AbstractClientServerTest {
         CountDownLatch handshakeLatch2 = new CountDownLatch(1);
         AtomicReference<ServerSession> sessionRef2 = new AtomicReference<>();
         metaHandshake.addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
-            sessionRef2.set(bayeux.getSession(message.getClientId()));
+            sessionRef2.set(bayeuxServer.getSession(message.getClientId()));
             handshakeLatch2.countDown();
         });
 

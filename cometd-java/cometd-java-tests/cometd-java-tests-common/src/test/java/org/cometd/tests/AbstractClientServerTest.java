@@ -51,6 +51,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.server.WebSocketUpgradeHandler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -63,15 +64,15 @@ public abstract class AbstractClientServerTest {
     }
 
     @RegisterExtension
-    final BeforeTestExecutionCallback printMethodName = context ->
+    public final BeforeTestExecutionCallback printMethodName = context ->
             System.err.printf("Running %s.%s() %s%n", context.getRequiredTestClass().getSimpleName(), context.getRequiredTestMethod().getName(), context.getDisplayName());
     protected final Logger logger = LoggerFactory.getLogger(getClass());
     protected Server server;
     protected ServerConnector connector;
     protected ContextHandler context;
-    protected String cometdServletPath = "/cometd";
+    protected String cometdPath = "/cometd";
     protected String cometdURL;
-    protected BayeuxServer bayeux;
+    protected BayeuxServer bayeuxServer;
     private ScheduledExecutorService scheduler;
     private HttpClient httpClient;
     private WebSocketContainer wsContainer;
@@ -82,30 +83,30 @@ public abstract class AbstractClientServerTest {
         start(transport, serverOptions(transport));
     }
 
-    public void start(Transport transport, Map<String, String> initParams) throws Exception {
-        startServer(transport, initParams);
+    public void start(Transport transport, Map<String, String> options) throws Exception {
+        startServer(transport, options);
         startClient(transport);
     }
 
-    private void startServer(Transport transport, Map<String, String> initParams) throws Exception {
+    private void startServer(Transport transport, Map<String, String> options) throws Exception {
         server = new Server();
         connector = new ServerConnector(server, 1, 1);
         server.addConnector(connector);
 
         switch (transport) {
-            case JAKARTA_HTTP, JAKARTA_WEBSOCKET, OKHTTP_WEBSOCKET -> {
+            case JAKARTA_HTTP, OKHTTP_HTTP, JAKARTA_WEBSOCKET, OKHTTP_WEBSOCKET -> {
                 ServletContextHandler servletContext = new ServletContextHandler("/");
                 context = servletContext;
                 server.setHandler(context);
                 ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);
                 cometdServletHolder.setInitParameter("timeout", "10000");
                 cometdServletHolder.setInitOrder(1);
-                if (initParams != null) {
-                    for (Map.Entry<String, String> entry : initParams.entrySet()) {
+                if (options != null) {
+                    for (Map.Entry<String, String> entry : options.entrySet()) {
                         cometdServletHolder.setInitParameter(entry.getKey(), entry.getValue());
                     }
                 }
-                servletContext.addServlet(cometdServletHolder, cometdServletPath + "/*");
+                servletContext.addServlet(cometdServletHolder, cometdPath + "/*");
                 if (transport == Transport.JAKARTA_WEBSOCKET || transport == Transport.OKHTTP_WEBSOCKET) {
                     JakartaWebSocketServletContainerInitializer.configure(servletContext, null);
                 }
@@ -114,19 +115,20 @@ public abstract class AbstractClientServerTest {
                 context = new ContextHandler("/");
                 server.setHandler(context);
                 CometDHandler cometdHandler = new CometDHandler();
-                cometdHandler.setOptions(initParams);
+                cometdHandler.setOptions(options == null ? Map.of() : options);
                 context.setHandler(cometdHandler);
                 if (transport == Transport.JETTY_WEBSOCKET) {
-                    // TODO: use WSUH?
-//                    JettyWebSocketServletContainerInitializer.configure(context, null);
+                    WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context);
+                    context.insertHandler(wsHandler);
                 }
             }
+            default -> throw new IllegalStateException();
         }
 
         server.start();
         int port = connector.getLocalPort();
-        cometdURL = "http://localhost:" + port + cometdServletPath;
-        bayeux = (BayeuxServer)context.getAttribute(BayeuxServer.ATTRIBUTE);
+        cometdURL = "http://localhost:" + port + cometdPath;
+        bayeuxServer = (BayeuxServer)context.getContext().getAttribute(BayeuxServer.ATTRIBUTE);
     }
 
     protected void startClient(Transport transport) throws Exception {
@@ -149,13 +151,14 @@ public abstract class AbstractClientServerTest {
                 // There's no lifecycle of OkHttp client.
                 okHttpClient = new OkHttpClient();
             }
+            default -> throw new IllegalStateException();
         }
     }
 
     protected Map<String, String> serverOptions(Transport transport) {
         Map<String, String> options = new HashMap<>();
         options.put(BayeuxServerImpl.TRANSPORTS_OPTION, serverTransport(transport));
-        options.put("ws.cometdURLMapping", cometdServletPath + "/*");
+        options.put("ws.cometdURLMapping", cometdPath + "/*");
         return options;
     }
 

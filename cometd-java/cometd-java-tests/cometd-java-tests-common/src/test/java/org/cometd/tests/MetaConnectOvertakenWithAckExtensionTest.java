@@ -20,6 +20,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSession;
@@ -47,7 +48,7 @@ public class MetaConnectOvertakenWithAckExtensionTest extends AbstractClientServ
         start(transport, serverOptions);
         AtomicReference<ServerMessage.Mutable> messageRef = new AtomicReference<>();
         AtomicReference<Promise<ServerMessage.Mutable>> promiseRef = new AtomicReference<>();
-        bayeux.addExtension(new BayeuxServer.Extension() {
+        bayeuxServer.addExtension(new BayeuxServer.Extension() {
             @Override
             public boolean rcvMeta(ServerSession session, ServerMessage.Mutable message) {
                 if (Channel.META_HANDSHAKE.equals(message.getChannel())) {
@@ -71,7 +72,7 @@ public class MetaConnectOvertakenWithAckExtensionTest extends AbstractClientServ
                 return true;
             }
         });
-        bayeux.addExtension(new AcknowledgedMessagesExtension());
+        bayeuxServer.addExtension(new AcknowledgedMessagesExtension());
 
         String channelName = "/overtaken";
 
@@ -111,7 +112,7 @@ public class MetaConnectOvertakenWithAckExtensionTest extends AbstractClientServ
 
         // Send a message to deliver it with the ack extension.
         // The 2nd /meta/connect reply will be delayed by the extension on server.
-        ServerChannel serverChannel = bayeux.getChannel(channelName);
+        ServerChannel serverChannel = bayeuxServer.getChannel(channelName);
         serverChannel.publish(null, "data1", Promise.noop());
 
         // Setup to hold the 3rd /meta/connect on the client, so the 4th is delayed.

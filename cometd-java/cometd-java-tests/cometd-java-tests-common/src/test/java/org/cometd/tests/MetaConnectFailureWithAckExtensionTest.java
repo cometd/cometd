@@ -18,6 +18,7 @@ package org.cometd.tests;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSession;
@@ -39,12 +40,12 @@ public class MetaConnectFailureWithAckExtensionTest extends AbstractClientServer
     @MethodSource("transports")
     public void testMetaConnectFailureWithAckExtension(Transport transport) throws Exception {
         start(transport);
-        bayeux.addExtension(new AcknowledgedMessagesExtension());
+        bayeuxServer.addExtension(new AcknowledgedMessagesExtension());
 
         String channelName = "/test";
 
         CountDownLatch serverSubscribeLatch = new CountDownLatch(1);
-        bayeux.addListener(new BayeuxServer.SubscriptionListener() {
+        bayeuxServer.addListener(new BayeuxServer.SubscriptionListener() {
             @Override
             public void subscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
                 if (channelName.equals(channel.getId())) {
@@ -55,7 +56,7 @@ public class MetaConnectFailureWithAckExtensionTest extends AbstractClientServer
 
         long delay = 1000;
         long maxNetworkDelay = 3 * delay;
-        bayeux.getChannel(Channel.META_CONNECT).addListener(new ServerChannel.MessageListener() {
+        bayeuxServer.getChannel(Channel.META_CONNECT).addListener(new ServerChannel.MessageListener() {
             private final AtomicInteger connects = new AtomicInteger();
 
             @Override
@@ -76,7 +77,7 @@ public class MetaConnectFailureWithAckExtensionTest extends AbstractClientServer
                 if (connect == 1) {
                     // Publish a message on the first connect, which will fail.
                     // The ack extension will deliver it via /meta/connect.
-                    bayeux.createChannelIfAbsent(channelName).getReference().publish(null, "data", Promise.noop());
+                    bayeuxServer.createChannelIfAbsent(channelName).getReference().publish(null, "data", Promise.noop());
                     sleep(maxNetworkDelay + delay);
                 } else if (connect == 2) {
                     // When the second connect arrives, maxNetworkDelay has elapsed.

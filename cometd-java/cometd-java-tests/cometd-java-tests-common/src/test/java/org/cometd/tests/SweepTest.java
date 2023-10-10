@@ -45,7 +45,7 @@ public class SweepTest extends AbstractClientServerTest {
         CountDownLatch suspendLatch = new CountDownLatch(1);
         CountDownLatch removeLatch = new CountDownLatch(1);
         client.handshake(r -> {
-            ServerSession session = bayeux.getSession(r.getClientId());
+            ServerSession session = bayeuxServer.getSession(r.getClientId());
             session.addListener(new ServerSession.HeartBeatListener() {
                 @Override
                 public void onSuspended(ServerSession session, ServerMessage message, long timeout) {

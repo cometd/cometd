@@ -54,7 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class OortStartupTest {
     @RegisterExtension
-    final BeforeTestExecutionCallback printMethodName = context ->
+    public final BeforeTestExecutionCallback printMethodName = context ->
             System.err.printf("Running %s.%s() %s%n", context.getRequiredTestClass().getSimpleName(), context.getRequiredTestMethod().getName(), context.getDisplayName());
     private final Map<Integer, Server> servers = new ConcurrentHashMap<>();
     private final Map<Integer, ServletContextHandler> contexts = new ConcurrentHashMap<>();

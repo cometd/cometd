@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.ServerMessage;
@@ -55,7 +56,7 @@ public class AckExtensionTest extends AbstractClientServerTest {
                 }
             }
         });
-        bayeux.addExtension(extension);
+        bayeuxServer.addExtension(extension);
 
         String channelName = "/ack_listener";
 
@@ -72,7 +73,7 @@ public class AckExtensionTest extends AbstractClientServerTest {
 
         Assertions.assertTrue(readyLatch.await(5, TimeUnit.SECONDS));
         String sessionId = client.getId();
-        ServerSession serverSession = bayeux.getSession(sessionId);
+        ServerSession serverSession = bayeuxServer.getSession(sessionId);
         Assertions.assertNotNull(serverSession);
 
         // Send a message directly to the client.
