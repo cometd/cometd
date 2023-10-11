@@ -41,7 +41,11 @@ import org.slf4j.LoggerFactory;
  * <p>The {@link BayeuxServer} instance is created and configured using the
  * given {@link #setOptions(Map) options}.</p>
  */
-public class CometDHandler extends Handler.Abstract {
+
+// TODO: can this handler be the direct child of Server?
+//  In this way we will save the ContextHandler wrapping & machinery.
+
+public class CometDHandler extends Handler.Abstract.NonBlocking {
     private static final Logger LOGGER = LoggerFactory.getLogger(CometDHandler.class);
 
     private Map<String, String> options = Map.of();

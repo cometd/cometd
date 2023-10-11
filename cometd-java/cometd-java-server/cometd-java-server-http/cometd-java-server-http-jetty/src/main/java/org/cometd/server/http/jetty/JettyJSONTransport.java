@@ -23,6 +23,8 @@ import org.cometd.server.transport.AbstractHttpTransport;
 import org.cometd.server.transport.AbstractJSONTransport;
 import org.cometd.server.transport.TransportContext;
 
+// TODO: This does not depend on Jetty, works with every HTTP implementation because it only relies on CometD classes.
+//  Hence, rename.
 public class JettyJSONTransport extends AbstractJSONTransport {
     public JettyJSONTransport(BayeuxServerImpl bayeux) {
         super(bayeux);

@@ -25,6 +25,9 @@ import org.cometd.server.transport.AbstractHttpScheduler;
 import org.cometd.server.transport.AbstractHttpTransport;
 import org.cometd.server.transport.TransportContext;
 
+// TODO: why do we need this class? For Jetty we can use only CometD classes to resume suspended requests
+//  write their output, and then eventually complete the transport callback.
+//  Should be the same for Servlets.
 public class JakartaHttpScheduler extends AbstractHttpScheduler implements AsyncListener {
     public JakartaHttpScheduler(AbstractHttpTransport transport, TransportContext context, Promise<Void> promise, ServerMessage.Mutable reply, long timeout) {
         super(transport, context, promise, reply, timeout);

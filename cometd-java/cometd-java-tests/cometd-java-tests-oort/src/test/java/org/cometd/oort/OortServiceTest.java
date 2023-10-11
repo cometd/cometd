@@ -26,8 +26,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 public class OortServiceTest extends AbstractOortObjectTest {
     @ParameterizedTest
     @MethodSource("transports")
-    public void testActionIsForwarded(String serverTransport) throws Exception {
-        prepare(serverTransport);
+    public void testActionIsForwarded(Transport transport) throws Exception {
+        prepare(transport);
 
         CountDownLatch latch1 = new CountDownLatch(1);
         Service service1 = new Service(oort1, latch1);
@@ -52,8 +52,8 @@ public class OortServiceTest extends AbstractOortObjectTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testActionIsNotForwardedForUnknownURL(String serverTransport) throws Exception {
-        prepare(serverTransport);
+    public void testActionIsNotForwardedForUnknownURL(Transport transport) throws Exception {
+        prepare(transport);
 
         Service service1 = new Service(oort1, null);
         service1.start();
@@ -65,8 +65,8 @@ public class OortServiceTest extends AbstractOortObjectTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testActionIsBroadcast(String serverTransport) throws Exception {
-        prepare(serverTransport);
+    public void testActionIsBroadcast(Transport transport) throws Exception {
+        prepare(transport);
 
         CountDownLatch latch1 = new CountDownLatch(1);
         BroadcastService service1 = new BroadcastService(oort1, latch1);
@@ -105,8 +105,8 @@ public class OortServiceTest extends AbstractOortObjectTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testActionFailsOnRuntimeException(String serverTransport) throws Exception {
-        prepare(serverTransport);
+    public void testActionFailsOnRuntimeException(Transport transport) throws Exception {
+        prepare(transport);
 
         CountDownLatch latch1 = new CountDownLatch(1);
         Service service1 = new Service(oort1, latch1) {
@@ -141,8 +141,8 @@ public class OortServiceTest extends AbstractOortObjectTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testActionFailsOnFailure(String serverTransport) throws Exception {
-        prepare(serverTransport);
+    public void testActionFailsOnFailure(Transport transport) throws Exception {
+        prepare(transport);
 
         String failure = "failure";
         CountDownLatch latch1 = new CountDownLatch(1);
@@ -178,8 +178,8 @@ public class OortServiceTest extends AbstractOortObjectTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testActionBroadcastTimeout(String serverTransport) throws Exception {
-        prepare(serverTransport);
+    public void testActionBroadcastTimeout(Transport transport) throws Exception {
+        prepare(transport);
 
         long timeout = 1000;
         CountDownLatch latch1 = new CountDownLatch(1);
@@ -219,8 +219,8 @@ public class OortServiceTest extends AbstractOortObjectTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testActionForwardTimeout(String serverTransport) throws Exception {
-        prepare(serverTransport);
+    public void testActionForwardTimeout(Transport transport) throws Exception {
+        prepare(transport);
 
         long timeout = 1000;
         CountDownLatch latch1 = new CountDownLatch(1);

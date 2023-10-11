@@ -28,8 +28,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 public class OortLongMapTest extends AbstractOortObjectTest {
     @ParameterizedTest
     @MethodSource("transports")
-    public void testShare(String serverTransport) throws Exception {
-        prepare(serverTransport);
+    public void testShare(Transport transport) throws Exception {
+        prepare(transport);
 
         String name = "test";
         OortObject.Factory<ConcurrentMap<Long, Object>> factory = OortObjectFactories.forConcurrentMap();
@@ -86,8 +86,8 @@ public class OortLongMapTest extends AbstractOortObjectTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testHowToDealWitMutableValues(String serverTransport) throws Exception {
-        prepare(serverTransport);
+    public void testHowToDealWitMutableValues(Transport transport) throws Exception {
+        prepare(transport);
 
         // We are using a Map as mutable value because it serializes easily in JSON.
         // Any other mutable data structure would require a serializer/deserializer.

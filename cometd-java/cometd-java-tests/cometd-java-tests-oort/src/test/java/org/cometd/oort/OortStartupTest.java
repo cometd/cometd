@@ -52,6 +52,11 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+// TODO: this only works for Jakarta.
+//  To make it work with Jetty we would need a OortBean which is added as a bean to CometDHandler
+//  so that when it starts it configured an Oort instance.
+//  Can we just add the Oort?
+// TODO: split the oort module in 3: common, jakarta, jetty
 public class OortStartupTest {
     @RegisterExtension
     public final BeforeTestExecutionCallback printMethodName = context ->

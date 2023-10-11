@@ -54,8 +54,8 @@ public class JMXTest {
         String value = BayeuxServerImpl.ATTRIBUTE + "," + Oort.OORT_ATTRIBUTE + "," + Seti.SETI_ATTRIBUTE;
         context.setInitParameter(ServletContextHandler.MANAGED_ATTRIBUTES, value);
 
-        String cometdServletPath = "/cometd";
-        String cometdURLMapping = cometdServletPath + "/*";
+        String cometdPath = "/cometd";
+        String cometdURLMapping = cometdPath + "/*";
         ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);
         cometdServletHolder.setInitParameter("timeout", "10000");
         cometdServletHolder.setInitParameter("ws.cometdURLMapping", cometdURLMapping);
@@ -63,7 +63,7 @@ public class JMXTest {
         context.addServlet(cometdServletHolder, cometdURLMapping);
 
         ServletHolder oortServletHolder = new ServletHolder(OortStaticConfigServlet.class);
-        oortServletHolder.setInitParameter(OortConfigServlet.OORT_URL_PARAM, "http://localhost" + cometdServletPath);
+        oortServletHolder.setInitParameter(OortConfigServlet.OORT_URL_PARAM, "http://localhost" + cometdPath);
         oortServletHolder.setInitOrder(2);
         context.addServlet(oortServletHolder, "/oort");
 

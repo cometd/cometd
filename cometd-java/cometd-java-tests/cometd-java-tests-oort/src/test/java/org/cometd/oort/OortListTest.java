@@ -30,8 +30,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 public class OortListTest extends AbstractOortObjectTest {
     @ParameterizedTest
     @MethodSource("transports")
-    public void testElementAdded(String serverTransport) throws Exception {
-        prepare(serverTransport);
+    public void testElementAdded(Transport transport) throws Exception {
+        prepare(transport);
 
         String name = "test";
         OortObject.Factory<List<Long>> factory = OortObjectFactories.forConcurrentList();
@@ -58,8 +58,8 @@ public class OortListTest extends AbstractOortObjectTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testElementRemoved(String serverTransport) throws Exception {
-        prepare(serverTransport);
+    public void testElementRemoved(Transport transport) throws Exception {
+        prepare(transport);
 
         String name = "test";
         OortObject.Factory<List<Long>> factory = OortObjectFactories.forConcurrentList();
@@ -100,8 +100,8 @@ public class OortListTest extends AbstractOortObjectTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testDeltaListener(String serverTransport) throws Exception {
-        prepare(serverTransport);
+    public void testDeltaListener(Transport transport) throws Exception {
+        prepare(transport);
 
         String name = "test";
         OortObject.Factory<List<String>> factory = OortObjectFactories.forConcurrentList();
@@ -171,8 +171,8 @@ public class OortListTest extends AbstractOortObjectTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testContains(String serverTransport) throws Exception {
-        prepare(serverTransport);
+    public void testContains(Transport transport) throws Exception {
+        prepare(transport);
 
         String name = "test";
         OortObject.Factory<List<String>> factory = OortObjectFactories.forConcurrentList();
@@ -225,8 +225,8 @@ public class OortListTest extends AbstractOortObjectTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testConcurrent(String serverTransport) throws Exception {
-        prepare(serverTransport);
+    public void testConcurrent(Transport transport) throws Exception {
+        prepare(transport);
 
         String name = "concurrent";
         OortObject.Factory<List<String>> factory = OortObjectFactories.forConcurrentList();

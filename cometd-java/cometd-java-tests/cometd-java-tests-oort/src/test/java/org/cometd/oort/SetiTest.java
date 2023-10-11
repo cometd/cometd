@@ -54,7 +54,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public class SetiTest extends OortTest {
+public class SetiTest extends AbstractOortTest {
     private final List<Seti> setis = new ArrayList<>();
 
     protected Seti startSeti(Oort oort) throws Exception {
@@ -77,10 +77,10 @@ public class SetiTest extends OortTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testAssociateAndSendMessage(String serverTransport) throws Exception {
-        Server server1 = startServer(serverTransport, 0);
+    public void testAssociateAndSendMessage(Transport transport) throws Exception {
+        Server server1 = startServer(transport, 0);
         Oort oort1 = startOort(server1);
-        Server server2 = startServer(serverTransport, 0);
+        Server server2 = startServer(transport, 0);
         Oort oort2 = startOort(server2);
 
         CountDownLatch latch = new CountDownLatch(1);
@@ -139,10 +139,10 @@ public class SetiTest extends OortTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testAssociateWithAllChannelsSubscription(String serverTransport) throws Exception {
-        Server server1 = startServer(serverTransport, 0);
+    public void testAssociateWithAllChannelsSubscription(Transport transport) throws Exception {
+        Server server1 = startServer(transport, 0);
         Oort oort1 = startOort(server1);
-        Server server2 = startServer(serverTransport, 0);
+        Server server2 = startServer(transport, 0);
         Oort oort2 = startOort(server2);
 
         CountDownLatch latch = new CountDownLatch(1);
@@ -212,10 +212,10 @@ public class SetiTest extends OortTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testDisassociate(String serverTransport) throws Exception {
-        Server server1 = startServer(serverTransport, 0);
+    public void testDisassociate(Transport transport) throws Exception {
+        Server server1 = startServer(transport, 0);
         Oort oort1 = startOort(server1);
-        Server server2 = startServer(serverTransport, 0);
+        Server server2 = startServer(transport, 0);
         Oort oort2 = startOort(server2);
 
         CountDownLatch latch = new CountDownLatch(1);
@@ -275,10 +275,10 @@ public class SetiTest extends OortTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testAutomaticDisassociation(String serverTransport) throws Exception {
-        Server server1 = startServer(serverTransport, 0);
+    public void testAutomaticDisassociation(Transport transport) throws Exception {
+        Server server1 = startServer(transport, 0);
         Oort oort1 = startOort(server1);
-        Server server2 = startServer(serverTransport, 0);
+        Server server2 = startServer(transport, 0);
         Oort oort2 = startOort(server2);
 
         CountDownLatch latch = new CountDownLatch(1);
@@ -347,12 +347,12 @@ public class SetiTest extends OortTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testAssociationWithMultipleSessions(String serverTransport) throws Exception {
-        Server server1 = startServer(serverTransport, 0);
+    public void testAssociationWithMultipleSessions(Transport transport) throws Exception {
+        Server server1 = startServer(transport, 0);
         Oort oort1 = startOort(server1);
-        Server server2 = startServer(serverTransport, 0);
+        Server server2 = startServer(transport, 0);
         Oort oort2 = startOort(server2);
-        Server server3 = startServer(serverTransport, 0);
+        Server server3 = startServer(transport, 0);
         Oort oort3 = startOort(server3);
 
         CountDownLatch latch = new CountDownLatch(6);
@@ -488,10 +488,10 @@ public class SetiTest extends OortTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testIsPresent(String serverTransport) throws Exception {
-        Server server1 = startServer(serverTransport, 0);
+    public void testIsPresent(Transport transport) throws Exception {
+        Server server1 = startServer(transport, 0);
         Oort oort1 = startOort(server1);
-        Server server2 = startServer(serverTransport, 0);
+        Server server2 = startServer(transport, 0);
         Oort oort2 = startOort(server2);
 
         CountDownLatch latch = new CountDownLatch(1);
@@ -560,8 +560,8 @@ public class SetiTest extends OortTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testIsPresentWhenNodeJoins(String serverTransport) throws Exception {
-        Server server1 = startServer(serverTransport, 0);
+    public void testIsPresentWhenNodeJoins(Transport transport) throws Exception {
+        Server server1 = startServer(transport, 0);
         Oort oort1 = startOort(server1);
         Seti seti1 = startSeti(oort1);
         new SetiService(seti1);
@@ -579,7 +579,7 @@ public class SetiTest extends OortTest {
 
         // Now user1 is associated on node1, start node2
 
-        Server server2 = startServer(serverTransport, 0);
+        Server server2 = startServer(transport, 0);
         Oort oort2 = startOort(server2);
 
         CountDownLatch latch = new CountDownLatch(1);
@@ -611,10 +611,10 @@ public class SetiTest extends OortTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testPresenceFiresEventLocally(String serverTransport) throws Exception {
-        Server server1 = startServer(serverTransport, 0);
+    public void testPresenceFiresEventLocally(Transport transport) throws Exception {
+        Server server1 = startServer(transport, 0);
         Oort oort1 = startOort(server1);
-        Server server2 = startServer(serverTransport, 0);
+        Server server2 = startServer(transport, 0);
         Oort oort2 = startOort(server2);
 
         CountDownLatch latch = new CountDownLatch(1);
@@ -704,10 +704,10 @@ public class SetiTest extends OortTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testStopRemovesAssociationsAndPresences(String serverTransport) throws Exception {
-        Server server1 = startServer(serverTransport, 0);
+    public void testStopRemovesAssociationsAndPresences(Transport transport) throws Exception {
+        Server server1 = startServer(transport, 0);
         Oort oort1 = startOort(server1);
-        Server server2 = startServer(serverTransport, 0);
+        Server server2 = startServer(transport, 0);
         Oort oort2 = startOort(server2);
 
         CountDownLatch latch = new CountDownLatch(1);
@@ -773,10 +773,10 @@ public class SetiTest extends OortTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testNetworkDisconnectAndReconnect(String serverTransport) throws Exception {
-        Server server1 = startServer(serverTransport, 0);
+    public void testNetworkDisconnectAndReconnect(Transport transport) throws Exception {
+        Server server1 = startServer(transport, 0);
         Oort oort1 = startOort(server1);
-        Server server2 = startServer(serverTransport, 0);
+        Server server2 = startServer(transport, 0);
         Oort oort2 = startOort(server2);
 
         CountDownLatch latch = new CountDownLatch(1);
@@ -875,10 +875,10 @@ public class SetiTest extends OortTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testMultipleServerCrashes(String serverTransport) throws Exception {
-        Server server1 = startServer(serverTransport, 0);
+    public void testMultipleServerCrashes(Transport transport) throws Exception {
+        Server server1 = startServer(transport, 0);
         Oort oort1 = startOort(server1);
-        Server server2 = startServer(serverTransport, 0);
+        Server server2 = startServer(transport, 0);
         Oort oort2 = startOort(server2);
 
         CountDownLatch oortLatch = new CountDownLatch(1);
@@ -936,7 +936,7 @@ public class SetiTest extends OortTest {
             Assertions.assertTrue(loginLatch2.await(5, TimeUnit.SECONDS));
 
             // Bring node1 back online
-            server1 = startServer(serverTransport, port1);
+            server1 = startServer(transport, port1);
             oort1 = startOort(server1);
             oortLatch = new CountDownLatch(1);
             oort2.addCometListener(new CometJoinedListener(oortLatch));
@@ -977,7 +977,7 @@ public class SetiTest extends OortTest {
             Assertions.assertTrue(loginLatch3.await(5, TimeUnit.SECONDS));
 
             // Bring node2 back online
-            server2 = startServer(serverTransport, port2);
+            server2 = startServer(transport, port2);
             oort2 = startOort(server2);
             oortLatch = new CountDownLatch(1);
             oort1.addCometListener(new CometJoinedListener(oortLatch));
@@ -1000,20 +1000,20 @@ public class SetiTest extends OortTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testMessageToObservedChannelIsForwarded(String serverTransport) throws Exception {
-        testForwardBehaviour(serverTransport, true);
+    public void testMessageToObservedChannelIsForwarded(Transport transport) throws Exception {
+        testForwardBehaviour(transport, true);
     }
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testMessageToNonObservedChannelIsNotForwarded(String serverTransport) throws Exception {
-        testForwardBehaviour(serverTransport, false);
+    public void testMessageToNonObservedChannelIsNotForwarded(Transport transport) throws Exception {
+        testForwardBehaviour(transport, false);
     }
 
-    private void testForwardBehaviour(String serverTransport, boolean forward) throws Exception {
-        Server server1 = startServer(serverTransport, 0);
+    private void testForwardBehaviour(Transport transport, boolean forward) throws Exception {
+        Server server1 = startServer(transport, 0);
         Oort oort1 = startOort(server1);
-        Server server2 = startServer(serverTransport, 0);
+        Server server2 = startServer(transport, 0);
         Oort oort2 = startOort(server2);
 
         CountDownLatch latch = new CountDownLatch(1);
@@ -1101,10 +1101,10 @@ public class SetiTest extends OortTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testConcurrent(String serverTransport) throws Exception {
-        Server server1 = startServer(serverTransport, 0);
+    public void testConcurrent(Transport transport) throws Exception {
+        Server server1 = startServer(transport, 0);
         Oort oort1 = startOort(server1);
-        Server server2 = startServer(serverTransport, 0);
+        Server server2 = startServer(transport, 0);
         Oort oort2 = startOort(server2);
 
         CountDownLatch latch = new CountDownLatch(1);
@@ -1176,8 +1176,8 @@ public class SetiTest extends OortTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testDisassociationRemovesListeners(String serverTransport) throws Exception {
-        Server server1 = startServer(serverTransport, 0);
+    public void testDisassociationRemovesListeners(Transport transport) throws Exception {
+        Server server1 = startServer(transport, 0);
         Oort oort1 = startOort(server1);
 
         Seti seti1 = startSeti(oort1);
@@ -1195,8 +1195,8 @@ public class SetiTest extends OortTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testDisassociateAllSessions(String serverTransport) throws Exception {
-        Server server1 = startServer(serverTransport, 0);
+    public void testDisassociateAllSessions(Transport transport) throws Exception {
+        Server server1 = startServer(transport, 0);
         Oort oort1 = startOort(server1);
 
         Seti seti1 = startSeti(oort1);
@@ -1246,18 +1246,18 @@ public class SetiTest extends OortTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testShortHalfNetworkDisconnectionBetweenNodes(String serverTransport) throws Exception {
+    public void testShortHalfNetworkDisconnectionBetweenNodes(Transport transport) throws Exception {
         String loggerName = "org.cometd";
         Configurator.setLevel(loggerName, Level.DEBUG);
         try {
             Map<String, String> options = new HashMap<>();
             long timeout = 2000;
             options.put(AbstractServerTransport.TIMEOUT_OPTION, String.valueOf(timeout));
-            Server server1 = startServer(serverTransport, 0, options);
+            Server server1 = startServer(transport, 0, options);
             BayeuxServerImpl bayeuxServer1 = (BayeuxServerImpl)server1.getAttribute(BayeuxServer.ATTRIBUTE);
             bayeuxServer1.setDetailedDump(true);
             Oort oort1 = startOort(server1);
-            Server server2 = startServer(serverTransport, 0, options);
+            Server server2 = startServer(transport, 0, options);
             String url2 = (String)server2.getAttribute(OortConfigServlet.OORT_URL_PARAM);
             BayeuxServerImpl bayeuxServer2 = (BayeuxServerImpl)server2.getAttribute(BayeuxServer.ATTRIBUTE);
             bayeuxServer2.setDetailedDump(true);
@@ -1393,7 +1393,7 @@ public class SetiTest extends OortTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testLongHalfNetworkDisconnectionBetweenNodes(String serverTransport) throws Exception {
+    public void testLongHalfNetworkDisconnectionBetweenNodes(Transport transport) throws Exception {
         String loggerName = "org.cometd";
         Configurator.setLevel(loggerName, Level.DEBUG);
         try {
@@ -1404,7 +1404,7 @@ public class SetiTest extends OortTest {
             options.put(AbstractServerTransport.TIMEOUT_OPTION, String.valueOf(timeout));
             long maxInterval = timeout + maxNetworkDelay + 1000;
             options.put(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(maxInterval));
-            Server server1 = startServer(serverTransport, 0, options);
+            Server server1 = startServer(transport, 0, options);
             String url1 = (String)server1.getAttribute(OortConfigServlet.OORT_URL_PARAM);
             BayeuxServerImpl bayeuxServer1 = (BayeuxServerImpl)server1.getAttribute(BayeuxServer.ATTRIBUTE);
             bayeuxServer1.setOption(Server.class.getName(), server1);
@@ -1438,7 +1438,7 @@ public class SetiTest extends OortTest {
             bayeuxServer1.addExtension(new HalfNetworkDownExtension(oort1, networkDown21));
             oort1.start();
             oorts.add(oort1);
-            Server server2 = startServer(serverTransport, 0, options);
+            Server server2 = startServer(transport, 0, options);
             String url2 = (String)server2.getAttribute(OortConfigServlet.OORT_URL_PARAM);
             BayeuxServerImpl bayeuxServer2 = (BayeuxServerImpl)server2.getAttribute(BayeuxServer.ATTRIBUTE);
             bayeuxServer2.setOption(Server.class.getName(), server2);
@@ -1628,8 +1628,8 @@ public class SetiTest extends OortTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testProtectedSetiChannels(String serverTransport) throws Exception {
-        Server server = startServer(serverTransport, 0);
+    public void testProtectedSetiChannels(Transport transport) throws Exception {
+        Server server = startServer(transport, 0);
         Oort oort = startOort(server);
         Seti seti = startSeti(oort);
 

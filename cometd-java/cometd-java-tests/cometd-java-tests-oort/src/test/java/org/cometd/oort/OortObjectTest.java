@@ -40,8 +40,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 public class OortObjectTest extends AbstractOortObjectTest {
     @ParameterizedTest
     @MethodSource("transports")
-    public void testShareObject(String serverTransport) throws Exception {
-        prepare(serverTransport);
+    public void testShareObject(Transport transport) throws Exception {
+        prepare(transport);
 
         String name = "test";
         OortObject.Factory<Map<String, Object>> factory = OortObjectFactories.forMap();
@@ -98,8 +98,8 @@ public class OortObjectTest extends AbstractOortObjectTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testShareObjectWithAllChannelsSubscription(String serverTransport) throws Exception {
-        prepare(serverTransport);
+    public void testShareObjectWithAllChannelsSubscription(Transport transport) throws Exception {
+        prepare(transport);
 
         String name = "test";
         OortObject.Factory<Map<String, Object>> factory = OortObjectFactories.forMap();
@@ -142,8 +142,8 @@ public class OortObjectTest extends AbstractOortObjectTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testLocalObjectIsPushedWhenNodeJoins(String serverTransport) throws Exception {
-        prepare(serverTransport);
+    public void testLocalObjectIsPushedWhenNodeJoins(Transport transport) throws Exception {
+        prepare(transport);
 
         String name = "test";
         OortObject.Factory<Map<String, Object>> factory = OortObjectFactories.forMap();
@@ -167,7 +167,7 @@ public class OortObjectTest extends AbstractOortObjectTest {
         Thread.sleep(1000);
 
         // Connect node3
-        Server server3 = startServer(serverTransport, 0);
+        Server server3 = startServer(transport, 0);
         Oort oort3 = startOort(server3);
         OortComet oortComet31 = oort3.observeComet(oort1.getURL());
         Assertions.assertTrue(oortComet31.waitFor(5000, BayeuxClient.State.CONNECTED));
@@ -217,8 +217,8 @@ public class OortObjectTest extends AbstractOortObjectTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testLocalObjectIsRemovedWhenNodeLeaves(String serverTransport) throws Exception {
-        prepare(serverTransport);
+    public void testLocalObjectIsRemovedWhenNodeLeaves(Transport transport) throws Exception {
+        prepare(transport);
 
         String name = "test";
         OortObject.Factory<Map<String, Object>> factory = OortObjectFactories.forMap();
@@ -252,8 +252,8 @@ public class OortObjectTest extends AbstractOortObjectTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testIterationOverInfos(String serverTransport) throws Exception {
-        prepare(serverTransport);
+    public void testIterationOverInfos(Transport transport) throws Exception {
+        prepare(transport);
 
         String name = "test";
         OortObject.Factory<Map<String, Object>> factory = OortObjectFactories.forMap();
@@ -293,8 +293,8 @@ public class OortObjectTest extends AbstractOortObjectTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testNonCompositeObject(String serverTransport) throws Exception {
-        prepare(serverTransport);
+    public void testNonCompositeObject(Transport transport) throws Exception {
+        prepare(transport);
 
         String name = "test";
         OortObject.Factory<Long> factory = OortObjectFactories.forLong(0);
@@ -334,8 +334,8 @@ public class OortObjectTest extends AbstractOortObjectTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testStaleUpdateIsDiscarded(String serverTransport) throws Exception {
-        prepare(serverTransport);
+    public void testStaleUpdateIsDiscarded(Transport transport) throws Exception {
+        prepare(transport);
 
         String name = "test";
         OortObject.Factory<Long> factory = OortObjectFactories.forLong(0);
@@ -399,8 +399,8 @@ public class OortObjectTest extends AbstractOortObjectTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testConcurrent(String serverTransport) throws Exception {
-        prepare(serverTransport);
+    public void testConcurrent(Transport transport) throws Exception {
+        prepare(transport);
 
         String name = "concurrent";
         OortObject.Factory<String> factory = OortObjectFactories.forString("");
@@ -470,8 +470,8 @@ public class OortObjectTest extends AbstractOortObjectTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testApplicationLocking(String serverTransport) throws Exception {
-        prepare(serverTransport);
+    public void testApplicationLocking(Transport transport) throws Exception {
+        prepare(transport);
 
         String name = "locking";
         OortObject.Factory<String> factory = OortObjectFactories.forString("initial");
@@ -526,13 +526,13 @@ public class OortObjectTest extends AbstractOortObjectTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testNodeCrashWhileOtherNodeStarts(String serverTransport) throws Exception {
-        prepare(serverTransport);
+    public void testNodeCrashWhileOtherNodeStarts(Transport transport) throws Exception {
+        prepare(transport);
 
         String name = "crash";
         OortObject.Factory<String> factory = OortObjectFactories.forString("");
 
-        Server server1 = startServer(serverTransport, 0);
+        Server server1 = startServer(transport, 0);
         ServerConnector connector1 = (ServerConnector)server1.getConnectors()[0];
         int port1 = connector1.getLocalPort();
         oort1 = startOort(server1);
@@ -543,7 +543,7 @@ public class OortObjectTest extends AbstractOortObjectTest {
         result1.get(5, TimeUnit.SECONDS);
 
         // Simulate that node2 is starting but not yet ready to accept connections.
-        Server server2 = startServer(serverTransport, 0);
+        Server server2 = startServer(transport, 0);
         ServerConnector connector2 = (ServerConnector)server2.getConnectors()[0];
         int port2 = connector2.getLocalPort();
         connector2.stop();
@@ -580,7 +580,7 @@ public class OortObjectTest extends AbstractOortObjectTest {
         Assertions.assertNull(info);
 
         // Restart node1.
-        server1 = startServer(serverTransport, port1);
+        server1 = startServer(transport, port1);
         connector1 = (ServerConnector)server1.getConnectors()[0];
         connector1.stop();
         oort1 = startOort(server1);

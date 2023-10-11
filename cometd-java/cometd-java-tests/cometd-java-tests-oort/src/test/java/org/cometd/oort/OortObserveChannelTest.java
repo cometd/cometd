@@ -32,15 +32,15 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public class OortObserveChannelTest extends OortTest {
+public class OortObserveChannelTest extends AbstractOortTest {
     @ParameterizedTest
     @MethodSource("transports")
-    public void testObserveChannel(String serverTransport) throws Exception {
-        Server server1 = startServer(serverTransport, 0);
+    public void testObserveChannel(Transport transport) throws Exception {
+        Server server1 = startServer(transport, 0);
         Oort oort1 = startOort(server1);
-        Server server2 = startServer(serverTransport, 0);
+        Server server2 = startServer(transport, 0);
         Oort oort2 = startOort(server2);
-        Server server3 = startServer(serverTransport, 0);
+        Server server3 = startServer(transport, 0);
         Oort oort3 = startOort(server3);
 
         CountDownLatch latch = new CountDownLatch(6);
@@ -104,10 +104,10 @@ public class OortObserveChannelTest extends OortTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testObserveWildChannel(String serverTransport) throws Exception {
-        Server server1 = startServer(serverTransport, 0);
+    public void testObserveWildChannel(Transport transport) throws Exception {
+        Server server1 = startServer(transport, 0);
         Oort oort1 = startOort(server1);
-        Server server2 = startServer(serverTransport, 0);
+        Server server2 = startServer(transport, 0);
         Oort oort2 = startOort(server2);
 
         CountDownLatch latch = new CountDownLatch(2);
@@ -152,10 +152,10 @@ public class OortObserveChannelTest extends OortTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testDeobserve(String serverTransport) throws Exception {
-        Server server1 = startServer(serverTransport, 0);
+    public void testDeobserve(Transport transport) throws Exception {
+        Server server1 = startServer(transport, 0);
         Oort oort1 = startOort(server1);
-        Server server2 = startServer(serverTransport, 0);
+        Server server2 = startServer(transport, 0);
         Oort oort2 = startOort(server2);
 
         CountDownLatch latch = new CountDownLatch(2);
@@ -205,14 +205,14 @@ public class OortObserveChannelTest extends OortTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testBinaryMessageOnObservedChannel(String serverTransport) throws Exception {
-        Server server1 = startServer(serverTransport, 0);
+    public void testBinaryMessageOnObservedChannel(Transport transport) throws Exception {
+        Server server1 = startServer(transport, 0);
         BayeuxServer bayeux1 = (BayeuxServer)server1.getAttribute(BayeuxServer.ATTRIBUTE);
         bayeux1.addExtension(new BinaryExtension());
         Oort oort1 = startOort(server1);
         oort1.getOortSession().addExtension(new org.cometd.client.ext.BinaryExtension());
         oort1.setBinaryExtensionEnabled(true);
-        Server server2 = startServer(serverTransport, 0);
+        Server server2 = startServer(transport, 0);
         BayeuxServer bayeux2 = (BayeuxServer)server2.getAttribute(BayeuxServer.ATTRIBUTE);
         bayeux2.addExtension(new BinaryExtension());
         Oort oort2 = startOort(server2);

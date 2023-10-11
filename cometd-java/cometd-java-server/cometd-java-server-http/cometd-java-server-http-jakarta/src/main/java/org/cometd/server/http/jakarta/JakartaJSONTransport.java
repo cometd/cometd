@@ -36,6 +36,7 @@ public class JakartaJSONTransport extends AbstractJSONTransport {
         super.handle(bayeuxContext, request, response, new Promise.Wrapper<>(promise) {
             @Override
             public void fail(Throwable failure) {
+                // TODO: line below is duplicated in CometDServlet, remove.
                 request.setAttribute(RequestDispatcher.ERROR_EXCEPTION, failure);
                 super.fail(failure);
             }

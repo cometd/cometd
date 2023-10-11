@@ -32,7 +32,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public class OortMulticastConfigurerTest extends OortTest {
+public class OortMulticastConfigurerTest extends AbstractOortTest {
     private final List<OortMulticastConfigurer> configurers = new ArrayList<>();
 
     @BeforeEach
@@ -81,13 +81,13 @@ public class OortMulticastConfigurerTest extends OortTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testTwoComets(String serverTransport) throws Exception {
-        Server server1 = startServer(serverTransport, 0);
+    public void testTwoComets(Transport transport) throws Exception {
+        Server server1 = startServer(transport, 0);
         int groupPort = ((NetworkConnector)server1.getConnectors()[0]).getLocalPort();
         Oort oort1 = startOort(server1);
         startConfigurer(oort1, groupPort);
 
-        Server server2 = startServer(serverTransport, 0);
+        Server server2 = startServer(transport, 0);
         Oort oort2 = startOort(server2);
         startConfigurer(oort2, groupPort);
 
@@ -100,13 +100,13 @@ public class OortMulticastConfigurerTest extends OortTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testThreeComets(String serverTransport) throws Exception {
-        Server server1 = startServer(serverTransport, 0);
+    public void testThreeComets(Transport transport) throws Exception {
+        Server server1 = startServer(transport, 0);
         int groupPort = ((NetworkConnector)server1.getConnectors()[0]).getLocalPort();
         Oort oort1 = startOort(server1);
         startConfigurer(oort1, groupPort);
 
-        Server server2 = startServer(serverTransport, 0);
+        Server server2 = startServer(transport, 0);
         Oort oort2 = startOort(server2);
         OortMulticastConfigurer configurer2 = startConfigurer(oort2, groupPort);
 
@@ -117,7 +117,7 @@ public class OortMulticastConfigurerTest extends OortTest {
         Assertions.assertEquals(1, oort2.getKnownComets().size());
 
         // Create another comet
-        Server server3 = startServer(serverTransport, 0);
+        Server server3 = startServer(transport, 0);
         Oort oort3 = startOort(server3);
         startConfigurer(oort3, groupPort);
 
@@ -143,10 +143,10 @@ public class OortMulticastConfigurerTest extends OortTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testTwoCometsOneWithWrongURL(String serverTransport) throws Exception {
+    public void testTwoCometsOneWithWrongURL(Transport transport) throws Exception {
         long connectTimeout = 2000;
 
-        Server serverA = startServer(serverTransport, 0);
+        Server serverA = startServer(transport, 0);
         int groupPort = ((NetworkConnector)serverA.getConnectors()[0]).getLocalPort();
         Oort oortA = startOort(serverA);
         OortMulticastConfigurer configurerA = new OortMulticastConfigurer(oortA);
@@ -155,7 +155,7 @@ public class OortMulticastConfigurerTest extends OortTest {
         configurers.add(configurerA);
         configurerA.start();
 
-        Server serverB = startServer(serverTransport, 0);
+        Server serverB = startServer(transport, 0);
         String wrongURL = "http://localhost:4/cometd";
         BayeuxServer bayeuxServerB = (BayeuxServer)serverB.getAttribute(BayeuxServer.ATTRIBUTE);
         Oort oortB = new Oort(bayeuxServerB, wrongURL);
