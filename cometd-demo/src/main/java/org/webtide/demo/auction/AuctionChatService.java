@@ -22,6 +22,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import jakarta.servlet.ServletContext;
+
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerChannel;
@@ -29,7 +30,6 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.oort.Oort;
 import org.cometd.oort.Seti;
-import org.cometd.oort.SetiServlet;
 import org.cometd.server.AbstractService;
 import org.cometd.server.authorizer.GrantAuthorizer;
 import org.slf4j.Logger;
@@ -49,12 +49,12 @@ public class AuctionChatService extends AbstractService {
         _oort = (Oort)context.getAttribute(Oort.OORT_ATTRIBUTE);
         if (_oort == null) {
             throw new RuntimeException("Missing " + Oort.OORT_ATTRIBUTE + " from " + ServletContext.class.getSimpleName() + "; " +
-                    "is an Oort servlet declared in web.xml ?");
+                    "is an Oort Servlet declared in web.xml?");
         }
         _seti = (Seti)context.getAttribute(Seti.SETI_ATTRIBUTE);
         if (_seti == null) {
             throw new RuntimeException("Missing " + Seti.SETI_ATTRIBUTE + " from " + ServletContext.class.getSimpleName() + "; " +
-                    "is " + SetiServlet.class.getSimpleName() + " declared in web.xml ?");
+                                       "is a Seti Servlet declared in web.xml?");
         }
 
         getBayeux().createChannelIfAbsent("/auction/chat/**", channel -> channel.addAuthorizer(GrantAuthorizer.GRANT_ALL));

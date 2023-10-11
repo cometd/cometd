@@ -80,7 +80,7 @@
     </dependency>
     <dependency>
       <groupId>org.cometd.java</groupId>
-      <artifactId>cometd-java-oort</artifactId>
+      <artifactId>cometd-java-oort-common</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>

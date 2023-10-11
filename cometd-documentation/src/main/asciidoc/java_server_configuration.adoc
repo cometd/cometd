@@ -255,7 +255,7 @@ Furthermore, a cross-domain deployment may require a more advanced configuration
 [[_java_server_configuration_advanced_cross_origin_filter]]
 ====== Configuring the `CrossOriginFilter`
 
-Independently of the Servlet Container you are using, Jetty provides a standard, portable, `org.eclipse.jetty.servlets.CrossOriginFilter`.
+Independently of the Servlet Container you are using, Jetty provides a standard, portable, `org.eclipse.jetty.ee10.servlets.CrossOriginFilter`.
 This filter implements the https://www.w3.org/TR/access-control/[Cross-Origin Resource Sharing] specification, and allows recent browsers that implement it to perform cross-domain JavaScript requests (see also xref:_javascript_transports[the JavaScript transports section]).
 
 Here is an example of `web.xml` configuration for the `CrossOriginFilter`:
@@ -285,7 +285,7 @@ Here is an example of `web.xml` configuration for the `CrossOriginFilter`:
 
   <filter>
     <filter-name>cross-origin</filter-name>
-    <filter-class>org.eclipse.jetty.servlets.CrossOriginFilter</filter-class>
+    <filter-class>org.eclipse.jetty.ee10.servlets.CrossOriginFilter</filter-class>
     <async-supported>true</async-supported>
   </filter>
   <filter-mapping>
@@ -347,7 +347,7 @@ For example:
 
   <filter>
     <filter-name>cross-origin</filter-name>
-    <filter-class>org.eclipse.jetty.servlets.CrossOriginFilter</filter-class>
+    <filter-class>org.eclipse.jetty.ee10.servlets.CrossOriginFilter</filter-class>
     <async-supported>true</async-supported> <2>
   </filter>
   <filter-mapping>

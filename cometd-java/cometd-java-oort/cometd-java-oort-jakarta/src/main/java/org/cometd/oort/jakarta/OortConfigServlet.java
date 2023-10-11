@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.cometd.oort;
+package org.cometd.oort.jakarta;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,10 +23,13 @@ import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.UnavailableException;
 import jakarta.servlet.http.HttpServlet;
+
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.common.JSONContext;
+import org.cometd.oort.Oort;
+import org.cometd.oort.OortComet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -221,7 +224,7 @@ public abstract class OortConfigServlet extends HttpServlet {
                     String[] patterns = channels.split(",");
                     for (String channel : patterns) {
                         channel = channel.trim();
-                        if (channel.length() > 0) {
+                        if (!channel.isEmpty()) {
                             oort.observeChannel(channel);
                         }
                     }

@@ -24,6 +24,9 @@ import javax.management.ObjectName;
 import jakarta.servlet.http.HttpServlet;
 
 import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.oort.jakarta.OortConfigServlet;
+import org.cometd.oort.jakarta.OortStaticConfigServlet;
+import org.cometd.oort.jakarta.SetiServlet;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.http.jakarta.CometDServlet;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;

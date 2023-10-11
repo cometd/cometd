@@ -29,6 +29,8 @@ import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.client.http.okhttp.OkHttpClientTransport;
 import org.cometd.client.websocket.okhttp.OkHttpWebSocketTransport;
 import org.cometd.common.JettyJSONContextClient;
+import org.cometd.oort.jakarta.OortConfigServlet;
+import org.cometd.oort.jakarta.OortStaticConfigServlet;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.JettyJSONContextServer;
@@ -41,6 +43,7 @@ import org.eclipse.jetty.ee10.websocket.jakarta.server.config.JakartaWebSocketSe
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.ajax.JSON;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
@@ -52,11 +55,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-// TODO: this only works for Jakarta.
-//  To make it work with Jetty we would need a OortBean which is added as a bean to CometDHandler
-//  so that when it starts it configured an Oort instance.
-//  Can we just add the Oort?
-// TODO: split the oort module in 3: common, jakarta, jetty
 public class OortStartupTest {
     @RegisterExtension
     public final BeforeTestExecutionCallback printMethodName = context ->
@@ -269,6 +267,11 @@ public class OortStartupTest {
                 throw new ServletException(x);
             }
         }
+
+        @Override
+        public void destroy() {
+            LifeCycle.stop(ids);
+        }
     }
 
     public static class OortMapStartupServlet extends HttpServlet {
@@ -285,6 +288,11 @@ public class OortStartupTest {
             } catch (Throwable x) {
                 throw new ServletException(x);
             }
+        }
+
+        @Override
+        public void destroy() {
+            LifeCycle.stop(users);
         }
     }
 

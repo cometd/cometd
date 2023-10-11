@@ -15,7 +15,7 @@
   <!-- Filter to support cross domain requests -->
   <filter>
     <filter-name>cross-origin</filter-name>
-    <filter-class>org.eclipse.jetty.servlets.CrossOriginFilter</filter-class>
+    <filter-class>org.eclipse.jetty.ee10.servlets.CrossOriginFilter</filter-class>
     <async-supported>true</async-supported>
   </filter>
   <filter-mapping>
@@ -76,7 +76,7 @@
   <!-- Configure Oort Cloud, used by Auction demo -->
   <servlet>
     <servlet-name>oort</servlet-name>
-    <servlet-class>org.cometd.oort.OortMulticastConfigServlet</servlet-class>
+    <servlet-class>org.cometd.oort.jakarta.OortMulticastConfigServlet</servlet-class>
     <init-param>
       <param-name>oort.url</param-name>
       <param-value>http://localhost:8080/cometd</param-value>
@@ -87,7 +87,7 @@
   <!-- Configure Seti ID management, used by Auction demo -->
   <servlet>
     <servlet-name>seti</servlet-name>
-    <servlet-class>org.cometd.oort.SetiServlet</servlet-class>
+    <servlet-class>org.cometd.oort.jakarta.SetiServlet</servlet-class>
     <load-on-startup>4</load-on-startup>
   </servlet>
 

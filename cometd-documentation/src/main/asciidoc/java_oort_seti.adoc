@@ -36,7 +36,7 @@ A configuration example follows:
 
     <servlet>
         <servlet-name>oort</servlet-name>
-        <servlet-class>org.cometd.oort.OortStaticConfigServlet</servlet-class>
+        <servlet-class>org.cometd.oort.jakarta.OortStaticConfigServlet</servlet-class>
         <init-param>
             <param-name>oort.url</param-name>
             <param-value>http://host:port/context/cometd</param-value>
@@ -46,7 +46,7 @@ A configuration example follows:
 
     <servlet>
         <servlet-name>seti</servlet-name>
-        <servlet-class>org.cometd.oort.SetiServlet</servlet-class>
+        <servlet-class>org.cometd.oort.jakarta.SetiServletorg.cometd.oort.jakarta.SetiServlet</servlet-class>
         <load-on-startup>3</load-on-startup>
     </servlet>
 </web-app>

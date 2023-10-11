@@ -13,13 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.cometd.oort;
+package org.cometd.oort.jakarta;
 
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.UnavailableException;
 import jakarta.servlet.http.HttpServlet;
+
+import org.cometd.oort.Oort;
+import org.cometd.oort.Seti;
 
 /**
  * <p>This servlet initializes and configures and instance of the {@link Seti}

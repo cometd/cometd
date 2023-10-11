@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.cometd.oort;
+package org.cometd.oort.jakarta;
 
 import jakarta.servlet.ServletConfig;
 
 import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.oort.Oort;
+import org.cometd.oort.OortComet;
 
 /**
  * <p>This servlet initializes and configures an instance of the {@link Oort}
@@ -40,11 +42,11 @@ public class OortStaticConfigServlet extends OortConfigServlet {
     @Override
     protected void configureCloud(ServletConfig config, Oort oort) {
         String cloud = config.getInitParameter(OORT_CLOUD_PARAM);
-        if (cloud != null && cloud.length() > 0) {
+        if (cloud != null && !cloud.isEmpty()) {
             String[] urls = cloud.split(",");
             for (String comet : urls) {
                 comet = comet.trim();
-                if (comet.length() > 0) {
+                if (!comet.isEmpty()) {
                     OortComet oortComet = oort.observeComet(comet);
                     if (oortComet == null) {
                         throw new IllegalArgumentException("Invalid value for " + OORT_CLOUD_PARAM);

@@ -13,16 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-module org.cometd.oort {
-    exports org.cometd.oort;
-    exports org.cometd.oort.jmx;
+module org.cometd.oort.jakarta {
+    exports org.cometd.oort.jakarta;
 
-    requires transitive org.cometd.client.websocket.jakarta;
-    requires transitive org.cometd.client.http.jetty;
-    requires transitive org.cometd.server;
+    requires transitive jakarta.servlet;
+    requires transitive org.cometd.oort;
     requires org.slf4j;
-
-    // Only required when using JMX.
-    requires static org.eclipse.jetty.jmx;
-    requires jakarta.servlet;
 }

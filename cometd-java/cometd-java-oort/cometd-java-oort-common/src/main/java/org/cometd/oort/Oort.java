@@ -311,7 +311,7 @@ public class Oort extends ContainerLifeCycle {
         return _membership.observeComet(cometURL);
     }
 
-    protected OortComet newOortComet(String cometURL) {
+    public OortComet newOortComet(String cometURL) {
         Map<String, Object> options = new HashMap<>(2);
         options.put(ClientTransport.SCHEDULER_OPTION, _scheduler);
 
@@ -522,7 +522,7 @@ public class Oort extends ContainerLifeCycle {
         return b64LocalSecret.equals(b64RemoteSecret);
     }
 
-    protected Map<String, Object> newOortHandshakeFields(String cometURL, String oortAliasURL) {
+    public Map<String, Object> newOortHandshakeFields(String cometURL, String oortAliasURL) {
         Map<String, Object> fields = new HashMap<>(1);
         Map<String, Object> ext = new HashMap<>(1);
         fields.put(Message.EXT_FIELD, ext);

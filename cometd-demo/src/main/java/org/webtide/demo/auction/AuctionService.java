@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import jakarta.servlet.ServletContext;
+
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSessionChannel;
@@ -29,7 +30,6 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.oort.Oort;
 import org.cometd.oort.Seti;
-import org.cometd.oort.SetiServlet;
 import org.cometd.server.AbstractService;
 import org.cometd.server.authorizer.GrantAuthorizer;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -53,12 +53,12 @@ public class AuctionService extends AbstractService implements ClientSessionChan
         Oort oort = (Oort)context.getAttribute(Oort.OORT_ATTRIBUTE);
         if (oort == null) {
             throw new RuntimeException("Missing " + Oort.OORT_ATTRIBUTE + " from " + ServletContext.class.getSimpleName() + "; " +
-                    "is an Oort servlet declared in web.xml ?");
+                    "is an Oort Servlet declared in web.xml?");
         }
         _seti = (Seti)context.getAttribute(Seti.SETI_ATTRIBUTE);
         if (_seti == null) {
             throw new RuntimeException("Missing " + Seti.SETI_ATTRIBUTE + " from " + ServletContext.class.getSimpleName() + "; " +
-                    "is " + SetiServlet.class.getSimpleName() + " declared in web.xml ?");
+                    "is a Seti Servlet declared in web.xml?");
         }
 
         oort.observeChannel(AUCTION_ROOT + "**");

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.cometd.oort;
+package org.cometd.oort.jakarta;
 
 import java.net.InetAddress;
 import java.net.MulticastSocket;
@@ -21,7 +21,10 @@ import java.net.NetworkInterface;
 import java.util.ArrayList;
 import java.util.List;
 import jakarta.servlet.ServletConfig;
+
 import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.oort.Oort;
+import org.cometd.oort.OortMulticastConfigurer;
 
 /**
  * <p>This servlet initializes and configures an instance of the {@link Oort}
