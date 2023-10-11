@@ -66,12 +66,12 @@ class JettyBayeuxContext implements BayeuxContext {
 
     @Override
     public String getParameter(String name) {
-        throw new UnsupportedOperationException("REMOVE API?");
+        return Request.extractQueryParameters(request).getValue(name);
     }
 
     @Override
     public List<String> getParameterValues(String name) {
-        throw new UnsupportedOperationException("REMOVE API?");
+        return Request.extractQueryParameters(request).getValues(name);
     }
 
     @Override
@@ -100,11 +100,6 @@ class JettyBayeuxContext implements BayeuxContext {
     }
 
     @Override
-    public String getContextInitParameter(String name) {
-        throw new UnsupportedOperationException("REMOVE API?");
-    }
-
-    @Override
     public String getContextPath() {
         return request.getContext().getContextPath();
     }
@@ -116,7 +111,7 @@ class JettyBayeuxContext implements BayeuxContext {
 
     @Override
     public List<Locale> getLocales() {
-        throw new UnsupportedOperationException("REMOVE API?");
+        return Request.getLocales(request);
     }
 
     @Override

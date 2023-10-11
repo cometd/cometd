@@ -104,11 +104,6 @@ class JakartaBayeuxContext implements BayeuxContext {
         return session != null ? session.getAttribute(name) : null;
     }
 
-    @Override
-    public String getContextInitParameter(String name) {
-        return getServletContext().getInitParameter(name);
-    }
-
     private ServletContext getServletContext() {
         return request.getServletContext();
     }

@@ -144,11 +144,6 @@ public abstract class AbstractBayeuxContext implements BayeuxContext {
     }
 
     @Override
-    public String getContextInitParameter(String name) {
-        return null;
-    }
-
-    @Override
     public String getContextPath() {
         return contextPath;
     }

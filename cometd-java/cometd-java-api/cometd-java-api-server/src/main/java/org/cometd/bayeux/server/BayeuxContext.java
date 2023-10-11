@@ -124,14 +124,6 @@ public interface BayeuxContext {
     Object getSessionAttribute(String name);
 
     /**
-     * Access the ServletContext (if any) init parameter.
-     *
-     * @param name the init parameter name
-     * @return The attribute value
-     */
-    String getContextInitParameter(String name);
-
-    /**
      * @return the application context path
      */
     String getContextPath();
