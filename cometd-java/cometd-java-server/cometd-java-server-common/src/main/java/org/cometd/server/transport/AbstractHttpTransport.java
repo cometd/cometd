@@ -727,7 +727,6 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
                 promise.succeed(null);
                 return true;
             } else {
-                // TODO: this relies on buffering which we may not have in Handlers.
                 if (needsComma) {
                     needsComma = false;
                     output.write(false, COMMA, promise);

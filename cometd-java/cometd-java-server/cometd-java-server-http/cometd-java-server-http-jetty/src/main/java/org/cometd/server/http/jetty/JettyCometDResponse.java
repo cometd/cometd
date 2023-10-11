@@ -20,6 +20,7 @@ import java.nio.ByteBuffer;
 import org.cometd.bayeux.Promise;
 import org.cometd.server.CometDResponse;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 
@@ -39,7 +40,7 @@ class JettyCometDResponse implements CometDResponse {
     @Override
     public Output getOutput() {
         if (cometDOutput == null) {
-            cometDOutput = new JettyCometDOutput(response);
+            cometDOutput = new JettyCometDOutput(Response.asBufferedSink(response.getRequest(), response));
         }
         return cometDOutput;
     }
@@ -50,15 +51,15 @@ class JettyCometDResponse implements CometDResponse {
     }
 
     private static class JettyCometDOutput implements Output {
-        private final Response response;
+        private final Content.Sink sink;
 
-        private JettyCometDOutput(Response response) {
-            this.response = response;
+        private JettyCometDOutput(Content.Sink sink) {
+            this.sink = sink;
         }
 
         @Override
         public void write(boolean last, byte[] bytes, Promise<Void> promise) {
-            response.write(last, ByteBuffer.wrap(bytes), new Callback() {
+            sink.write(last, ByteBuffer.wrap(bytes), new Callback() {
                 @Override
                 public void succeeded() {
                     promise.succeed(null);
