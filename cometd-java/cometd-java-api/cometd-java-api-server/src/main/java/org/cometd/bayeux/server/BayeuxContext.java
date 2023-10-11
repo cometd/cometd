@@ -22,19 +22,18 @@ import java.util.Locale;
 
 /**
  * <p>The Bayeux Context provides information about the current context of a Bayeux message.</p>
- * <p>This information may be from an associated HTTP request, or a HTTP request used to
- * originally establish the connection (for example in a websocket handshake).</p>
+ * <p>This information may be from an associated HTTP request, or from a HTTP request originally
+ * used to establish the connection to the server (for example in a WebSocket upgrade).</p>
  */
-// TODO: review javadocs and remove Servlet references.
 public interface BayeuxContext {
     /**
-     * @return The user Principal (if any)
+     * @return the user {@link Principal} (if any)
      */
     Principal getUserPrincipal();
 
     /**
      * @param role the role to check whether the user belongs to
-     * @return true if there is a known user and they are in the given role.
+     * @return true if there is a known user and they are in the given role
      */
     boolean isUserInRole(String role);
 
@@ -49,93 +48,70 @@ public interface BayeuxContext {
     SocketAddress getLocalAddress();
 
     /**
-     * Get a transport header.<p>
-     * Get a header for any current transport mechanism (eg HTTP request).
-     * For transports like websocket, the header may be from the initial handshake.
-     *
-     * @param name The name of the header
-     * @return The header value or null if no current transport mechanism or no such header.
+     * @param name the name of the request header
+     * @return the value of the header, or {@code null} if there is no such header
      */
     String getHeader(String name);
 
     /**
-     * Get a multi valued transport header.<p>
-     * Get a header for any current transport mechanism (eg HTTP request).
-     * For transports like websocket, the header may be from the initial handshake.
-     *
-     * @param name The name of the header
-     * @return The header value or null if no current transport mechanism or no such header.
+     * @param name the name of the request header
+     * @return the values of the header, or {@code null} if no such header
      */
     List<String> getHeaderValues(String name);
 
     /**
-     * Get a transport parameter.<p>
-     * Get a parameter for any current transport mechanism (eg HTTP request).
-     * For transports like websocket, the parameter may be from the initial handshake.
-     *
-     * @param name The name of the parameter
-     * @return The parameter value or null if no current transport mechanism or no such parameter.
+     * @param name the name of the query parameter
+     * @return the value of the query parameter, or {@code null} if no such parameter
      */
     String getParameter(String name);
 
     /**
-     * Get a multi valued transport parameter.<p>
-     * Get a parameter for any current transport mechanism (eg HTTP request).
-     * For transports like websocket, the parameter may be from the initial handshake.
-     *
-     * @param name The name of the parameter
-     * @return The parameter value or null if no current transport mechanism or no such parameter.
+     * @param name the name of the query parameter
+     * @return the values of the query parameter, or {@code null} if no such parameter
      */
     List<String> getParameterValues(String name);
 
     /**
-     * Get a transport cookie.<p>
-     * Get a cookie for any current transport mechanism (eg HTTP request).
-     * For transports like websocket, the cookie may be from the initial handshake.
-     *
-     * @param name The name of the cookie
-     * @return The cookie value or null if no current transport mechanism or no such cookie.
+     * @param name the name of the cookie
+     * @return the value of the cookie value, or {@code null} if no such cookie
      */
     String getCookie(String name);
 
     /**
-     * Access the ServletContext (if any) attributes.
-     *
-     * @param name the attribute name
-     * @return The attribute value
+     * @param name the context attribute name
+     * @return the context attribute value, or {@code null} if no such attribute
      */
     Object getContextAttribute(String name);
 
     /**
-     * Access the Request (if any) attributes.
-     *
-     * @param name the attribute name
-     * @return The attribute value
+     * @param name the request attribute name
+     * @return the request attribute value, or {@code null} if no such attribute
      */
     Object getRequestAttribute(String name);
 
     /**
-     * Access the HTTP Session (if any) attributes.
-     * The {@link ServerSession#getAttribute(String)} should be used in preference to the HTTP Session.
+     * <p>Returns an HTTP session attribute value.</p>
+     * <p>{@link ServerSession#getAttribute(String)} should be used to retrieve
+     * attribute values in session scope.</p>
      *
-     * @param name the attribute name
-     * @return The attribute value
+     * @param name the HTTP session attribute name
+     * @return the HTTP session attribute value, or {@code null} if no such attribute
      */
     Object getSessionAttribute(String name);
 
     /**
-     * @return the application context path
+     * @return the web application context path
      */
     String getContextPath();
 
     /**
-     * @return the full request URI complete with query string if present.
+     * @return the full request URI complete with query string if present
      */
     String getURL();
 
     /**
-     * @return the request Locales, in order of preference, or the default
-     * server Locale if the request Locales are missing.
+     * @return the request {@link Locale}s, in order of preference, or the default
+     * server {@link Locale} if the request does not specify locales
      */
     List<Locale> getLocales();
 
@@ -145,7 +121,7 @@ public interface BayeuxContext {
     String getProtocol();
 
     /**
-     * @return whether the request was made over a secure channel
+     * @return whether the request was made over a secure transport
      */
     boolean isSecure();
 }
