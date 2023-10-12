@@ -15,10 +15,11 @@
  */
 package org.cometd.server.http;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.client.CompletableResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
-import org.eclipse.jetty.client.FutureResponseListener;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.Assertions;
@@ -59,8 +60,7 @@ public class ServerRedeployTest extends AbstractBayeuxClientServerTest {
                                    "\"clientId\": \"" + clientId + "\"," +
                                    "\"connectionType\": \"long-polling\"" +
                                    "}]");
-        FutureResponseListener futureResponse = new FutureResponseListener(connect);
-        connect.send(futureResponse);
+        CompletableFuture<ContentResponse> futureResponse = new CompletableResponseListener(connect).send();
 
         // Wait for the /meta/connect to be suspended.
         // We cannot rely on the HeartBeatListener because the "suspended" event

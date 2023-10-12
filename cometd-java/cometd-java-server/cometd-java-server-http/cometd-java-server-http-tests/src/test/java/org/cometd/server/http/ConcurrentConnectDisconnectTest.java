@@ -16,6 +16,7 @@
 package org.cometd.server.http;
 
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -26,8 +27,8 @@ import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.common.JettyJSONContextClient;
+import org.eclipse.jetty.client.CompletableResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
-import org.eclipse.jetty.client.FutureResponseListener;
 import org.eclipse.jetty.client.Request;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
@@ -86,8 +87,7 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
                                             "\"clientId\": \"" + clientId + "\"," +
                                             "\"connectionType\": \"long-polling\"" +
                                             "}]");
-        FutureResponseListener futureResponse = new FutureResponseListener(connect2);
-        connect2.send(futureResponse);
+        CompletableFuture<ContentResponse> futureResponse = new CompletableResponseListener(connect2).send();
 
         // Wait for the second connect to arrive, then disconnect
         Assertions.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
@@ -195,8 +195,7 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
                                             "\"clientId\": \"" + clientId + "\"," +
                                             "\"connectionType\": \"long-polling\"" +
                                             "}]");
-        FutureResponseListener futureResponse = new FutureResponseListener(connect2);
-        connect2.send(futureResponse);
+        CompletableFuture<ContentResponse> futureResponse = new CompletableResponseListener(connect2).send();
 
         // Wait for the second connect to arrive, then disconnect
         Assertions.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));

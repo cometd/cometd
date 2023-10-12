@@ -18,7 +18,7 @@ module org.cometd.annotation.server {
 
     requires jakarta.annotation;
     requires jakarta.inject;
-    requires jakarta.servlet;
+    requires transitive jakarta.servlet;
     requires transitive org.cometd.annotation;
     requires transitive org.cometd.api.server;
     requires transitive org.cometd.server.http.jakarta;

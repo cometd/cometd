@@ -318,7 +318,7 @@ public class OortStartupTest {
         }
 
         @Override
-        public Object fromJSON(Map map) {
+        public Object fromJSON(Map<String, Object> map) {
             System.err.println("fromJSON() = " + map);
             String userId = (String)map.get("userId");
             return new UserInfo(userId);

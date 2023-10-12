@@ -37,7 +37,6 @@ import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.client.transport.ClientTransport;
@@ -338,7 +337,7 @@ public class SetiTest extends AbstractOortTest {
         // Wait for the server to expire client2 and for Seti to disassociate it
         CountDownLatch removedLatch = new CountDownLatch(1);
         oort2.getBayeuxServer().getSession(session2.get()).addListener((ServerSession.RemovedListener)(s, m, t) -> removedLatch.countDown());
-        long maxTimeout = ((ServerTransport)oort2.getBayeuxServer().getTransport("websocket")).getMaxInterval();
+        long maxTimeout = oort2.getBayeuxServer().getTransport("websocket").getMaxInterval();
         Assertions.assertTrue(removedLatch.await(maxTimeout + 5000, TimeUnit.MILLISECONDS));
 
         Assertions.assertTrue(absenceLatch.await(5, TimeUnit.SECONDS));

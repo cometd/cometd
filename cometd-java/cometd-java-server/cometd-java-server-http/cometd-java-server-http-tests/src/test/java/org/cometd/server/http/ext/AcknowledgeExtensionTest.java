@@ -15,6 +15,7 @@
  */
 package org.cometd.server.http.ext;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -30,8 +31,8 @@ import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.cometd.server.ext.AcknowledgedMessagesSessionExtension;
 import org.cometd.server.ext.BatchArrayQueue;
 import org.cometd.server.http.AbstractBayeuxClientServerTest;
+import org.eclipse.jetty.client.CompletableResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
-import org.eclipse.jetty.client.FutureResponseListener;
 import org.eclipse.jetty.client.Request;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -116,8 +117,7 @@ public class AcknowledgeExtensionTest extends AbstractBayeuxClientServerTest {
                                    "\"connectionType\": \"long-polling\"," +
                                    "\"ext\": { \"ack\": 0 }" +
                                    "}]");
-        FutureResponseListener listener = new FutureResponseListener(connect);
-        connect.send(listener);
+        CompletableFuture<ContentResponse> listener = new CompletableResponseListener(connect).send();
 
         // It must return immediately because there is a message in the unacknowledged queue.
         response = listener.get(1, TimeUnit.SECONDS);
@@ -223,8 +223,7 @@ public class AcknowledgeExtensionTest extends AbstractBayeuxClientServerTest {
                                    "\"connectionType\": \"long-polling\"," +
                                    "\"ext\": { \"ack\": 0 }" +
                                    "}]");
-        FutureResponseListener listener = new FutureResponseListener(connect);
-        connect.send(listener);
+        CompletableFuture<ContentResponse> listener = new CompletableResponseListener(connect).send();
 
         // It must be held because there are only lazy messages.
         try {

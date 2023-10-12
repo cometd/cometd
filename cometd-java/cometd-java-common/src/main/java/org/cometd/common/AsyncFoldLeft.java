@@ -123,6 +123,9 @@ public class AsyncFoldLeft {
         run(new ReverseIterable<>(list), zero, operation, promise);
     }
 
+    private AsyncFoldLeft() {
+    }
+
     /**
      * <p>The operation to invoke for each element.</p>
      *

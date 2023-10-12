@@ -17,6 +17,7 @@ module org.cometd.server.http.jetty {
     exports org.cometd.server.http.jetty;
 
     requires transitive org.eclipse.jetty.server;
+    requires transitive org.cometd.api.server;
     requires org.cometd.server;
     requires org.slf4j;
 

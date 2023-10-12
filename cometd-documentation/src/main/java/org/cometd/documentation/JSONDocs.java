@@ -130,7 +130,7 @@ public class JSONDocs {
         }
 
         @Override
-        public Object fromJSON(Map map) {
+        public Object fromJSON(Map<String, Object> map) {
             String id = (String)map.get("id");
             String echo = (String)map.get("echo");
             return new EchoInfo(id, echo);

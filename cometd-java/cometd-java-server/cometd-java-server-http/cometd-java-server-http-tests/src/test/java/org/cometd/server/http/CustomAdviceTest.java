@@ -16,6 +16,7 @@
 package org.cometd.server.http;
 
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -27,8 +28,8 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.common.JSONContext;
 import org.cometd.common.JettyJSONContextClient;
 import org.cometd.server.ServerSessionImpl;
+import org.eclipse.jetty.client.CompletableResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
-import org.eclipse.jetty.client.FutureResponseListener;
 import org.eclipse.jetty.client.Request;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -83,8 +84,7 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest {
                                             "\"clientId\": \"" + clientId + "\"," +
                                             "\"connectionType\": \"long-polling\"" +
                                             "}]");
-        FutureResponseListener futureResponse = new FutureResponseListener(connect2);
-        connect2.send(futureResponse);
+        CompletableFuture<ContentResponse> futureResponse = new CompletableResponseListener(connect2).send();
         Assertions.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
 
         Request publish = newBayeuxRequest("[{" +
@@ -157,8 +157,7 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest {
                                             "\"clientId\": \"" + clientId + "\"," +
                                             "\"connectionType\": \"long-polling\"" +
                                             "}]");
-        FutureResponseListener futureResponse = new FutureResponseListener(connect2);
-        connect2.send(futureResponse);
+        CompletableFuture<ContentResponse> futureResponse = new CompletableResponseListener(connect2).send();
         Assertions.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
 
         Request publish = newBayeuxRequest("[{" +

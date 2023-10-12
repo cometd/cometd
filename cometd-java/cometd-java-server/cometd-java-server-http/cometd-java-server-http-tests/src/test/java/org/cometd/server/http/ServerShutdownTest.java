@@ -15,11 +15,12 @@
  */
 package org.cometd.server.http;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.client.CompletableResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
-import org.eclipse.jetty.client.FutureResponseListener;
 import org.eclipse.jetty.client.Request;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -60,8 +61,7 @@ public class ServerShutdownTest extends AbstractBayeuxClientServerTest {
                                    "\"clientId\": \"" + clientId + "\"," +
                                    "\"connectionType\": \"long-polling\"" +
                                    "}]");
-        FutureResponseListener futureResponse = new FutureResponseListener(connect);
-        connect.send(futureResponse);
+        CompletableFuture<ContentResponse> futureResponse = new CompletableResponseListener(connect).send();
 
         // Wait for the connect to arrive to the server
         Thread.sleep(1000);

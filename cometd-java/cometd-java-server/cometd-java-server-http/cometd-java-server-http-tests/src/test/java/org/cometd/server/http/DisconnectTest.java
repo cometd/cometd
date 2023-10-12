@@ -16,6 +16,7 @@
 package org.cometd.server.http;
 
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -23,8 +24,8 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.common.JettyJSONContextClient;
+import org.eclipse.jetty.client.CompletableResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
-import org.eclipse.jetty.client.FutureResponseListener;
 import org.eclipse.jetty.client.Request;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -64,8 +65,7 @@ public class DisconnectTest extends AbstractBayeuxClientServerTest {
                                             "\"connectionType\": \"long-polling\"" +
                                             "}]");
 
-        FutureResponseListener listener = new FutureResponseListener(connect2);
-        connect2.send(listener);
+        CompletableFuture<ContentResponse> listener = new CompletableResponseListener(connect2).send();
 
         // Wait for the /meta/connect to be suspended
         Thread.sleep(1000);

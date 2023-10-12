@@ -16,7 +16,8 @@
 module org.cometd.server.http.jakarta {
     exports org.cometd.server.http.jakarta;
 
-    requires jakarta.servlet;
+    requires transitive jakarta.servlet;
+    requires transitive org.cometd.api.server;
     requires org.cometd.server;
     requires org.slf4j;
 
