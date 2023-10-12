@@ -90,9 +90,7 @@ public class WebAppTest {
         copyWebAppDependency(jakarta.inject.Inject.class, webINF);
         copyWebAppDependency(jakarta.annotation.PostConstruct.class, webINF);
         copyWebAppDependency(org.slf4j.Logger.class, webINF);
-        copyWebAppDependency(org.apache.logging.slf4j.Log4jLogger.class, webINF);
-        copyWebAppDependency(org.apache.logging.log4j.Level.class, webINF);
-        copyWebAppDependency(org.apache.logging.log4j.core.LoggerContext.class, webINF);
+        copyWebAppDependency(org.eclipse.jetty.logging.JettyLogger.class, webINF);
         copyWebAppDependency(org.cometd.annotation.Service.class, webINF);
         copyWebAppDependency(org.cometd.annotation.server.RemoteCall.class, webINF);
         copyWebAppDependency(org.cometd.bayeux.Message.class, webINF);
@@ -156,9 +154,7 @@ public class WebAppTest {
         addServerDependency(jakarta.annotation.Resources.class, serverClassPath);
         addServerDependency(jakarta.annotation.security.RunAs.class, serverClassPath);
         addServerDependency(org.slf4j.Logger.class, serverClassPath);
-        addServerDependency(org.apache.logging.slf4j.SLF4JServiceProvider.class, serverClassPath);
-        addServerDependency(org.apache.logging.log4j.Logger.class, serverClassPath);
-        addServerDependency(org.apache.logging.log4j.core.Appender.class, serverClassPath);
+        addServerDependency(org.eclipse.jetty.logging.JettyLogger.class, serverClassPath);
         addServerDependency(org.eclipse.jetty.ee10.annotations.AnnotationConfiguration.class, serverClassPath);
         addServerDependency(org.eclipse.jetty.client.HttpClient.class, serverClassPath);
         addServerDependency(org.eclipse.jetty.http.HttpStatus.class, serverClassPath);

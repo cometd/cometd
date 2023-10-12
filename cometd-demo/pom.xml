@@ -101,14 +101,9 @@
             <version>${jetty-version}</version>
           </dependency>
           <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-core</artifactId>
-            <version>${log4j2-version}</version>
-          </dependency>
-          <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-slf4j2-impl</artifactId>
-            <version>${log4j2-version}</version>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-slf4j-impl</artifactId>
+            <version>${jetty-version}</version>
           </dependency>
         </dependencies>
       </plugin>
@@ -213,26 +208,11 @@
       <version>${jetty-version}</version>
     </dependency>
     <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-core</artifactId>
-      <scope>runtime</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-slf4j2-impl</artifactId>
-      <scope>runtime</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-web</artifactId>
-      <version>${log4j2-version}</version>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-slf4j-impl</artifactId>
       <scope>runtime</scope>
     </dependency>
 
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter</artifactId>
-    </dependency>
     <dependency>
       <groupId>org.cometd.java</groupId>
       <artifactId>cometd-java-client-websocket-jetty</artifactId>
