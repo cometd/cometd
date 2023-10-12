@@ -35,6 +35,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 public class MetaConnectFailureWithAckExtensionTest extends AbstractClientServerTest {
     @ParameterizedTest
     @MethodSource("transports")
@@ -68,9 +70,8 @@ public class MetaConnectFailureWithAckExtensionTest extends AbstractClientServer
 
                 // Be sure we are subscribed.
                 try {
-                    serverSubscribeLatch.await(5, TimeUnit.SECONDS);
-                } catch (InterruptedException x) {
-                    // Ignored
+                    assertTrue(serverSubscribeLatch.await(5, TimeUnit.SECONDS));
+                } catch (InterruptedException ignored) {
                 }
 
                 int connect = connects.incrementAndGet();
@@ -116,8 +117,8 @@ public class MetaConnectFailureWithAckExtensionTest extends AbstractClientServer
             }
         });
 
-        Assertions.assertTrue(clientSubscribeLatch.await(5, TimeUnit.SECONDS));
-        Assertions.assertTrue(messageLatch1.await(2 * maxNetworkDelay, TimeUnit.MILLISECONDS));
+        assertTrue(clientSubscribeLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(messageLatch1.await(2 * maxNetworkDelay, TimeUnit.MILLISECONDS));
         Assertions.assertFalse(messageLatch2.await(2 * delay, TimeUnit.MILLISECONDS));
 
         disconnectBayeuxClient(client);

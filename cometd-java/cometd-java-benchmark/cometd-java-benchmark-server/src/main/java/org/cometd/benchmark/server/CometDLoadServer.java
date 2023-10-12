@@ -17,7 +17,6 @@ package org.cometd.benchmark.server;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
@@ -46,11 +45,16 @@ import org.cometd.server.JacksonJSONContextServer;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.cometd.server.http.JSONHttpTransport;
 import org.cometd.server.http.TransportContext;
+import org.cometd.server.http.jakarta.CometDServlet;
 import org.cometd.server.http.jetty.CometDHandler;
 import org.cometd.server.websocket.common.AbstractWebSocketEndPoint;
 import org.cometd.server.websocket.common.AbstractWebSocketTransport;
+import org.cometd.server.websocket.jakarta.WebSocketTransport;
 import org.cometd.server.websocket.jetty.JettyWebSocketTransport;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
@@ -66,8 +70,6 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.toolchain.perf.HistogramSnapshot;
 import org.eclipse.jetty.toolchain.perf.MeasureConverter;
@@ -75,8 +77,11 @@ import org.eclipse.jetty.toolchain.perf.PlatformMonitor;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.websocket.server.WebSocketUpgradeHandler;
 
 public class CometDLoadServer {
+    private static final String MICROS = "\u00B5s";
+
     private final MonitoringQueuedThreadPool jettyThreadPool = new MonitoringQueuedThreadPool(0);
     private final MonitoringQueuedThreadPool cometdThreadPool = new MonitoringQueuedThreadPool(0);
     private final BayeuxServerImpl bayeuxServer = new BayeuxServerImpl();
@@ -87,7 +92,7 @@ public class CometDLoadServer {
     private boolean tls = false;
     private int selectors = Runtime.getRuntime().availableProcessors();
     private int maxThreads = 256;
-    private String transports = "asynchttp";
+    private String transport = "jakarta";
     private boolean perMessageDeflate = false;
     private boolean statistics = true;
     private boolean latencies = true;
@@ -114,7 +119,7 @@ public class CometDLoadServer {
             } else if (arg.startsWith("--maxThreads=")) {
                 server.maxThreads = Integer.parseInt(arg.substring("--maxThreads=".length()));
             } else if (arg.startsWith("--transports=")) {
-                server.transports = arg.substring("--transports=".length());
+                server.transport = arg.substring("--transports=".length());
             } else if (arg.equals("--permessage-deflate")) {
                 server.perMessageDeflate = true;
             } else if (arg.equals("--statistics")) {
@@ -134,7 +139,7 @@ public class CometDLoadServer {
         if (interactive) {
             System.err.printf("listen port [%d]: ", port);
             String value = console.readLine().trim();
-            if (value.length() == 0) {
+            if (value.isEmpty()) {
                 value = String.valueOf(port);
             }
             port = Integer.parseInt(value);
@@ -144,7 +149,7 @@ public class CometDLoadServer {
         if (interactive) {
             System.err.printf("use tls [%b]: ", tls);
             String value = console.readLine().trim();
-            if (value.length() == 0) {
+            if (value.isEmpty()) {
                 value = String.valueOf(tls);
             }
             tls = Boolean.parseBoolean(value);
@@ -154,7 +159,7 @@ public class CometDLoadServer {
         if (interactive) {
             System.err.printf("selectors [%d]: ", selectors);
             String value = console.readLine().trim();
-            if (value.length() == 0) {
+            if (value.isEmpty()) {
                 value = String.valueOf(selectors);
             }
             selectors = Integer.parseInt(value);
@@ -165,7 +170,7 @@ public class CometDLoadServer {
             maxThreads = Integer.parseInt(System.getProperty("cometd.threads", String.valueOf(maxThreads)));
             System.err.printf("max threads [%d]: ", maxThreads);
             String value = console.readLine().trim();
-            if (value.length() == 0) {
+            if (value.isEmpty()) {
                 value = String.valueOf(maxThreads);
             }
             maxThreads = Integer.parseInt(value);
@@ -175,50 +180,61 @@ public class CometDLoadServer {
         // The BayeuxServer executor uses PEC mode only.
         cometdThreadPool.setReservedThreads(0);
 
-        String availableTransports = "jettyws,asynchttp";
-        String transports = this.transports;
+        boolean perMessageDeflate = this.perMessageDeflate;
         if (interactive) {
-            System.err.printf("transports (%s) [%s]: ", availableTransports, transports);
+            System.err.printf("enable permessage-deflate extension [%b]: ", perMessageDeflate);
             String value = console.readLine().trim();
-            if (value.length() == 0) {
-                value = transports;
+            if (value.isEmpty()) {
+                value = String.valueOf(perMessageDeflate);
             }
-            transports = value;
+            perMessageDeflate = Boolean.parseBoolean(value);
         }
-        for (String token : transports.split(",")) {
-            String transport = token.trim();
-            switch (transport) {
-                case "jettyws" -> {
-                    boolean perMessageDeflate = readPerMessageDeflate(transport, console);
-                    JettyWebSocketTransport serverTransport = new JettyWebSocketTransport(bayeuxServer) {
-                        @Override
-                        protected void writeComplete(AbstractWebSocketEndPoint.Context context, List<ServerMessage> messages) {
-                            messageLatencyExtension.complete(messages);
-                        }
-                    };
-                    serverTransport.setOption(AbstractWebSocketTransport.ENABLE_EXTENSION_PREFIX_OPTION + "permessage-deflate", perMessageDeflate);
-                    bayeuxServer.addTransport(serverTransport);
-                }
-                // TODO: all transport are async now, so change to just "http".
-                case "asynchttp" -> {
-                    bayeuxServer.addTransport(new JSONHttpTransport(bayeuxServer) {
-                        @Override
-                        protected void writeComplete(TransportContext context, List<ServerMessage> messages) {
-                            messageLatencyExtension.complete(messages);
-                        }
-                    });
-                }
-                default -> {
-                    throw new IllegalArgumentException("Invalid transport: " + token);
-                }
+
+        String availableTransports = "jakarta | jetty";
+        String transport = this.transport;
+        if (interactive) {
+            System.err.printf("transports (%s) [%s]: ", availableTransports, transport);
+            String value = console.readLine().trim();
+            if (value.isEmpty()) {
+                value = transport;
             }
+            transport = value;
         }
+        AbstractWebSocketTransport wsTransport = switch (transport) {
+            case "jakarta" -> {
+                yield new WebSocketTransport(bayeuxServer) {
+                    @Override
+                    protected void writeComplete(AbstractWebSocketEndPoint.Context context, List<ServerMessage> messages) {
+                        messageLatencyExtension.complete(messages);
+                    }
+                };
+            }
+            case "jetty" -> {
+                yield new JettyWebSocketTransport(bayeuxServer) {
+                    @Override
+                    protected void writeComplete(AbstractWebSocketEndPoint.Context context, List<ServerMessage> messages) {
+                        messageLatencyExtension.complete(messages);
+                    }
+                };
+            }
+            default -> {
+                throw new IllegalArgumentException("Invalid transport: " + transport);
+            }
+        };
+        wsTransport.setOption(AbstractWebSocketTransport.ENABLE_EXTENSION_PREFIX_OPTION + "permessage-deflate", perMessageDeflate);
+        bayeuxServer.addTransport(wsTransport);
+        bayeuxServer.addTransport(new JSONHttpTransport(bayeuxServer) {
+            @Override
+            protected void writeComplete(TransportContext context, List<ServerMessage> messages) {
+                messageLatencyExtension.complete(messages);
+            }
+        });
 
         boolean statistics = this.statistics;
         if (interactive) {
             System.err.printf("record statistics [%b]: ", statistics);
             String value = console.readLine().trim();
-            if (value.length() == 0) {
+            if (value.isEmpty()) {
                 value = String.valueOf(statistics);
             }
             statistics = Boolean.parseBoolean(value);
@@ -228,7 +244,7 @@ public class CometDLoadServer {
         if (interactive) {
             System.err.printf("record latencies [%b]: ", latencies);
             String value = console.readLine().trim();
-            if (value.length() == 0) {
+            if (value.isEmpty()) {
                 value = String.valueOf(latencies);
             }
             latencies = Boolean.parseBoolean(value);
@@ -238,13 +254,13 @@ public class CometDLoadServer {
         if (interactive) {
             System.err.printf("detect long requests [%b]: ", longRequests);
             String value = console.readLine().trim();
-            if (value.length() == 0) {
+            if (value.isEmpty()) {
                 value = String.valueOf(longRequests);
             }
             longRequests = Boolean.parseBoolean(value);
         }
 
-        // Setup JMX
+        // Setup JMX.
         MBeanContainer mbeanContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
         server.addBean(mbeanContainer);
 
@@ -272,9 +288,9 @@ public class CometDLoadServer {
         }
         ServerConnector connector = new ServerConnector(server, null, null, null, 1, selectors, factories);
         // Make sure the OS is configured properly for load testing;
-        // see http://cometd.org/documentation/howtos/loadtesting
+        // see http://cometd.org/documentation/howtos/loadtesting.
         connector.setAcceptQueueSize(2048);
-        // Make sure the server timeout on a TCP connection is large
+        // Make sure the server timeout on a TCP connection is large.
         connector.setIdleTimeout(Config.META_CONNECT_TIMEOUT + 10 * Config.MAX_NETWORK_DELAY);
         connector.setPort(port);
         server.addConnector(connector);
@@ -299,28 +315,49 @@ public class CometDLoadServer {
             handler = statisticsHandler;
         }
 
-        // Add more handlers if needed
-        ContextHandlerCollection contextHandlerCollection = new ContextHandlerCollection();
-        handler.setHandler(contextHandlerCollection);
+        // Add more handlers if needed.
 
-        // Setup default handler to serve static files
-        contextHandlerCollection.addHandler(new DefaultHandler());
+        String cometdURLMapping = Config.COMETD_PATH + "/*";
+        switch (transport) {
+            case "jakarta" -> {
+                ServletContextHandler context = new ServletContextHandler(Config.CONTEXT_PATH);
+                handler.setHandler(context);
+                context.getServletContext().setAttribute(BayeuxServer.ATTRIBUTE, bayeuxServer);
+                context.setInitParameter(ServletContextHandler.MANAGED_ATTRIBUTES, BayeuxServer.ATTRIBUTE);
 
-        // Setup comet handler
-        ContextHandler context = new ContextHandler(Config.CONTEXT_PATH);
-        context.setAttribute(BayeuxServer.ATTRIBUTE, bayeuxServer);
-        context.setHandler(new CometDHandler());
-        contextHandlerCollection.addHandler(context);
+                JakartaWebSocketServletContainerInitializer.configure(context, null);
+
+                // Set up the CometDServlet.
+                CometDServlet cometServlet = new CometDServlet();
+                ServletHolder cometdServletHolder = new ServletHolder(cometServlet);
+                context.addServlet(cometdServletHolder, cometdURLMapping);
+            }
+            case "jetty" -> {
+                ContextHandler context = new ContextHandler(Config.CONTEXT_PATH);
+                handler.setHandler(context);
+                context.getContext().setAttribute(BayeuxServer.ATTRIBUTE, bayeuxServer);
+                context.setAttribute(ContextHandler.MANAGED_ATTRIBUTES, BayeuxServer.ATTRIBUTE);
+
+                WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context);
+                context.setHandler(wsHandler);
+
+                wsHandler.setHandler(new CometDHandler());
+            }
+            default -> {
+                throw new IllegalArgumentException("Invalid transport: " + transport);
+            }
+        }
 
         // Make sure the expiration timeout is large to avoid clients to timeout
         // This value must be several times larger than the client value
         // (e.g. 60 s on server vs 5 s on client) so that it's guaranteed that
         // it will be the client to dispose idle connections.
         bayeuxServer.setOption(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(10 * Config.MAX_NETWORK_DELAY));
-        // Explicitly set the timeout value
+        // Explicitly set the timeout value.
         bayeuxServer.setOption(AbstractServerTransport.TIMEOUT_OPTION, String.valueOf(Config.META_CONNECT_TIMEOUT));
-        // Use the faster JSON parser/generator
+        // Use the faster JSON parser/generator.
         bayeuxServer.setOption(AbstractServerTransport.JSON_CONTEXT_OPTION, JacksonJSONContextServer.class.getName());
+        bayeuxServer.setOption(AbstractWebSocketTransport.COMETD_URL_MAPPING_OPTION, cometdURLMapping);
 
         bayeuxServer.addExtension(new AcknowledgedMessagesExtension());
         bayeuxServer.addExtension(messageLatencyExtension);
@@ -330,19 +367,6 @@ public class CometDLoadServer {
         server.start();
 
         new StatisticsService(this);
-    }
-
-    private boolean readPerMessageDeflate(String transport, BufferedReader console) throws IOException {
-        boolean perMessageDeflate = this.perMessageDeflate;
-        if (interactive) {
-            System.err.printf("enable %s permessage-deflate extension [%b]: ", transport, perMessageDeflate);
-            String value = console.readLine().trim();
-            if (value.length() == 0) {
-                value = String.valueOf(perMessageDeflate);
-            }
-            perMessageDeflate = Boolean.parseBoolean(value);
-        }
-        return perMessageDeflate;
     }
 
     public static class StatisticsService extends AbstractService {
@@ -479,7 +503,7 @@ public class CometDLoadServer {
                 formatStackFrames(stackFrames, builder);
                 System.err.println("Request #" + requestId + " is too slow (> " + maxRequestTime + " ms)\n" + builder);
                 long end = System.nanoTime();
-                System.err.println("Request #" + requestId + " printed in " + TimeUnit.NANOSECONDS.toMicros(end - begin) + " \u00B5s");
+                System.err.println("Request #" + requestId + " printed in " + TimeUnit.NANOSECONDS.toMicros(end - begin) + " " + MICROS);
             } catch (Exception x) {
                 x.printStackTrace();
             }
@@ -553,7 +577,7 @@ public class CometDLoadServer {
                 return h1;
             });
             if (histogram.getTotalCount() > 0) {
-                System.err.println(new HistogramSnapshot(histogram, 20, "Requests - Latency", "\u00B5s", this));
+                System.err.println(new HistogramSnapshot(histogram, 20, "Requests - Latency", MICROS, this));
             }
         }
 
@@ -601,7 +625,7 @@ public class CometDLoadServer {
             Histogram histogram = latencies.getIntervalHistogram();
             if (histogram.getTotalCount() > 0) {
                 System.err.println("========================================");
-                System.err.println(new HistogramSnapshot(histogram, 20, "Messages - Processing", "\u00B5s", this));
+                System.err.println(new HistogramSnapshot(histogram, 20, "Messages - Processing", MICROS, this));
             }
         }
     }

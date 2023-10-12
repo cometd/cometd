@@ -25,6 +25,7 @@ import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.HttpException;
 import org.cometd.server.ServerSessionImpl;
 import org.cometd.server.http.AbstractHttpTransport;
+import org.cometd.server.http.JSONHttpTransport;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
@@ -45,11 +46,19 @@ import org.slf4j.LoggerFactory;
 // TODO: can this handler be the direct child of Server?
 //  In this way we will save the ContextHandler wrapping & machinery.
 
-public class CometDHandler extends Handler.Abstract.NonBlocking {
+public class CometDHandler extends Handler.Abstract {
     private static final Logger LOGGER = LoggerFactory.getLogger(CometDHandler.class);
 
     private Map<String, String> options = Map.of();
     private BayeuxServer bayeuxServer;
+
+    public CometDHandler() {
+        this(InvocationType.BLOCKING);
+    }
+
+    public CometDHandler(InvocationType invocationType) {
+        super(invocationType);
+    }
 
     public Map<String, String> getOptions() {
         return options;
@@ -61,20 +70,28 @@ public class CometDHandler extends Handler.Abstract.NonBlocking {
 
     @Override
     protected void doStart() throws Exception {
-        bayeuxServer = newBayeuxServer();
-        addBean(bayeuxServer);
+        Context context = ContextHandler.getCurrentContext(getServer());
+        bayeuxServer = (BayeuxServer)context.getAttribute(BayeuxServer.ATTRIBUTE);
 
-        bayeuxServer.setOption(BayeuxServerImpl.TRANSPORTS_OPTION, """
-                org.cometd.server.http.jetty.JettyJSONTransport,
-                org.cometd.server.websocket.jetty.JettyWebSocketTransport
-                """);
-        for (Map.Entry<String, String> entry : getOptions().entrySet()) {
-            bayeuxServer.setOption(entry.getKey(), entry.getValue());
+        boolean export = false;
+        if (bayeuxServer == null) {
+            export = true;
+            bayeuxServer = newBayeuxServer();
+
+            String transports = JSONHttpTransport.class.getName() + ",org.cometd.server.websocket.jetty.JettyWebSocketTransport";
+            bayeuxServer.setOption(BayeuxServerImpl.TRANSPORTS_OPTION, transports);
+            for (Map.Entry<String, String> entry : getOptions().entrySet()) {
+                this.bayeuxServer.setOption(entry.getKey(), entry.getValue());
+            }
         }
 
-        Context context = ContextHandler.getCurrentContext(getServer());
         bayeuxServer.setOption(Context.class.getName(), context);
-        context.setAttribute(BayeuxServer.ATTRIBUTE, bayeuxServer);
+
+        addBean(bayeuxServer);
+
+        if (export) {
+            context.setAttribute(BayeuxServer.ATTRIBUTE, bayeuxServer);
+        }
 
         super.doStart();
     }

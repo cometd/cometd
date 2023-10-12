@@ -66,7 +66,6 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.ee10.websocket.jakarta.client.JakartaWebSocketClientContainerProvider;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
@@ -83,6 +82,7 @@ import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
 
 public class CometDLoadClient implements MeasureConverter {
     private static final String START_FIELD = "start";
@@ -305,7 +305,7 @@ public class CometDLoadClient implements MeasureConverter {
             }
             contextPath = value;
         }
-        String url = (tls ? "https" : "http") + "://" + host + ":" + port + contextPath + Config.SERVLET_PATH;
+        String url = (tls ? "https" : "http") + "://" + host + ":" + port + contextPath + Config.COMETD_PATH;
 
         String channel = this.channel;
         if (interactive) {

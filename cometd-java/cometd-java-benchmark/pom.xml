@@ -13,8 +13,7 @@
 
   <modules>
     <module>cometd-java-benchmark-common</module>
-    <module>cometd-java-benchmark-server-servlet</module>
-    <module>cometd-java-benchmark-server-handler</module>
+    <module>cometd-java-benchmark-server</module>
     <module>cometd-java-benchmark-client</module>
   </modules>
 </project>

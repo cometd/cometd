@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
 
 public class Config {
     public static final String CONTEXT_PATH = "/cometd";
-    public static final String SERVLET_PATH = "/cometd";
+    public static final String COMETD_PATH = "/cometd";
     public static final String ID_FIELD = "msg_id";
     public static final String CHANNEL_PREFIX = "/bench/";
 

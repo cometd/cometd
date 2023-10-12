@@ -170,6 +170,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
 
     protected void write(TransportContext context, List<ServerMessage> messages) {
         try {
+            // TODO: do not allocate a Writer every time, it can be reused.
             Writer writer = new Writer(context, messages);
             writer.iterate();
         } catch (Throwable x) {
@@ -626,7 +627,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
     protected class Writer extends IteratingCallback implements Promise<Void> {
         private final TransportContext context;
         private final List<ServerMessage> messages;
-        private Writer.State state = Writer.State.BEGIN;
+        private State state = State.PREPARE;
         private int replyIndex;
         private int messageIndex;
         private boolean needsComma;

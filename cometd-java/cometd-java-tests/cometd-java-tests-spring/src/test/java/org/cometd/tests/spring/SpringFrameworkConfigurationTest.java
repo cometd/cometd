@@ -78,7 +78,7 @@ public class SpringFrameworkConfigurationTest {
         String url = startServer(context -> {
             // Add Spring listener
             context.addEventListener(new ContextLoaderListener());
-            context.getInitParams().put(ContextLoader.CONFIG_LOCATION_PARAM, "classpath:/applicationContext-server.xml");
+            context.getInitParams().put(ContextLoader.CONFIG_LOCATION_PARAM, "classpath:/applicationContext-http.xml");
         });
 
         WebApplicationContext applicationContext = WebApplicationContextUtils.getRequiredWebApplicationContext(context.getServletContext());

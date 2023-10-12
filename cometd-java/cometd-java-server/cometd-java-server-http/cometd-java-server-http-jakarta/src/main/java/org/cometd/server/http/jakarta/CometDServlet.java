@@ -54,20 +54,21 @@ public class CometDServlet extends HttpServlet {
     @Override
     public void init() throws ServletException {
         try {
+            bayeuxServer = (BayeuxServer)getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
+
             boolean export = false;
-            bayeuxServer = (BayeuxServerImpl)getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
             if (bayeuxServer == null) {
                 export = true;
                 bayeuxServer = newBayeuxServer();
 
-                // Transfer all servlet init parameters to the BayeuxServer implementation
+                // Transfer all servlet init parameters to the BayeuxServer implementation.
                 for (String initParamName : Collections.list(getInitParameterNames())) {
                     bayeuxServer.setOption(initParamName, getInitParameter(initParamName));
                 }
-
-                // Add the ServletContext to the options
-                bayeuxServer.setOption(ServletContext.class.getName(), getServletContext());
             }
+
+            // Add the ServletContext to the options.
+            bayeuxServer.setOption(ServletContext.class.getName(), getServletContext());
 
             LifeCycle.start(bayeuxServer);
 
