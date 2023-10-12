@@ -28,10 +28,9 @@ import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.websocket.okhttp.OkHttpWebSocketTransport;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
+import org.cometd.server.http.JSONHttpTransport;
 import org.cometd.server.http.jakarta.CometDServlet;
-import org.cometd.server.http.jakarta.JakartaJSONTransport;
 import org.cometd.server.http.jetty.CometDHandler;
-import org.cometd.server.http.jetty.JettyJSONTransport;
 import org.cometd.server.websocket.common.AbstractWebSocketTransport;
 import org.cometd.server.websocket.jakarta.WebSocketTransport;
 import org.cometd.server.websocket.jetty.JettyWebSocketTransport;
@@ -122,7 +121,7 @@ public abstract class ClientServerWebSocketTest {
                 JakartaWebSocketServletContainerInitializer.configure(servletContext, null);
                 CometDServlet cometdServlet = new CometDServlet();
                 ServletHolder cometdServletHolder = new ServletHolder(cometdServlet);
-                String transports = wsTransportClass + "," + JakartaJSONTransport.class.getName();
+                String transports = wsTransportClass + "," + JSONHttpTransport.class.getName();
                 cometdServletHolder.setInitParameter(BayeuxServerImpl.TRANSPORTS_OPTION, transports);
                 cometdServletHolder.setInitParameter(AbstractServerTransport.TIMEOUT_OPTION, "10000");
                 cometdServletHolder.setInitParameter(AbstractWebSocketTransport.COMETD_URL_MAPPING_OPTION, cometdURLMapping);
@@ -143,7 +142,7 @@ public abstract class ClientServerWebSocketTest {
                 if (options == null) {
                     options = new HashMap<>();
                 }
-                String transports = wsTransportClass + "," + JettyJSONTransport.class.getName();
+                String transports = wsTransportClass + "," + JSONHttpTransport.class.getName();
                 options.putIfAbsent(BayeuxServerImpl.TRANSPORTS_OPTION, transports);
                 options.putIfAbsent(AbstractServerTransport.TIMEOUT_OPTION, "10000");
                 options.putIfAbsent(AbstractWebSocketTransport.COMETD_URL_MAPPING_OPTION, cometdURLMapping);

@@ -44,9 +44,9 @@ import org.cometd.server.AbstractService;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.JacksonJSONContextServer;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
+import org.cometd.server.http.JSONHttpTransport;
+import org.cometd.server.http.TransportContext;
 import org.cometd.server.http.jetty.CometDHandler;
-import org.cometd.server.http.jetty.JettyJSONTransport;
-import org.cometd.server.transport.TransportContext;
 import org.cometd.server.websocket.common.AbstractWebSocketEndPoint;
 import org.cometd.server.websocket.common.AbstractWebSocketTransport;
 import org.cometd.server.websocket.jetty.JettyWebSocketTransport;
@@ -199,8 +199,9 @@ public class CometDLoadServer {
                     serverTransport.setOption(AbstractWebSocketTransport.ENABLE_EXTENSION_PREFIX_OPTION + "permessage-deflate", perMessageDeflate);
                     bayeuxServer.addTransport(serverTransport);
                 }
+                // TODO: all transport are async now, so change to just "http".
                 case "asynchttp" -> {
-                    bayeuxServer.addTransport(new JettyJSONTransport(bayeuxServer) {
+                    bayeuxServer.addTransport(new JSONHttpTransport(bayeuxServer) {
                         @Override
                         protected void writeComplete(TransportContext context, List<ServerMessage> messages) {
                             messageLatencyExtension.complete(messages);

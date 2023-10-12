@@ -22,9 +22,7 @@ import java.util.function.Supplier;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.http.jakarta.CometDServlet;
-import org.cometd.server.http.jakarta.JakartaJSONTransport;
 import org.cometd.server.http.jetty.CometDHandler;
-import org.cometd.server.http.jetty.JettyJSONTransport;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.server.Server;
@@ -68,7 +66,7 @@ public abstract class AbstractBayeuxServerTest {
                     options = new HashMap<>();
                 }
                 options.put("timeout", String.valueOf(timeout));
-                options.put("transports", JakartaJSONTransport.class.getName());
+                options.put("transports", JSONHttpTransport.class.getName());
                 for (Map.Entry<String, String> entry : options.entrySet()) {
                     cometdServletHolder.setInitParameter(entry.getKey(), entry.getValue());
                 }
@@ -84,7 +82,7 @@ public abstract class AbstractBayeuxServerTest {
                     options = new HashMap<>();
                 }
                 options.put("timeout", String.valueOf(timeout));
-                options.put("transports", JettyJSONTransport.class.getName());
+                options.put("transports", JSONHttpTransport.class.getName());
                 cometdHandler.setOptions(options);
                 yield cometdHandler::getBayeuxServer;
             }

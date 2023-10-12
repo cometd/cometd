@@ -34,7 +34,7 @@ import org.cometd.server.CometDRequest;
 import org.cometd.server.CometDResponse;
 import org.cometd.server.HttpException;
 import org.cometd.server.ServerSessionImpl;
-import org.cometd.server.transport.AbstractHttpTransport;
+import org.cometd.server.http.AbstractHttpTransport;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -101,7 +101,6 @@ public class CometDServlet extends HttpServlet {
         asyncContext.setTimeout(0);
 
         CometDRequest cometDRequest = new JakartaCometDRequest(request);
-        cometDRequest.setAttribute(AsyncContext.class.getName(), asyncContext);
         CometDResponse cometDResponse = new JakartaCometDResponse(response);
         BayeuxContext bayeuxContext = new JakartaBayeuxContext(request);
 

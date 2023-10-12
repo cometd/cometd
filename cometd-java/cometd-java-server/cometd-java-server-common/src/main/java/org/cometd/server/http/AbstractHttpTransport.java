@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.cometd.server.transport;
+package org.cometd.server.http;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -164,7 +164,9 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         return context.scheduler();
     }
 
-    protected abstract HttpScheduler newHttpScheduler(TransportContext context, Promise<Void> promise, ServerMessage.Mutable reply, long timeout);
+    protected HttpScheduler newHttpScheduler(TransportContext context, Promise<Void> promise, ServerMessage.Mutable reply, long timeout) {
+        return new HttpSchedulerImpl(this, context, promise, reply, timeout);
+    }
 
     protected void write(TransportContext context, List<ServerMessage> messages) {
         try {
@@ -604,6 +606,21 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
      */
     public interface HttpScheduler extends Scheduler {
         ServerMessage.Mutable getMessage();
+    }
+
+    // TODO: coalesce with AbstractHttpScheduler
+    private static class HttpSchedulerImpl extends AbstractHttpScheduler {
+        private HttpSchedulerImpl(AbstractHttpTransport transport, TransportContext context, Promise<Void> promise, ServerMessage.Mutable message, long timeout) {
+            super(transport, context, promise, message, timeout);
+        }
+
+        @Override
+        protected void dispatch(boolean timeout) {
+            // Directly succeeding the callback to write messages and replies.
+            // Since the write is async, we will never block and thus never delay other sessions.
+            getContext().session().notifyResumed(getMessage(), timeout);
+            getPromise().succeed(null);
+        }
     }
 
     protected class Writer extends IteratingCallback implements Promise<Void> {

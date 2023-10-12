@@ -24,8 +24,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.cometd.server.ServerSessionImpl;
-import org.cometd.server.http.jetty.JettyJSONTransport;
-import org.cometd.server.transport.AbstractHttpTransport;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.http.HttpFields;
@@ -261,10 +259,10 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
         String cookieSameSite = "Lax";
 
         Map<String, String> options = new HashMap<>();
-        options.put(JettyJSONTransport.BROWSER_COOKIE_NAME_OPTION, cookieName);
-        options.put(JettyJSONTransport.BROWSER_COOKIE_DOMAIN_OPTION, cookieDomain);
-        options.put(JettyJSONTransport.BROWSER_COOKIE_PATH_OPTION, cookiePath);
-        options.put(JettyJSONTransport.BROWSER_COOKIE_SAME_SITE_OPTION, cookieSameSite);
+        options.put(JSONHttpTransport.BROWSER_COOKIE_NAME_OPTION, cookieName);
+        options.put(JSONHttpTransport.BROWSER_COOKIE_DOMAIN_OPTION, cookieDomain);
+        options.put(JSONHttpTransport.BROWSER_COOKIE_PATH_OPTION, cookiePath);
+        options.put(JSONHttpTransport.BROWSER_COOKIE_SAME_SITE_OPTION, cookieSameSite);
         startServer(transport, options);
 
         Request handshake = newBayeuxRequest("""

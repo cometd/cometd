@@ -19,7 +19,7 @@ module org.cometd.server {
     exports org.cometd.server.ext;
     exports org.cometd.server.filter;
     exports org.cometd.server.jmx;
-    exports org.cometd.server.transport;
+    exports org.cometd.server.http;
 
     requires transitive org.cometd.api.server;
     requires transitive org.cometd.common;

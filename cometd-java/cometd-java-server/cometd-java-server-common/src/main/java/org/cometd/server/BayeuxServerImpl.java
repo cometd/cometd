@@ -295,7 +295,7 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
 
     private ServerTransport newJSONTransport() {
         try {
-            return newServerTransport("org.cometd.server.http.jakarta.JakartaJSONTransport");
+            return newServerTransport("org.cometd.server.http.JSONHttpTransport");
         } catch (Exception x) {
             return null;
         }
@@ -303,7 +303,7 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
 
     private ServerTransport newJSONPTransport() {
         try {
-            return newServerTransport("org.cometd.server.http.jakarta.JakartaJSONPTransport");
+            return newServerTransport("org.cometd.server.http.JSONPHttpTransport");
         } catch (Exception x) {
             return null;
         }

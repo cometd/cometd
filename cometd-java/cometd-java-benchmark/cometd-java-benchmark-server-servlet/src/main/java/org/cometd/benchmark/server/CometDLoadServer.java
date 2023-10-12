@@ -45,9 +45,9 @@ import org.cometd.server.AbstractService;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.JacksonJSONContextServer;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
+import org.cometd.server.http.JSONHttpTransport;
+import org.cometd.server.http.TransportContext;
 import org.cometd.server.http.jakarta.CometDServlet;
-import org.cometd.server.http.jakarta.JakartaJSONTransport;
-import org.cometd.server.transport.TransportContext;
 import org.cometd.server.websocket.common.AbstractWebSocketEndPoint;
 import org.cometd.server.websocket.common.AbstractWebSocketTransport;
 import org.cometd.server.websocket.jakarta.WebSocketTransport;
@@ -213,8 +213,9 @@ public class CometDLoadServer {
                     serverTransport.setOption(AbstractWebSocketTransport.ENABLE_EXTENSION_PREFIX_OPTION + "permessage-deflate", perMessageDeflate);
                     bayeuxServer.addTransport(serverTransport);
                 }
+                // TODO: make only one case for http and asynchttp
                 case "http" -> {
-                    bayeuxServer.addTransport(new JakartaJSONTransport(bayeuxServer) {
+                    bayeuxServer.addTransport(new JSONHttpTransport(bayeuxServer) {
                         @Override
                         protected void writeComplete(TransportContext context, List<ServerMessage> messages) {
                             messageLatencyExtension.complete(messages);
@@ -222,7 +223,7 @@ public class CometDLoadServer {
                     });
                 }
                 case "asynchttp" -> {
-                    bayeuxServer.addTransport(new JakartaJSONTransport(bayeuxServer) {
+                    bayeuxServer.addTransport(new JSONHttpTransport(bayeuxServer) {
                         @Override
                         protected void writeComplete(TransportContext context, List<ServerMessage> messages) {
                             messageLatencyExtension.complete(messages);

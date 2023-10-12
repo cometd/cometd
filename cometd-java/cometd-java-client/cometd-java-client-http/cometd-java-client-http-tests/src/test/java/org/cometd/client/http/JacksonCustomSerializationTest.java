@@ -34,7 +34,7 @@ import org.cometd.common.JSONContext;
 import org.cometd.common.JacksonJSONContextClient;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.JacksonJSONContextServer;
-import org.cometd.server.transport.AbstractHttpTransport;
+import org.cometd.server.http.AbstractHttpTransport;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 

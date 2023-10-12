@@ -35,8 +35,8 @@ import org.cometd.client.transport.ClientTransport;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerMessageImpl;
+import org.cometd.server.http.JSONHttpTransport;
 import org.cometd.server.http.jakarta.CometDServlet;
-import org.cometd.server.http.jakarta.JakartaJSONTransport;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
@@ -98,7 +98,7 @@ public class ProxyTest {
         ServletContextHandler context = new ServletContextHandler("/");
         server.setHandler(context);
         ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);
-        cometdServletHolder.setInitParameter(BayeuxServerImpl.TRANSPORTS_OPTION, JakartaJSONTransport.class.getName());
+        cometdServletHolder.setInitParameter(BayeuxServerImpl.TRANSPORTS_OPTION, JSONHttpTransport.class.getName());
         cometdServletHolder.setInitParameter(AbstractServerTransport.TIMEOUT_OPTION, "10000");
         cometdServletHolder.setInitOrder(1);
         if (initParams != null) {

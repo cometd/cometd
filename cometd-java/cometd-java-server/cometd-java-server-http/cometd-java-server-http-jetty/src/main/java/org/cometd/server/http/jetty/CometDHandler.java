@@ -24,7 +24,7 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.HttpException;
 import org.cometd.server.ServerSessionImpl;
-import org.cometd.server.transport.AbstractHttpTransport;
+import org.cometd.server.http.AbstractHttpTransport;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;

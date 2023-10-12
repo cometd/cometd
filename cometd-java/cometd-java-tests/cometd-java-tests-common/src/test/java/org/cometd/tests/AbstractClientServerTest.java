@@ -38,10 +38,9 @@ import org.cometd.client.websocket.jakarta.WebSocketTransport;
 import org.cometd.client.websocket.jetty.JettyWebSocketTransport;
 import org.cometd.client.websocket.okhttp.OkHttpWebSocketTransport;
 import org.cometd.server.BayeuxServerImpl;
+import org.cometd.server.http.JSONHttpTransport;
 import org.cometd.server.http.jakarta.CometDServlet;
-import org.cometd.server.http.jakarta.JakartaJSONTransport;
 import org.cometd.server.http.jetty.CometDHandler;
-import org.cometd.server.http.jetty.JettyJSONTransport;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
@@ -164,8 +163,7 @@ public abstract class AbstractClientServerTest {
 
     protected String serverTransport(Transport transport) {
         return switch (transport) {
-            case JETTY_HTTP -> JettyJSONTransport.class.getName();
-            case JAKARTA_HTTP, OKHTTP_HTTP -> JakartaJSONTransport.class.getName();
+            case JAKARTA_HTTP, JETTY_HTTP, OKHTTP_HTTP -> JSONHttpTransport.class.getName();
             case JAKARTA_WEBSOCKET, OKHTTP_WEBSOCKET ->
                     org.cometd.server.websocket.jakarta.WebSocketTransport.class.getName();
             case JETTY_WEBSOCKET -> org.cometd.server.websocket.jetty.JettyWebSocketTransport.class.getName();

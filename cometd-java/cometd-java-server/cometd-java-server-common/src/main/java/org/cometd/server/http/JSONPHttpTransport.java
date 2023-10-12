@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.cometd.server.http.jakarta;
+package org.cometd.server.http;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -28,18 +28,15 @@ import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometDRequest;
 import org.cometd.server.CometDResponse;
 import org.cometd.server.HttpException;
-import org.cometd.server.transport.AbstractHttpTransport;
-import org.cometd.server.transport.AbstractJSONTransport;
-import org.cometd.server.transport.TransportContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class JakartaJSONPTransport extends AbstractHttpTransport {
+public class JSONPHttpTransport extends AbstractHttpTransport {
     public final static String NAME = "callback-polling";
     public final static String CALLBACK_PARAMETER_OPTION = "callbackParameter";
     public final static String CALLBACK_PARAMETER_MAX_LENGTH_OPTION = "callbackParameterMaxLength";
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractJSONTransport.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(JSONHttpTransport.class);
     private final static String PREFIX = "long-polling.jsonp";
     private final static Pattern CALLBACK_PATTERN = Pattern.compile("^[a-zA-Z0-9._\\-]+$");
     private final static byte[] MESSAGE_BEGIN = new byte[]{'(', '['};
@@ -48,7 +45,7 @@ public class JakartaJSONPTransport extends AbstractHttpTransport {
     private String callbackParam = "jsonp";
     private int callbackMaxLength = 64;
 
-    public JakartaJSONPTransport(BayeuxServerImpl bayeux) {
+    public JSONPHttpTransport(BayeuxServerImpl bayeux) {
         super(bayeux, NAME);
         setOptionPrefix(PREFIX);
     }
@@ -120,11 +117,6 @@ public class JakartaJSONPTransport extends AbstractHttpTransport {
         } catch (Throwable x) {
             context.promise().fail(x);
         }
-    }
-
-    @Override
-    protected HttpScheduler newHttpScheduler(TransportContext context, Promise<Void> promise, ServerMessage.Mutable reply, long timeout) {
-        return new JakartaHttpScheduler(this, context, promise, reply, timeout);
     }
 
     @Override

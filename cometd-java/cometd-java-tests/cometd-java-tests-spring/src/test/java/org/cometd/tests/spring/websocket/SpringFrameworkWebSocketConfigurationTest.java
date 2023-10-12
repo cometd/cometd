@@ -27,8 +27,8 @@ import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.websocket.okhttp.OkHttpWebSocketTransport;
 import org.cometd.server.BayeuxServerImpl;
+import org.cometd.server.http.JSONHttpTransport;
 import org.cometd.server.http.jakarta.CometDServlet;
-import org.cometd.server.http.jakarta.JakartaJSONTransport;
 import org.cometd.server.websocket.jakarta.WebSocketTransport;
 import org.cometd.server.websocket.jetty.JettyWebSocketTransport;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
@@ -79,7 +79,7 @@ public class SpringFrameworkWebSocketConfigurationTest {
         String cometdURLMapping = cometdServletPath + "/*";
 
         ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);
-        String transports = wsTransportClass + "," + JakartaJSONTransport.class.getName();
+        String transports = wsTransportClass + "," + JSONHttpTransport.class.getName();
         cometdServletHolder.setInitParameter("transports", transports);
         cometdServletHolder.setInitParameter("timeout", "10000");
         cometdServletHolder.setInitParameter("ws.cometdURLMapping", cometdURLMapping);

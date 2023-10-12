@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.cometd.server.transport;
+package org.cometd.server.http;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -31,13 +31,13 @@ import org.cometd.server.JSONContextServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class AbstractJSONTransport extends AbstractHttpTransport {
+public class JSONHttpTransport extends AbstractHttpTransport {
     public static final String NAME = "long-polling";
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractJSONTransport.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(JSONHttpTransport.class);
     private static final String PREFIX = "long-polling.json";
 
-    public AbstractJSONTransport(BayeuxServerImpl bayeux) {
+    public JSONHttpTransport(BayeuxServerImpl bayeux) {
         super(bayeux, NAME);
         setOptionPrefix(PREFIX);
     }
@@ -89,15 +89,15 @@ public abstract class AbstractJSONTransport extends AbstractHttpTransport {
         }
     }
 
-    protected abstract class AbstractReader {
+    private abstract class AbstractReader {
         private final TransportContext context;
         private int total;
 
-        protected AbstractReader(TransportContext context) {
+        private AbstractReader(TransportContext context) {
             this.context = context;
         }
 
-        protected TransportContext context() {
+        private TransportContext context() {
             return context;
         }
 
@@ -177,10 +177,10 @@ public abstract class AbstractJSONTransport extends AbstractHttpTransport {
         }
     }
 
-    protected class UTF8Reader extends AbstractReader {
+    private class UTF8Reader extends AbstractReader {
         private final JSONContext.AsyncParser parser;
 
-        protected UTF8Reader(TransportContext context) {
+        private UTF8Reader(TransportContext context) {
             super(context);
             JSONContextServer jsonContext = getJSONContextServer();
             JSONContext.AsyncParser asyncParser = jsonContext.newAsyncParser();
@@ -196,17 +196,17 @@ public abstract class AbstractJSONTransport extends AbstractHttpTransport {
         }
 
         @Override
-        public void onEOF() {
+        protected void onEOF() {
             List<ServerMessage.Mutable> messages = parser.complete();
             finish(messages);
         }
     }
 
-    protected class CharsetReader extends AbstractReader {
+    private class CharsetReader extends AbstractReader {
         private final Charset charset;
         private ByteBuffer aggregator = ByteBuffer.allocateDirect(256);
 
-        public CharsetReader(TransportContext context, Charset charset) {
+        private CharsetReader(TransportContext context, Charset charset) {
             super(context);
             this.charset = charset;
         }
@@ -224,7 +224,7 @@ public abstract class AbstractJSONTransport extends AbstractHttpTransport {
         }
 
         @Override
-        public void onEOF() {
+        protected void onEOF() {
             String json = charset.decode(aggregator.flip()).toString();
             finish(json);
         }

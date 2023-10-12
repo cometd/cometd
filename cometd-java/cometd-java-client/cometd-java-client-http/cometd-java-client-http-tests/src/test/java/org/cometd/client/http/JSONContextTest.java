@@ -41,7 +41,7 @@ import org.cometd.server.JSONContextServer;
 import org.cometd.server.JacksonJSONContextServer;
 import org.cometd.server.JettyJSONContextServer;
 import org.cometd.server.ServerMessageImpl;
-import org.cometd.server.http.jakarta.JakartaJSONTransport;
+import org.cometd.server.http.JSONHttpTransport;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.http.HttpMethod;
@@ -99,7 +99,7 @@ public class JSONContextTest extends ClientServerTest {
     @Test
     public void testHandshakeMessageNoArray() throws Exception {
         Map<String, String> serverOptions = new HashMap<>();
-        serverOptions.put(BayeuxServerImpl.TRANSPORTS_OPTION, JakartaJSONTransport.class.getName());
+        serverOptions.put(BayeuxServerImpl.TRANSPORTS_OPTION, JSONHttpTransport.class.getName());
         // Only Jetty supports the lenient parsing tested here.
         serverOptions.put(AbstractServerTransport.JSON_CONTEXT_OPTION, JettyJSONContextServer.class.getName());
         start(serverOptions);
