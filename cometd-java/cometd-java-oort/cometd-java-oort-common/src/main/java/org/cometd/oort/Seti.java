@@ -73,8 +73,6 @@ import org.slf4j.LoggerFactory;
  * {@link #sendMessage(String, String, Object)} methods may be
  * used to send messages to user(s) anywhere in the Oort cluster
  * and Seti organizes the search in order to locate the user(s).</p>
- *
- * @see SetiServlet
  */
 @ManagedObject("CometD cloud peer discovery component")
 public class Seti extends AbstractLifeCycle implements Dumpable {

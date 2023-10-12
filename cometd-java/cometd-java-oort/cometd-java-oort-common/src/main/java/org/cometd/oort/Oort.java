@@ -68,8 +68,6 @@ import org.slf4j.LoggerFactory;
 
 /**
  * <p>Oort is the cluster manager that links one CometD server to a set of other CometD servers.</p>
- * <p>The Oort instance is created and configured by either {@link OortMulticastConfigServlet} or
- * {@link OortStaticConfigServlet}.</p>
  * <p>This class maintains a collection of {@link OortComet} instances to each
  * CometD server, created by calls to {@link #observeComet(String)}.</p>
  * <p>The key configuration parameter is the Oort URL, which is
@@ -78,9 +76,6 @@ import org.slf4j.LoggerFactory;
  * <p>Oort instances can be configured with a shared {@link #setSecret(String) secret}, which allows
  * the Oort instance to distinguish handshakes coming from remote clients from handshakes coming from
  * other Oort comets: the firsts may be subject to a stricter authentication policy than the seconds.</p>
- *
- * @see OortMulticastConfigServlet
- * @see OortStaticConfigServlet
  */
 @ManagedObject("CometD cloud node")
 public class Oort extends ContainerLifeCycle {
