@@ -17,6 +17,6 @@ module org.cometd.annotation {
     exports org.cometd.annotation;
 
     requires jakarta.annotation;
-    requires jakarta.inject;
+    requires transitive jakarta.inject;
     requires org.slf4j;
 }

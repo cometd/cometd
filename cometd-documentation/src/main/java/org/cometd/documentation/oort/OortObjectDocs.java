@@ -17,6 +17,7 @@ package org.cometd.documentation.oort;
 
 import java.util.List;
 import java.util.Map;
+
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.common.JettyJSONContextClient;
@@ -113,7 +114,7 @@ public class OortObjectDocs {
         }
 
         @Override
-        public Object fromJSON(Map object) {
+        public Object fromJSON(Map<String, Object> object) {
             String id = (String)object.get("id");
             return new UserInfo(id);
         }

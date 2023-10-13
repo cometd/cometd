@@ -28,7 +28,7 @@
 
   <servlet>
     <servlet-name>cometd</servlet-name>
-    <servlet-class>org.cometd.server.CometDServlet</servlet-class>
+    <servlet-class>org.cometd.server.http.jakarta.CometDServlet</servlet-class>
     <init-param>
       <param-name>ws.cometdURLMapping</param-name>
       <param-value>/cometd/*</param-value>

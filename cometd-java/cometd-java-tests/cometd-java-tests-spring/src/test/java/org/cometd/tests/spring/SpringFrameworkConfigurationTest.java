@@ -22,7 +22,7 @@ import java.util.function.Consumer;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.CometDServlet;
+import org.cometd.server.http.jakarta.CometDServlet;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
@@ -78,7 +78,7 @@ public class SpringFrameworkConfigurationTest {
         String url = startServer(context -> {
             // Add Spring listener
             context.addEventListener(new ContextLoaderListener());
-            context.getInitParams().put(ContextLoader.CONFIG_LOCATION_PARAM, "classpath:/applicationContext-server.xml");
+            context.getInitParams().put(ContextLoader.CONFIG_LOCATION_PARAM, "classpath:/applicationContext-http.xml");
         });
 
         WebApplicationContext applicationContext = WebApplicationContextUtils.getRequiredWebApplicationContext(context.getServletContext());
@@ -91,7 +91,7 @@ public class SpringFrameworkConfigurationTest {
         Assertions.assertTrue(bayeuxServer.isStarted());
         Assertions.assertEquals(sweepPeriod, bayeuxServer.getOption("sweepPeriod"));
 
-        Assertions.assertSame(bayeuxServer, cometdServlet.getBayeux());
+        Assertions.assertSame(bayeuxServer, cometdServlet.getBayeuxServer());
 
         CountDownLatch latch = new CountDownLatch(1);
         BayeuxClient bayeuxClient = new BayeuxClient(url, new JettyHttpClientTransport(null, httpClient));

@@ -42,7 +42,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class OortStringMapDisconnectTest extends OortTest {
+public class OortStringMapDisconnectTest extends AbstractOortTest {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final List<Seti> setis = new ArrayList<>();
     private final List<OortStringMap<String>> oortStringMaps = new ArrayList<>();
@@ -72,13 +72,13 @@ public class OortStringMapDisconnectTest extends OortTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testMassiveDisconnect(String serverTransport) throws Exception {
+    public void testMassiveDisconnect(Transport transport) throws Exception {
         int nodes = 4;
         int usersPerNode = 500;
         int totalUsers = nodes * usersPerNode;
         // One event in a node is replicated to other "nodes" nodes.
         int totalEvents = nodes * totalUsers;
-        prepareNodes(serverTransport, nodes);
+        prepareNodes(transport, nodes);
 
         // Register a service so that when a user logs in,
         // it is recorded in the users OortStringMap.
@@ -159,7 +159,7 @@ public class OortStringMapDisconnectTest extends OortTest {
         }
     }
 
-    private void prepareNodes(String serverTransport, int nodes) throws Exception {
+    private void prepareNodes(Transport transport, int nodes) throws Exception {
         int edges = nodes * (nodes - 1);
         // Create the Oorts.
         CountDownLatch joinLatch = new CountDownLatch(edges);
@@ -172,7 +172,7 @@ public class OortStringMapDisconnectTest extends OortTest {
         Map<String, String> options = new HashMap<>();
         options.put("ws.maxMessageSize", String.valueOf(1024 * 1024));
         for (int i = 0; i < nodes; i++) {
-            Server server = startServer(serverTransport, 0, options);
+            Server server = startServer(transport, 0, options);
             Oort oort = startOort(server);
             oort.addCometListener(joinListener);
         }

@@ -29,7 +29,6 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.websocket.common.AbstractWebSocketEndPoint;
 import org.cometd.server.websocket.common.AbstractWebSocketTransport;
-import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -94,7 +93,7 @@ public class WebSocketEndPoint extends Endpoint implements MessageHandler.Whole<
         }
 
         @Override
-        protected void send(ServerSession session, String data, Callback callback) {
+        protected void send(ServerSession session, String data, Promise<Void> promise) {
             if (_logger.isDebugEnabled()) {
                 _logger.debug("Sending {} on {}", data, this);
             }
@@ -102,9 +101,9 @@ public class WebSocketEndPoint extends Endpoint implements MessageHandler.Whole<
             _wsSession.getAsyncRemote().sendText(data, result -> {
                 Throwable failure = result.getException();
                 if (failure == null) {
-                    callback.succeeded();
+                    promise.succeed(null);
                 } else {
-                    callback.failed(failure);
+                    promise.fail(failure);
                 }
             });
         }

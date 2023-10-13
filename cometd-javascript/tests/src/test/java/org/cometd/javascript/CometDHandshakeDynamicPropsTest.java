@@ -28,6 +28,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import org.cometd.bayeux.server.ServerSession;
+import org.cometd.server.BayeuxServerImpl;
 import org.eclipse.jetty.ee10.servlet.FilterHolder;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -133,7 +134,7 @@ public class CometDHandshakeDynamicPropsTest extends AbstractCometDLongPollingTe
                     // send "unknown_session" and the JavaScript will re-handshake.
                     ServerSession session = bayeuxServer.getSession(clientId);
                     if (session != null) {
-                        bayeuxServer.removeServerSession(session, false);
+                        ((BayeuxServerImpl)bayeuxServer).removeServerSession(session, false);
                     }
                 }
             } else {

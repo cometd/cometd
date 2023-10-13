@@ -18,6 +18,7 @@ package org.cometd.tests;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
@@ -35,7 +36,7 @@ public class MetaConnectDeliverOnlyTest extends AbstractClientServerTest {
 
         BayeuxClient client = newBayeuxClient(transport);
 
-        bayeux.addListener(new BayeuxServer.SessionListener() {
+        bayeuxServer.addListener(new BayeuxServer.SessionListener() {
             @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
                 session.setMetaConnectDeliveryOnly(true);
@@ -49,7 +50,7 @@ public class MetaConnectDeliverOnlyTest extends AbstractClientServerTest {
                 client.getChannel(channelName).subscribe((c, m) -> {
                     latch.countDown();
                     if (latch.getCount() == 1) {
-                        bayeux.getChannel(channelName).publish(null, "data2", Promise.noop());
+                        bayeuxServer.getChannel(channelName).publish(null, "data2", Promise.noop());
                         Assertions.assertFalse(await(latch, Duration.ofSeconds(1)));
                     }
                 });
@@ -63,7 +64,7 @@ public class MetaConnectDeliverOnlyTest extends AbstractClientServerTest {
         // In the message listener, we perform a second server-side
         // publish and the second message should not arrive to the
         // client yet because we deliver messages only via /meta/connect.
-        bayeux.getChannel(channelName).publish(null, "data1", Promise.noop());
+        bayeuxServer.getChannel(channelName).publish(null, "data1", Promise.noop());
 
         Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
 

@@ -18,6 +18,7 @@ package org.cometd.tests;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSessionChannel;
@@ -58,7 +59,7 @@ public class MessageDeliveryDuringHandshakeTest extends AbstractClientServerTest
         Map<String, String> options = serverOptions(transport);
         options.put(AbstractServerTransport.ALLOW_MESSAGE_DELIVERY_DURING_HANDSHAKE, String.valueOf(true));
         start(transport, options);
-        bayeux.addExtension(new AcknowledgedMessagesExtension());
+        bayeuxServer.addExtension(new AcknowledgedMessagesExtension());
         BayeuxClient client = newBayeuxClient(transport);
         client.addExtension(new AckExtension());
         testMessagesInHandshakeResponse(client, true);
@@ -66,7 +67,7 @@ public class MessageDeliveryDuringHandshakeTest extends AbstractClientServerTest
 
     private void testMessagesInHandshakeResponse(BayeuxClient client, boolean allowHandshakeMessages) throws Exception {
         String channelName = "/test";
-        bayeux.addListener(new BayeuxServer.SessionListener() {
+        bayeuxServer.addListener(new BayeuxServer.SessionListener() {
             @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
                 // Send messages during the handshake processing.
@@ -87,7 +88,7 @@ public class MessageDeliveryDuringHandshakeTest extends AbstractClientServerTest
 
         CountDownLatch queueLatch = new CountDownLatch(1);
         client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> {
-            ServerSessionImpl serverSession = (ServerSessionImpl)bayeux.getSession(client.getId());
+            ServerSessionImpl serverSession = (ServerSessionImpl)bayeuxServer.getSession(client.getId());
             if (serverSession.getQueue().isEmpty() == allowHandshakeMessages) {
                 queueLatch.countDown();
             }
@@ -111,8 +112,8 @@ public class MessageDeliveryDuringHandshakeTest extends AbstractClientServerTest
         Map<String, String> options = serverOptions(transport);
         options.put(AbstractServerTransport.ALLOW_MESSAGE_DELIVERY_DURING_HANDSHAKE, String.valueOf(true));
         start(transport, options);
-        bayeux.addExtension(new AcknowledgedMessagesExtension());
-        bayeux.addListener(new BayeuxServer.SessionListener() {
+        bayeuxServer.addExtension(new AcknowledgedMessagesExtension());
+        bayeuxServer.addListener(new BayeuxServer.SessionListener() {
             @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
                 session.addListener((ServerSession.DeQueueListener)(s, queue) -> {
@@ -126,7 +127,7 @@ public class MessageDeliveryDuringHandshakeTest extends AbstractClientServerTest
         client.addExtension(new AckExtension());
 
         String channelName = "/test";
-        bayeux.addListener(new BayeuxServer.SessionListener() {
+        bayeuxServer.addListener(new BayeuxServer.SessionListener() {
             @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
                 // Send messages during the handshake processing.

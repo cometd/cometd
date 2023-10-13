@@ -14,18 +14,6 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-core</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-slf4j2-impl</artifactId>
-    </dependency>
-    <dependency>
       <groupId>jakarta.servlet</groupId>
       <artifactId>jakarta.servlet-api</artifactId>
       <scope>test</scope>
@@ -55,8 +43,8 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee10.websocket</groupId>
-      <artifactId>jetty-ee10-websocket-jetty-server</artifactId>
+      <groupId>org.eclipse.jetty.websocket</groupId>
+      <artifactId>jetty-websocket-jetty-server</artifactId>
       <version>${jetty-version}</version>
       <scope>test</scope>
     </dependency>
@@ -80,7 +68,7 @@
     </dependency>
     <dependency>
       <groupId>org.cometd.java</groupId>
-      <artifactId>cometd-java-oort</artifactId>
+      <artifactId>cometd-java-oort-common</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>

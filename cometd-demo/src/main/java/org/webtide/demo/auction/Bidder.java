@@ -16,6 +16,7 @@
 package org.webtide.demo.auction;
 
 import java.util.Map;
+
 import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.ajax.JSON.Output;
 
@@ -46,7 +47,6 @@ public class Bidder implements Cloneable, JSON.Convertible {
     public void setUsername(String aUsername) {
         username = aUsername;
     }
-
 
     @Override
     public boolean equals(Object obj) {

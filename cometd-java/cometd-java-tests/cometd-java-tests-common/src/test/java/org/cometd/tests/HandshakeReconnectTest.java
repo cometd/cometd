@@ -18,6 +18,7 @@ package org.cometd.tests;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -65,7 +66,7 @@ public class HandshakeReconnectTest extends AbstractClientServerTest {
 
         // Wait for the session to be swept (timeout + maxInterval).
         CountDownLatch sessionRemoved = new CountDownLatch(1);
-        bayeux.addListener(new BayeuxServer.SessionListener() {
+        bayeuxServer.addListener(new BayeuxServer.SessionListener() {
             @Override
             public void sessionRemoved(ServerSession session, ServerMessage message, boolean timeout) {
                 sessionRemoved.countDown();

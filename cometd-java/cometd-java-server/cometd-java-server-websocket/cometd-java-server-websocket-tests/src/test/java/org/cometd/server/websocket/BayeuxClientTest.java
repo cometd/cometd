@@ -15,22 +15,11 @@
  */
 package org.cometd.server.websocket;
 
-import java.io.IOException;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import jakarta.servlet.DispatcherType;
-import jakarta.servlet.Filter;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.FilterConfig;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpServletResponseWrapper;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.MarkedReference;
@@ -47,8 +36,8 @@ import org.cometd.client.BayeuxClient.State;
 import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.common.HashMapMessage;
+import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.DefaultSecurityPolicy;
-import org.eclipse.jetty.ee10.servlet.FilterHolder;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
@@ -57,16 +46,16 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 public class BayeuxClientTest extends ClientServerWebSocketTest {
     @ParameterizedTest
-    @MethodSource("wsTypes")
-    public void testHandshakeDenied(String wsType) throws Exception {
+    @MethodSource("transports")
+    public void testHandshakeDenied(Transport wsType) throws Exception {
         prepareAndStart(wsType, null);
 
         BayeuxClient client = newBayeuxClient(wsType);
         long backOffIncrement = 500;
         client.setBackOffStrategy(new BayeuxClient.BackOffStrategy.Linear(backOffIncrement, -1));
 
-        SecurityPolicy oldPolicy = bayeux.getSecurityPolicy();
-        bayeux.setSecurityPolicy(new DefaultSecurityPolicy() {
+        SecurityPolicy oldPolicy = bayeuxServer.getSecurityPolicy();
+        bayeuxServer.setSecurityPolicy(new DefaultSecurityPolicy() {
             @Override
             public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message) {
                 return false;
@@ -88,20 +77,20 @@ public class BayeuxClientTest extends ClientServerWebSocketTest {
 
             Assertions.assertTrue(client.waitFor(5000, State.DISCONNECTED));
         } finally {
-            bayeux.setSecurityPolicy(oldPolicy);
+            bayeuxServer.setSecurityPolicy(oldPolicy);
             disconnectBayeuxClient(client);
         }
     }
 
     @ParameterizedTest
-    @MethodSource("wsTypes")
-    public void testPublish(String wsType) throws Exception {
+    @MethodSource("transports")
+    public void testPublish(Transport wsType) throws Exception {
         prepareAndStart(wsType, null);
 
         BlockingArrayQueue<String> results = new BlockingArrayQueue<>();
 
         String channelName = "/chat/msg";
-        MarkedReference<ServerChannel> channel = bayeux.createChannelIfAbsent(channelName);
+        MarkedReference<ServerChannel> channel = bayeuxServer.createChannelIfAbsent(channelName);
         channel.getReference().addListener(new ServerChannel.MessageListener() {
             @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message) {
@@ -128,14 +117,14 @@ public class BayeuxClientTest extends ClientServerWebSocketTest {
     }
 
     @ParameterizedTest
-    @MethodSource("wsTypes")
-    public void testWaitFor(String wsType) throws Exception {
+    @MethodSource("transports")
+    public void testWaitFor(Transport wsType) throws Exception {
         prepareAndStart(wsType, null);
 
         BlockingArrayQueue<String> results = new BlockingArrayQueue<>();
 
         String channelName = "/chat/msg";
-        MarkedReference<ServerChannel> channel = bayeux.createChannelIfAbsent(channelName);
+        MarkedReference<ServerChannel> channel = bayeuxServer.createChannelIfAbsent(channelName);
         channel.getReference().addListener(new ServerChannel.MessageListener() {
             @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message) {
@@ -169,8 +158,8 @@ public class BayeuxClientTest extends ClientServerWebSocketTest {
     }
 
     @ParameterizedTest
-    @MethodSource("wsTypes")
-    public void testAuthentication(String wsType) throws Exception {
+    @MethodSource("transports")
+    public void testAuthentication(Transport wsType) throws Exception {
         prepareAndStart(wsType, null);
 
         AtomicReference<String> sessionId = new AtomicReference<>();
@@ -208,8 +197,8 @@ public class BayeuxClientTest extends ClientServerWebSocketTest {
         }
         A authenticator = new A();
 
-        SecurityPolicy oldPolicy = bayeux.getSecurityPolicy();
-        bayeux.setSecurityPolicy(authenticator);
+        SecurityPolicy oldPolicy = bayeuxServer.getSecurityPolicy();
+        bayeuxServer.setSecurityPolicy(authenticator);
         try {
             BayeuxClient client = newBayeuxClient(wsType);
 
@@ -227,13 +216,13 @@ public class BayeuxClientTest extends ClientServerWebSocketTest {
 
             Assertions.assertNull(sessionId.get());
         } finally {
-            bayeux.setSecurityPolicy(oldPolicy);
+            bayeuxServer.setSecurityPolicy(oldPolicy);
         }
     }
 
     @ParameterizedTest
-    @MethodSource("wsTypes")
-    public void testClient(String wsType) throws Exception {
+    @MethodSource("transports")
+    public void testClient(Transport wsType) throws Exception {
         prepareAndStart(wsType, null);
 
         BayeuxClient client = newBayeuxClient(wsType);
@@ -292,12 +281,12 @@ public class BayeuxClientTest extends ClientServerWebSocketTest {
 
     @Disabled("TODO: verify why it does not work; I suspect the setAllowedTransport() does not play since the WSUpgradeFilter kicks in first")
     @ParameterizedTest
-    @MethodSource("wsTypes")
-    public void testHandshakeOverWebSocketReportsHTTPFailure(String wsType) throws Exception {
+    @MethodSource("transports")
+    public void testHandshakeOverWebSocketReportsHTTPFailure(Transport wsType) throws Exception {
         prepareAndStart(wsType, null);
 
         // No transports on server, to make the client fail
-        bayeux.setAllowedTransports();
+        ((BayeuxServerImpl)bayeuxServer).setAllowedTransports();
 
         BayeuxClient client = newBayeuxClient(wsType);
         CountDownLatch latch = new CountDownLatch(1);
@@ -328,36 +317,37 @@ public class BayeuxClientTest extends ClientServerWebSocketTest {
     // response so they cannot be removed/intercepted before they are sent to the client.
     @Disabled
     @ParameterizedTest
-    @MethodSource("wsTypes")
-    public void testWebSocketResponseHeadersRemoved(String wsType) throws Exception {
+    @MethodSource("transports")
+    public void testWebSocketResponseHeadersRemoved(Transport wsType) throws Exception {
         prepareAndStart(wsType, null);
 
-        context.addFilter(new FilterHolder(new Filter() {
-            @Override
-            public void init(FilterConfig filterConfig) {
-            }
-
-            @Override
-            public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
-                try {
-                    // Wrap the response to remove the header
-                    chain.doFilter(request, new HttpServletResponseWrapper((HttpServletResponse)response) {
-                        @Override
-                        public void addHeader(String name, String value) {
-                            if (!"Sec-WebSocket-Accept".equals(name)) {
-                                super.addHeader(name, value);
-                            }
-                        }
-                    });
-                } finally {
-                    ((HttpServletResponse)response).setHeader("Sec-WebSocket-Accept", null);
-                }
-            }
-
-            @Override
-            public void destroy() {
-            }
-        }), cometdServletPath, EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
+        // TODO
+//        context.addFilter(new FilterHolder(new Filter() {
+//            @Override
+//            public void init(FilterConfig filterConfig) {
+//            }
+//
+//            @Override
+//            public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
+//                try {
+//                    // Wrap the response to remove the header
+//                    chain.doFilter(request, new HttpServletResponseWrapper((HttpServletResponse)response) {
+//                        @Override
+//                        public void addHeader(String name, String value) {
+//                            if (!"Sec-WebSocket-Accept".equals(name)) {
+//                                super.addHeader(name, value);
+//                            }
+//                        }
+//                    });
+//                } finally {
+//                    ((HttpServletResponse)response).setHeader("Sec-WebSocket-Accept", null);
+//                }
+//            }
+//
+//            @Override
+//            public void destroy() {
+//            }
+//        }), cometdServletPath, EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
 
         ClientTransport webSocketTransport = newWebSocketTransport(wsType, null);
         ClientTransport longPollingTransport = newLongPollingTransport(null);
@@ -378,8 +368,8 @@ public class BayeuxClientTest extends ClientServerWebSocketTest {
     }
 
     @ParameterizedTest
-    @MethodSource("wsTypes")
-    public void testCustomTransportURL(String wsType) throws Exception {
+    @MethodSource("transports")
+    public void testCustomTransportURL(Transport wsType) throws Exception {
         prepareAndStart(wsType, null);
 
         ClientTransport transport = newWebSocketTransport(wsType, cometdURL, null);

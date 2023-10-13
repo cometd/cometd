@@ -16,8 +16,8 @@
 module org.cometd.client.http.okhttp {
     exports org.cometd.client.http.okhttp;
 
-    requires okhttp3;
     requires kotlin.stdlib;
+    requires transitive okhttp3;
     requires transitive org.cometd.client.http.common;
     requires org.slf4j;
 }

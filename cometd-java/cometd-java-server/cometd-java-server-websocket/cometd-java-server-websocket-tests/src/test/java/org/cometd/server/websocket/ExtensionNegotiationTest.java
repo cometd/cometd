@@ -33,8 +33,8 @@ import org.cometd.client.websocket.okhttp.OkHttpWebSocketTransport;
 import org.cometd.server.websocket.common.AbstractWebSocketTransport;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -95,10 +95,10 @@ public class ExtensionNegotiationTest extends ClientServerWebSocketTest {
     }
 
     @ParameterizedTest
-    @MethodSource("wsTypes")
-    public void testExtensionNegotiation(String wsType) throws Exception {
+    @MethodSource("transports")
+    public void testExtensionNegotiation(Transport wsType) throws Exception {
         // OkHttp does not support specifying WebSocket extensions.
-        Assumptions.assumeFalse(wsType.equals(WEBSOCKET_OKHTTP));
+        Assumptions.assumeFalse(wsType == Transport.WEBSOCKET_OKHTTP);
 
         // Disable the identity extension on server.
         Map<String, String> serverOptions = new HashMap<>();

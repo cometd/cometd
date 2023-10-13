@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
@@ -40,7 +41,7 @@ public class OrphanedSessionTest extends AbstractClientServerTest {
 
         AtomicReference<ServerSession> serverSessionRef = new AtomicReference<>();
         CountDownLatch removedLatch = new CountDownLatch(1);
-        bayeux.addListener(new BayeuxServer.SessionListener() {
+        bayeuxServer.addListener(new BayeuxServer.SessionListener() {
             @Override
             public void sessionAdded(ServerSession session, ServerMessage message) {
                 serverSessionRef.set(session);

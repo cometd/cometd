@@ -66,9 +66,9 @@ public class NetworkDelayListenerTest extends AbstractClientServerTest {
     public void testNetworkDelayListener(Transport transport) throws Exception {
         try (ServerSocketChannel serverSocket = ServerSocketChannel.open()) {
             serverSocket.bind(new InetSocketAddress("localhost", 0));
-            cometdServletPath = "/cometd";
+            cometdPath = "/cometd";
             int port = serverSocket.socket().getLocalPort();
-            cometdURL = "http://localhost:" + port + cometdServletPath;
+            cometdURL = "http://localhost:" + port + cometdPath;
             LOGGER.debug("Listening on localhost:{}", port);
             startClient(transport);
 

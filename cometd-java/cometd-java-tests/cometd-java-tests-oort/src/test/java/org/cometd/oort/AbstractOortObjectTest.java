@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
@@ -30,19 +31,19 @@ import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 
-public abstract class AbstractOortObjectTest extends OortTest {
+public abstract class AbstractOortObjectTest extends AbstractOortTest {
     private final List<OortObject<?>> oortObjects = new ArrayList<>();
     protected Oort oort1;
     protected Oort oort2;
 
-    protected void prepare(String serverTransport) throws Exception {
-        prepare(serverTransport, new HashMap<>());
+    protected void prepare(Transport transport) throws Exception {
+        prepare(transport, new HashMap<>());
     }
 
-    protected void prepare(String serverTransport, Map<String, String> options) throws Exception {
-        Server server1 = startServer(serverTransport, 0, options);
+    protected void prepare(Transport transport, Map<String, String> options) throws Exception {
+        Server server1 = startServer(transport, 0, options);
         oort1 = startOort(server1);
-        Server server2 = startServer(serverTransport, 0, options);
+        Server server2 = startServer(transport, 0, options);
         oort2 = startOort(server2);
 
         CountDownLatch latch = new CountDownLatch(2);

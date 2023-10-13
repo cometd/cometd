@@ -27,21 +27,21 @@ import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.websocket.okhttp.OkHttpWebSocketTransport;
 import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.CometDServlet;
-import org.cometd.server.http.AsyncJSONTransport;
+import org.cometd.server.http.JSONHttpTransport;
+import org.cometd.server.http.jakarta.CometDServlet;
 import org.cometd.server.websocket.jakarta.WebSocketTransport;
 import org.cometd.server.websocket.jetty.JettyWebSocketTransport;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.ee10.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
-import org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.context.ContextLoader;
 import org.springframework.web.context.ContextLoaderListener;
@@ -67,7 +67,8 @@ public class SpringFrameworkWebSocketConfigurationTest {
         if (WebSocketTransport.class.equals(wsTransportClass)) {
             JakartaWebSocketServletContainerInitializer.configure(context, null);
         } else if (JettyWebSocketTransport.class.equals(wsTransportClass)) {
-            JettyWebSocketServletContainerInitializer.configure(context, null);
+            // TODO:
+//            JettyWebSocketServletContainerInitializer.configure(context, null);
         } else {
             throw new IllegalArgumentException();
         }
@@ -75,12 +76,11 @@ public class SpringFrameworkWebSocketConfigurationTest {
         context.addEventListener(new ContextLoaderListener());
         context.getInitParams().put(ContextLoader.CONFIG_LOCATION_PARAM, "classpath:" + springConfig);
 
-        // CometD servlet
         String cometdServletPath = "/cometd";
         String cometdURLMapping = cometdServletPath + "/*";
 
         ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);
-        String transports = wsTransportClass + "," + AsyncJSONTransport.class.getName();
+        String transports = wsTransportClass + "," + JSONHttpTransport.class.getName();
         cometdServletHolder.setInitParameter("transports", transports);
         cometdServletHolder.setInitParameter("timeout", "10000");
         cometdServletHolder.setInitParameter("ws.cometdURLMapping", cometdURLMapping);
@@ -114,6 +114,7 @@ public class SpringFrameworkWebSocketConfigurationTest {
     }
 
     @Test
+    @Disabled("Spring's applicationContext.xml somehow implies Jakarta (can we avoid Jakarta?), and we don't have anymore a Jetty Jakarta WebSocket transport.")
     public void testXMLSpringConfigurationWithJettyWebSocket() throws Exception {
         String url = startServer(JettyWebSocketTransport.class, "applicationContext-jetty-websocket.xml");
         WebSocketClient wsClient = new WebSocketClient();

@@ -24,8 +24,11 @@ import javax.management.ObjectName;
 import jakarta.servlet.http.HttpServlet;
 
 import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.oort.jakarta.OortConfigServlet;
+import org.cometd.oort.jakarta.OortStaticConfigServlet;
+import org.cometd.oort.jakarta.SetiServlet;
 import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.CometDServlet;
+import org.cometd.server.http.jakarta.CometDServlet;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
@@ -54,9 +57,8 @@ public class JMXTest {
         String value = BayeuxServerImpl.ATTRIBUTE + "," + Oort.OORT_ATTRIBUTE + "," + Seti.SETI_ATTRIBUTE;
         context.setInitParameter(ServletContextHandler.MANAGED_ATTRIBUTES, value);
 
-        // CometD servlet
-        String cometdServletPath = "/cometd";
-        String cometdURLMapping = cometdServletPath + "/*";
+        String cometdPath = "/cometd";
+        String cometdURLMapping = cometdPath + "/*";
         ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);
         cometdServletHolder.setInitParameter("timeout", "10000");
         cometdServletHolder.setInitParameter("ws.cometdURLMapping", cometdURLMapping);
@@ -64,7 +66,7 @@ public class JMXTest {
         context.addServlet(cometdServletHolder, cometdURLMapping);
 
         ServletHolder oortServletHolder = new ServletHolder(OortStaticConfigServlet.class);
-        oortServletHolder.setInitParameter(OortConfigServlet.OORT_URL_PARAM, "http://localhost" + cometdServletPath);
+        oortServletHolder.setInitParameter(OortConfigServlet.OORT_URL_PARAM, "http://localhost" + cometdPath);
         oortServletHolder.setInitOrder(2);
         context.addServlet(oortServletHolder, "/oort");
 

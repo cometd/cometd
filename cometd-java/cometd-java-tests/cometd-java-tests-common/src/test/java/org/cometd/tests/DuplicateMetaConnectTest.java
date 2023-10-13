@@ -21,6 +21,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
@@ -89,7 +90,7 @@ public class DuplicateMetaConnectTest extends AbstractClientServerTest {
         clientOptions.put(BayeuxClient.BACKOFF_INCREMENT_OPTION, backoff);
         BayeuxClient client = new BayeuxClient(cometdURL, newClientTransport(transport, clientOptions));
 
-        bayeux.getChannel(Channel.META_CONNECT).addListener(new ServerChannel.MessageListener() {
+        bayeuxServer.getChannel(Channel.META_CONNECT).addListener(new ServerChannel.MessageListener() {
             private final AtomicInteger metaConnects = new AtomicInteger();
 
             @Override

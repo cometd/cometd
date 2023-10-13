@@ -24,7 +24,7 @@ The `web.xml` file is as follows:
 
   <servlet>
     <servlet-name>cometd</servlet-name>
-    <servlet-class>org.cometd.server.CometDServlet</servlet-class>
+    <servlet-class>org.cometd.server.http.jakarta.CometDServlet</servlet-class>
     <async-supported>true</async-supported>
   </servlet>
   <servlet-mapping>
@@ -103,10 +103,10 @@ Below you can find a Spring's `applicationContext.xml` that configures the `Baye
         <bean id="websocketTransport" class="org.cometd.server.websocket.jakarta.WebSocketTransport">
           <constructor-arg ref="bayeux" />
         </bean>
-        <bean id="jsonTransport" class="org.cometd.server.http.JSONTransport">
+        <bean id="jsonTransport" class="org.cometd.server.http.JSONHttpTransport">
           <constructor-arg ref="bayeux" />
         </bean>
-        <bean id="jsonpTransport" class="org.cometd.server.http.JSONPTransport">
+        <bean id="jsonpTransport" class="org.cometd.server.http.JSONPHttpTransport">
           <constructor-arg ref="bayeux" />
         </bean>
       </list>
@@ -121,7 +121,7 @@ Below you can find a Spring's `applicationContext.xml` that configures the `Baye
 [NOTE]
 ====
 When configuring the `BayeuxServer` transports, you need to explicitly specify all the transports you want, included the default transports that you do not need to specify when configuring a `BayeuxServer` using the `CometDServlet`.
-The order of the transports is important, and you want the `WebSocketTransport` to be the first of the list, followed by at least the `JSONTransport` (also known as the "long-polling" transport) as a fallback.
+The order of the transports is important, and you want the `WebSocketTransport` to be the first of the list, followed by at least the `ServletJSONTransport` (also known as the "long-polling" transport) as a fallback.
 ====
 
 ===== Annotation Based Spring Configuration

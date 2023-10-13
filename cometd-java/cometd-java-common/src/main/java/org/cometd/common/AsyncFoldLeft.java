@@ -123,6 +123,9 @@ public class AsyncFoldLeft {
         run(new ReverseIterable<>(list), zero, operation, promise);
     }
 
+    private AsyncFoldLeft() {
+    }
+
     /**
      * <p>The operation to invoke for each element.</p>
      *
@@ -300,7 +303,6 @@ public class AsyncFoldLeft {
             }
         }
     }
-
 
     private static class IndexedLoop<T, R> extends AbstractLoop<T, R> {
         private final IntFunction<T> element;

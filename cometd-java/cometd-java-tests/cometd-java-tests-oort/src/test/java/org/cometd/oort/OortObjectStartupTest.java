@@ -32,7 +32,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public class OortObjectStartupTest extends OortTest {
+public class OortObjectStartupTest extends AbstractOortTest {
     private final List<OortObject<String>> oortObjects = new ArrayList<>();
 
     @AfterEach
@@ -44,7 +44,7 @@ public class OortObjectStartupTest extends OortTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testOortObjectStartup(String serverTransport) throws Exception {
+    public void testOortObjectStartup(Transport transport) throws Exception {
         int nodes = 4;
         int edges = nodes * (nodes - 1);
         CountDownLatch joinLatch = new CountDownLatch(edges);
@@ -57,7 +57,7 @@ public class OortObjectStartupTest extends OortTest {
         Map<String, String> options = new HashMap<>();
         options.put("ws.maxMessageSize", String.valueOf(1024 * 1024));
         for (int i = 0; i < nodes; i++) {
-            Oort oort = startOort(startServer(serverTransport, 0, options));
+            Oort oort = startOort(startServer(transport, 0, options));
             oort.addCometListener(joinListener);
         }
         Oort oort1 = oorts.get(0);

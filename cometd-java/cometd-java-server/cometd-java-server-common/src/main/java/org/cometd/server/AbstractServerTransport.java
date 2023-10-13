@@ -15,10 +15,10 @@
  */
 package org.cometd.server;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.concurrent.atomic.AtomicLong;
+
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerTransport;
@@ -57,7 +57,7 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     private JSONContextServer _jsonContext;
     private boolean _handshakeReconnect;
     private boolean _allowHandshakeDelivery;
-    private long _maxMessageSize;
+    private int _maxMessageSize;
 
     /**
      * <p>The constructor is passed the {@link BayeuxServerImpl} instance for
@@ -138,7 +138,7 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
         _allowHandshakeDelivery = allow;
     }
 
-    public long getMaxMessageSize() {
+    public int getMaxMessageSize() {
         return _maxMessageSize;
     }
 
@@ -168,44 +168,14 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
         return _jsonContext;
     }
 
-    protected ServerMessage.Mutable[] parseMessages(BufferedReader reader, boolean jsonDebug) throws ParseException, IOException {
-        if (jsonDebug || getMaxMessageSize() > 0) {
-            return parseMessages(read(reader));
-        } else {
-            return _jsonContext.parse(reader);
-        }
-    }
-
     public ServerMessage.Mutable[] parseMessages(String json) throws ParseException {
         return _jsonContext.parse(json);
-    }
-
-    private String read(BufferedReader reader) throws IOException {
-        long maxMessageSize = getMaxMessageSize();
-        StringBuilder builder = new StringBuilder();
-        long total = 0;
-        char[] buffer = new char[1024];
-        while (true) {
-            int read = reader.read(buffer);
-            if (read < 0) {
-                break;
-            } else {
-                if (maxMessageSize > 0) {
-                    total += read;
-                    if (total > maxMessageSize) {
-                        throw new IOException("Max message size " + maxMessageSize + " exceeded");
-                    }
-                }
-                builder.append(buffer, 0, read);
-            }
-        }
-        return builder.toString();
     }
 
     /**
      * @return the BayeuxServer object
      */
-    public BayeuxServerImpl getBayeux() {
+    public BayeuxServerImpl getBayeuxServer() {
         return _bayeux;
     }
 
@@ -244,7 +214,7 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     }
 
     public void processReply(ServerSessionImpl session, ServerMessage.Mutable reply, Promise<ServerMessage.Mutable> promise) {
-        getBayeux().extendReply(session, session, reply, promise);
+        getBayeuxServer().extendReply(session, session, reply, promise);
     }
 
     protected String toJSON(ServerMessage msg) {

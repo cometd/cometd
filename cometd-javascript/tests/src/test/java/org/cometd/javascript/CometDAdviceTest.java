@@ -24,7 +24,6 @@ import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.cometd.server.BayeuxServerImpl;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -49,7 +48,7 @@ public class CometDAdviceTest extends AbstractCometDTransportsTest {
         evaluateScript("const HandshakeListener = Java.type('" + HandshakeListener.class.getName() + "')");
         evaluateScript("const handshakeListener = new HandshakeListener();");
         HandshakeListener handshakeListener = javaScript.get("handshakeListener");
-        handshakeListener.server = bayeuxServer;
+        handshakeListener.bayeuxServer = bayeuxServer;
 
         evaluateScript("const connectLatch = new Latch(1);");
         Latch connectLatch = javaScript.get("connectLatch");
@@ -72,7 +71,7 @@ public class CometDAdviceTest extends AbstractCometDTransportsTest {
 
     public static class HandshakeListener {
         private final CountDownLatch latch = new CountDownLatch(1);
-        private BayeuxServerImpl server;
+        private BayeuxServer bayeuxServer;
         private int handshakes;
 
         public void handle(Object jsMessage) {
@@ -81,7 +80,7 @@ public class CometDAdviceTest extends AbstractCometDTransportsTest {
             if ((Boolean)message.get("successful")) {
                 ++handshakes;
                 if (handshakes == 1) {
-                    server.removeSession(server.getSession((String)message.get("clientId")));
+                    bayeuxServer.removeSession(bayeuxServer.getSession((String)message.get("clientId")));
                 } else if (handshakes == 2) {
                     latch.countDown();
                 }

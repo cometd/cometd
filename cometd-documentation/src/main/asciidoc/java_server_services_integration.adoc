@@ -22,7 +22,7 @@ Here is a sample `web.xml`:
 
   <servlet>
     <servlet-name>cometd</servlet-name>
-    <servlet-class>org.cometd.server.CometDServlet</servlet-class>
+    <servlet-class>org.cometd.server.http.jakarta.CometDServlet</servlet-class>
     <load-on-startup>1</load-on-startup>
     <async-supported>true</async-supported>
   </servlet>
@@ -70,7 +70,7 @@ Here is a sample `web.xml` file:
 
   <servlet>
     <servlet-name>cometd</servlet-name>
-    <servlet-class>org.cometd.server.CometDServlet</servlet-class>
+    <servlet-class>org.cometd.server.http.jakarta.CometDServlet</servlet-class>
     <load-on-startup>1</load-on-startup>
     <async-supported>true</async-supported>
   </servlet>

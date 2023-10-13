@@ -15,24 +15,21 @@
  */
 package org.cometd.client.transport;
 
-import java.io.IOException;
-import java.net.CookieManager;
-import java.net.CookiePolicy;
-import java.net.CookieStore;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpCookieStore;
+import org.eclipse.jetty.http.SetCookieParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class HttpClientTransport extends ClientTransport {
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpClientTransport.class);
 
+    private final SetCookieParser cookieParser = SetCookieParser.newInstance();
     private volatile HttpCookieStore cookieStore;
 
     @Deprecated
@@ -57,66 +54,18 @@ public abstract class HttpClientTransport extends ClientTransport {
     }
 
     protected void storeCookies(URI uri, Map<String, List<String>> headers) {
-        // TODO: change this old API that uses java.net to use Jetty 12 cookie APIs.
-        try {
-            Store store = new Store();
-            CookieManager cookieManager = new CookieManager(store, CookiePolicy.ACCEPT_ALL);
-            cookieManager.put(uri, headers);
-            List<HttpCookie> cookies = store.cookies;
-            if (cookies != null) {
-                cookies.forEach(cookie -> cookieStore.add(uri, cookie));
+        headers.forEach((key, value1) -> {
+            if ("set-cookie".equalsIgnoreCase(key)) {
+                value1.forEach(value -> {
+                    HttpCookie cookie = cookieParser.parse(value);
+                    if (cookie != null) {
+                        cookieStore.add(uri, cookie);
+                        if (LOGGER.isDebugEnabled()) {
+                            LOGGER.debug("Stored cookie {}", cookie);
+                        }
+                    }
+                });
             }
-        } catch (IOException x) {
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Could not parse cookies", x);
-            }
-        }
-    }
-
-    private static class Store implements CookieStore
-    {
-        private List<HttpCookie> cookies;
-
-        @Override
-        public void add(URI uri, java.net.HttpCookie cookie)
-        {
-            String domain = cookie.getDomain();
-            if ("localhost.local".equals(domain))
-                cookie.setDomain("localhost");
-            if (cookies == null) {
-                cookies = new ArrayList<>();
-            }
-            cookies.add(HttpCookie.from(cookie));
-        }
-
-        @Override
-        public List<java.net.HttpCookie> get(URI uri)
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public List<java.net.HttpCookie> getCookies()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public List<URI> getURIs()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean remove(URI uri, java.net.HttpCookie cookie)
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean removeAll()
-        {
-            throw new UnsupportedOperationException();
-        }
+        });
     }
 }

@@ -79,7 +79,7 @@ For example:
 
     <servlet>
         <servlet-name>cometd</servlet-name>
-        <servlet-class>org.cometd.server.CometDServlet</servlet-class>
+        <servlet-class>org.cometd.server.http.jakarta.CometDServlet</servlet-class>
         <!-- other parameters -->
         <init-param>
             <param-name>jsonContext</param-name>

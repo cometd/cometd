@@ -32,15 +32,15 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public class OortAuthenticationTest extends OortTest {
+public class OortAuthenticationTest extends AbstractOortTest {
     @ParameterizedTest
     @MethodSource("transports")
-    public void testAuthenticationWithSecurityPolicy(String serverTransport) throws Exception {
-        Server server1 = startServer(serverTransport, 0);
+    public void testAuthenticationWithSecurityPolicy(Transport transport) throws Exception {
+        Server server1 = startServer(transport, 0);
         Oort oort1 = startOort(server1);
         oort1.setSecret("test_secret");
         oort1.getBayeuxServer().setSecurityPolicy(new TestSecurityPolicy(oort1));
-        Server server2 = startServer(serverTransport, 0);
+        Server server2 = startServer(transport, 0);
         Oort oort2 = startOort(server2);
         oort2.setSecret(oort1.getSecret());
         oort2.getBayeuxServer().setSecurityPolicy(new TestSecurityPolicy(oort2));

@@ -176,7 +176,7 @@ public class WebAppService {
         }
 
         @Override
-        public Object fromJSON(Map map) {
+        public Object fromJSON(Map<String, Object> map) {
             Custom custom = new Custom();
             custom.data = (String)map.get("data");
             return custom;

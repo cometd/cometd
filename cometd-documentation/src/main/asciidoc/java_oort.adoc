@@ -108,7 +108,7 @@ You can configure the automatic discovery mechanism either via code, or by confi
 
     <servlet>
         <servlet-name>cometd</servlet-name>
-        <servlet-class>org.cometd.server.CometDServlet</servlet-class>
+        <servlet-class>org.cometd.server.http.jakarta.CometDServlet</servlet-class>
         <load-on-startup>1</load-on-startup>
         <async-supported>true</async-supported>
     </servlet>
@@ -119,7 +119,7 @@ You can configure the automatic discovery mechanism either via code, or by confi
 
     <servlet>
         <servlet-name>oort</servlet-name>
-        <servlet-class>org.cometd.oort.OortMulticastConfigServlet</servlet-class>
+        <servlet-class>org.cometd.oort.jakarta.OortMulticastConfigServletorg.cometd.oort.jakarta.OortMulticastConfigServlet</servlet-class>
         <load-on-startup>2</load-on-startup>
         <init-param>
             <param-name>oort.url</param-name>
@@ -227,7 +227,7 @@ You can accomplish the static discovery configuration either via code, or by con
 
     <servlet>
         <servlet-name>cometd</servlet-name>
-        <servlet-class>org.cometd.server.CometDServlet</servlet-class>
+        <servlet-class>org.cometd.server.http.jakarta.CometDServlet</servlet-class>
         <load-on-startup>1</load-on-startup>
         <async-supported>true</async-supported>
     </servlet>
@@ -238,7 +238,7 @@ You can accomplish the static discovery configuration either via code, or by con
 
     <servlet>
         <servlet-name>oort</servlet-name>
-        <servlet-class>org.cometd.oort.OortStaticConfigServlet</servlet-class>
+        <servlet-class>org.cometd.oort.jakarta.OortStaticConfigServletorg.cometd.oort.jakarta.OortStaticConfigServlet</servlet-class>
         <load-on-startup>2</load-on-startup>
         <init-param>
             <param-name>oort.url</param-name>
@@ -279,7 +279,7 @@ To make the Oort node part of the Oort cluster, you can configure the `oort.clou
 
     <servlet>
         <servlet-name>cometd</servlet-name>
-        <servlet-class>org.cometd.server.CometDServlet</servlet-class>
+        <servlet-class>org.cometd.server.http.jakarta.CometDServlet</servlet-class>
         <load-on-startup>1</load-on-startup>
         <async-supported>true</async-supported>
     </servlet>
@@ -290,7 +290,7 @@ To make the Oort node part of the Oort cluster, you can configure the `oort.clou
 
     <servlet>
         <servlet-name>oort</servlet-name>
-        <servlet-class>org.cometd.oort.OortStaticConfigServlet</servlet-class>
+        <servlet-class>org.cometd.oort.jakarta.OortStaticConfigServletorg.cometd.oort.jakarta.OortStaticConfigServlet</servlet-class>
         <load-on-startup>2</load-on-startup>
         <init-param>
             <param-name>oort.url</param-name>
@@ -414,7 +414,7 @@ You accomplish this by configuring the Oort configuration servlets to set the `o
 
     <servlet>
         <servlet-name>cometd</servlet-name>
-        <servlet-class>org.cometd.server.CometDServlet</servlet-class>
+        <servlet-class>org.cometd.server.http.jakarta.CometDServlet</servlet-class>
         <load-on-startup>1</load-on-startup>
         <async-supported>true</async-supported>
     </servlet>
@@ -425,7 +425,7 @@ You accomplish this by configuring the Oort configuration servlets to set the `o
 
     <servlet>
         <servlet-name>oort</servlet-name>
-        <servlet-class>org.cometd.oort.OortMulticastConfigServlet</servlet-class>
+        <servlet-class>org.cometd.oort.jakarta.OortMulticastConfigServletorg.cometd.oort.jakarta.OortMulticastConfigServlet</servlet-class>
         <load-on-startup>2</load-on-startup>
         <init-param>
             <param-name>oort.url</param-name>

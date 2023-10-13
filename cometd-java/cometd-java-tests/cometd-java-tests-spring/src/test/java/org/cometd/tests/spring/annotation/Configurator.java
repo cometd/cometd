@@ -17,10 +17,11 @@ package org.cometd.tests.spring.annotation;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
+
 import org.cometd.annotation.server.ServerAnnotationProcessor;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.http.AsyncJSONTransport;
+import org.cometd.server.http.JSONHttpTransport;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.DestructionAwareBeanPostProcessor;
 import org.springframework.context.annotation.Bean;
@@ -81,7 +82,7 @@ public class Configurator implements DestructionAwareBeanPostProcessor {
         BayeuxServerImpl bayeuxServer = new BayeuxServerImpl();
         // Don't initialize the WebSocket transports, since for
         // this test we don't have the required ServletContext.
-        bayeuxServer.setOption("transports", AsyncJSONTransport.class.getName());
+        bayeuxServer.setOption("transports", JSONHttpTransport.class.getName());
         return bayeuxServer;
     }
 }

@@ -29,11 +29,13 @@ import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.client.http.okhttp.OkHttpClientTransport;
 import org.cometd.client.websocket.okhttp.OkHttpWebSocketTransport;
 import org.cometd.common.JettyJSONContextClient;
+import org.cometd.oort.jakarta.OortConfigServlet;
+import org.cometd.oort.jakarta.OortStaticConfigServlet;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.CometDServlet;
 import org.cometd.server.JettyJSONContextServer;
-import org.cometd.server.http.AsyncJSONTransport;
+import org.cometd.server.http.JSONHttpTransport;
+import org.cometd.server.http.jakarta.CometDServlet;
 import org.cometd.server.websocket.jakarta.WebSocketTransport;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
@@ -41,6 +43,7 @@ import org.eclipse.jetty.ee10.websocket.jakarta.server.config.JakartaWebSocketSe
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.ajax.JSON;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
@@ -54,7 +57,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class OortStartupTest {
     @RegisterExtension
-    final BeforeTestExecutionCallback printMethodName = context ->
+    public final BeforeTestExecutionCallback printMethodName = context ->
             System.err.printf("Running %s.%s() %s%n", context.getRequiredTestClass().getSimpleName(), context.getRequiredTestMethod().getName(), context.getDisplayName());
     private final Map<Integer, Server> servers = new ConcurrentHashMap<>();
     private final Map<Integer, ServletContextHandler> contexts = new ConcurrentHashMap<>();
@@ -89,7 +92,6 @@ public class OortStartupTest {
 
         JakartaWebSocketServletContainerInitializer.configure(context, null);
 
-        // CometD servlet.
         String cometdServletPath = "/cometd";
         String cometdURLMapping = cometdServletPath + "/*";
         ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);
@@ -200,8 +202,8 @@ public class OortStartupTest {
         return Stream.of(
                 Arguments.of(WebSocketTransport.class.getName(), org.cometd.client.websocket.jakarta.WebSocketTransport.Factory.class.getName()),
                 Arguments.of(WebSocketTransport.class.getName(), OkHttpWebSocketTransport.Factory.class.getName()),
-                Arguments.of(AsyncJSONTransport.class.getName(), JettyHttpClientTransport.Factory.class.getName()),
-                Arguments.of(AsyncJSONTransport.class.getName(), OkHttpClientTransport.Factory.class.getName())
+                Arguments.of(JSONHttpTransport.class.getName(), JettyHttpClientTransport.Factory.class.getName()),
+                Arguments.of(JSONHttpTransport.class.getName(), OkHttpClientTransport.Factory.class.getName())
         );
     }
 
@@ -265,6 +267,11 @@ public class OortStartupTest {
                 throw new ServletException(x);
             }
         }
+
+        @Override
+        public void destroy() {
+            LifeCycle.stop(ids);
+        }
     }
 
     public static class OortMapStartupServlet extends HttpServlet {
@@ -281,6 +288,11 @@ public class OortStartupTest {
             } catch (Throwable x) {
                 throw new ServletException(x);
             }
+        }
+
+        @Override
+        public void destroy() {
+            LifeCycle.stop(users);
         }
     }
 
@@ -306,7 +318,7 @@ public class OortStartupTest {
         }
 
         @Override
-        public Object fromJSON(Map map) {
+        public Object fromJSON(Map<String, Object> map) {
             System.err.println("fromJSON() = " + map);
             String userId = (String)map.get("userId");
             return new UserInfo(userId);

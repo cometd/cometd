@@ -79,7 +79,6 @@ public class CometDDemo {
         ServletHolder dftServlet = context.addServlet(DefaultServlet.class, "/");
         dftServlet.setInitOrder(1);
 
-        // CometD servlet
         AnnotationCometDServlet cometdServlet = new AnnotationCometDServlet();
         ServletHolder cometd = new ServletHolder(cometdServlet);
         context.addServlet(cometd, "/cometd/*");
@@ -95,7 +94,7 @@ public class CometDDemo {
 
         server.start();
 
-        BayeuxServer bayeux = cometdServlet.getBayeux();
+        BayeuxServer bayeux = cometdServlet.getBayeuxServer();
         bayeux.setSecurityPolicy(new DefaultSecurityPolicy());
 
         // Demo lazy messages

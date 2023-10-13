@@ -36,8 +36,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 public class OortStringMapTest extends AbstractOortObjectTest {
     @ParameterizedTest
     @MethodSource("transports")
-    public void testEntryPut(String serverTransport) throws Exception {
-        prepare(serverTransport);
+    public void testEntryPut(Transport transport) throws Exception {
+        prepare(transport);
 
         String name = "test";
         OortObject.Factory<ConcurrentMap<String, String>> factory = OortObjectFactories.forConcurrentMap();
@@ -82,8 +82,8 @@ public class OortStringMapTest extends AbstractOortObjectTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testEntryRemoved(String serverTransport) throws Exception {
-        prepare(serverTransport);
+    public void testEntryRemoved(Transport transport) throws Exception {
+        prepare(transport);
 
         String name = "test";
         OortObject.Factory<ConcurrentMap<String, String>> factory = OortObjectFactories.forConcurrentMap();
@@ -126,8 +126,8 @@ public class OortStringMapTest extends AbstractOortObjectTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testDeltaListener(String serverTransport) throws Exception {
-        prepare(serverTransport);
+    public void testDeltaListener(Transport transport) throws Exception {
+        prepare(transport);
 
         String name = "test";
         OortObject.Factory<ConcurrentMap<String, String>> factory = OortObjectFactories.forConcurrentMap();
@@ -199,8 +199,8 @@ public class OortStringMapTest extends AbstractOortObjectTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testGetFind(String serverTransport) throws Exception {
-        prepare(serverTransport);
+    public void testGetFind(Transport transport) throws Exception {
+        prepare(transport);
 
         String name = "test";
         OortObject.Factory<ConcurrentMap<String, String>> factory = OortObjectFactories.forConcurrentMap();
@@ -250,8 +250,8 @@ public class OortStringMapTest extends AbstractOortObjectTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testConcurrent(String serverTransport) throws Exception {
-        prepare(serverTransport);
+    public void testConcurrent(Transport transport) throws Exception {
+        prepare(transport);
 
         String name = "concurrent";
         OortObject.Factory<ConcurrentMap<String, String>> factory = OortObjectFactories.forConcurrentMap();
@@ -303,8 +303,8 @@ public class OortStringMapTest extends AbstractOortObjectTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testEntryBeforeMap(String serverTransport) throws Exception {
-        prepare(serverTransport);
+    public void testEntryBeforeMap(Transport transport) throws Exception {
+        prepare(transport);
 
         String name = "entry_before_map";
         OortObject.Factory<ConcurrentMap<String, String>> factory = OortObjectFactories.forConcurrentMap();
@@ -370,8 +370,8 @@ public class OortStringMapTest extends AbstractOortObjectTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testLostEntry(String serverTransport) throws Exception {
-        prepare(serverTransport);
+    public void testLostEntry(Transport transport) throws Exception {
+        prepare(transport);
 
         String name = "lost_entry";
         OortObject.Factory<ConcurrentMap<String, String>> factory = OortObjectFactories.forConcurrentMap();
@@ -440,10 +440,10 @@ public class OortStringMapTest extends AbstractOortObjectTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testNodeSyncWithLargeMap(String serverTransport) throws Exception {
+    public void testNodeSyncWithLargeMap(Transport transport) throws Exception {
         Map<String, String> options = new HashMap<>();
         options.put("ws.maxMessageSize", String.valueOf(64 * 1024 * 1024));
-        prepare(serverTransport, options);
+        prepare(transport, options);
 
         String name = "large_sync";
         OortObject.Factory<ConcurrentMap<String, String>> factory = OortObjectFactories.forConcurrentMap();
@@ -509,13 +509,13 @@ public class OortStringMapTest extends AbstractOortObjectTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testNodeHalfDisconnectedWillReconnect(String serverTransport) throws Exception {
+    public void testNodeHalfDisconnectedWillReconnect(Transport transport) throws Exception {
         long timeout = 5000;
         long maxInterval = 3000;
         Map<String, String> options = new HashMap<>();
         options.put("timeout", String.valueOf(timeout));
         options.put("maxInterval", String.valueOf(maxInterval));
-        prepare(serverTransport, options);
+        prepare(transport, options);
         String name = "half_disconnection";
         OortObject.Factory<ConcurrentMap<String, String>> factory = OortObjectFactories.forConcurrentMap();
         OortStringMap<String> oortMap1 = new OortStringMap<>(oort1, name, factory);
@@ -573,13 +573,13 @@ public class OortStringMapTest extends AbstractOortObjectTest {
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testNodeHalfDisconnectedWillResync(String serverTransport) throws Exception {
+    public void testNodeHalfDisconnectedWillResync(Transport transport) throws Exception {
         long timeout = 5000;
         long maxInterval = 3000;
         Map<String, String> options = new HashMap<>();
         options.put(AbstractServerTransport.TIMEOUT_OPTION, String.valueOf(timeout));
         options.put(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(maxInterval));
-        prepare(serverTransport, options);
+        prepare(transport, options);
         String name = "half_disconnection_resync";
         OortObject.Factory<ConcurrentMap<String, String>> factory = OortObjectFactories.forConcurrentMap();
         String key2B = "key2B";

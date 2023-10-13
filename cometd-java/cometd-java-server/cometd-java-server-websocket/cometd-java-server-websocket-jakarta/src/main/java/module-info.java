@@ -19,4 +19,5 @@ module org.cometd.server.websocket.jakarta {
     requires transitive jakarta.websocket;
     requires transitive org.cometd.server.websocket.common;
     requires org.slf4j;
+    requires jakarta.servlet;
 }

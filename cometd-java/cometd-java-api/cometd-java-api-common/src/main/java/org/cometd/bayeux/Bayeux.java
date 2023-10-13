@@ -98,7 +98,7 @@ public interface Bayeux {
         }
 
         public static boolean isValidMessageId(String messageId) {
-            if (messageId.length() < 1) {
+            if (messageId.isEmpty()) {
                 return false;
             }
             for (int i = 0; i < messageId.length(); ++i) {
@@ -127,6 +127,9 @@ public interface Bayeux {
                 case ' ', '!', '#', '$', '(', ')', '*', '+', '-', '.', '/', '@', '_', '{', '~', '}' -> true;
                 default -> false;
             };
+        }
+
+        private Validator() {
         }
     }
 }

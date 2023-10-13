@@ -21,8 +21,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.CometDServlet;
+import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.server.http.jakarta.CometDServlet;
 import org.eclipse.jetty.ee10.servlet.DefaultServlet;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
@@ -41,7 +41,7 @@ import org.slf4j.LoggerFactory;
 
 public abstract class AbstractCometDTest {
     @RegisterExtension
-    final BeforeTestExecutionCallback printMethodName = context ->
+    public final BeforeTestExecutionCallback printMethodName = context ->
             System.err.printf("Running %s.%s() %s%n", context.getRequiredTestClass().getSimpleName(), context.getRequiredTestMethod().getName(), context.getDisplayName());
     private final HttpCookieStore cookieStore = new HttpCookieStore.Default();
     private final Map<String, String> sessionStore = new HashMap<>();
@@ -54,7 +54,7 @@ public abstract class AbstractCometDTest {
     protected int port;
     protected String contextURL;
     protected String cometdURL;
-    protected BayeuxServerImpl bayeuxServer;
+    protected BayeuxServer bayeuxServer;
     protected int expirationPeriod = 2500;
     protected JavaScript javaScript;
     private XMLHttpRequestClient xhrClient;
@@ -112,7 +112,7 @@ public abstract class AbstractCometDTest {
         connector.setPort(port);
         server.start();
         port = connector.getLocalPort();
-        bayeuxServer = cometdServlet.getBayeux();
+        bayeuxServer = cometdServlet.getBayeuxServer();
     }
 
     @AfterEach

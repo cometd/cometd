@@ -94,9 +94,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
                 LOGGER.debug("Opening websocket session to {}", uri);
             }
             ClientUpgradeRequest request = new ClientUpgradeRequest();
-            // TODO: remove this mangling when HttpCookieStore supports the "ws" scheme.
-            String mangledURI = uri.replaceFirst("^ws", "http");
-            List<HttpCookie> cookies = getHttpCookieStore().match(URI.create(mangledURI));
+            List<HttpCookie> cookies = getHttpCookieStore().match(URI.create(uri));
             request.setCookies(cookies.stream().map(HttpCookie::asJavaNetHttpCookie).toList());
             String protocol = getProtocol();
             if (protocol != null) {

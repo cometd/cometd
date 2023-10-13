@@ -32,7 +32,7 @@ import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.websocket.jakarta.WebSocketTransport;
 import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.CometDServlet;
+import org.cometd.server.http.jakarta.CometDServlet;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
@@ -64,7 +64,6 @@ public class TransportFailureTest {
 
         cometdServletPath = "/cometd";
 
-        // CometD servlet
         ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);
         cometdServletHolder.setInitParameter("timeout", "10000");
         cometdServletHolder.setInitParameter("ws.cometdURLMapping", cometdServletPath);

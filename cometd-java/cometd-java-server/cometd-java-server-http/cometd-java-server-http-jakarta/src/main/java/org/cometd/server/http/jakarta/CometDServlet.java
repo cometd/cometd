@@ -1,0 +1,175 @@
+/*
+ * Copyright (c) 2008-2022 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.cometd.server.http.jakarta;
+
+import java.io.IOException;
+import java.util.Collections;
+import jakarta.servlet.AsyncContext;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import org.cometd.bayeux.Promise;
+import org.cometd.bayeux.server.BayeuxContext;
+import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ServerSession;
+import org.cometd.server.BayeuxServerImpl;
+import org.cometd.server.CometDRequest;
+import org.cometd.server.CometDResponse;
+import org.cometd.server.HttpException;
+import org.cometd.server.ServerSessionImpl;
+import org.cometd.server.http.AbstractHttpTransport;
+import org.eclipse.jetty.util.component.LifeCycle;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * <p>The CometD Servlet maps HTTP requests to the {@link AbstractHttpTransport}
+ * of a {@link BayeuxServer} instance.</p>
+ * <p>The {@link BayeuxServer} instance is searched in the servlet context under the {@link BayeuxServer#ATTRIBUTE}
+ * attribute; if it is found then it is used without further configuration, otherwise a new {@link BayeuxServer}
+ * instance is created and configured using the init parameters of this servlet.</p>
+ */
+public class CometDServlet extends HttpServlet {
+    private static final Logger LOGGER = LoggerFactory.getLogger(CometDServlet.class);
+
+    private BayeuxServer bayeuxServer;
+
+    @Override
+    public void init() throws ServletException {
+        try {
+            bayeuxServer = (BayeuxServer)getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
+
+            boolean export = false;
+            if (bayeuxServer == null) {
+                export = true;
+                bayeuxServer = newBayeuxServer();
+
+                // Transfer all servlet init parameters to the BayeuxServer implementation.
+                for (String initParamName : Collections.list(getInitParameterNames())) {
+                    bayeuxServer.setOption(initParamName, getInitParameter(initParamName));
+                }
+            }
+
+            // Add the ServletContext to the options.
+            bayeuxServer.setOption(ServletContext.class.getName(), getServletContext());
+
+            LifeCycle.start(bayeuxServer);
+
+            if (export) {
+                getServletContext().setAttribute(BayeuxServer.ATTRIBUTE, bayeuxServer);
+            }
+        } catch (Exception x) {
+            throw new ServletException(x);
+        }
+    }
+
+    public BayeuxServer getBayeuxServer() {
+        return bayeuxServer;
+    }
+
+    protected BayeuxServer newBayeuxServer() {
+        return new BayeuxServerImpl();
+    }
+
+    @Override
+    protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        if ("OPTIONS".equals(request.getMethod())) {
+            serviceOptions(request, response);
+            return;
+        }
+
+        // API calls could be async, so we must be async in the request processing too.
+        AsyncContext asyncContext = request.startAsync();
+        // Explicitly disable the timeout, to prevent
+        // that the timeout fires in case of slow reads.
+        asyncContext.setTimeout(0);
+
+        CometDRequest cometDRequest = new JakartaCometDRequest(request);
+        CometDResponse cometDResponse = new JakartaCometDResponse(response);
+        BayeuxContext bayeuxContext = new JakartaBayeuxContext(request);
+
+        Promise<Void> promise = new Promise<>() {
+            @Override
+            public void succeed(Void result) {
+                asyncContext.complete();
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Handling successful");
+                }
+            }
+
+            @Override
+            public void fail(Throwable failure) {
+                int code = failure instanceof HttpException http ? http.getCode() : HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
+                sendError(request, response, code, failure);
+                asyncContext.complete();
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Handling failed", failure);
+                }
+            }
+        };
+
+        AbstractHttpTransport transport = AbstractHttpTransport.find(bayeuxServer, cometDRequest);
+        if (transport == null) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Unknown Bayeux Transport");
+        } else {
+            transport.handle(bayeuxContext, cometDRequest, cometDResponse, promise);
+        }
+    }
+
+    protected void serviceOptions(HttpServletRequest request, HttpServletResponse response) {
+        // OPTIONS requests are made by browsers that are CORS compliant
+        // (see http://www.w3.org/TR/cors/) during a "preflight request".
+        // Preflight requests happen for each different new URL, then results are cached
+        // by the browser.
+        // For the Bayeux protocol, preflight requests happen for URLs such as
+        // "/cometd/handshake", "/cometd/connect", etc, since the Bayeux clients append
+        // the Bayeux message type to the base Bayeux server URL.
+        // Just return 200 OK, there is nothing more to add to such requests.
+    }
+
+    protected void sendError(HttpServletRequest request, HttpServletResponse response, int code, Throwable failure) {
+        try {
+            request.setAttribute(RequestDispatcher.ERROR_EXCEPTION, failure);
+            response.setStatus(code);
+        } catch (Throwable x) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("", x);
+            }
+        }
+    }
+
+    @Override
+    public void destroy() {
+        for (ServerSession session : bayeuxServer.getSessions()) {
+            ((ServerSessionImpl)session).destroyScheduler();
+        }
+
+        try {
+            LifeCycle.start(bayeuxServer);
+        } catch (Exception x) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("", x);
+            }
+        } finally {
+            bayeuxServer = null;
+            getServletContext().removeAttribute(BayeuxServer.ATTRIBUTE);
+        }
+    }
+}

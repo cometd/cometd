@@ -42,7 +42,8 @@ import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.client.websocket.jakarta.WebSocketTransport;
-import org.cometd.client.websocket.jetty.JettyWebSocketTransport;
+import org.cometd.server.CometDRequest;
+import org.cometd.server.http.jakarta.CometDServlet;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -56,11 +57,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-
 public class WebAppTest {
     private String testName;
     @RegisterExtension
-    final BeforeTestExecutionCallback printMethodName = context -> {
+    public final BeforeTestExecutionCallback printMethodName = context -> {
         testName = context.getRequiredTestMethod().getName();
         System.err.printf("Running %s.%s() %s%n", context.getRequiredTestClass().getSimpleName(), testName, context.getDisplayName());
     };
@@ -90,9 +90,7 @@ public class WebAppTest {
         copyWebAppDependency(jakarta.inject.Inject.class, webINF);
         copyWebAppDependency(jakarta.annotation.PostConstruct.class, webINF);
         copyWebAppDependency(org.slf4j.Logger.class, webINF);
-        copyWebAppDependency(org.apache.logging.slf4j.Log4jLogger.class, webINF);
-        copyWebAppDependency(org.apache.logging.log4j.Level.class, webINF);
-        copyWebAppDependency(org.apache.logging.log4j.core.LoggerContext.class, webINF);
+        copyWebAppDependency(org.eclipse.jetty.logging.JettyLogger.class, webINF);
         copyWebAppDependency(org.cometd.annotation.Service.class, webINF);
         copyWebAppDependency(org.cometd.annotation.server.RemoteCall.class, webINF);
         copyWebAppDependency(org.cometd.bayeux.Message.class, webINF);
@@ -102,7 +100,6 @@ public class WebAppTest {
         copyWebAppDependency(org.cometd.server.BayeuxServerImpl.class, webINF);
         copyWebAppDependency(org.cometd.server.websocket.common.AbstractWebSocketTransport.class, webINF);
         copyWebAppDependency(org.cometd.server.websocket.jakarta.WebSocketTransport.class, webINF);
-        copyWebAppDependency(org.cometd.server.websocket.jetty.JettyWebSocketTransport.class, webINF);
         copyWebAppDependency(org.cometd.client.BayeuxClient.class, webINF);
         copyWebAppDependency(org.cometd.client.http.common.AbstractHttpClientTransport.class, webINF);
         copyWebAppDependency(org.cometd.client.http.jetty.JettyHttpClientTransport.class, webINF);
@@ -117,10 +114,17 @@ public class WebAppTest {
         copyWebAppDependency(org.eclipse.jetty.ee10.servlets.CrossOriginFilter.class, webINF);
         copyWebAppDependency(org.eclipse.jetty.util.Callback.class, webINF);
         copyWebAppDependency(org.eclipse.jetty.util.ajax.JSON.class, webINF);
+        copyWebAppDependency(org.eclipse.jetty.websocket.api.Configurable.class, webINF);
         copyWebAppDependency(org.eclipse.jetty.websocket.common.WebSocketSession.class, webINF);
         copyWebAppDependency(org.eclipse.jetty.websocket.client.WebSocketClient.class, webINF);
         copyWebAppDependency(org.eclipse.jetty.websocket.core.client.WebSocketCoreClient.class, webINF);
         copyWebAppDependency(org.eclipse.jetty.websocket.core.Configuration.class, webINF);
+        copyWebAppDependency(CometDServlet.class, webINF);
+        copyWebAppDependency(CometDRequest.class, webINF);
+        copyWebAppDependency(org.cometd.bayeux.server.BayeuxContext.class, webINF);
+        copyWebAppDependency(org.cometd.bayeux.Promise.class, webINF);
+        copyWebAppDependency(org.cometd.common.JSONContext.class, webINF);
+        copyWebAppDependency(org.cometd.bayeux.client.ClientSession.class, webINF);
 
         // Web application classes.
         Path testClasses = baseDir.resolve("target/test-classes/");
@@ -150,9 +154,7 @@ public class WebAppTest {
         addServerDependency(jakarta.annotation.Resources.class, serverClassPath);
         addServerDependency(jakarta.annotation.security.RunAs.class, serverClassPath);
         addServerDependency(org.slf4j.Logger.class, serverClassPath);
-        addServerDependency(org.apache.logging.slf4j.SLF4JServiceProvider.class, serverClassPath);
-        addServerDependency(org.apache.logging.log4j.Logger.class, serverClassPath);
-        addServerDependency(org.apache.logging.log4j.core.Appender.class, serverClassPath);
+        addServerDependency(org.eclipse.jetty.logging.JettyLogger.class, serverClassPath);
         addServerDependency(org.eclipse.jetty.ee10.annotations.AnnotationConfiguration.class, serverClassPath);
         addServerDependency(org.eclipse.jetty.client.HttpClient.class, serverClassPath);
         addServerDependency(org.eclipse.jetty.http.HttpStatus.class, serverClassPath);
@@ -164,6 +166,9 @@ public class WebAppTest {
         addServerDependency(org.eclipse.jetty.server.Server.class, serverClassPath);
         addServerDependency(org.eclipse.jetty.ee10.servlet.ServletContextHandler.class, serverClassPath);
         addServerDependency(org.eclipse.jetty.util.Callback.class, serverClassPath);
+        addServerDependency(org.eclipse.jetty.server.Deployable.class, serverClassPath);
+        addServerDependency(org.eclipse.jetty.session.SessionManager.class, serverClassPath);
+        addServerDependency(org.eclipse.jetty.util.ajax.JSON.class, serverClassPath);
         addServerDependency(org.eclipse.jetty.ee10.webapp.WebAppContext.class, serverClassPath);
         addServerDependency(org.eclipse.jetty.websocket.api.Session.class, serverClassPath);
         addServerDependency(org.eclipse.jetty.websocket.common.WebSocketSession.class, serverClassPath);
@@ -173,7 +178,6 @@ public class WebAppTest {
         addServerDependency(org.eclipse.jetty.ee10.websocket.jakarta.client.JakartaWebSocketClientContainerProvider.class, serverClassPath);
         addServerDependency(org.eclipse.jetty.ee10.websocket.jakarta.common.JakartaWebSocketContainer.class, serverClassPath);
         addServerDependency(org.eclipse.jetty.ee10.websocket.jakarta.server.config.JakartaWebSocketConfiguration.class, serverClassPath);
-        addServerDependency(org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketConfiguration.class, serverClassPath);
         addServerDependency(org.eclipse.jetty.ee10.websocket.servlet.WebSocketUpgradeFilter.class, serverClassPath);
         addServerDependency(org.eclipse.jetty.xml.XmlConfiguration.class, serverClassPath);
         addServerDependency(org.objectweb.asm.ClassVisitor.class, serverClassPath);
@@ -210,15 +214,6 @@ public class WebAppTest {
     public void dispose() {
         LifeCycle.stop(httpClient);
         IO.close(server);
-    }
-
-    @Test
-    public void testWebAppWithNativeJettyWebSocketTransport() throws Exception {
-        start(baseDir.resolve("src/test/resources/jetty-ws-web.xml"));
-
-        BayeuxClient client = new BayeuxClient(cometdURI, new JettyWebSocketTransport(null, null, wsClient));
-        subscribePublishReceive(client);
-        client.disconnect();
     }
 
     @Test

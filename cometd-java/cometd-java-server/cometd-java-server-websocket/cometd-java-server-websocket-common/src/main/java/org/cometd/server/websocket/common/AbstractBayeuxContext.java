@@ -16,15 +16,14 @@
 package org.cometd.server.websocket.common;
 
 import java.net.HttpCookie;
-import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.security.Principal;
 import java.text.ParseException;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
-import jakarta.servlet.ServletContext;
-import jakarta.servlet.http.HttpSession;
+
 import org.cometd.bayeux.server.BayeuxContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,26 +31,24 @@ import org.slf4j.LoggerFactory;
 public abstract class AbstractBayeuxContext implements BayeuxContext {
     private static final Logger logger = LoggerFactory.getLogger(BayeuxContext.class);
 
-    private final ServletContext context;
     private final String url;
+    private final String contextPath;
     private final Map<String, List<String>> headers;
     private final Map<String, List<String>> parameters;
     private final Principal principal;
-    private final HttpSession session;
-    private final InetSocketAddress localAddress;
-    private final InetSocketAddress remoteAddress;
+    private final SocketAddress localAddress;
+    private final SocketAddress remoteAddress;
     private final List<Locale> locales;
     private final String protocol;
     private final boolean secure;
 
-    public AbstractBayeuxContext(ServletContext context, String uri, String query, Map<String, List<String>> headers, Map<String, List<String>> parameters, Principal principal, HttpSession session, InetSocketAddress local, InetSocketAddress remote, List<Locale> locales, String protocol, boolean secure) {
-        this.context = context;
+    public AbstractBayeuxContext(String uri, String contextPath, String query, Map<String, List<String>> headers, Map<String, List<String>> parameters, Principal principal, SocketAddress local, SocketAddress remote, List<Locale> locales, String protocol, boolean secure) {
         this.url = uri + (query == null ? "" : "?" + query);
+        this.contextPath = contextPath;
         this.headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         this.headers.putAll(headers);
         this.parameters = parameters;
         this.principal = principal;
-        this.session = session;
         this.localAddress = local;
         this.remoteAddress = remote;
         this.locales = locales;
@@ -97,36 +94,12 @@ public abstract class AbstractBayeuxContext implements BayeuxContext {
     }
 
     @Override
-    public String getHttpSessionId() {
-        return session == null ? null : session.getId();
-    }
-
-    @Override
-    public Object getHttpSessionAttribute(String name) {
-        return session == null ? null : session.getAttribute(name);
-    }
-
-    @Override
-    public void setHttpSessionAttribute(String name, Object value) {
-        if (session != null) {
-            session.setAttribute(name, value);
-        }
-    }
-
-    @Override
-    public void invalidateHttpSession() {
-        if (session != null) {
-            session.invalidate();
-        }
-    }
-
-    @Override
-    public InetSocketAddress getRemoteAddress() {
+    public SocketAddress getRemoteAddress() {
         return remoteAddress;
     }
 
     @Override
-    public InetSocketAddress getLocalAddress() {
+    public SocketAddress getLocalAddress() {
         return localAddress;
     }
 
@@ -156,23 +129,23 @@ public abstract class AbstractBayeuxContext implements BayeuxContext {
     }
 
     @Override
+    public Object getContextAttribute(String name) {
+        return null;
+    }
+
+    @Override
     public Object getRequestAttribute(String name) {
         return null;
     }
 
     @Override
-    public Object getContextAttribute(String name) {
-        return context.getAttribute(name);
-    }
-
-    @Override
-    public String getContextInitParameter(String name) {
-        return context.getInitParameter(name);
+    public Object getSessionAttribute(String name) {
+        return null;
     }
 
     @Override
     public String getContextPath() {
-        return context.getContextPath();
+        return contextPath;
     }
 
     @Override

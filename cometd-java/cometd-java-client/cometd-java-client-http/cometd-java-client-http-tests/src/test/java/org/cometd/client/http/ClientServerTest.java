@@ -21,7 +21,7 @@ import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.http.jetty.JettyHttpClientTransport;
 import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.CometDServlet;
+import org.cometd.server.http.jakarta.CometDServlet;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
 
 public abstract class ClientServerTest {
     @RegisterExtension
-    final BeforeTestExecutionCallback printMethodName = context ->
+    public final BeforeTestExecutionCallback printMethodName = context ->
             System.err.printf("Running %s.%s() %s%n", context.getRequiredTestClass().getSimpleName(), context.getRequiredTestMethod().getName(), context.getDisplayName());
     protected final Logger logger = LoggerFactory.getLogger(getClass());
     protected ServerConnector connector;
@@ -63,7 +63,6 @@ public abstract class ClientServerTest {
         context = new ServletContextHandler("/");
         server.setHandler(context);
 
-        // CometD servlet
         ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);
         cometdServletHolder.setInitParameter("timeout", "10000");
         cometdServletHolder.setInitOrder(1);

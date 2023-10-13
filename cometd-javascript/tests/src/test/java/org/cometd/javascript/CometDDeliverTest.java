@@ -18,10 +18,10 @@ package org.cometd.javascript;
 import java.util.Map;
 
 import org.cometd.bayeux.Promise;
+import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractService;
-import org.cometd.server.BayeuxServerImpl;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -80,7 +80,7 @@ public class CometDDeliverTest extends AbstractCometDTransportsTest {
     }
 
     public static class DeliverService extends AbstractService {
-        public DeliverService(BayeuxServerImpl bayeux) {
+        public DeliverService(BayeuxServer bayeux) {
             super(bayeux, "deliver");
             addService("/service/deliver", "deliver");
         }

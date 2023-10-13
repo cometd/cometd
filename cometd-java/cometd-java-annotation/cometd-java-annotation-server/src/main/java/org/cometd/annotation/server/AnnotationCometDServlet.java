@@ -20,8 +20,7 @@ import java.util.List;
 import jakarta.servlet.ServletException;
 
 import org.cometd.bayeux.server.BayeuxServer;
-import org.cometd.server.CometDServlet;
-import org.eclipse.jetty.util.Loader;
+import org.cometd.server.http.jakarta.CometDServlet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,7 +53,7 @@ public class AnnotationCometDServlet extends CometDServlet {
     public void init() throws ServletException {
         super.init();
 
-        processor = newServerAnnotationProcessor(getBayeux());
+        processor = newServerAnnotationProcessor(getBayeuxServer());
 
         String servicesParam = getInitParameter("services");
         if (servicesParam != null && servicesParam.length() > 0) {
@@ -86,7 +85,7 @@ public class AnnotationCometDServlet extends CometDServlet {
     }
 
     protected Object newService(String serviceClassName) throws Exception {
-        Class<?> serviceClass = Loader.loadClass(getClass(), serviceClassName);
+        Class<?> serviceClass = Thread.currentThread().getContextClassLoader().loadClass(serviceClassName);
         return serviceClass.getConstructor().newInstance();
     }
 

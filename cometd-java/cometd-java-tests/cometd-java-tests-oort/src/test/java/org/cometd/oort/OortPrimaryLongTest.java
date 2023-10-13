@@ -25,8 +25,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 public class OortPrimaryLongTest extends AbstractOortObjectTest {
     @ParameterizedTest
     @MethodSource("transports")
-    public void testCount(String serverTransport) throws Exception {
-        prepare(serverTransport);
+    public void testCount(Transport transport) throws Exception {
+        prepare(transport);
 
         String name = "test";
         long initial = 3;

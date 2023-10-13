@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
@@ -37,23 +38,25 @@ import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.cometd.server.websocket.common.AbstractWebSocketTransport;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 public class SlowConnectionTest extends ClientServerWebSocketTest {
     @ParameterizedTest
-    @MethodSource("wsTypes")
-    public void testLargeMessageOnSlowConnection(String wsType) throws Exception {
+    @MethodSource("transports")
+    @Tag("flaky")
+    public void testLargeMessageOnSlowConnection(Transport wsType) throws Exception {
         testLargeMessageOnSlowConnection(wsType, false);
     }
 
     @ParameterizedTest
-    @MethodSource("wsTypes")
-    public void testLargeMessageOnSlowConnectionWithAckExtension(String wsType) throws Exception {
+    @MethodSource("transports")
+    public void testLargeMessageOnSlowConnectionWithAckExtension(Transport wsType) throws Exception {
         testLargeMessageOnSlowConnection(wsType, true);
     }
 
-    private void testLargeMessageOnSlowConnection(String wsType, boolean ackExtension) throws Exception {
+    private void testLargeMessageOnSlowConnection(Transport wsType, boolean ackExtension) throws Exception {
         Map<String, String> serverOptions = new HashMap<>();
         long timeout = 2000;
         serverOptions.put(AbstractServerTransport.TIMEOUT_OPTION, String.valueOf(timeout));
@@ -64,21 +67,20 @@ public class SlowConnectionTest extends ClientServerWebSocketTest {
         prepareServer(wsType, serverOptions);
         startServer();
 
-        bayeux.setDetailedDump(true);
         if (ackExtension) {
-            bayeux.addExtension(new AcknowledgedMessagesExtension());
+            bayeuxServer.addExtension(new AcknowledgedMessagesExtension());
         }
 
         try (Socket socket = new Socket("localhost", connector.getLocalPort())) {
             OutputStream output = socket.getOutputStream();
             String upgrade = "" +
-                    "GET " + cometdServletPath + " HTTP/1.1\r\n" +
-                    "Host: localhost:" + connector.getLocalPort() + "\r\n" +
-                    "Connection: Upgrade\r\n" +
-                    "Upgrade: websocket\r\n" +
-                    "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n" +
-                    "Sec-WebSocket-Version: 13\r\n" +
-                    "\r\n";
+                             "GET " + cometdPath + " HTTP/1.1\r\n" +
+                             "Host: localhost:" + connector.getLocalPort() + "\r\n" +
+                             "Connection: Upgrade\r\n" +
+                             "Upgrade: websocket\r\n" +
+                             "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n" +
+                             "Sec-WebSocket-Version: 13\r\n" +
+                             "\r\n";
             output.write(upgrade.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
@@ -150,7 +152,7 @@ public class SlowConnectionTest extends ClientServerWebSocketTest {
             }
 
             CountDownLatch removeLatch = new CountDownLatch(1);
-            ServerSessionImpl session = (ServerSessionImpl)bayeux.getSession(clientId);
+            ServerSessionImpl session = (ServerSessionImpl)bayeuxServer.getSession(clientId);
             session.addListener((ServerSession.RemovedListener)(s, m, t) -> removeLatch.countDown());
 
             String connect2 = "[{" +
@@ -166,7 +168,7 @@ public class SlowConnectionTest extends ClientServerWebSocketTest {
             char[] chars = new char[64 * 1024 * 1024];
             Arrays.fill(chars, 'x');
             String data = new String(chars);
-            bayeux.getChannel(channelName).publish(null, data, Promise.noop());
+            bayeuxServer.getChannel(channelName).publish(null, data, Promise.noop());
 
             // After timeout ms, the /meta/connect reply should be added to the
             // queue to be written, but the connection is still TCP congested.
@@ -175,6 +177,9 @@ public class SlowConnectionTest extends ClientServerWebSocketTest {
             // After maxInterval, the session should be swept.
 
             Assertions.assertTrue(removeLatch.await(timeout + idleTimeout + 2 * maxInterval, TimeUnit.MILLISECONDS));
+
+            // TODO this helps with the flakyness
+            Thread.sleep(100);
         }
     }
 

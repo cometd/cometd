@@ -15,6 +15,7 @@
  */
 package org.cometd.bayeux;
 
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -30,15 +31,7 @@ public interface Promise<C> {
      * <p>Shared instance whose methods are implemented empty,</p>
      * <p>use {@link #noop()} to ease type inference.</p>
      */
-    static final Promise<?> NOOP = new Promise<>() {
-        @Override
-        public void succeed(Object result) {
-        }
-
-        @Override
-        public void fail(Throwable failure) {
-        }
-    };
+    Promise<?> NOOP = new Promise<>() {};
 
     /**
      * <p>Callback to invoke when the operation succeeds.</p>
@@ -144,6 +137,33 @@ public interface Promise<C> {
         @Override
         public void fail(Throwable failure) {
             completeExceptionally(failure);
+        }
+    }
+
+    /**
+     * <p>A wrapper for {@link Promise} instances.</p>
+     *
+     * @param <W> the type of the result value
+     */
+    class Wrapper<W> implements Promise<W> {
+        private final Promise<W> wrapped;
+
+        public Wrapper(Promise<W> wrapped) {
+            this.wrapped = Objects.requireNonNull(wrapped);
+        }
+
+        public Promise<W> getWrapped() {
+            return wrapped;
+        }
+
+        @Override
+        public void succeed(W result) {
+            getWrapped().succeed(result);
+        }
+
+        @Override
+        public void fail(Throwable failure) {
+            getWrapped().fail(failure);
         }
     }
 }

@@ -15,13 +15,16 @@
  */
 package org.cometd.server.websocket.jakarta;
 
-import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpSession;
 import jakarta.websocket.DeploymentException;
@@ -51,7 +54,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
     public void init() {
         super.init();
 
-        ServletContext context = (ServletContext)getOption(ServletContext.class.getName());
+        ServletContext context = (ServletContext)getBayeuxServer().getOption(ServletContext.class.getName());
         if (context == null) {
             throw new IllegalArgumentException("Missing ServletContext");
         }
@@ -105,15 +108,57 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
         return new EndPoint(bayeuxContext);
     }
 
-    private static class WebSocketContext extends AbstractBayeuxContext {
-        private WebSocketContext(ServletContext context, HandshakeRequest request, Map<String, Object> userProperties) {
-            super(context, request.getRequestURI().toString(), request.getQueryString(), request.getHeaders(),
-                    request.getParameterMap(), request.getUserPrincipal(), (HttpSession)request.getHttpSession(),
+    private static class JakartaWebSocketContext extends AbstractBayeuxContext {
+        private final Map<String, Object> contextAttributes;
+        private final Map<String, Object> requestAttributes;
+        private final Map<String, Object> sessionAttributes;
+
+        private JakartaWebSocketContext(ServletContext context, HandshakeRequest request, Map<String, Object> userProperties) {
+            super(request.getRequestURI().toString(), context.getContextPath(), request.getQueryString(), request.getHeaders(),
+                    request.getParameterMap(), request.getUserPrincipal(),
                     // Hopefully these will become a standard, for now they are Jetty specific.
-                    (InetSocketAddress)userProperties.get("jakarta.websocket.endpoint.localAddress"),
-                    (InetSocketAddress)userProperties.get("jakarta.websocket.endpoint.remoteAddress"),
+                    (SocketAddress)userProperties.get("jakarta.websocket.endpoint.localAddress"),
+                    (SocketAddress)userProperties.get("jakarta.websocket.endpoint.remoteAddress"),
                     WebSocketTransport.retrieveLocales(userProperties), "HTTP/1.1",
                     WebSocketTransport.isSecure(request));
+            contextAttributes = Map.copyOf(attributesToMap(context));
+            requestAttributes = Map.of();
+            sessionAttributes = Map.copyOf(attributesToMap((HttpSession)request.getHttpSession()));
+        }
+
+        private static Map<String, Object> attributesToMap(ServletContext context) {
+            return attributesToMap(context.getAttributeNames(), context::getAttribute);
+        }
+
+        private static Map<String, Object> attributesToMap(HttpSession session) {
+            if (session == null) {
+                return Map.of();
+            }
+            return attributesToMap(session.getAttributeNames(), session::getAttribute);
+        }
+
+        private static Map<String, Object> attributesToMap(Enumeration<String> names, Function<String, Object> getter) {
+            Map<String, Object> result = new HashMap<>();
+            while (names.hasMoreElements()) {
+                String name = names.nextElement();
+                result.put(name, getter.apply(name));
+            }
+            return result;
+        }
+
+        @Override
+        public Object getContextAttribute(String name) {
+            return contextAttributes.get(name);
+        }
+
+        @Override
+        public Object getRequestAttribute(String name) {
+            return requestAttributes.get(name);
+        }
+
+        @Override
+        public Object getSessionAttribute(String name) {
+            return sessionAttributes.get(name);
         }
     }
 
@@ -141,7 +186,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
         @Override
         public void modifyHandshake(ServerEndpointConfig sec, HandshakeRequest request, HandshakeResponse response) {
             BayeuxContextHolder context = provideContext();
-            context.bayeuxContext = new WebSocketContext(servletContext, request, sec.getUserProperties());
+            context.bayeuxContext = new JakartaWebSocketContext(servletContext, request, sec.getUserProperties());
             WebSocketTransport.this.modifyHandshake(request, response);
         }
 
@@ -183,7 +228,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
         @SuppressWarnings("unchecked")
         public <T> T getEndpointInstance(Class<T> endpointClass) throws InstantiationException {
             BayeuxContextHolder holder = provideContext();
-            if (!getBayeux().getAllowedTransports().contains(getName())) {
+            if (!getBayeuxServer().getAllowedTransports().contains(getName())) {
                 throw new InstantiationException("Transport not allowed");
             }
             if (!holder.protocolMatches) {
@@ -223,7 +268,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
 
     private static class BayeuxContextHolder {
         private static final ThreadLocal<BayeuxContextHolder> holder = new ThreadLocal<>();
-        private WebSocketContext bayeuxContext;
+        private JakartaWebSocketContext bayeuxContext;
         private boolean protocolMatches;
 
         public void clear() {

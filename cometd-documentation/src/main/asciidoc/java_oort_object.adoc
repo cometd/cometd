@@ -189,7 +189,7 @@ Finally, you must specify class `MyCustomJSONContextClient` as the `jsonContext`
     ...
     <servlet>
         <servlet-name>oort-config</servlet-name>
-        <servlet-class>org.cometd.oort.OortMulticastConfigServlet</servlet-class>
+        <servlet-class>org.cometd.oort.jakarta.OortMulticastConfigServlet</servlet-class>
         <init-param>
             <param-name>oort.url</param-name>
             <param-value>http://localhost:8080/cometd</param-value>

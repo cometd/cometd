@@ -16,10 +16,10 @@
 package org.cometd.javascript.extension;
 
 import org.cometd.bayeux.Promise;
+import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.javascript.AbstractCometDTransportsTest;
 import org.cometd.javascript.Latch;
 import org.cometd.server.AbstractService;
-import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -143,7 +143,7 @@ public class CometDAckExtensionTest extends AbstractCometDTransportsTest {
     }
 
     public static class AckService extends AbstractService {
-        private AckService(BayeuxServerImpl bayeux) {
+        private AckService(BayeuxServer bayeux) {
             super(bayeux, "ack-test");
         }
 

@@ -29,10 +29,6 @@
 
   <dependencies>
     <dependency>
-      <groupId>jakarta.servlet</groupId>
-      <artifactId>jakarta.servlet-api</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.cometd.java</groupId>
       <artifactId>cometd-java-api-server</artifactId>
       <version>${project.version}</version>
@@ -56,18 +52,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-core</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-slf4j2-impl</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-client</artifactId>
       <version>${jetty-version}</version>
@@ -77,17 +61,6 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-server</artifactId>
       <version>${jetty-version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee10</groupId>
-      <artifactId>jetty-ee10-servlet</artifactId>
-      <version>${jetty-version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.awaitility</groupId>
-      <artifactId>awaitility</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

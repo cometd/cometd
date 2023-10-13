@@ -17,6 +17,7 @@ package org.cometd.tests;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.ServerChannel;
@@ -35,7 +36,7 @@ public class ServerSendMessageTest extends AbstractClientServerTest {
 
         String channelName = "/service/test";
         String response = "response";
-        bayeux.createChannelIfAbsent(channelName).getReference().addListener(new ServerChannel.MessageListener() {
+        bayeuxServer.createChannelIfAbsent(channelName).getReference().addListener(new ServerChannel.MessageListener() {
             @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message) {
                 from.deliver(null, channelName, response, Promise.noop());

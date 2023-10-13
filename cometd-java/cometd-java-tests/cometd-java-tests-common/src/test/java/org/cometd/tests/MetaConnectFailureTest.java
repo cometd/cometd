@@ -18,6 +18,7 @@ package org.cometd.tests;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
@@ -51,7 +52,7 @@ public class MetaConnectFailureTest extends AbstractClientServerTest {
 
         // Verify that the /meta/connect reply is written.
         CountDownLatch metaConnectReplyLatch = new CountDownLatch(1);
-        bayeux.addExtension(new BayeuxServer.Extension() {
+        bayeuxServer.addExtension(new BayeuxServer.Extension() {
             @Override
             public boolean sendMeta(ServerSession session, ServerMessage.Mutable message) {
                 if (Channel.META_CONNECT.equals(message.getChannel())) {
@@ -63,7 +64,7 @@ public class MetaConnectFailureTest extends AbstractClientServerTest {
 
         // Verify that the session is swept.
         CountDownLatch sessionRemovedLatch = new CountDownLatch(1);
-        ServerSession session = bayeux.getSession(client.getId());
+        ServerSession session = bayeuxServer.getSession(client.getId());
         session.addListener((ServerSession.RemovedListener)(s, m, t) -> sessionRemovedLatch.countDown());
 
         // Stop the connector so the /meta/connect response cannot be sent,

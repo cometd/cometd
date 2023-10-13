@@ -15,6 +15,7 @@
     <module>cometd-java-examples-embedded</module>
   </modules>
 
+<!-- There is no support for Jetty 12 in Spring Boot yet
   <profiles>
     <profile>
       <id>jdk17</id>
@@ -26,4 +27,5 @@
       </modules>
     </profile>
   </profiles>
+-->
 </project>

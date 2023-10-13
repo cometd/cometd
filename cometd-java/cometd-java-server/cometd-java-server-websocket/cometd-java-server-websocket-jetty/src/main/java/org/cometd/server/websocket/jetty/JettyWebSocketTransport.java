@@ -15,24 +15,26 @@
  */
 package org.cometd.server.websocket.jetty;
 
-import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import jakarta.servlet.ServletContext;
-import jakarta.servlet.http.HttpSession;
 
 import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.websocket.common.AbstractBayeuxContext;
 import org.cometd.server.websocket.common.AbstractWebSocketTransport;
-import org.eclipse.jetty.ee10.websocket.server.JettyServerUpgradeRequest;
-import org.eclipse.jetty.ee10.websocket.server.JettyServerUpgradeResponse;
-import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServerContainer;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.server.Context;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Session;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.websocket.api.ExtensionConfig;
+import org.eclipse.jetty.websocket.server.ServerUpgradeRequest;
+import org.eclipse.jetty.websocket.server.ServerUpgradeResponse;
+import org.eclipse.jetty.websocket.server.ServerWebSocketContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,9 +49,9 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport {
     public void init() {
         super.init();
 
-        ServletContext context = (ServletContext)getOption(ServletContext.class.getName());
+        Context context = (Context)getBayeuxServer().getOption(Context.class.getName());
         if (context == null) {
-            throw new IllegalArgumentException("Missing ServletContext");
+            throw new IllegalArgumentException("Missing Context");
         }
 
         String cometdURLMapping = (String)getOption(COMETD_URL_MAPPING_OPTION);
@@ -57,7 +59,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport {
             throw new IllegalArgumentException("Missing '" + COMETD_URL_MAPPING_OPTION + "' parameter");
         }
 
-        JettyWebSocketServerContainer container = JettyWebSocketServerContainer.getContainer(context);
+        ServerWebSocketContainer container = ServerWebSocketContainer.get(context);
         if (container == null) {
             throw new IllegalArgumentException("Missing JettyWebSocketServerContainer");
         }
@@ -74,10 +76,10 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport {
         container.setIdleTimeout(Duration.ofMillis(idleTimeout));
 
         for (String mapping : normalizeURLMapping(cometdURLMapping)) {
-            container.addMapping(mapping, (request, response) -> {
-                String origin = request.getHeader("Origin");
+            container.addMapping(mapping, (request, response, callback) -> {
+                String origin = request.getHeaders().get("Origin");
                 if (origin == null) {
-                    origin = request.getHeader("Sec-WebSocket-Origin");
+                    origin = request.getHeaders().get("Sec-WebSocket-Origin");
                 }
                 if (checkOrigin(request, origin)) {
                     List<ExtensionConfig> negotiated = new ArrayList<>();
@@ -92,9 +94,9 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport {
 
                     modifyUpgrade(request, response);
 
-                    List<String> allowedTransports = getBayeux().getAllowedTransports();
+                    List<String> allowedTransports = getBayeuxServer().getAllowedTransports();
                     if (allowedTransports.contains(getName())) {
-                        WebSocketContext handshake = new WebSocketContext(context, request);
+                        JettyWebSocketContext handshake = new JettyWebSocketContext(request);
                         Object instance = newWebSocketEndPoint(handshake);
                         if (LOGGER.isDebugEnabled()) {
                             LOGGER.debug("Created {}", instance);
@@ -119,35 +121,74 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport {
         return new EndPoint(bayeuxContext);
     }
 
-    protected void modifyUpgrade(JettyServerUpgradeRequest request, JettyServerUpgradeResponse response) {
+    protected void modifyUpgrade(ServerUpgradeRequest request, ServerUpgradeResponse response) {
     }
 
-    protected boolean checkOrigin(JettyServerUpgradeRequest request, String origin) {
+    protected boolean checkOrigin(ServerUpgradeRequest request, String origin) {
         return true;
     }
 
-    private static class WebSocketContext extends AbstractBayeuxContext {
-        private final Map<String, Object> attributes;
+    private static class JettyWebSocketContext extends AbstractBayeuxContext {
+        private final Map<String, Object> contextAttributes;
+        private final Map<String, Object> requestAttributes;
+        private final Map<String, Object> sessionAttributes;
 
-        private WebSocketContext(ServletContext context, JettyServerUpgradeRequest request) {
-            super(context, request.getRequestURI().toString(), request.getQueryString(), request.getHeaders(),
-                    request.getParameterMap(), request.getUserPrincipal(), getHttpSession(request),
-                    (InetSocketAddress)request.getLocalSocketAddress(), (InetSocketAddress)request.getRemoteSocketAddress(),
-                    Collections.list(request.getLocales()), "HTTP/1.1", request.isSecure());
-            this.attributes = request.getServletAttributes();
+        private JettyWebSocketContext(ServerUpgradeRequest request) {
+            super(request.getHttpURI().toString(), request.getContext().getContextPath(), null, headersToMap(request),
+                    queryToMap(request), /*TODO*/null,
+                    request.getConnectionMetaData().getLocalSocketAddress(), request.getConnectionMetaData().getRemoteSocketAddress(),
+                    Request.getLocales(request), "HTTP/1.1", request.isSecure());
+            this.contextAttributes = Map.copyOf(request.getContext().asAttributeMap());
+            this.requestAttributes = Map.copyOf(request.asAttributeMap());
+            Session session = request.getSession(false);
+            this.sessionAttributes = session == null ? Map.of() : Map.copyOf(session.asAttributeMap());
+        }
+
+        private static Map<String, List<String>> headersToMap(ServerUpgradeRequest request) {
+            HttpFields headers = request.getHeaders();
+            Map<String, List<String>> result = new LinkedHashMap<>();
+            headers.forEach(field -> {
+                String name = field.getName();
+                result.compute(name, (k, v) -> {
+                    if (v == null) {
+                        v = new ArrayList<>(1);
+                    }
+                    v.addAll(field.getValueList());
+                    return v;
+                });
+            });
+            return result;
+        }
+
+        private static Map<String, List<String>> queryToMap(ServerUpgradeRequest request) {
+            Fields fields = Request.extractQueryParameters(request);
+            Map<String, List<String>> result = new LinkedHashMap<>();
+            fields.forEach(field -> {
+                String name = field.getName();
+                result.compute(name, (k, v) -> {
+                    if (v == null) {
+                        v = new ArrayList<>(1);
+                    }
+                    v.addAll(field.getValues());
+                    return v;
+                });
+            });
+            return result;
+        }
+
+        @Override
+        public Object getContextAttribute(String name) {
+            return contextAttributes.get(name);
         }
 
         @Override
         public Object getRequestAttribute(String name) {
-            return attributes.get(name);
+            return requestAttributes.get(name);
         }
 
-        private static HttpSession getHttpSession(JettyServerUpgradeRequest request) {
-            try {
-                return (HttpSession)request.getSession();
-            } catch (Throwable x) {
-                return null;
-            }
+        @Override
+        public Object getSessionAttribute(String name) {
+            return sessionAttributes.get(name);
         }
     }
 
