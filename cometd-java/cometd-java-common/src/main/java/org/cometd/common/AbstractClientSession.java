@@ -247,11 +247,14 @@ public abstract class AbstractClientSession implements ClientSession, Dumpable {
             ClientSessionChannel.MessageListener subscriber = unregisterSubscriber(message.getId());
             if (!message.isSuccessful()) {
                 String subscription = (String)message.get(Message.SUBSCRIPTION_FIELD);
-                MarkedReference<AbstractSessionChannel> channelRef = getReleasableChannel(subscription);
-                AbstractSessionChannel channel = channelRef.getReference();
-                channel.removeSubscription(subscriber);
-                if (channelRef.isMarked()) {
-                    channel.release();
+                // Avoid NPE when the server sends an invalid message with no subscription field.
+                if (subscription != null) {
+                    MarkedReference<AbstractSessionChannel> channelRef = getReleasableChannel(subscription);
+                    AbstractSessionChannel channel = channelRef.getReference();
+                    channel.removeSubscription(subscriber);
+                    if (channelRef.isMarked()) {
+                        channel.release();
+                    }
                 }
             }
         }
