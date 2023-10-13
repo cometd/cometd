@@ -20,41 +20,34 @@ import java.io.Reader;
 import java.nio.ByteBuffer;
 import java.text.ParseException;
 import java.util.List;
+
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.async.ByteArrayFeeder;
 import com.fasterxml.jackson.core.async.ByteBufferFeeder;
 import com.fasterxml.jackson.core.async.NonBlockingInputFeeder;
-import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.type.CollectionType;
 import com.fasterxml.jackson.databind.util.TokenBuffer;
 import org.cometd.bayeux.Message;
 
 public abstract class JacksonJSONContext<M extends Message.Mutable, I extends M> {
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final JavaType rootArrayType;
+    private final CollectionType collectionType;
 
     protected JacksonJSONContext() {
-        rootArrayType = objectMapper.constructType(rootArrayClass());
+        collectionType = objectMapper.getTypeFactory().constructCollectionType(List.class, messageClass());
     }
 
     public ObjectMapper getObjectMapper() {
         return objectMapper;
     }
 
-    protected abstract Class<I[]> rootArrayClass();
+    protected abstract Class<I> messageClass();
 
-    public M[] parse(Reader reader) throws ParseException {
+    public List<M> parse(String json) throws ParseException {
         try {
-            return getObjectMapper().readValue(reader, rootArrayType);
-        } catch (IOException x) {
-            throw (ParseException)new ParseException("", -1).initCause(x);
-        }
-    }
-
-    public M[] parse(String json) throws ParseException {
-        try {
-            return getObjectMapper().readValue(json, rootArrayType);
+            return getObjectMapper().readValue(json, collectionType);
         } catch (IOException x) {
             throw (ParseException)new ParseException(json, -1).initCause(x);
         }
@@ -72,16 +65,6 @@ public abstract class JacksonJSONContext<M extends Message.Mutable, I extends M>
     public String generate(M message) {
         try {
             return getObjectMapper().writeValueAsString(message);
-        } catch (IOException x) {
-            throw new RuntimeException(x);
-        }
-    }
-
-    public String generate(List<M> messages) {
-        try {
-            Message.Mutable[] mutables = new Message.Mutable[messages.size()];
-            messages.toArray(mutables);
-            return getObjectMapper().writeValueAsString(mutables);
         } catch (IOException x) {
             throw new RuntimeException(x);
         }
@@ -127,37 +110,21 @@ public abstract class JacksonJSONContext<M extends Message.Mutable, I extends M>
         }
 
         @Override
-        public void parse(byte[] bytes, int offset, int length) {
-            try {
-                NonBlockingInputFeeder feeder = jsonParser.getNonBlockingInputFeeder();
-                if (feeder instanceof ByteArrayFeeder) {
-                    ((ByteArrayFeeder)feeder).feedInput(bytes, offset, offset + length);
-                    parseInput();
-                } else if (feeder instanceof ByteBufferFeeder) {
-                    parse(ByteBuffer.wrap(bytes, offset, length));
-                } else {
-                    throw new UnsupportedOperationException();
-                }
-            } catch (IOException x) {
-                throw new IllegalStateException(x);
-            }
-        }
-
-        @Override
         public void parse(ByteBuffer buffer) {
             try {
-                NonBlockingInputFeeder feeder = jsonParser.getNonBlockingInputFeeder();
-                if (feeder instanceof ByteBufferFeeder) {
-                    ((ByteBufferFeeder)feeder).feedInput(buffer);
+                NonBlockingInputFeeder input = jsonParser.getNonBlockingInputFeeder();
+                if (input instanceof ByteBufferFeeder feeder) {
+                    feeder.feedInput(buffer);
                     parseInput();
-                } else if (feeder instanceof ByteArrayFeeder) {
+                } else if (input instanceof ByteArrayFeeder feeder) {
                     if (buffer.hasArray()) {
-                        parse(buffer.array(), buffer.arrayOffset(), buffer.remaining());
+                        feeder.feedInput(buffer.array(), buffer.arrayOffset(), buffer.remaining());
                     } else {
                         byte[] bytes = new byte[buffer.remaining()];
                         buffer.get(bytes);
-                        parse(bytes, 0, bytes.length);
+                        feeder.feedInput(bytes, 0, bytes.length);
                     }
+                    parseInput();
                 } else {
                     throw new UnsupportedOperationException();
                 }
@@ -176,15 +143,13 @@ public abstract class JacksonJSONContext<M extends Message.Mutable, I extends M>
             }
         }
 
-        @SuppressWarnings("unchecked")
         @Override
         public <R> R complete() {
             try {
                 NonBlockingInputFeeder feeder = jsonParser.getNonBlockingInputFeeder();
                 feeder.endOfInput();
                 jsonParser.nextToken();
-                M[] result = objectMapper.readValue(tokenBuffer.asParser(), objectMapper.constructType(rootArrayClass()));
-                return (R)List.of(result);
+                return objectMapper.readValue(tokenBuffer.asParser(), collectionType);
             } catch (IOException x) {
                 throw new IllegalArgumentException(x);
             }

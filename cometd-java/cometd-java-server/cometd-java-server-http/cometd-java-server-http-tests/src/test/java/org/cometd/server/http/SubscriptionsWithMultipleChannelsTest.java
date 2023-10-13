@@ -15,6 +15,8 @@
  */
 package org.cometd.server.http;
 
+import java.util.List;
+
 import org.cometd.bayeux.Message;
 import org.cometd.common.JSONContext;
 import org.cometd.common.JettyJSONContextClient;
@@ -50,9 +52,9 @@ public class SubscriptionsWithMultipleChannelsTest extends AbstractBayeuxClientS
         Assertions.assertEquals(200, response.getStatus());
 
         JSONContext.Client jsonContext = new JettyJSONContextClient();
-        Message.Mutable[] messages = jsonContext.parse(response.getContentAsString());
-        Assertions.assertEquals(1, messages.length);
-        Message.Mutable message = messages[0];
+        List<Message.Mutable> messages = jsonContext.parse(response.getContentAsString());
+        Assertions.assertEquals(1, messages.size());
+        Message.Mutable message = messages.get(0);
         Assertions.assertTrue(message.isSuccessful());
         Object subscriptions = message.get(Message.SUBSCRIPTION_FIELD);
         Assertions.assertTrue(subscriptions instanceof Object[]);
@@ -91,9 +93,9 @@ public class SubscriptionsWithMultipleChannelsTest extends AbstractBayeuxClientS
         Assertions.assertEquals(200, response.getStatus());
 
         JSONContext.Client jsonContext = new JettyJSONContextClient();
-        Message.Mutable[] messages = jsonContext.parse(response.getContentAsString());
-        Assertions.assertEquals(1, messages.length);
-        Message.Mutable message = messages[0];
+        List<Message.Mutable> messages = jsonContext.parse(response.getContentAsString());
+        Assertions.assertEquals(1, messages.size());
+        Message.Mutable message = messages.get(0);
         Assertions.assertTrue(message.isSuccessful());
         Object subscriptions = message.get(Message.SUBSCRIPTION_FIELD);
         Assertions.assertTrue(subscriptions instanceof Object[]);

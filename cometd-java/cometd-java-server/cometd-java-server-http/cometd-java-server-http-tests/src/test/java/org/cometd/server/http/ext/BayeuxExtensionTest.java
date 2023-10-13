@@ -15,6 +15,7 @@
  */
 package org.cometd.server.http.ext;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -79,9 +80,9 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest {
         Assertions.assertEquals(CLIENT_INFO, handshakeRef.get().getDataAsMap().get(CLIENT_DATA_FIELD));
 
         JSONContextServer jsonContext = new JettyJSONContextServer();
-        ServerMessage.Mutable[] messages = jsonContext.parse(response.getContentAsString());
-        Assertions.assertEquals(1, messages.length);
-        Map<String, Object> message = messages[0];
+        List<ServerMessage.Mutable> messages = jsonContext.parse(response.getContentAsString());
+        Assertions.assertEquals(1, messages.size());
+        Map<String, Object> message = messages.get(0);
         Assertions.assertEquals(SERVER_EXT_INFO, message.get(SERVER_EXT_MESSAGE_FIELD));
         Assertions.assertEquals(SERVER_EXT_INFO, ((Map)message.get(Message.DATA_FIELD)).get(SERVER_EXT_DATA_FIELD));
         Assertions.assertEquals(SERVER_EXT_INFO, ((Map)message.get(Message.EXT_FIELD)).get(SERVER_EXT_EXT_FIELD));
@@ -128,9 +129,9 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest {
         Assertions.assertEquals(CLIENT_INFO, publishRef.get().getDataAsMap().get(CLIENT_DATA_FIELD));
 
         JSONContextServer jsonContext = new JettyJSONContextServer();
-        ServerMessage.Mutable[] messages = jsonContext.parse(response.getContentAsString());
-        Assertions.assertEquals(2, messages.length);
-        Map<String, Object> message = messages[0].containsKey(Message.DATA_FIELD) ? messages[0] : messages[1];
+        List<ServerMessage.Mutable> messages = jsonContext.parse(response.getContentAsString());
+        Assertions.assertEquals(2, messages.size());
+        Map<String, Object> message = messages.get(0).containsKey(Message.DATA_FIELD) ? messages.get(0) : messages.get(1);
         Assertions.assertEquals(SERVER_EXT_INFO, message.get(SERVER_EXT_MESSAGE_FIELD));
         Assertions.assertEquals(SERVER_EXT_INFO, ((Map)message.get(Message.DATA_FIELD)).get(SERVER_EXT_DATA_FIELD));
         Assertions.assertEquals(SERVER_EXT_INFO, ((Map)message.get(Message.EXT_FIELD)).get(SERVER_EXT_EXT_FIELD));
@@ -189,9 +190,9 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest {
         Assertions.assertEquals(CLIENT_INFO, publishRef.get().getDataAsMap().get(CLIENT_DATA_FIELD));
 
         JSONContextServer jsonContext = new JettyJSONContextServer();
-        ServerMessage.Mutable[] messages = jsonContext.parse(response.getContentAsString());
-        Assertions.assertEquals(2, messages.length);
-        Map<String, Object> message = messages[0].containsKey(Message.DATA_FIELD) ? messages[0] : messages[1];
+        List<ServerMessage.Mutable> messages = jsonContext.parse(response.getContentAsString());
+        Assertions.assertEquals(2, messages.size());
+        Map<String, Object> message = messages.get(0).containsKey(Message.DATA_FIELD) ? messages.get(0) : messages.get(1);
         Assertions.assertEquals(SERVER_EXT_INFO, message.get(SERVER_EXT_MESSAGE_FIELD));
         Assertions.assertEquals(SERVER_EXT_INFO, ((Map)message.get(Message.DATA_FIELD)).get(SERVER_EXT_DATA_FIELD));
         Assertions.assertEquals(SERVER_EXT_INFO, ((Map)message.get(Message.EXT_FIELD)).get(SERVER_EXT_EXT_FIELD));

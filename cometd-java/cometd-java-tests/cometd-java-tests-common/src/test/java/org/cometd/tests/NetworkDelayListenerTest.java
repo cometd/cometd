@@ -258,7 +258,7 @@ public class NetworkDelayListenerTest extends AbstractClientServerTest {
             socket.read(buffer);
             buffer.flip();
         }
-        return json.parse(BufferUtil.toString(frame.getPayload(), StandardCharsets.UTF_8))[0];
+        return json.parse(BufferUtil.toString(frame.getPayload(), StandardCharsets.UTF_8)).get(0);
     }
 
     private ServerMessage receiveHttpMessage(SocketChannel socket, ByteBuffer buffer, JSONContextServer json) throws Exception {
@@ -272,7 +272,7 @@ public class NetworkDelayListenerTest extends AbstractClientServerTest {
             socket.read(buffer);
             buffer.flip();
         }
-        return json.parse(request.getContent())[0];
+        return json.parse(request.getContent()).get(0);
     }
 
     private void sendMessage(Transport transport, SocketChannel socket, String content) throws IOException {

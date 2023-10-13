@@ -61,29 +61,16 @@ public abstract class AbstractWebSocketEndPoint {
 
     public abstract void close(int code, String reason);
 
-    public void onMessage(String data, Promise<Void> p) {
-        Promise<Void> promise = Promise.from(p::succeed, failure -> {
-            if (_logger.isDebugEnabled()) {
-                _logger.debug("", failure);
-            }
-            close(1011, failure.toString());
-            p.fail(failure);
-        });
-
+    public void onMessage(String data, Promise<Void> promise) {
         try {
-            ServerMessage.Mutable[] messages = _transport.parseMessages(data);
+            List<ServerMessage.Mutable> messages = _transport.parseMessages(data);
             if (_logger.isDebugEnabled()) {
-                _logger.debug("Parsed {} messages on {}", messages == null ? -1 : messages.length, this);
+                _logger.debug("Parsed {} messages on {}", messages == null ? -1 : messages.size(), this);
             }
-            if (messages != null) {
-                processMessages(messages, promise);
-            } else {
-                promise.succeed(null);
-            }
+            processMessages(messages == null ? List.of() : messages, promise);
         } catch (ParseException x) {
-            close(1011, x.toString());
             _logger.warn("Error parsing JSON: {} on {}", data, this, x);
-            promise.succeed(null);
+            promise.fail(x);
         } catch (Throwable x) {
             promise.fail(x);
         }
@@ -116,12 +103,12 @@ public abstract class AbstractWebSocketEndPoint {
         }
     }
 
-    private void processMessages(ServerMessage.Mutable[] messages, Promise<Void> promise) {
-        if (messages.length == 0) {
+    private void processMessages(List<ServerMessage.Mutable> messages, Promise<Void> promise) {
+        if (messages.isEmpty()) {
             promise.fail(new IOException("bayeux protocol violation"));
         } else {
             ServerSessionImpl session;
-            ServerMessage.Mutable m = messages[0];
+            ServerMessage.Mutable m = messages.get(0);
             if (Channel.META_HANDSHAKE.equals(m.getChannel())) {
                 _session = null;
                 session = _transport.getBayeuxServer().newServerSession();
@@ -150,7 +137,7 @@ public abstract class AbstractWebSocketEndPoint {
         }
     }
 
-    private void processMessage(ServerMessage.Mutable[] messages, Context context, ServerMessageImpl message, Promise<Boolean> promise) {
+    private void processMessage(List<ServerMessage.Mutable> messages, Context context, ServerMessageImpl message, Promise<Boolean> promise) {
         if (_logger.isDebugEnabled()) {
             _logger.debug("Processing {} on {}", message, this);
         }
@@ -165,7 +152,7 @@ public abstract class AbstractWebSocketEndPoint {
 
         String channel = message.getChannel();
         if (Channel.META_HANDSHAKE.equals(channel)) {
-            if (messages.length > 1) {
+            if (messages.size() > 1) {
                 promise.fail(new IOException("protocol violation"));
             } else {
                 if (session != null) {

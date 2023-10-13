@@ -17,6 +17,7 @@ package org.cometd.server.http;
 
 import java.text.ParseException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.cometd.bayeux.Message;
@@ -175,9 +176,9 @@ public class CustomResponseOnSecurityPolicyDenyTest extends AbstractBayeuxClient
 
     private void checkResponse(ContentResponse reply, String reconnectAdvice) throws ParseException {
         JSONContext.Client jsonContext = new JettyJSONContextClient();
-        Message.Mutable[] responses = jsonContext.parse(reply.getContentAsString());
-        Assertions.assertEquals(1, responses.length);
-        Message response = responses[0];
+        List<Message.Mutable> responses = jsonContext.parse(reply.getContentAsString());
+        Assertions.assertEquals(1, responses.size());
+        Message response = responses.get(0);
         Map<String, Object> advice = response.getAdvice();
         Assertions.assertNotNull(advice);
         Assertions.assertEquals(reconnectAdvice, advice.get(Message.RECONNECT_FIELD));

@@ -89,7 +89,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest {
         response = connect2.send();
         Assertions.assertEquals(200, response.getStatus());
 
-        Message.Mutable reply = new JettyJSONContextClient().parse(response.getContentAsString())[0];
+        Message.Mutable reply = new JettyJSONContextClient().parse(response.getContentAsString()).get(0);
         Assertions.assertEquals(Channel.META_CONNECT, reply.getChannel());
         Map<String, Object> advice = reply.getAdvice(false);
         if (advice != null) {

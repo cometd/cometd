@@ -16,6 +16,7 @@
 package org.cometd.server.http;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.cometd.bayeux.Message;
@@ -74,8 +75,8 @@ public class JSONTransportMetaConnectDeliveryTest extends AbstractBayeuxClientSe
 
         // Expect only the meta response to the publish
         JSONContext.Client jsonContext = new JettyJSONContextClient();
-        Message.Mutable[] messages = jsonContext.parse(response.getContentAsString());
-        Assertions.assertEquals(1, messages.length);
+        List<Message.Mutable> messages = jsonContext.parse(response.getContentAsString());
+        Assertions.assertEquals(1, messages.size());
 
         connect = newBayeuxRequest("[{" +
                                    "\"channel\": \"/meta/connect\"," +
@@ -87,6 +88,6 @@ public class JSONTransportMetaConnectDeliveryTest extends AbstractBayeuxClientSe
 
         // Expect meta response to the connect plus the published message
         messages = jsonContext.parse(response.getContentAsString());
-        Assertions.assertEquals(2, messages.length);
+        Assertions.assertEquals(2, messages.size());
     }
 }

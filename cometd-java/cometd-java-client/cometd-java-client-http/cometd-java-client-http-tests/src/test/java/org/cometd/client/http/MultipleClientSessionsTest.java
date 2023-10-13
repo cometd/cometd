@@ -334,9 +334,9 @@ public class MultipleClientSessionsTest extends ClientServerTest {
         Assertions.assertEquals(1, cookies.size());
         HttpCookie browserCookie = cookies.get(0);
         Assertions.assertEquals("BAYEUX_BROWSER", browserCookie.getName());
-        Message.Mutable[] messages = parser.parse(handshake.getContentAsString());
-        Assertions.assertEquals(1, messages.length);
-        String clientId = messages[0].getClientId();
+        List<Message.Mutable> messages = parser.parse(handshake.getContentAsString());
+        Assertions.assertEquals(1, messages.size());
+        String clientId = messages.get(0).getClientId();
 
         String connectContent1 = "[{" +
                 "\"id\":\"2\"," +
@@ -408,8 +408,8 @@ public class MultipleClientSessionsTest extends ClientServerTest {
                 .send();
         Assertions.assertEquals(200, connect4.getStatus());
         messages = parser.parse(connect4.getContentAsString());
-        Assertions.assertEquals(1, messages.length);
-        Message.Mutable message = messages[0];
+        Assertions.assertEquals(1, messages.size());
+        Message.Mutable message = messages.get(0);
         Map<String, Object> advice = message.getAdvice(true);
         Assertions.assertFalse(advice.containsKey("multiple-clients"));
     }

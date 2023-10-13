@@ -17,6 +17,7 @@ package org.cometd.server;
 
 import java.io.IOException;
 import java.text.ParseException;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.cometd.bayeux.Promise;
@@ -168,7 +169,7 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
         return _jsonContext;
     }
 
-    public ServerMessage.Mutable[] parseMessages(String json) throws ParseException {
+    public List<ServerMessage.Mutable> parseMessages(String json) throws ParseException {
         return _jsonContext.parse(json);
     }
 

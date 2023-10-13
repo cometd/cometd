@@ -19,12 +19,7 @@ import org.cometd.bayeux.Message;
 
 public class JettyJSONContextClient extends JettyJSONContext<Message.Mutable> implements JSONContext.Client {
     @Override
-    protected Message.Mutable newRoot() {
+    protected Message.Mutable newMessage() {
         return new HashMapMessage();
-    }
-
-    @Override
-    protected Message.Mutable[] newRootArray(int size) {
-        return new Message.Mutable[size];
     }
 }

@@ -15,6 +15,8 @@
  */
 package org.cometd.server.http;
 
+import java.util.List;
+
 import org.cometd.bayeux.Message;
 import org.cometd.common.JSONContext;
 import org.cometd.common.JettyJSONContextClient;
@@ -90,8 +92,8 @@ public class BadJSONTest extends AbstractBayeuxClientServerTest {
         response = connect.send();
         Assertions.assertEquals(200, response.getStatus());
         JSONContext.Client jsonContext = new JettyJSONContextClient();
-        Message.Mutable[] replies = jsonContext.parse(response.getContentAsString());
-        Message.Mutable reply = replies[0];
+        List<Message.Mutable> replies = jsonContext.parse(response.getContentAsString());
+        Message.Mutable reply = replies.get(0);
         Assertions.assertFalse(reply.isSuccessful());
 
         Request subscribe = newBayeuxRequest("[{" +
@@ -102,7 +104,7 @@ public class BadJSONTest extends AbstractBayeuxClientServerTest {
         response = subscribe.send();
         Assertions.assertEquals(200, response.getStatus());
         replies = jsonContext.parse(response.getContentAsString());
-        reply = replies[0];
+        reply = replies.get(0);
         Assertions.assertFalse(reply.isSuccessful());
 
         Request publish = newBayeuxRequest("[{" +
@@ -113,7 +115,7 @@ public class BadJSONTest extends AbstractBayeuxClientServerTest {
         response = publish.send();
         Assertions.assertEquals(200, response.getStatus());
         replies = jsonContext.parse(response.getContentAsString());
-        reply = replies[0];
+        reply = replies.get(0);
         Assertions.assertFalse(reply.isSuccessful());
 
         Request unsubscribe = newBayeuxRequest("[{" +
@@ -124,7 +126,7 @@ public class BadJSONTest extends AbstractBayeuxClientServerTest {
         response = unsubscribe.send();
         Assertions.assertEquals(200, response.getStatus());
         replies = jsonContext.parse(response.getContentAsString());
-        reply = replies[0];
+        reply = replies.get(0);
         Assertions.assertFalse(reply.isSuccessful());
     }
 }

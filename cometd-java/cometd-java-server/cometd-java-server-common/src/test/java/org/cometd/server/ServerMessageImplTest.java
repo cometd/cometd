@@ -19,7 +19,9 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.List;
 import java.util.Map;
+
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.ServerMessage;
 import org.junit.jupiter.api.Assertions;
@@ -53,8 +55,8 @@ public class ServerMessageImplTest {
                 "}";
 
         JSONContextServer jsonContext = new JettyJSONContextServer();
-        ServerMessage.Mutable[] messages = jsonContext.parse(originalJSON);
-        ServerMessageImpl message = (ServerMessageImpl)messages[0];
+        List<ServerMessage.Mutable> messages = jsonContext.parse(originalJSON);
+        ServerMessageImpl message = (ServerMessageImpl)messages.get(0);
 
         String json = jsonContext.generate(message);
         Assertions.assertTrue(json.contains("\"ext\":{\"extName\":\"extValue\"}"));
@@ -186,8 +188,8 @@ public class ServerMessageImplTest {
                 "}";
 
         JSONContextServer jsonContext = new JettyJSONContextServer();
-        ServerMessage.Mutable[] messages = jsonContext.parse(originalJSON);
-        ServerMessageImpl message = (ServerMessageImpl)messages[0];
+        List<ServerMessage.Mutable> messages = jsonContext.parse(originalJSON);
+        ServerMessageImpl message = (ServerMessageImpl)messages.get(0);
         Map<String, Object> data = message.getDataAsMap();
         Assertions.assertNull(data.get("nullData"));
         Assertions.assertTrue(data.containsKey("nullData"));

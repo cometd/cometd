@@ -15,6 +15,7 @@
  */
 package org.cometd.server.http.ext;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -124,10 +125,10 @@ public class AcknowledgeExtensionTest extends AbstractBayeuxClientServerTest {
         Assertions.assertEquals(200, response.getStatus());
 
         JSONContext.Client parser = new JettyJSONContextClient();
-        Message.Mutable[] messages = parser.parse(response.getContentAsString());
-        Assertions.assertEquals(2, messages.length);
-        Message.Mutable m1 = messages[0];
-        Message.Mutable m2 = messages[1];
+        List<Message.Mutable> messages = parser.parse(response.getContentAsString());
+        Assertions.assertEquals(2, messages.size());
+        Message.Mutable m1 = messages.get(0);
+        Message.Mutable m2 = messages.get(1);
         if (channel.equals(m1.getChannel())) {
             Assertions.assertEquals(Channel.META_CONNECT, m2.getChannel());
             Assertions.assertEquals(data, m1.getData());
@@ -237,10 +238,10 @@ public class AcknowledgeExtensionTest extends AbstractBayeuxClientServerTest {
         Assertions.assertEquals(200, response.getStatus());
 
         JSONContext.Client parser = new JettyJSONContextClient();
-        Message.Mutable[] messages = parser.parse(response.getContentAsString());
-        Assertions.assertEquals(2, messages.length);
-        Message.Mutable m1 = messages[0];
-        Message.Mutable m2 = messages[1];
+        List<Message.Mutable> messages = parser.parse(response.getContentAsString());
+        Assertions.assertEquals(2, messages.size());
+        Message.Mutable m1 = messages.get(0);
+        Message.Mutable m2 = messages.get(1);
         if (channel.equals(m1.getChannel())) {
             Assertions.assertEquals(Channel.META_CONNECT, m2.getChannel());
             Assertions.assertEquals(data, m1.getData());

@@ -15,6 +15,8 @@
  */
 package org.cometd.server.http;
 
+import java.util.List;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.ServerChannel;
@@ -55,14 +57,14 @@ public class MetaConnectWithOtherMessagesTest extends AbstractBayeuxClientServer
         Assertions.assertEquals(200, response.getStatus());
 
         JettyJSONContextClient parser = new JettyJSONContextClient();
-        Message.Mutable[] messages = parser.parse(response.getContentAsString());
+        List<Message.Mutable> messages = parser.parse(response.getContentAsString());
 
-        Assertions.assertEquals(2, messages.length);
+        Assertions.assertEquals(2, messages.size());
 
-        Message.Mutable connectReply = messages[0];
+        Message.Mutable connectReply = messages.get(0);
         Assertions.assertEquals(Channel.META_CONNECT, connectReply.getChannel());
 
-        Message.Mutable subscribeReply = messages[1];
+        Message.Mutable subscribeReply = messages.get(1);
         Assertions.assertEquals(Channel.META_SUBSCRIBE, subscribeReply.getChannel());
 
         ServerChannel channel = bayeux.getChannel(channelName);
