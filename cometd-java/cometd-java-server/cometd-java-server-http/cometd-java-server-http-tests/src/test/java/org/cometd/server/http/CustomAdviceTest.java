@@ -15,6 +15,7 @@
  */
 package org.cometd.server.http;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -100,8 +101,8 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest {
         Assertions.assertEquals(200, response.getStatus());
 
         JSONContext.Client jsonContext = new JettyJSONContextClient();
-        Message.Mutable[] messages = jsonContext.parse(response.getContentAsString());
-        Message.Mutable connect = messages[0];
+        List<Message.Mutable> messages = jsonContext.parse(response.getContentAsString());
+        Message.Mutable connect = messages.get(0);
         Map<String, Object> advice = connect.getAdvice();
         Assertions.assertNotNull(advice);
         Number timeout = (Number)advice.get("timeout");
@@ -173,8 +174,8 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest {
         Assertions.assertEquals(200, response.getStatus());
 
         JSONContext.Client jsonContext = new JettyJSONContextClient();
-        Message.Mutable[] messages = jsonContext.parse(response.getContentAsString());
-        Message.Mutable connect = messages[0];
+        List<Message.Mutable> messages = jsonContext.parse(response.getContentAsString());
+        Message.Mutable connect = messages.get(0);
         Map<String, Object> advice = connect.getAdvice();
         Assertions.assertNotNull(advice);
         Number interval = (Number)advice.get("interval");
@@ -222,8 +223,8 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest {
         Assertions.assertEquals(200, response.getStatus());
 
         JSONContext.Client jsonContext = new JettyJSONContextClient();
-        Message.Mutable[] messages = jsonContext.parse(response.getContentAsString());
-        Message.Mutable connect = messages[0];
+        List<Message.Mutable> messages = jsonContext.parse(response.getContentAsString());
+        Message.Mutable connect = messages.get(0);
         Map<String, Object> advice = connect.getAdvice();
         Assertions.assertNotNull(advice);
         Number interval = (Number)advice.get("interval");

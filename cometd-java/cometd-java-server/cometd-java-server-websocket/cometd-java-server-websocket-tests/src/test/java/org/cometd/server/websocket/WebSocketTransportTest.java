@@ -16,8 +16,8 @@
 package org.cometd.server.websocket;
 
 import java.net.URI;
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -320,8 +320,8 @@ public class WebSocketTransportTest {
         @Override
         public void onWebSocketText(String message) {
             try {
-                Message.Mutable[] mutables = jsonContext.parse(message);
-                Collections.addAll(messages, mutables);
+                List<Message.Mutable> mutables = jsonContext.parse(message);
+                messages.addAll(mutables);
             } catch (Throwable x) {
                 disconnect(session);
             }

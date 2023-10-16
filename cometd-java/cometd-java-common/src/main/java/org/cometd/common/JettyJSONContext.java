@@ -42,20 +42,9 @@ public abstract class JettyJSONContext<M extends Message.Mutable> {
         return _jsonFactory;
     }
 
-    protected abstract M newRoot();
+    protected abstract M newMessage();
 
-    protected abstract M[] newRootArray(int size);
-
-    public M[] parse(Reader reader) throws ParseException {
-        try {
-            Object object = _messagesParser.parse(new JSON.ReaderSource(reader));
-            return adapt(object);
-        } catch (Exception x) {
-            throw (ParseException)new ParseException("", -1).initCause(x);
-        }
-    }
-
-    public M[] parse(String json) throws ParseException {
+    public List<M> parse(String json) throws ParseException {
         try {
             Object object = _messagesParser.parse(new JSON.StringSource(json));
             return adapt(object);
@@ -70,27 +59,21 @@ public abstract class JettyJSONContext<M extends Message.Mutable> {
     }
 
     @SuppressWarnings("unchecked")
-    private M[] adapt(Object object) {
+    private List<M> adapt(Object object) {
         if (object == null) {
             return null;
         }
-        if (object.getClass().isArray()) {
-            return (M[])object;
-        }
         if (object instanceof List list) {
-            return (M[])list.toArray(this::newRootArray);
+            return list;
         }
-        M[] result = newRootArray(1);
-        result[0] = (M)object;
-        return result;
+        if (object.getClass().isArray()) {
+            return List.of((M[])object);
+        }
+        return List.of((M)object);
     }
 
     public String generate(M message) {
         return _messageParser.toJSON(message);
-    }
-
-    public String generate(List<M> messages) {
-        return _messagesParser.toJSON(messages);
     }
 
     public JSONContext.Parser getParser() {
@@ -130,7 +113,7 @@ public abstract class JettyJSONContext<M extends Message.Mutable> {
     private class MessageJSON extends FieldJSON {
         @Override
         protected Map<String, Object> newMap() {
-            return newRoot();
+            return newMessage();
         }
 
         @Override
@@ -151,7 +134,7 @@ public abstract class JettyJSONContext<M extends Message.Mutable> {
 
         @Override
         protected Map<String, Object> newMap() {
-            return newRoot();
+            return newMessage();
         }
 
         @Override
@@ -239,7 +222,7 @@ public abstract class JettyJSONContext<M extends Message.Mutable> {
                 @Override
                 protected Map<String, Object> newObject(Context context) {
                     if (context.depth() <= 1) {
-                        return newRoot();
+                        return newMessage();
                     }
                     return super.newObject(context);
                 }

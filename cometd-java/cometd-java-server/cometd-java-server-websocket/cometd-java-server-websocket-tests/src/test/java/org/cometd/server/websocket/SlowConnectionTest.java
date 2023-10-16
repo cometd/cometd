@@ -114,7 +114,7 @@ public class SlowConnectionTest extends ClientServerWebSocketTest {
                     "}]";
             wsWrite(output, handshake);
             String text = wsRead(input);
-            Message.Mutable handshakeReply = jsonContext.parse(text)[0];
+            Message.Mutable handshakeReply = jsonContext.parse(text).get(0);
             Assertions.assertEquals(Channel.META_HANDSHAKE, handshakeReply.getChannel());
             Assertions.assertTrue(handshakeReply.isSuccessful());
             String clientId = handshakeReply.getClientId();
@@ -128,7 +128,7 @@ public class SlowConnectionTest extends ClientServerWebSocketTest {
                     "}]";
             wsWrite(output, subscribe);
             text = wsRead(input);
-            Message.Mutable subscribeReply = jsonContext.parse(text)[0];
+            Message.Mutable subscribeReply = jsonContext.parse(text).get(0);
             Assertions.assertEquals(Channel.META_SUBSCRIBE, subscribeReply.getChannel());
             Assertions.assertTrue(subscribeReply.isSuccessful());
 
@@ -142,7 +142,7 @@ public class SlowConnectionTest extends ClientServerWebSocketTest {
                     "}]";
             wsWrite(output, connect1);
             text = wsRead(input);
-            Message.Mutable connect1Reply = jsonContext.parse(text)[0];
+            Message.Mutable connect1Reply = jsonContext.parse(text).get(0);
             Assertions.assertEquals(Channel.META_CONNECT, connect1Reply.getChannel());
             Assertions.assertTrue(connect1Reply.isSuccessful());
             long ack = 0;

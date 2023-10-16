@@ -105,7 +105,7 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
         Assertions.assertEquals(200, response.getStatus());
 
         JettyJSONContextClient parser = new JettyJSONContextClient();
-        Message.Mutable connectReply2 = parser.parse(response.getContentAsString())[0];
+        Message.Mutable connectReply2 = parser.parse(response.getContentAsString()).get(0);
         Assertions.assertFalse(connectReply2.isSuccessful());
         String error = (String)connectReply2.get(Message.ERROR_FIELD);
         Assertions.assertNotNull(error);
@@ -124,7 +124,7 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
                                             "}]");
         response = connect3.send();
         Assertions.assertEquals(200, response.getStatus());
-        Message.Mutable connectReply3 = parser.parse(response.getContentAsString())[0];
+        Message.Mutable connectReply3 = parser.parse(response.getContentAsString()).get(0);
         advice = connectReply3.getAdvice();
         Assertions.assertNotNull(advice);
         Assertions.assertEquals(Message.RECONNECT_HANDSHAKE_VALUE, advice.get(Message.RECONNECT_FIELD));

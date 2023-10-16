@@ -29,22 +29,13 @@ import org.cometd.bayeux.Message;
  */
 public interface JSONContext<T extends Message.Mutable> {
     /**
-     * <p>Parses an array of messages from the given reader.</p>
-     *
-     * @param reader the reader to parse from
-     * @return an array of messages
-     * @throws ParseException in case of parsing errors
-     */
-    public T[] parse(Reader reader) throws ParseException;
-
-    /**
      * <p>Parses an array of messages from the given string.</p>
      *
      * @param json the JSON string to parse from
      * @return an array of messages
      * @throws ParseException in case of parsing errors
      */
-    public T[] parse(String json) throws ParseException;
+    public List<T> parse(String json) throws ParseException;
 
     /**
      * @return a new {@link AsyncParser} instance, or null if non-blocking parsing is not supported
@@ -60,14 +51,6 @@ public interface JSONContext<T extends Message.Mutable> {
      * @return the JSON string for the message
      */
     public String generate(T message);
-
-    /**
-     * <p>Converts a list of messages to a JSON string.</p>
-     *
-     * @param messages the list of messages to stringify
-     * @return the JSON string for the messages
-     */
-    public String generate(List<T> messages);
 
     /**
      * @return a synchronous JSON parser to parse any JSON string
@@ -105,15 +88,6 @@ public interface JSONContext<T extends Message.Mutable> {
      * A non-blocking JSON parser.
      */
     public interface AsyncParser {
-        /**
-         * @param bytes  the bytes chunk to parse
-         * @param offset the offset to start parsing from
-         * @param length the number of bytes to parse
-         */
-        public default void parse(byte[] bytes, int offset, int length) {
-            parse(ByteBuffer.wrap(bytes, offset, length));
-        }
-
         /**
          * @param buffer the buffer chunk to parse
          */

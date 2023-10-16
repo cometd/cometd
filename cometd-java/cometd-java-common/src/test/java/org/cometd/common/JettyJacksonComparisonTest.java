@@ -19,8 +19,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+
 import org.cometd.bayeux.Message;
-import org.cometd.bayeux.Message.Mutable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
@@ -34,7 +34,7 @@ public class JettyJacksonComparisonTest {
     public interface JSONProvider {
         String getName();
 
-        Message.Mutable[] parse(String json) throws Exception;
+        List<Message.Mutable> parse(String json) throws Exception;
 
         String generate(Message.Mutable message) throws Exception;
     }
@@ -48,7 +48,7 @@ public class JettyJacksonComparisonTest {
         }
 
         @Override
-        public org.cometd.bayeux.Message.Mutable[] parse(String json) throws Exception {
+        public List<Message.Mutable> parse(String json) throws Exception {
             return jacksonContextClient.parse(json);
         }
 
@@ -67,7 +67,7 @@ public class JettyJacksonComparisonTest {
         }
 
         @Override
-        public Mutable[] parse(String json) throws Exception {
+        public List<Message.Mutable> parse(String json) throws Exception {
             return jettyJSONContextClient.parse(json);
         }
 

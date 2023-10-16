@@ -17,6 +17,7 @@ package org.cometd.server.http;
 
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
@@ -40,13 +41,13 @@ public class SessionHijackingTest extends AbstractBayeuxClientServerTest {
         startServer(transport, settings);
 
         // Message should succeed.
-        Message.Mutable[] messages = testSessionHijacking();
-        Assertions.assertEquals(1, messages.length);
-        Message message = messages[0];
+        List<Message.Mutable> messages = testSessionHijacking();
+        Assertions.assertEquals(1, messages.size());
+        Message message = messages.get(0);
         Assertions.assertTrue(message.isSuccessful());
     }
 
-    private Message.Mutable[] testSessionHijacking() throws UnsupportedEncodingException, InterruptedException, TimeoutException, ExecutionException, java.text.ParseException {
+    private List<Message.Mutable> testSessionHijacking() throws UnsupportedEncodingException, InterruptedException, TimeoutException, ExecutionException, java.text.ParseException {
         String cookieName = "BAYEUX_BROWSER";
 
         Request handshake1 = newBayeuxRequest("[{" +

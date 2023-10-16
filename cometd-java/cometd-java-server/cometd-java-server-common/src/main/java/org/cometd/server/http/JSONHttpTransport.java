@@ -68,11 +68,11 @@ public class JSONHttpTransport extends AbstractHttpTransport {
 
     private void process(TransportContext context, String json) {
         try {
-            ServerMessage.Mutable[] messages = parseMessages(json);
+            List<ServerMessage.Mutable> messages = parseMessages(json);
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Parsed {} messages", messages == null ? -1 : messages.length);
+                LOGGER.debug("Parsed {} messages", messages == null ? -1 : messages.size());
             }
-            process(context, messages == null ? List.of() : List.of(messages));
+            process(context, messages == null ? List.of() : messages);
         } catch (ParseException x) {
             LOGGER.warn("Could not parse JSON: " + x.getMessage(), x.getMessage());
             context.promise().fail(new HttpException(400, x.getCause()));
@@ -97,7 +97,7 @@ public class JSONHttpTransport extends AbstractHttpTransport {
             this.context = context;
         }
 
-        private TransportContext context() {
+        protected TransportContext context() {
             return context;
         }
 
@@ -161,20 +161,6 @@ public class JSONHttpTransport extends AbstractHttpTransport {
         protected abstract void onChunk(CometDRequest.Input.Chunk chunk);
 
         protected abstract void onEOF();
-
-        protected void finish(List<ServerMessage.Mutable> messages) {
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Asynchronous read end from {}: {}", context.request().getInput(), messages);
-            }
-            process(context, messages);
-        }
-
-        protected void finish(String json) {
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Asynchronous read end from {}: {}", context.request().getInput(), json);
-            }
-            process(context, json);
-        }
     }
 
     private class UTF8Reader extends AbstractReader {
@@ -199,6 +185,13 @@ public class JSONHttpTransport extends AbstractHttpTransport {
         protected void onEOF() {
             List<ServerMessage.Mutable> messages = parser.complete();
             finish(messages);
+        }
+
+        private void finish(List<ServerMessage.Mutable> messages) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Asynchronous read end from {}: {}", context().request().getInput(), messages);
+            }
+            process(context(), messages);
         }
     }
 
@@ -227,6 +220,13 @@ public class JSONHttpTransport extends AbstractHttpTransport {
         protected void onEOF() {
             String json = charset.decode(aggregator.flip()).toString();
             finish(json);
+        }
+
+        private void finish(String json) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Asynchronous read end from {}: {}", context().request().getInput(), json);
+            }
+            process(context(), json);
         }
     }
 }

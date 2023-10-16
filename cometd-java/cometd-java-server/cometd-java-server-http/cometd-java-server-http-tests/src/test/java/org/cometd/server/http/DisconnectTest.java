@@ -84,7 +84,7 @@ public class DisconnectTest extends AbstractBayeuxClientServerTest {
 
         response = listener.get(5, TimeUnit.SECONDS);
         Assertions.assertEquals(200, response.getStatus());
-        Message.Mutable connectReply = new JettyJSONContextClient().parse(response.getContentAsString())[0];
+        Message.Mutable connectReply = new JettyJSONContextClient().parse(response.getContentAsString()).get(0);
         Assertions.assertEquals(Channel.META_CONNECT, connectReply.getChannel());
         Map<String, Object> advice = connectReply.getAdvice(false);
         Assertions.assertEquals(Message.RECONNECT_NONE_VALUE, advice.get(Message.RECONNECT_FIELD));

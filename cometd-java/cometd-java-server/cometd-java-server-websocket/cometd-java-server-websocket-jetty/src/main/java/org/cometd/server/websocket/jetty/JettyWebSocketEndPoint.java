@@ -84,8 +84,7 @@ public class JettyWebSocketEndPoint extends AbstractWebSocketEndPoint implements
         _wsSession.close(code, reason, org.eclipse.jetty.websocket.api.Callback.NOOP);
     }
 
-    private void handleFailure(Throwable t)
-    {
+    private void handleFailure(Throwable t) {
         if (_logger.isDebugEnabled()) {
             _logger.debug("", t);
         }

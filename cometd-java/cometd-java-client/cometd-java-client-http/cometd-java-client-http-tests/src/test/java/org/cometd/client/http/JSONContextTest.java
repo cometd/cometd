@@ -15,6 +15,7 @@
  */
 package org.cometd.client.http;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
@@ -82,8 +83,8 @@ public class JSONContextTest extends ClientServerTest {
         byte[] bytes = json.getBytes(StandardCharsets.UTF_8);
 
         for (int i = 0; i < bytes.length; ++i) {
-            clientParser.parse(bytes, i, 1);
-            serverParser.parse(bytes, i, 1);
+            clientParser.parse(ByteBuffer.wrap(bytes, i, 1));
+            serverParser.parse(ByteBuffer.wrap(bytes, i, 1));
         }
         List<Message.Mutable> clientMessages = clientParser.complete();
         List<ServerMessage.Mutable> serverMessages = serverParser.complete();

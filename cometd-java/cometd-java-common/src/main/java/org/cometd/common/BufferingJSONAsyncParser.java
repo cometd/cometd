@@ -17,7 +17,7 @@ package org.cometd.common;
 
 import java.nio.ByteBuffer;
 import java.text.ParseException;
-import java.util.List;
+
 import org.cometd.bayeux.Message;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 
@@ -36,11 +36,6 @@ public class BufferingJSONAsyncParser implements JSONContext.AsyncParser {
     }
 
     @Override
-    public void parse(byte[] bytes, int offset, int length) {
-        buffer.append(bytes, offset, length);
-    }
-
-    @Override
     public void parse(ByteBuffer byteBuffer) {
         buffer.append(byteBuffer);
     }
@@ -51,8 +46,7 @@ public class BufferingJSONAsyncParser implements JSONContext.AsyncParser {
         try {
             String json = buffer.toString();
             buffer.reset();
-            Message.Mutable[] result = jsonContext.parse(json);
-            return (R)List.of(result);
+            return (R)jsonContext.parse(json);
         } catch (ParseException x) {
             throw new IllegalArgumentException(x);
         }

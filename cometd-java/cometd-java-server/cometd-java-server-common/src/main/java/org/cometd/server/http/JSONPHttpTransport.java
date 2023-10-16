@@ -92,17 +92,17 @@ public class JSONPHttpTransport extends AbstractHttpTransport {
 
             List<ServerMessage.Mutable> messages;
             if (requestParameters.length == 1) {
-                ServerMessage.Mutable[] parsed = parseMessages(requestParameters[0]);
-                messages = parsed == null ? List.of() : List.of(parsed);
+                List<ServerMessage.Mutable> parsed = parseMessages(requestParameters[0]);
+                messages = parsed == null ? List.of() : parsed;
             } else {
                 messages = new ArrayList<>();
                 for (String batch : requestParameters) {
                     if (batch == null) {
                         continue;
                     }
-                    ServerMessage.Mutable[] parsed = parseMessages(batch);
+                    List<ServerMessage.Mutable> parsed = parseMessages(batch);
                     if (parsed != null) {
-                        messages.addAll(List.of(parsed));
+                        messages.addAll(parsed);
                     }
                 }
             }

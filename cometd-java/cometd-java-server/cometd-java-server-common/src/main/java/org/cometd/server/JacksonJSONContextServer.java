@@ -20,8 +20,8 @@ import org.cometd.common.JacksonJSONContext;
 
 public class JacksonJSONContextServer extends JacksonJSONContext<ServerMessage.Mutable, ServerMessageImpl> implements JSONContextServer {
     @Override
-    protected Class<ServerMessageImpl[]> rootArrayClass() {
-        return ServerMessageImpl[].class;
+    protected Class<ServerMessageImpl> messageClass() {
+        return ServerMessageImpl.class;
     }
 
     @Override

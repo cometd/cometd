@@ -16,19 +16,15 @@
 package org.cometd.server;
 
 import java.util.List;
+
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.common.JettyJSONContext;
 import org.eclipse.jetty.util.ajax.AsyncJSON;
 
 public class JettyJSONContextServer extends JettyJSONContext<ServerMessage.Mutable> implements JSONContextServer {
     @Override
-    protected ServerMessage.Mutable newRoot() {
+    protected ServerMessage.Mutable newMessage() {
         return new ServerMessageImpl();
-    }
-
-    @Override
-    protected ServerMessage.Mutable[] newRootArray(int size) {
-        return new ServerMessage.Mutable[size];
     }
 
     @Override
