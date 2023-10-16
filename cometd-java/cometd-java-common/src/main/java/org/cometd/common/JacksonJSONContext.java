@@ -118,7 +118,9 @@ public abstract class JacksonJSONContext<M extends Message.Mutable, I extends M>
                     parseInput();
                 } else if (input instanceof ByteArrayFeeder feeder) {
                     if (buffer.hasArray()) {
-                        feeder.feedInput(buffer.array(), buffer.arrayOffset(), buffer.remaining());
+                        int startIndex = buffer.arrayOffset() + buffer.position();
+                        int endIndex = startIndex + buffer.remaining();
+                        feeder.feedInput(buffer.array(), startIndex, endIndex);
                     } else {
                         byte[] bytes = new byte[buffer.remaining()];
                         buffer.get(bytes);
