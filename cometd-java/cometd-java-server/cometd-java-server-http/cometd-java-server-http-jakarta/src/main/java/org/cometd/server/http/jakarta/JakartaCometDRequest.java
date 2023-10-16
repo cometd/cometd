@@ -126,7 +126,7 @@ class JakartaCometDRequest implements CometDRequest {
                 // TODO: the chunks can be pooled.
                 Input.Chunk chunk = new Chunk();
                 ByteBuffer byteBuffer = chunk.byteBuffer();
-                int read = inputStream.read(byteBuffer.array(), byteBuffer.arrayOffset(), byteBuffer.remaining());
+                int read = inputStream.read(byteBuffer.array(), byteBuffer.arrayOffset() + byteBuffer.position(), byteBuffer.remaining());
                 if (read < 0) {
                     chunk.release();
                     return Input.Chunk.EOF;
