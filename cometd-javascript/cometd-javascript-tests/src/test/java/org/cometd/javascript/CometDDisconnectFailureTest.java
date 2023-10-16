@@ -17,7 +17,7 @@ package org.cometd.javascript;
 
 import java.io.IOException;
 import java.util.EnumSet;
-import java.util.concurrent.atomic.AtomicInteger;
+
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
@@ -27,61 +27,51 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
 import org.eclipse.jetty.ee10.servlet.FilterHolder;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
-public class CometDLongPollingPublishFailureTest extends AbstractCometDLongPollingTest {
+/**
+ * Tests that failing the disconnect, the comet communication is aborted anyway
+ */
+public class CometDDisconnectFailureTest extends AbstractCometDTransportsTest {
     @Override
     protected void customizeContext(ServletContextHandler context) throws Exception {
         super.customizeContext(context);
-        PublishThrowingFilter filter = new PublishThrowingFilter();
+        DisconnectThrowingFilter filter = new DisconnectThrowingFilter();
         FilterHolder filterHolder = new FilterHolder(filter);
         context.addFilter(filterHolder, cometdServletPath + "/*", EnumSet.of(DispatcherType.REQUEST));
     }
 
-    @Test
-    public void testPublishFailures() throws Exception {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testDisconnectFailure(String transport) throws Exception {
+        initCometDServer(transport);
+
         evaluateScript("""
                 const readyLatch = new Latch(1);
-                cometd.addListener('/meta/connect', () => readyLatch.countDown());
+                cometd.addListener('/meta/connect', () => readyLatch.countDown())
                 cometd.init({url: '$U', logLevel: '$L'});
                 """.replace("$U", cometdURL).replace("$L", getLogLevel()));
         Latch readyLatch = javaScript.get("readyLatch");
         Assertions.assertTrue(readyLatch.await(5000));
 
-        evaluateScript("""
-                const subscribeLatch = new Latch(1);
-                cometd.addListener('/meta/subscribe', () => subscribeLatch.countDown());
-                cometd.subscribe('/echo', () => subscribeLatch.countDown());
-                """);
-        Latch subscribeLatch = javaScript.get("subscribeLatch");
-        Assertions.assertTrue(subscribeLatch.await(5000));
-
-        evaluateScript("""
-                const publishLatch = new Latch(1);
-                cometd.addListener('/meta/publish', () => publishLatch.countDown());
-                const failureLatch = new Latch(1);
-                cometd.addListener('/meta/unsuccessful', () => failureLatch.countDown());
-                cometd.publish('/echo', 'test');
-                """);
-        Latch publishLatch = javaScript.get("publishLatch");
-        Assertions.assertTrue(publishLatch.await(5000));
-        Latch failureLatch = javaScript.get("failureLatch");
-        Assertions.assertTrue(failureLatch.await(5000));
-
-        // Be sure there is no backoff.
-        int backoff = ((Number)evaluateScript("cometd.getBackoffPeriod()")).intValue();
-        Assertions.assertEquals(0, backoff);
-
         disconnect();
+
+        // The test ends here, as we cannot get any information about the fact that
+        // the long poll call returned (which we would have liked to, confirming that
+        // a client-side only disconnect() actually stops the comet communication,
+        // even if it fails).
+        // The XmlHttpRequest specification says that if the response has not begun,
+        // then aborting the XmlHttpRequest calling xhr.abort() does not result in
+        // any notification. The network activity is stopped, but no notification is
+        // emitted by calling onreadystatechange(). Therefore, comet cannot call any
+        // callback to signal this, and any connect listener will not be notified.
     }
 
-    public static class PublishThrowingFilter implements Filter {
-        private final AtomicInteger messages = new AtomicInteger();
-
+    public static class DisconnectThrowingFilter implements Filter {
         @Override
         public void init(FilterConfig filterConfig) {
         }
@@ -93,11 +83,8 @@ public class CometDLongPollingPublishFailureTest extends AbstractCometDLongPolli
 
         private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
             String uri = request.getRequestURI();
-            if (!uri.endsWith("/handshake") && !uri.endsWith("/connect")) {
-                // First subscribe message, then publish message, throw.
-                if (messages.incrementAndGet() == 2) {
-                    throw new IOException();
-                }
+            if (uri.endsWith("/disconnect")) {
+                throw new IOException();
             }
             chain.doFilter(request, response);
         }
