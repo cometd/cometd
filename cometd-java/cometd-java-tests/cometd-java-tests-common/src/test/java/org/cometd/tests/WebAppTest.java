@@ -93,6 +93,7 @@ public class WebAppTest {
         copyWebAppDependency(org.eclipse.jetty.logging.JettyLogger.class, webINF);
         copyWebAppDependency(org.cometd.annotation.Service.class, webINF);
         copyWebAppDependency(org.cometd.annotation.server.RemoteCall.class, webINF);
+        copyWebAppDependency(org.cometd.annotation.server.jakarta.AnnotationCometDServlet.class, webINF);
         copyWebAppDependency(org.cometd.bayeux.Message.class, webINF);
         copyWebAppDependency(org.cometd.bayeux.client.ClientSession.class, webINF);
         copyWebAppDependency(org.cometd.bayeux.server.BayeuxServer.class, webINF);
