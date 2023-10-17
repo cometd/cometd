@@ -13,19 +13,8 @@
 
   <modules>
     <module>cometd-java-examples-embedded</module>
-  </modules>
+    <!-- There is no support for Jetty 12 in Spring Boot yet -->
+    <!--<module>cometd-java-examples-springboot</module>-->
+    </modules>
 
-<!-- There is no support for Jetty 12 in Spring Boot yet
-  <profiles>
-    <profile>
-      <id>jdk17</id>
-      <activation>
-        <jdk>[17,)</jdk>
-      </activation>
-      <modules>
-        <module>cometd-java-examples-springboot</module>
-      </modules>
-    </profile>
-  </profiles>
--->
 </project>

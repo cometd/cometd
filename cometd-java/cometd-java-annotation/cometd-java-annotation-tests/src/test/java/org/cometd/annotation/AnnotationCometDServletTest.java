@@ -19,7 +19,7 @@ import java.util.List;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 
-import org.cometd.annotation.server.AnnotationCometDServlet;
+import org.cometd.annotation.server.jakarta.AnnotationCometDServlet;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.server.Server;

@@ -34,12 +34,12 @@ tar cvf - -C ${COMETD_DIR}/cometd-documentation/target/html . | ssh ubuntu@docs.
 
 if yes_no "Relink documentation ? (Y/n)" y; then
   echo "Relinking documentation"
-  ssh ubuntu@docs.cometd.org "sudo -u www-data bash -c 'cd ${DOCS_ROOT} && ln -fns ${VERSION} current7'"
+  ssh ubuntu@docs.cometd.org "sudo -u www-data bash -c 'cd ${DOCS_ROOT} && ln -fns ${VERSION} current8'"
 fi
 
 echo "Updating cometd-javascript repository"
 COMETD_JS_DIR=${COMETD_DIR}/target/release/cometd-javascript
-git clone --branch 7.0.x git@github.com:cometd/cometd-javascript.git ${COMETD_JS_DIR}
+git clone --branch 8.0.x git@github.com:cometd/cometd-javascript.git ${COMETD_JS_DIR}
 
 COMETD_JS_SOURCE=${COMETD_DIR}/cometd-javascript/common/target/cometd-javascript-common-${VERSION}/js
 cp -v ${COMETD_JS_SOURCE}/cometd/cometd.js ${COMETD_JS_DIR}

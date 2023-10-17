@@ -13,12 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.cometd.annotation.server;
+package org.cometd.annotation.server.jakarta;
 
 import java.util.ArrayList;
 import java.util.List;
 import jakarta.servlet.ServletException;
 
+import org.cometd.annotation.server.ServerAnnotationProcessor;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.server.http.jakarta.CometDServlet;
 import org.slf4j.Logger;
@@ -31,10 +32,10 @@ import org.slf4j.LoggerFactory;
  * <p>
  * A configuration example:
  * <pre>{@code
- * <web-app xmlns="http://java.sun.com/xml/ns/javaee" ...>
+ * <web-app ...>
  *   <servlet>
  *     <servlet-name>cometd</servlet-name>
- *     <servlet-class>org.cometd.annotation.AnnotationCometDServlet</servlet-class>
+ *     <servlet-class>org.cometd.annotation.server.jakarta.AnnotationCometDServlet</servlet-class>
  *     <init-param>
  *       <param-name>services</param-name>
  *       <param-value>org.cometd.examples.FooService, org.cometd.examples.BarService</param-value>

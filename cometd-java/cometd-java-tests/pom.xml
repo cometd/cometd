@@ -19,17 +19,7 @@
   <modules>
     <module>cometd-java-tests-common</module>
     <module>cometd-java-tests-oort</module>
+    <module>cometd-java-tests-spring</module>
   </modules>
 
-  <profiles>
-    <profile>
-      <id>jdk17</id>
-      <activation>
-        <jdk>[17,)</jdk>
-      </activation>
-      <modules>
-        <module>cometd-java-tests-spring</module>
-      </modules>
-    </profile>
-  </profiles>
 </project>

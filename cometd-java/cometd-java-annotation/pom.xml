@@ -15,6 +15,7 @@
     <module>cometd-java-annotation-common</module>
     <module>cometd-java-annotation-client</module>
     <module>cometd-java-annotation-server</module>
+    <module>cometd-java-annotation-server-jakarta</module>
     <module>cometd-java-annotation-tests</module>
   </modules>
 </project>

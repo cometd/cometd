@@ -155,16 +155,6 @@
       <build>
         <plugins>
           <plugin>
-            <artifactId>maven-enforcer-plugin</artifactId>
-            <configuration>
-              <rules>
-                <requireJavaVersion>
-                  <version>[17,)</version>
-                </requireJavaVersion>
-              </rules>
-            </configuration>
-          </plugin>
-          <plugin>
             <artifactId>maven-gpg-plugin</artifactId>
             <executions>
               <execution>
@@ -196,10 +186,10 @@
             <configuration>
               <rules>
                 <requireJavaVersion>
-                  <version>[11,)</version>
+                  <version>[17,)</version>
                 </requireJavaVersion>
                 <requireMavenVersion>
-                  <version>[3.5,)</version>
+                  <version>[3.9,)</version>
                 </requireMavenVersion>
               </rules>
             </configuration>

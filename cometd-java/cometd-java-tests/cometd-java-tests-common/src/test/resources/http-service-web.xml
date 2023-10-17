@@ -7,7 +7,7 @@
 
   <servlet>
     <servlet-name>cometd</servlet-name>
-    <servlet-class>org.cometd.annotation.server.AnnotationCometDServlet</servlet-class>
+    <servlet-class>org.cometd.annotation.server.jakarta.AnnotationCometDServlet</servlet-class>
     <init-param>
       <param-name>services</param-name>
       <param-value>org.cometd.tests.WebAppService</param-value>

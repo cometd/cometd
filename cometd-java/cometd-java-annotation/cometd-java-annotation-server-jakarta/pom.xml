@@ -7,19 +7,24 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>cometd-java-annotation-server</artifactId>
-  <name>CometD :: Java :: Annotation :: Server</name>
+  <artifactId>cometd-java-annotation-server-jakarta</artifactId>
+  <name>CometD :: Java :: Annotation :: Server :: Jakarta</name>
 
   <dependencies>
     <dependency>
+      <groupId>jakarta.servlet</groupId>
+      <artifactId>jakarta.servlet-api</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.cometd.java</groupId>
-      <artifactId>cometd-java-annotation-common</artifactId>
+      <artifactId>cometd-java-annotation-server</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.cometd.java</groupId>
-      <artifactId>cometd-java-api-server</artifactId>
+      <artifactId>cometd-java-server-http-jakarta</artifactId>
       <version>${project.version}</version>
     </dependency>
   </dependencies>
+
 </project>

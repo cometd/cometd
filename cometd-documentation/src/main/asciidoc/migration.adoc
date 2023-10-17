@@ -762,37 +762,59 @@ Migration from CometD 6.0.x to CometD 7.0.x implies migrating from Jetty 10.0.x 
 | Java 11 | Java 17
 |===
 
-==== Servlet Specification Changes
-
-[cols="1a,1a", options="header"]
-|===
-| CometD 7.0.x | CometD 8.0.x
-| Servlet 5.0 | Servlet 6.0
-|===
-
-==== Class Names Changes
-
-[cols="1a,1a", options="header"]
-|===
-| CometD 7.0.x | CometD 8.0.x
-| `org.cometd.**server**.CometDServlet` | `org.cometd.**server.http.jakarta.**CometDServlet`
-// TODO
-|===
-
-==== Maven Artifacts Changes
-
-[cols="1a,1a", options="header"]
-|===
-| CometD 7.0.x | CometD 8.0.x
-// TODO
-|===
-
 ==== Jetty Dependency Changes
 
 [cols="1,1", options="header"]
 |===
 | CometD 7.0.x  | CometD 8.0.x
 | Jetty 11.0.x | Jetty 12.0.x
+|===
+
+==== Servlet Specification Changes
+
+[cols="1a,1a", options="header"]
+|===
+| CometD 7.0.x | CometD 8.0.x
+| Servlet 5.0 (Jakarta EE 9) | Servlet 6.0 (Jakarta EE 10)
+|===
+
+==== Package/Class Names Changes
+
+The most notable changes are the split of artifacts to separate Jakarta EE 10 Servlet classes.
+
+[cols="1a,1a", options="header"]
+|===
+| CometD 7.0.x | CometD 8.0.x
+| `org.cometd.**server**.CometDServlet` | `org.cometd.**server.http.jakarta**.CometDServlet`
+| `org.cometd.annotation.server.AnnotationCometDServlet` | `org.cometd.annotation.server.**jakarta**.AnnotationCometDServlet`
+| `org.cometd.oort.OortStaticConfigServlet` | `org.cometd.oort.**jakarta**.OortStaticConfigServlet`
+| `org.cometd.oort.OortMulticastConfigServlet` | `org.cometd.oort.**jakarta**.OortMulticastConfigServlet`
+| `org.cometd.oort.SetServlet` | `org.cometd.oort.**jakarta**.SetServlet`
+| `org.cometd.client.websocket.**javax**.*` | `org.cometd.client.websocket.**jakarta**.*`
+| `org.cometd.server.websocket.**javax**.*` | `org.cometd.server.websocket.**jakarta**.*`
+|===
+
+==== Maven Artifacts Changes
+
+The most notable changes are the split of artifacts to separate Jakarta EE 10 Servlet classes.
+
+For example, class `CometDServlet` is in artifact `cometd-java-server-common` in CometD 7.0.x, and in artifact `cometd-java-server-http-jakarta` in CometD 8.0.x, but you can also use artifact ``cometd-java-server-http-jetty` if you are running in a Jetty 12 core environment.
+
+`Oort` and `Seti` configuration Servlets have been moved from artifact `cometd-java-oort` in CometD 7.0.x to artifact `cometd-java-oort-jakarta` in CometD 8.0.x.
+The `Oort` and `Seti` classes independent of Jakarta EE 10 have been moved from artifact `cometd-java-oort` in CometD 7.0.x to artifact `cometd-java-oort-common` in CometD 8.0.x.
+
+[cols="1a,1a", options="header"]
+|===
+| CometD 7.0.x | CometD 8.0.x
+| `cometd-java-annotation-server` | `cometd-java-annotation-server` +
+`cometd-java-annotation-server-**jakarta**`
+| `cometd-java-client-websocket-**javax**` | `cometd-java-client-websocket-**jakarta**`
+| `cometd-java-**oort**` | `cometd-java-**oort-common**` +
+`cometd-java-**oort-jakarta**`
+| `cometd-java-server-common` | `cometd-java-server-common` +
+`cometd-java-server-**http-jakarta**` +
+`cometd-java-server-**http-jetty**`
+| `cometd-java-server-websocket-**javax**` | `cometd-java-server-websocket-**jakarta**`
 |===
 
 ==== `web.xml` Changes
@@ -817,8 +839,8 @@ Migration from CometD 6.0.x to CometD 7.0.x implies migrating from Jetty 10.0.x 
 ----
 <web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd" <!--1-->
-         version="6.0"> <!--2-->
+         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd" <1>
+         version="6.0"> <2>
 ----
 <1> `schemaLocation` attribute changed URI path
 <2> `version` attribute changed from `5.0` to `6.0`

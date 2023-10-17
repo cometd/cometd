@@ -13,12 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-module org.cometd.annotation.server {
-    exports org.cometd.annotation.server;
+module org.cometd.annotation.server.jakarta {
+    exports org.cometd.annotation.server.jakarta;
 
-    requires jakarta.annotation;
-    requires jakarta.inject;
-    requires transitive org.cometd.annotation;
-    requires transitive org.cometd.api.server;
+    requires transitive jakarta.servlet;
+    requires transitive org.cometd.annotation.server;
+    requires transitive org.cometd.server.http.jakarta;
     requires org.slf4j;
 }

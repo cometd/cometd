@@ -14,20 +14,6 @@
     <maven.deploy.skip>true</maven.deploy.skip>
   </properties>
 
-  <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <excludes>
-            <!-- Guice still uses javax.inject -->
-            <exclude>org.cometd.annotation.guice.GuiceAnnotationTest</exclude>
-          </excludes>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
-
   <dependencies>
     <dependency>
       <groupId>org.cometd.java</groupId>
@@ -37,7 +23,7 @@
     </dependency>
     <dependency>
       <groupId>org.cometd.java</groupId>
-      <artifactId>cometd-java-annotation-server</artifactId>
+      <artifactId>cometd-java-annotation-server-jakarta</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
