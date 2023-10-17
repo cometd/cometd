@@ -750,3 +750,76 @@ Migration from CometD 6.0.x to CometD 7.0.x implies migrating from Jetty 10.0.x 
 <2> `schemaLocation` attribute changed URI
 <3> `version` attribute changed from `4.0` to `5.0`
 |===
+
+[[_migration_70_to_80]]
+=== Migrating from CometD 7.0.x to CometD 8.0.x
+
+==== Required Java Version Changes
+
+[cols="1,1", options="header"]
+|===
+| CometD 7.0.x | CometD 8.0.x
+| Java 11 | Java 17
+|===
+
+==== Servlet Specification Changes
+
+[cols="1a,1a", options="header"]
+|===
+| CometD 7.0.x | CometD 8.0.x
+| Servlet 5.0 | Servlet 6.0
+|===
+
+==== Class Names Changes
+
+[cols="1a,1a", options="header"]
+|===
+| CometD 7.0.x | CometD 8.0.x
+| `org.cometd.**server**.CometDServlet` | `org.cometd.**server.http.jakarta.**CometDServlet`
+// TODO
+|===
+
+==== Maven Artifacts Changes
+
+[cols="1a,1a", options="header"]
+|===
+| CometD 7.0.x | CometD 8.0.x
+// TODO
+|===
+
+==== Jetty Dependency Changes
+
+[cols="1,1", options="header"]
+|===
+| CometD 7.0.x  | CometD 8.0.x
+| Jetty 11.0.x | Jetty 12.0.x
+|===
+
+==== `web.xml` Changes
+
+[cols="1a,1a", options="header"]
+|===
+| CometD 7.0.x
+| CometD 8.0.x
+
+|
+[source,xml]
+----
+<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_5_0.xsd"
+         version="5.0">
+  ...
+</web-app>
+----
+|
+[source,xml]
+----
+<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd" <!--1-->
+         version="6.0"> <!--2-->
+----
+<1> `schemaLocation` attribute changed URI path
+<2> `version` attribute changed from `5.0` to `6.0`
+|===

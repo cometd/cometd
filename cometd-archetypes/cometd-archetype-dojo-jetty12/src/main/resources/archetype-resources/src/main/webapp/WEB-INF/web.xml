@@ -2,8 +2,28 @@
 <web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
-  metadata-complete="true"
   version="6.0">
+
+  <servlet>
+    <servlet-name>cometd</servlet-name>
+    <servlet-class>org.cometd.server.http.jakarta.CometDServlet</servlet-class>
+    <init-param>
+      <param-name>ws.cometdURLMapping</param-name>
+      <param-value>/cometd/*</param-value>
+    </init-param>
+    <load-on-startup>1</load-on-startup>
+    <async-supported>true</async-supported>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>cometd</servlet-name>
+    <url-pattern>/cometd/*</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
+    <servlet-name>initializer</servlet-name>
+    <servlet-class>${package}.CometDInitializer</servlet-class>
+    <load-on-startup>2</load-on-startup>
+  </servlet>
 
   <filter>
     <filter-name>cross-origin</filter-name>
@@ -14,21 +34,5 @@
     <filter-name>cross-origin</filter-name>
     <url-pattern>/cometd/*</url-pattern>
   </filter-mapping>
-
-  <servlet>
-    <servlet-name>cometd</servlet-name>
-    <servlet-class>org.cometd.server.http.jakarta.CometDServlet</servlet-class>
-    <init-param>
-      <param-name>transports</param-name>
-      <param-value>org.cometd.server.http.JSONHttpTransport</param-value>
-    </init-param>
-    <load-on-startup>1</load-on-startup>
-    <async-supported>true</async-supported>
-  </servlet>
-
-  <servlet-mapping>
-    <servlet-name>cometd</servlet-name>
-    <url-pattern>/cometd/*</url-pattern>
-  </servlet-mapping>
 
 </web-app>
