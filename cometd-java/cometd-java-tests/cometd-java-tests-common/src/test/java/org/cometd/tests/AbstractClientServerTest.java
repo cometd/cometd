@@ -72,11 +72,11 @@ public abstract class AbstractClientServerTest {
     protected String cometdPath = "/cometd";
     protected String cometdURL;
     protected BayeuxServer bayeuxServer;
-    private ScheduledExecutorService scheduler;
-    private HttpClient httpClient;
-    private WebSocketContainer wsContainer;
-    private WebSocketClient wsClient;
-    private OkHttpClient okHttpClient;
+    protected ScheduledExecutorService scheduler;
+    protected HttpClient httpClient;
+    protected WebSocketContainer wsContainer;
+    protected WebSocketClient wsClient;
+    protected OkHttpClient okHttpClient;
 
     public void start(Transport transport) throws Exception {
         start(transport, serverOptions(transport));
@@ -97,6 +97,7 @@ public abstract class AbstractClientServerTest {
                 ServletContextHandler servletContext = new ServletContextHandler("/");
                 context = servletContext;
                 server.setHandler(context);
+                configure(transport, context);
                 ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);
                 cometdServletHolder.setInitParameter("timeout", "10000");
                 cometdServletHolder.setInitOrder(1);
@@ -113,6 +114,7 @@ public abstract class AbstractClientServerTest {
             case JETTY_HTTP, JETTY_WEBSOCKET -> {
                 context = new ContextHandler("/");
                 server.setHandler(context);
+                configure(transport, context);
                 CometDHandler cometdHandler = new CometDHandler();
                 cometdHandler.setOptions(options == null ? Map.of() : options);
                 context.setHandler(cometdHandler);
@@ -128,6 +130,9 @@ public abstract class AbstractClientServerTest {
         int port = connector.getLocalPort();
         cometdURL = "http://localhost:" + port + cometdPath;
         bayeuxServer = (BayeuxServer)context.getContext().getAttribute(BayeuxServer.ATTRIBUTE);
+    }
+
+    protected void configure(Transport transport, ContextHandler context) {
     }
 
     protected void startClient(Transport transport) throws Exception {
