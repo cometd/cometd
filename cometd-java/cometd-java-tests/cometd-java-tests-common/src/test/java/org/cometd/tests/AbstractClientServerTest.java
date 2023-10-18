@@ -27,6 +27,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
+
 import okhttp3.OkHttpClient;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.client.BayeuxClient;
@@ -70,11 +71,11 @@ public abstract class AbstractClientServerTest {
     protected String cometdServletPath = "/cometd";
     protected String cometdURL;
     protected BayeuxServer bayeux;
-    private ScheduledExecutorService scheduler;
-    private HttpClient httpClient;
-    private WebSocketContainer wsContainer;
-    private WebSocketClient wsClient;
-    private OkHttpClient okHttpClient;
+    protected ScheduledExecutorService scheduler;
+    protected HttpClient httpClient;
+    protected WebSocketContainer wsContainer;
+    protected WebSocketClient wsClient;
+    protected OkHttpClient okHttpClient;
 
     public void start(Transport transport) throws Exception {
         start(transport, serverOptions(transport));
@@ -93,6 +94,7 @@ public abstract class AbstractClientServerTest {
         server.addConnector(connector);
 
         context = new ServletContextHandler(server, "/");
+        configure(transport, context);
 
         switch (transport) {
             case JAVAX_WEBSOCKET:
@@ -123,6 +125,9 @@ public abstract class AbstractClientServerTest {
         cometdURL = "http://localhost:" + port + cometdServletPath;
 
         bayeux = (BayeuxServer)context.getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
+    }
+
+    protected void configure(Transport transport, ServletContextHandler context) {
     }
 
     protected void startClient(Transport transport) throws Exception {
