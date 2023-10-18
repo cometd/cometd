@@ -14,20 +14,6 @@
     <maven.deploy.skip>true</maven.deploy.skip>
   </properties>
 
-  <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <excludes>
-            <!-- Guice still uses javax.inject -->
-            <exclude>org.cometd.annotation.guice.GuiceAnnotationTest</exclude>
-          </excludes>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
-
   <dependencies>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
