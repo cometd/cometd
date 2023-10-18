@@ -14,7 +14,7 @@ pipeline {
         axes {
           axis {
             name 'JDK'
-            values 'jdk11', 'jdk17'
+            values 'jdk11', 'jdk17', 'jdk21'
           }
         }
         stages {

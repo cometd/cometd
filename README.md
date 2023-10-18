@@ -1,5 +1,3 @@
-![GitHub CI](https://github.com/cometd/cometd/workflows/GitHub%20CI/badge.svg)
-
 ## The CometD Project
 
 Welcome to the [CometD](https://cometd.org) Project, a scalable comet (server push) implementation for the web.
