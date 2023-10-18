@@ -16,11 +16,13 @@
 package org.cometd.tests;
 
 import java.io.IOException;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletRequest;
@@ -35,8 +37,14 @@ import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.TransportListener;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.ee10.servlet.FilterHolder;
+import org.eclipse.jetty.ee10.servlet.FilterMapping;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletHandler;
+import org.eclipse.jetty.ee10.websocket.servlet.WebSocketUpgradeFilter;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.junit.jupiter.api.Disabled;
+import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -45,29 +53,30 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-@Disabled("Needs to be updated to Jetty 12 APIs")
 public class RequestRejectedViaResponseHeadersTest extends AbstractClientServerTest {
     @Override
     protected void configure(Transport transport, ContextHandler context) {
-//        switch (transport) {
-//            case JETTY_WEBSOCKET:
-//            case OKHTTP_WEBSOCKET: {
-//                WebSocketUpgradeFilter.ensureFilter(context.getContext());
-//                break;
-//            }
-//            default: {
-//                break;
-//            }
-//        }
-//        FilterHolder holder = new FilterHolder(RejectFilter.class);
-//        holder.setAsyncSupported(true);
-//        FilterMapping mapping = new FilterMapping();
-//        mapping.setFilterName(holder.getName());
-//        mapping.setPathSpec("/*");
-//        mapping.setDispatcherTypes(EnumSet.of(DispatcherType.REQUEST));
-//        ServletHandler servletHandler = context.getServletHandler();
-//        servletHandler.prependFilter(holder);
-//        servletHandler.prependFilterMapping(mapping);
+        if (transport == Transport.OKHTTP_WEBSOCKET) {
+            ServletContextHandler servletContext = (ServletContextHandler)context;
+            WebSocketUpgradeFilter.ensureFilter(servletContext.getServletContext());
+        }
+        switch (transport) {
+            case JAKARTA_HTTP, OKHTTP_HTTP, OKHTTP_WEBSOCKET -> {
+                FilterHolder holder = new FilterHolder(RejectFilter.class);
+                holder.setAsyncSupported(true);
+                FilterMapping mapping = new FilterMapping();
+                mapping.setFilterName(holder.getName());
+                mapping.setPathSpec("/*");
+                mapping.setDispatcherTypes(EnumSet.of(DispatcherType.REQUEST));
+                ServletContextHandler servletContext = (ServletContextHandler)context;
+                ServletHandler servletHandler = servletContext.getServletHandler();
+                servletHandler.prependFilter(holder);
+                servletHandler.prependFilterMapping(mapping);
+            }
+            case JETTY_HTTP, JETTY_WEBSOCKET -> {
+                context.insertHandler(new RejectHandler());
+            }
+        }
     }
 
     @Override
@@ -150,6 +159,15 @@ public class RequestRejectedViaResponseHeadersTest extends AbstractClientServerT
             HttpServletResponse response = (HttpServletResponse)servletResponse;
             response.setHeader("X-Reject", "true");
             // Do not forward the request.
+        }
+    }
+
+    public static class RejectHandler extends Handler.Wrapper {
+        @Override
+        public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) {
+            response.getHeaders().put("X-Reject", "true");
+            callback.succeeded();
+            return true;
         }
     }
 

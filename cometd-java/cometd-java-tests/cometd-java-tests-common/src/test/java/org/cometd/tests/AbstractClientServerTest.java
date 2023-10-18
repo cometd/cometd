@@ -97,7 +97,6 @@ public abstract class AbstractClientServerTest {
                 ServletContextHandler servletContext = new ServletContextHandler("/");
                 context = servletContext;
                 server.setHandler(context);
-                configure(transport, context);
                 ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);
                 cometdServletHolder.setInitParameter("timeout", "10000");
                 cometdServletHolder.setInitOrder(1);
@@ -110,11 +109,11 @@ public abstract class AbstractClientServerTest {
                 if (transport == Transport.JAKARTA_WEBSOCKET || transport == Transport.OKHTTP_WEBSOCKET) {
                     JakartaWebSocketServletContainerInitializer.configure(servletContext, null);
                 }
+                configure(transport, context);
             }
             case JETTY_HTTP, JETTY_WEBSOCKET -> {
                 context = new ContextHandler("/");
                 server.setHandler(context);
-                configure(transport, context);
                 CometDHandler cometdHandler = new CometDHandler();
                 cometdHandler.setOptions(options == null ? Map.of() : options);
                 context.setHandler(cometdHandler);
@@ -122,6 +121,7 @@ public abstract class AbstractClientServerTest {
                     WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context);
                     context.insertHandler(wsHandler);
                 }
+                configure(transport, context);
             }
             default -> throw new IllegalStateException();
         }
