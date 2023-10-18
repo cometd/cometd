@@ -1,7 +1,7 @@
 #!groovy
 
 pipeline {
-  agent any
+  agent none
   // Save some I/O during the build.
   options { 
     durabilityHint('PERFORMANCE_OPTIMIZED') 
