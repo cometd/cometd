@@ -4,92 +4,27 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.cometd</groupId>
   <artifactId>cometd-project</artifactId>
+  <version>8.0.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>CometD</name>
-  <version>8.0.0-SNAPSHOT</version>
-
-  <repositories>
-    <repository>
-      <id>jetty-snapshot</id>
-      <url>https://oss.sonatype.org/content/repositories/jetty-snapshots</url>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
-    <repository>
-      <id>jetty-staging</id>
-      <url>https://oss.sonatype.org/content/groups/jetty-with-staging</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
-  </repositories>
-  <pluginRepositories>
-    <pluginRepository>
-      <id>jetty-snapshot</id>
-      <url>https://oss.sonatype.org/content/repositories/jetty-snapshots</url>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </pluginRepository>
-    <pluginRepository>
-      <id>jetty-staging</id>
-      <url>https://oss.sonatype.org/content/groups/jetty-with-staging</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </pluginRepository>
-  </pluginRepositories>
-
-  <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <!-- tag::jetty-version[] -->
-    <jetty-version>12.0.2</jetty-version>
-    <!-- end::jetty-version[] -->
-    <graalvm-version>23.0.1</graalvm-version>
-    <slf4j-version>2.0.9</slf4j-version>
-    <spring-version>6.0.12</spring-version>
-    <spring-boot-version>3.1.4</spring-boot-version>
-    <jackson-version>2.15.2</jackson-version>
-    <dojo-version>1.17.3</dojo-version>
-    <okhttp-version>4.11.0</okhttp-version>
-  </properties>
+  <description>The CometD project is a scalable web messaging bus that uses WebSocket
+    and HTTP AJAX push technology patterns known as "Comet" techniques</description>
 
   <url>https://cometd.org</url>
-  <description>
-    The CometD project is a scalable web messaging bus that uses WebSocket
-    and HTTP AJAX push technology patterns known as "Comet" techniques
-  </description>
 
   <inceptionYear>2008</inceptionYear>
 
-  <issueManagement>
-    <system>GitHub</system>
-    <url>https://bugs.cometd.org</url>
-  </issueManagement>
+  <organization>
+    <name>The CometD Project</name>
+    <url>https://cometd.org</url>
+  </organization>
 
-  <mailingLists>
-    <mailingList>
-      <name>CometD Dev List</name>
-      <archive>https://groups.google.com/group/cometd-dev/</archive>
-    </mailingList>
-    <mailingList>
-      <name>CometD User List</name>
-      <archive>https://groups.google.com/group/cometd-users/</archive>
-    </mailingList>
-  </mailingLists>
+  <licenses>
+    <license>
+      <name>Apache License Version 2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+    </license>
+  </licenses>
 
   <developers>
     <developer>
@@ -108,12 +43,37 @@
     </developer>
   </developers>
 
-  <licenses>
-    <license>
-      <name>Apache License Version 2.0</name>
-      <url>https://www.apache.org/licenses/LICENSE-2.0</url>
-    </license>
-  </licenses>
+  <mailingLists>
+    <mailingList>
+      <name>CometD Dev List</name>
+      <archive>https://groups.google.com/group/cometd-dev/</archive>
+    </mailingList>
+    <mailingList>
+      <name>CometD User List</name>
+      <archive>https://groups.google.com/group/cometd-users/</archive>
+    </mailingList>
+  </mailingLists>
+
+  <modules>
+    <module>cometd-archetypes</module>
+    <module>cometd-demo</module>
+    <module>cometd-distribution</module>
+    <module>cometd-documentation</module>
+    <module>cometd-java</module>
+    <module>cometd-javascript</module>
+  </modules>
+
+  <scm>
+    <connection>scm:git:git://github.com/cometd/cometd.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com/cometd/cometd.git</developerConnection>
+    <tag>7.0.5</tag>
+    <url>https://github.com/cometd/cometd</url>
+  </scm>
+
+  <issueManagement>
+    <system>GitHub</system>
+    <url>https://bugs.cometd.org</url>
+  </issueManagement>
 
   <distributionManagement>
     <repository>
@@ -128,213 +88,168 @@
     </snapshotRepository>
   </distributionManagement>
 
-  <scm>
-    <connection>scm:git:git://github.com/cometd/cometd.git</connection>
-    <developerConnection>scm:git:ssh://git@github.com/cometd/cometd.git</developerConnection>
-    <url>https://github.com/cometd/cometd</url>
-    <tag>7.0.5</tag>
-  </scm>
+  <properties>
+    <dojo-version>1.17.3</dojo-version>
+    <!-- end::jetty-version[] -->
+    <graalvm-version>23.0.1</graalvm-version>
+    <jackson-version>2.15.2</jackson-version>
+    <!-- tag::jetty-version[] -->
+    <jetty-version>12.0.2</jetty-version>
+    <okhttp-version>4.11.0</okhttp-version>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <slf4j-version>2.0.9</slf4j-version>
+    <spring-boot-version>3.1.4</spring-boot-version>
+    <spring-version>6.0.12</spring-version>
+  </properties>
 
-  <organization>
-    <name>The CometD Project</name>
-    <url>https://cometd.org</url>
-  </organization>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>com.google.javascript</groupId>
+        <artifactId>closure-compiler</artifactId>
+        <version>v20230802</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.annotation</groupId>
+        <artifactId>jakarta.annotation-api</artifactId>
+        <!-- Must stay at 2.0.x for Jakarta EE 9 -->
+        <version>2.1.1</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.inject</groupId>
+        <artifactId>jakarta.inject-api</artifactId>
+        <version>2.0.1</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.toolchain</groupId>
+        <artifactId>jetty-perf-helper</artifactId>
+        <version>1.0.7</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>${slf4j-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.servlet</groupId>
+        <artifactId>jakarta.servlet-api</artifactId>
+        <version>6.0.0</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.websocket</groupId>
+        <artifactId>jakarta.websocket-api</artifactId>
+        <version>2.1.0</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.websocket</groupId>
+        <artifactId>jakarta.websocket-client-api</artifactId>
+        <version>2.1.0</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.google.inject</groupId>
+        <artifactId>guice</artifactId>
+        <version>7.0.0</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.awaitility</groupId>
+        <artifactId>awaitility</artifactId>
+        <version>4.2.0</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-slf4j-impl</artifactId>
+        <version>${jetty-version}</version>
+        <scope>test</scope>
+      </dependency>
 
-  <modules>
-    <module>cometd-archetypes</module>
-    <module>cometd-java</module>
-    <module>cometd-javascript</module>
-    <module>cometd-demo</module>
-    <module>cometd-documentation</module>
-    <module>cometd-distribution</module>
-  </modules>
+      <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter</artifactId>
+        <version>5.10.0</version>
+        <scope>test</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
-  <profiles>
-    <profile>
-      <id>release</id>
-      <build>
-        <plugins>
-          <plugin>
-            <artifactId>maven-gpg-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>sign-artifacts</id>
-                <phase>verify</phase>
-                <goals>
-                  <goal>sign</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
+  <dependencies>
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-slf4j-impl</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+    </dependency>
+  </dependencies>
+
+  <repositories>
+    <repository>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <id>jetty-snapshot</id>
+      <url>https://oss.sonatype.org/content/repositories/jetty-snapshots</url>
+    </repository>
+    <repository>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <id>jetty-staging</id>
+      <url>https://oss.sonatype.org/content/groups/jetty-with-staging</url>
+    </repository>
+  </repositories>
+  <pluginRepositories>
+    <pluginRepository>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <id>jetty-snapshot</id>
+      <url>https://oss.sonatype.org/content/repositories/jetty-snapshots</url>
+    </pluginRepository>
+    <pluginRepository>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <id>jetty-staging</id>
+      <url>https://oss.sonatype.org/content/groups/jetty-with-staging</url>
+    </pluginRepository>
+  </pluginRepositories>
 
   <build>
     <defaultGoal>install</defaultGoal>
-    <plugins>
-      <plugin>
-        <artifactId>maven-enforcer-plugin</artifactId>
-        <inherited>false</inherited>
-        <executions>
-          <execution>
-            <id>enforce-versions</id>
-            <goals>
-              <goal>enforce</goal>
-            </goals>
-            <configuration>
-              <rules>
-                <requireJavaVersion>
-                  <version>[17,)</version>
-                </requireJavaVersion>
-                <requireMavenVersion>
-                  <version>[3.9,)</version>
-                </requireMavenVersion>
-              </rules>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <source>17</source>
-          <target>17</target>
-          <release>17</release>
-          <showDeprecation>true</showDeprecation>
-          <showWarnings>true</showWarnings>
-          <compilerArgument>-Xlint:all,-serial</compilerArgument>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.felix</groupId>
-        <artifactId>maven-bundle-plugin</artifactId>
-        <extensions>true</extensions>
-        <configuration>
-          <archive>
-            <addMavenDescriptor>true</addMavenDescriptor>
-          </archive>
-          <supportedProjectTypes>
-            <supportedProjectType>jar</supportedProjectType>
-            <supportedProjectType>war</supportedProjectType>
-          </supportedProjectTypes>
-          <instructions>
-            <Bundle-Vendor>${project.organization.name}</Bundle-Vendor>
-            <Bundle-ContactAddress>${project.url}</Bundle-ContactAddress>
-            <Bundle-Description>${project.description}</Bundle-Description>
-            <Bundle-DocURL>https://docs.cometd.org</Bundle-DocURL>
-            <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
-            <Bundle-Version>${project.version}</Bundle-Version>
-            <Import-Package>org.eclipse.jetty.*;version="[9.4,10)",*</Import-Package>
-          </instructions>
-        </configuration>
-        <executions>
-          <execution>
-            <id>osgi</id>
-            <phase>process-classes</phase>
-            <goals>
-              <goal>manifest</goal>
-            </goals>
-            <inherited>true</inherited>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <artifactId>maven-jar-plugin</artifactId>
-        <configuration>
-          <archive>
-            <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
-            <manifestEntries>
-              <Implementation-Version>${project.version}</Implementation-Version>
-              <Implementation-Vendor>${project.organization.name}</Implementation-Vendor>
-            </manifestEntries>
-          </archive>
-        </configuration>
-      </plugin>
-      <plugin>
-        <artifactId>maven-war-plugin</artifactId>
-        <configuration>
-          <archive>
-            <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
-          </archive>
-        </configuration>
-      </plugin>
-      <plugin>
-        <artifactId>maven-release-plugin</artifactId>
-        <configuration>
-          <autoVersionSubmodules>true</autoVersionSubmodules>
-          <goals>deploy</goals>
-          <preparationGoals>clean install</preparationGoals>
-          <mavenExecutorId>forked-path</mavenExecutorId>
-          <useReleaseProfile>true</useReleaseProfile>
-          <releaseProfiles>release</releaseProfiles>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>com.mycila</groupId>
-        <artifactId>license-maven-plugin</artifactId>
-        <inherited>false</inherited>
-        <configuration>
-          <licenseSets>
-            <licenseSet>
-              <header>copyright-header.txt</header>
-              <includes>
-                <include>**/*.java</include>
-                <include>cometd-javascript/common/**/cometd-header.js</include>
-                <include>cometd-javascript/dojo/**/*.js</include>
-                <include>cometd-javascript/jquery/**/*.js</include>
-              </includes>
-              <excludes>
-                <exclude>cometd-archetypes/**</exclude>
-                <exclude>**/overlays/**</exclude>
-                <exclude>cometd-javascript/jquery/**/jquery-*.js</exclude>
-              </excludes>
-            </licenseSet>
-          </licenseSets>
-          <aggregate>true</aggregate>
-          <failIfMissing>true</failIfMissing>
-          <strictCheck>true</strictCheck>
-          <properties>
-            <copyright-range>${project.inceptionYear}-2022</copyright-range>
-          </properties>
-          <mapping>
-            <java>SLASHSTAR_STYLE</java>
-          </mapping>
-        </configuration>
-        <executions>
-          <execution>
-            <id>check-headers</id>
-            <phase>verify</phase>
-            <goals>
-              <goal>check</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.jacoco</groupId>
-        <artifactId>jacoco-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>jacoco-initialize</id>
-            <phase>initialize</phase>
-            <goals>
-              <goal>prepare-agent</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>jacoco-report</id>
-            <phase>package</phase>
-            <goals>
-              <goal>report</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
     <pluginManagement>
       <plugins>
+        <plugin>
+          <groupId>com.mycila</groupId>
+          <artifactId>license-maven-plugin</artifactId>
+          <version>4.3</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.felix</groupId>
+          <artifactId>maven-bundle-plugin</artifactId>
+          <version>5.1.9</version>
+        </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-antrun-plugin</artifactId>
@@ -442,19 +357,9 @@
           <version>3.4.0</version>
         </plugin>
         <plugin>
-          <groupId>com.mycila</groupId>
-          <artifactId>license-maven-plugin</artifactId>
-          <version>4.3</version>
-        </plugin>
-        <plugin>
           <groupId>org.asciidoctor</groupId>
           <artifactId>asciidoctor-maven-plugin</artifactId>
           <version>2.2.4</version>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.felix</groupId>
-          <artifactId>maven-bundle-plugin</artifactId>
-          <version>5.1.9</version>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
@@ -473,95 +378,228 @@
         </plugin>
       </plugins>
     </pluginManagement>
+    <plugins>
+      <plugin>
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
+        <version>2.39.0</version>
+        <configuration>
+          <pom>
+            <includes>
+              <include>pom.xml</include>
+            </includes>
+            <sortPom>
+              <nrOfIndentSpace>2</nrOfIndentSpace>
+              <!-- default see https://github.com/Ekryd/sortpom/wiki/PredefinedSortOrderProfiles -->
+              <predefinedSortOrder>recommended_2008_06</predefinedSortOrder>
+              <!-- Sort properties -->
+              <sortProperties>true</sortProperties>
+              <!-- Sort modules -->
+              <sortModules>true</sortModules>
+              <!-- Sort plugin executions -->
+              <sortExecutions>true</sortExecutions>
+              <!-- Sort dependencies see https://github.com/Ekryd/sortpom/wiki/SortDependencies -->
+              <sortDependencies>scope,groupId,artifactId</sortDependencies>
+              <!-- Sort dependency exclusions -->
+              <sortDependencyExclusions>groupId,artifactId</sortDependencyExclusions>
+              <!-- Sort plugins: https://github.com/Ekryd/sortpom/wiki/SortPlugins -->
+              <sortPlugins>groupId,artifactId</sortPlugins>
+            </sortPom>
+          </pom>
+          <upToDateChecking>
+            <enabled>true</enabled>
+          </upToDateChecking>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>check</goal>
+            </goals>
+            <phase>validate</phase>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>com.mycila</groupId>
+        <artifactId>license-maven-plugin</artifactId>
+        <inherited>false</inherited>
+        <configuration>
+          <licenseSets>
+            <licenseSet>
+              <header>copyright-header.txt</header>
+              <includes>
+                <include>**/*.java</include>
+                <include>cometd-javascript/common/**/cometd-header.js</include>
+                <include>cometd-javascript/dojo/**/*.js</include>
+                <include>cometd-javascript/jquery/**/*.js</include>
+              </includes>
+              <excludes>
+                <exclude>cometd-archetypes/**</exclude>
+                <exclude>**/overlays/**</exclude>
+                <exclude>cometd-javascript/jquery/**/jquery-*.js</exclude>
+              </excludes>
+            </licenseSet>
+          </licenseSets>
+          <aggregate>true</aggregate>
+          <failIfMissing>true</failIfMissing>
+          <strictCheck>true</strictCheck>
+          <properties>
+            <copyright-range>${project.inceptionYear}-2022</copyright-range>
+          </properties>
+          <mapping>
+            <java>SLASHSTAR_STYLE</java>
+          </mapping>
+        </configuration>
+        <executions>
+          <execution>
+            <id>check-headers</id>
+            <goals>
+              <goal>check</goal>
+            </goals>
+            <phase>verify</phase>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <extensions>true</extensions>
+        <configuration>
+          <archive>
+            <addMavenDescriptor>true</addMavenDescriptor>
+          </archive>
+          <supportedProjectTypes>
+            <supportedProjectType>jar</supportedProjectType>
+            <supportedProjectType>war</supportedProjectType>
+          </supportedProjectTypes>
+          <instructions>
+            <Bundle-Vendor>${project.organization.name}</Bundle-Vendor>
+            <Bundle-ContactAddress>${project.url}</Bundle-ContactAddress>
+            <Bundle-Description>${project.description}</Bundle-Description>
+            <Bundle-DocURL>https://docs.cometd.org</Bundle-DocURL>
+            <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
+            <Bundle-Version>${project.version}</Bundle-Version>
+            <Import-Package>org.eclipse.jetty.*;version="[9.4,10)",*</Import-Package>
+          </instructions>
+        </configuration>
+        <executions>
+          <execution>
+            <id>osgi</id>
+            <goals>
+              <goal>manifest</goal>
+            </goals>
+            <phase>process-classes</phase>
+            <inherited>true</inherited>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>17</source>
+          <target>17</target>
+          <release>17</release>
+          <showDeprecation>true</showDeprecation>
+          <showWarnings>true</showWarnings>
+          <compilerArgument>-Xlint:all,-serial</compilerArgument>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <inherited>false</inherited>
+        <executions>
+          <execution>
+            <id>enforce-versions</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <requireJavaVersion>
+                  <version>[17,)</version>
+                </requireJavaVersion>
+                <requireMavenVersion>
+                  <version>[3.9,)</version>
+                </requireMavenVersion>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+            <manifestEntries>
+              <Implementation-Version>${project.version}</Implementation-Version>
+              <Implementation-Vendor>${project.organization.name}</Implementation-Vendor>
+            </manifestEntries>
+          </archive>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-release-plugin</artifactId>
+        <configuration>
+          <autoVersionSubmodules>true</autoVersionSubmodules>
+          <goals>deploy</goals>
+          <preparationGoals>clean install</preparationGoals>
+          <mavenExecutorId>forked-path</mavenExecutorId>
+          <useReleaseProfile>true</useReleaseProfile>
+          <releaseProfiles>release</releaseProfiles>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-war-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+          </archive>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>jacoco-initialize</id>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+            <phase>initialize</phase>
+          </execution>
+          <execution>
+            <id>jacoco-report</id>
+            <goals>
+              <goal>report</goal>
+            </goals>
+            <phase>package</phase>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
   </build>
 
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>jakarta.servlet</groupId>
-        <artifactId>jakarta.servlet-api</artifactId>
-        <version>6.0.0</version>
-        <scope>provided</scope>
-      </dependency>
-      <dependency>
-        <groupId>jakarta.websocket</groupId>
-        <artifactId>jakarta.websocket-api</artifactId>
-        <version>2.1.0</version>
-        <scope>provided</scope>
-      </dependency>
-      <dependency>
-        <groupId>jakarta.websocket</groupId>
-        <artifactId>jakarta.websocket-client-api</artifactId>
-        <version>2.1.0</version>
-        <scope>provided</scope>
-      </dependency>
-      <dependency>
-        <groupId>jakarta.inject</groupId>
-        <artifactId>jakarta.inject-api</artifactId>
-        <version>2.0.1</version>
-      </dependency>
-      <dependency>
-        <groupId>jakarta.annotation</groupId>
-        <artifactId>jakarta.annotation-api</artifactId>
-        <!-- Must stay at 2.0.x for Jakarta EE 9 -->
-        <version>2.1.1</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.toolchain</groupId>
-        <artifactId>jetty-perf-helper</artifactId>
-        <version>1.0.7</version>
-      </dependency>
-      <dependency>
-        <groupId>org.slf4j</groupId>
-        <artifactId>slf4j-api</artifactId>
-        <version>${slf4j-version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.google.javascript</groupId>
-        <artifactId>closure-compiler</artifactId>
-        <version>v20230802</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.junit.jupiter</groupId>
-        <artifactId>junit-jupiter</artifactId>
-        <version>5.10.0</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>com.google.inject</groupId>
-        <artifactId>guice</artifactId>
-        <version>7.0.0</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.awaitility</groupId>
-        <artifactId>awaitility</artifactId>
-        <version>4.2.0</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-slf4j-impl</artifactId>
-        <version>${jetty-version}</version>
-        <scope>test</scope>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
-
-  <dependencies>
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-slf4j-impl</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.awaitility</groupId>
-      <artifactId>awaitility</artifactId>
-    </dependency>
-  </dependencies>
+  <profiles>
+    <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>sign-artifacts</id>
+                <goals>
+                  <goal>sign</goal>
+                </goals>
+                <phase>verify</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
 </project>
