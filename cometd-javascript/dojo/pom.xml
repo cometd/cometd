@@ -1,15 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.cometd.javascript</groupId>
     <artifactId>cometd-javascript</artifactId>
     <version>6.0.11-SNAPSHOT</version>
   </parent>
-
-  <modelVersion>4.0.0</modelVersion>
   <artifactId>cometd-javascript-dojo</artifactId>
   <packaging>war</packaging>
   <name>CometD :: JavaScript :: Dojo</name>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.cometd.javascript</groupId>
+      <artifactId>cometd-javascript-common</artifactId>
+      <version>${project.version}</version>
+      <type>war</type>
+    </dependency>
+    <dependency>
+      <groupId>org.dojotoolkit</groupId>
+      <artifactId>dojo-war</artifactId>
+      <version>${dojo-version}</version>
+      <type>war</type>
+    </dependency>
+  </dependencies>
 
   <build>
     <plugins>
@@ -18,13 +33,13 @@
         <executions>
           <execution>
             <id>main</id>
-            <phase>prepare-package</phase>
             <goals>
               <goal>run</goal>
             </goals>
+            <phase>prepare-package</phase>
             <configuration>
               <target>
-                <copy file="${basedir}/src/main/webapp/js/dojox/cometd/main.js" tofile="${project.build.directory}/${project.build.finalName}/js/dojox/cometd.js" />
+                <copy file="${basedir}/src/main/webapp/js/dojox/cometd/main.js" tofile="${project.build.directory}/${project.build.finalName}/js/dojox/cometd.js"></copy>
               </target>
             </configuration>
           </execution>
@@ -34,7 +49,7 @@
         <artifactId>maven-war-plugin</artifactId>
         <configuration>
           <overlays>
-            <overlay />
+            <overlay></overlay>
             <overlay>
               <groupId>org.cometd.javascript</groupId>
               <artifactId>cometd-javascript-common</artifactId>
@@ -56,19 +71,4 @@
       </plugin>
     </plugins>
   </build>
-
-  <dependencies>
-    <dependency>
-      <groupId>org.cometd.javascript</groupId>
-      <artifactId>cometd-javascript-common</artifactId>
-      <version>${project.version}</version>
-      <type>war</type>
-    </dependency>
-    <dependency>
-      <groupId>org.dojotoolkit</groupId>
-      <artifactId>dojo-war</artifactId>
-      <version>${dojo-version}</version>
-      <type>war</type>
-    </dependency>
-  </dependencies>
 </project>
