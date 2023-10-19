@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.cometd</groupId>
     <artifactId>cometd-project</artifactId>
     <version>7.0.11-SNAPSHOT</version>
   </parent>
-
-  <modelVersion>4.0.0</modelVersion>
   <artifactId>cometd-documentation</artifactId>
   <name>CometD :: Reference Book</name>
 
@@ -14,53 +14,17 @@
     <html-directory>${project.build.directory}/html/reference</html-directory>
   </properties>
 
-  <build>
-    <defaultGoal>install</defaultGoal>
-    <plugins>
-      <plugin>
-        <groupId>org.asciidoctor</groupId>
-        <artifactId>asciidoctor-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>output-html</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>process-asciidoc</goal>
-            </goals>
-            <configuration>
-              <backend>html5</backend>
-              <doctype>book</doctype>
-              <sourceDocumentName>index.adoc</sourceDocumentName>
-              <outputDirectory>${html-directory}</outputDirectory>
-              <attributes>
-                <version>${project.version}</version>
-              </attributes>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>css</id>
-            <phase>process-resources</phase>
-            <goals>
-              <goal>run</goal>
-            </goals>
-            <configuration>
-              <target>
-                <move file="${html-directory}/coderay-asciidoctor.css" tofile="${html-directory}/coderay-asciidoctor-default.css" />
-                <echo file="${html-directory}/coderay-asciidoctor.css" />
-              </target>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
-
   <dependencies>
+    <dependency>
+      <groupId>org.cometd.java</groupId>
+      <artifactId>cometd-java-annotation-client</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.cometd.java</groupId>
+      <artifactId>cometd-java-annotation-server</artifactId>
+      <version>${project.version}</version>
+    </dependency>
     <dependency>
       <groupId>org.cometd.java</groupId>
       <artifactId>cometd-java-client-http-jetty</artifactId>
@@ -87,22 +51,8 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-jakarta-servlet-api</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.cometd.java</groupId>
       <artifactId>cometd-java-server-common</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.cometd.java</groupId>
-      <artifactId>cometd-java-annotation-client</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.cometd.java</groupId>
-      <artifactId>cometd-java-annotation-server</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -114,6 +64,10 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util-ajax</artifactId>
       <version>${jetty-version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-jakarta-servlet-api</artifactId>
     </dependency>
     <dependency>
       <groupId>org.springframework</groupId>
@@ -136,4 +90,50 @@
       <version>${spring-boot-version}</version>
     </dependency>
   </dependencies>
+
+  <build>
+    <defaultGoal>install</defaultGoal>
+    <plugins>
+      <plugin>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>css</id>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <phase>process-resources</phase>
+            <configuration>
+              <target>
+                <move file="${html-directory}/coderay-asciidoctor.css" tofile="${html-directory}/coderay-asciidoctor-default.css"></move>
+                <echo file="${html-directory}/coderay-asciidoctor.css"></echo>
+              </target>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.asciidoctor</groupId>
+        <artifactId>asciidoctor-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>output-html</id>
+            <goals>
+              <goal>process-asciidoc</goal>
+            </goals>
+            <phase>generate-resources</phase>
+            <configuration>
+              <backend>html5</backend>
+              <doctype>book</doctype>
+              <sourceDocumentName>index.adoc</sourceDocumentName>
+              <outputDirectory>${html-directory}</outputDirectory>
+              <attributes>
+                <version>${project.version}</version>
+              </attributes>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 </project>

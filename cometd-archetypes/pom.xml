@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.cometd</groupId>
     <artifactId>cometd-project</artifactId>
     <version>7.0.11-SNAPSHOT</version>
   </parent>
-
-  <modelVersion>4.0.0</modelVersion>
   <groupId>org.cometd.archetypes</groupId>
   <artifactId>cometd-archetypes</artifactId>
   <packaging>pom</packaging>
@@ -22,6 +22,12 @@
   </modules>
 
   <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-archetype-plugin</artifactId>
+        <extensions>true</extensions>
+      </plugin>
+    </plugins>
     <extensions>
       <extension>
         <groupId>org.apache.maven.archetype</groupId>
@@ -29,12 +35,6 @@
         <version>3.2.1</version>
       </extension>
     </extensions>
-    <plugins>
-      <plugin>
-        <artifactId>maven-archetype-plugin</artifactId>
-        <extensions>true</extensions>
-      </plugin>
-    </plugins>
   </build>
 
 </project>
