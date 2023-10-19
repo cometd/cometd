@@ -95,7 +95,7 @@
     <jackson-version>2.15.2</jackson-version>
     <!-- tag::jetty-version[] -->
     <jetty-version>12.0.2</jetty-version>
-    <okhttp-version>4.11.0</okhttp-version>
+    <okhttp-version>4.12.0</okhttp-version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <slf4j-version>2.0.9</slf4j-version>
     <spring-boot-version>3.1.4</spring-boot-version>
