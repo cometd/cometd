@@ -90,17 +90,17 @@
 
   <properties>
     <dojo-version>1.17.3</dojo-version>
-    <!-- end::jetty-version[] -->
-    <graalvm-version>22.3.3</graalvm-version>
-    <jackson-version>2.15.2</jackson-version>
+    <graalvm-version>22.3.4</graalvm-version>
+    <jackson-version>2.15.3</jackson-version>
     <!-- tag::jetty-version[] -->
     <jetty-version>11.0.17</jetty-version>
-    <log4j2-version>2.20.0</log4j2-version>
-    <okhttp-version>4.11.0</okhttp-version>
+    <!-- end::jetty-version[] -->
+    <log4j2-version>2.21.0</log4j2-version>
+    <okhttp-version>4.12.0</okhttp-version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <slf4j-version>2.0.9</slf4j-version>
     <spring-boot-version>3.1.4</spring-boot-version>
-    <spring-version>6.0.12</spring-version>
+    <spring-version>6.0.13</spring-version>
   </properties>
 
   <dependencyManagement>
@@ -226,6 +226,11 @@
     <defaultGoal>install</defaultGoal>
     <pluginManagement>
       <plugins>
+        <plugin>
+          <groupId>com.diffplug.spotless</groupId>
+          <artifactId>spotless-maven-plugin</artifactId>
+          <version>2.40.0</version>
+        </plugin>
         <plugin>
           <groupId>com.mycila</groupId>
           <artifactId>license-maven-plugin</artifactId>
@@ -367,7 +372,7 @@
         <plugin>
           <groupId>org.jacoco</groupId>
           <artifactId>jacoco-maven-plugin</artifactId>
-          <version>0.8.10</version>
+          <version>0.8.11</version>
         </plugin>
       </plugins>
     </pluginManagement>
