@@ -36,6 +36,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
@@ -311,7 +312,7 @@ public class Oort extends ContainerLifeCycle {
     }
 
     protected OortComet newOortComet(String cometURL) {
-        Map<String, Object> options = new HashMap<>(2);
+        Map<String, Object> options = new HashMap<>(4);
         options.put(ClientTransport.SCHEDULER_OPTION, _scheduler);
 
         JSONContext.Client jsonContext = getJSONContextClient();
@@ -319,29 +320,26 @@ public class Oort extends ContainerLifeCycle {
             options.put(ClientTransport.JSON_CONTEXT_OPTION, jsonContext);
         }
 
-        String maxMessageSizeOption = ClientTransport.MAX_MESSAGE_SIZE_OPTION;
-        Object option = _bayeux.getOption(maxMessageSizeOption);
-        if (option != null) {
-            options.put(maxMessageSizeOption, option);
-        }
-
-        maxMessageSizeOption = WebSocketTransport.PREFIX + "." + maxMessageSizeOption;
-        option = _bayeux.getOption(maxMessageSizeOption);
-        if (option != null) {
-            options.put(maxMessageSizeOption, option);
-        }
-
-        String idleTimeoutOption = WebSocketTransport.PREFIX + "." + WebSocketTransport.IDLE_TIMEOUT_OPTION;
-        option = _bayeux.getOption(idleTimeoutOption);
-        if (option != null) {
-            options.put(idleTimeoutOption, option);
-        }
-
-        String maxNetworkDelayOption = ClientTransport.MAX_NETWORK_DELAY_OPTION;
-        option = _bayeux.getOption(maxNetworkDelayOption);
-        if (option != null) {
-            options.put(maxNetworkDelayOption, option);
-        }
+        List<String> clientTransportOptionNames = List.of(
+                ClientTransport.MAX_NETWORK_DELAY_OPTION,
+                ClientTransport.MAX_MESSAGE_SIZE_OPTION,
+                ClientTransport.MAX_SEND_BAYEUX_MESSAGE_SIZE_OPTION,
+                WebSocketTransport.PROTOCOL_OPTION,
+                WebSocketTransport.PERMESSAGE_DEFLATE_OPTION,
+                WebSocketTransport.CONNECT_TIMEOUT_OPTION,
+                WebSocketTransport.IDLE_TIMEOUT_OPTION
+        );
+        clientTransportOptionNames.forEach(name -> {
+            Object value = _bayeux.getOption(name);
+            if (value != null) {
+                options.put(name, value);
+            }
+            name = WebSocketTransport.PREFIX + "." + name;
+            value = _bayeux.getOption(name);
+            if (value != null) {
+                options.put(name, value);
+            }
+        });
 
         List<ClientTransport> transports = new ArrayList<>();
         for (ClientTransport.Factory factory : getClientTransportFactories()) {
