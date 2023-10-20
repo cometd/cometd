@@ -90,16 +90,16 @@
 
   <properties>
     <dojo-version>1.17.3</dojo-version>
-    <!-- end::jetty-version[] -->
-    <graalvm-version>23.0.1</graalvm-version>
-    <jackson-version>2.15.2</jackson-version>
+    <graalvm-version>23.0.2</graalvm-version>
+    <jackson-version>2.15.3</jackson-version>
     <!-- tag::jetty-version[] -->
     <jetty-version>12.0.2</jetty-version>
-    <okhttp-version>4.11.0</okhttp-version>
+    <!-- end::jetty-version[] -->
+    <okhttp-version>4.12.0</okhttp-version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <slf4j-version>2.0.9</slf4j-version>
-    <spring-boot-version>3.1.4</spring-boot-version>
-    <spring-version>6.0.12</spring-version>
+    <spring-boot-version>3.1.5</spring-boot-version>
+    <spring-version>6.0.13</spring-version>
   </properties>
 
   <dependencyManagement>
@@ -139,13 +139,13 @@
       <dependency>
         <groupId>jakarta.websocket</groupId>
         <artifactId>jakarta.websocket-api</artifactId>
-        <version>2.1.0</version>
+        <version>2.1.1</version>
         <scope>provided</scope>
       </dependency>
       <dependency>
         <groupId>jakarta.websocket</groupId>
         <artifactId>jakarta.websocket-client-api</artifactId>
-        <version>2.1.0</version>
+        <version>2.1.1</version>
         <scope>provided</scope>
       </dependency>
       <dependency>
@@ -240,6 +240,11 @@
     <defaultGoal>install</defaultGoal>
     <pluginManagement>
       <plugins>
+        <plugin>
+          <groupId>com.diffplug.spotless</groupId>
+          <artifactId>spotless-maven-plugin</artifactId>
+          <version>2.40.0</version>
+        </plugin>
         <plugin>
           <groupId>com.mycila</groupId>
           <artifactId>license-maven-plugin</artifactId>
@@ -374,7 +379,7 @@
         <plugin>
           <groupId>org.jacoco</groupId>
           <artifactId>jacoco-maven-plugin</artifactId>
-          <version>0.8.10</version>
+          <version>0.8.11</version>
         </plugin>
       </plugins>
     </pluginManagement>
