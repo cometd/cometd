@@ -479,12 +479,11 @@
           </supportedProjectTypes>
           <instructions>
             <Bundle-Vendor>${project.organization.name}</Bundle-Vendor>
-            <Bundle-ContactAddress>${project.url}</Bundle-ContactAddress>
             <Bundle-Description>${project.description}</Bundle-Description>
             <Bundle-DocURL>https://docs.cometd.org</Bundle-DocURL>
             <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
             <Bundle-Version>${project.version}</Bundle-Version>
-            <Import-Package>org.eclipse.jetty.*;version="[9.4,10)",*</Import-Package>
+            <Import-Package>org.eclipse.jetty.*;version="[12,13)",*</Import-Package>
           </instructions>
         </configuration>
         <executions>
