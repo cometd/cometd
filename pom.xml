@@ -167,11 +167,16 @@
         <version>4.2.0</version>
         <scope>test</scope>
       </dependency>
-
       <dependency>
         <groupId>org.junit.jupiter</groupId>
         <artifactId>junit-jupiter</artifactId>
         <version>5.10.0</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.openjdk.jmh</groupId>
+        <artifactId>jmh-generator-annprocess</artifactId>
+        <version>1.37</version>
         <scope>test</scope>
       </dependency>
     </dependencies>
