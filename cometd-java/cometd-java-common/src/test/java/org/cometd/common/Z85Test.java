@@ -34,4 +34,11 @@ public class Z85Test {
         byte[] result = Z85.decoder.decodeBytes(Z85.encoder.encodeBytes(bytes));
         Assertions.assertArrayEquals(bytes, result);
     }
+
+    @Test
+    public void testZ85UnpaddedShort() {
+        byte[] bytes = new byte[]{0xA, 0xB, 0xC};
+        byte[] result = Z85.decoder.decodeBytes(Z85.encoder.encodeBytes(bytes));
+        Assertions.assertArrayEquals(bytes, result);
+    }
 }
