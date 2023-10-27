@@ -18,11 +18,11 @@ package org.cometd.common;
 import java.nio.ByteBuffer;
 
 /**
- * <p>An implementation of Z85, a format for representing binary data
- * as printable text defined at https://rfc.zeromq.org/spec:32/Z85/.</p>
+ * <p>An implementation of Z85, a format for representing binary data as printable
+ * text defined at <a href="https://rfc.zeromq.org/spec:32/Z85/">ZeroMQ Z85</a>.</p>
  */
 public class Z85 {
-    private static char[] encodeTable = new char[]{
+    private static final char[] encodeTable = new char[]{
             '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
             'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j',
             'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',
@@ -55,29 +55,38 @@ public class Z85 {
 
     public static class Encoder {
         public String encodeBytes(byte[] bytes) {
+            // SPEC: The binary frame SHALL have a length that is divisible by 4 with no remainder.
             int length = bytes.length;
-            int remainder = length % 4;
+            int remainder = length & 3; // Equivalent to length % 4.
+            // Support inputs that are not divisible by 4 with no remainder.
             int padding = 4 - (remainder == 0 ? 4 : remainder);
-            StringBuilder result = new StringBuilder();
+
+            // SPEC: 4 octets convert into 5 printable characters.
+            // char.length = length + 1/4 length == 5/4 length.
+            char[] chars = new char[length + (length >>> 2) + (remainder == 0 ? 0 : 1)];
+            int idx = 0;
             long value = 0;
-            char[] inv = new char[5];
             for (int i = 0; i < length + padding; ++i) {
-                boolean isPadding = i >= length;
-                value = (value << 8) + (isPadding ? 0 : bytes[i] & 0xFF);
+                // Accumulate the octets into a long.
+                boolean isPadBlock = i >= length;
+                value = (value << 8) + (isPadBlock ? 0 : bytes[i] & 0xFF);
+
+                // Decode every 4 octets into 5 characters.
                 if (((i + 1) & 3) == 0) {
-                    for (int j = 0; j < inv.length; ++j) {
-                        inv[j] = encodeTable[(int)(value % 85)];
-                        value /= 85;
-                    }
-                    for (int j = inv.length - 1; j >= 0; --j) {
-                        if (!isPadding || j >= padding) {
-                            result.append(inv[j]);
+                    for (int j = 0; j < 5; ++j) {
+                        if (j > 0) {
+                            value /= 85;
+                        }
+                        if (!isPadBlock || j >= padding) {
+                            int code = (int)(value % 85);
+                            chars[idx + 4 - j] = encodeTable[code];
                         }
                     }
+                    idx += 5;
                     value = 0;
                 }
             }
-            return result.toString();
+            return new String(chars);
         }
 
         public String encodeByteBuffer(ByteBuffer buffer) {
@@ -96,25 +105,24 @@ public class Z85 {
                 string += encodeTable[encodeTable.length - 1];
             }
             int length = string.length();
-            byte[] bytes = new byte[(length * 4 / 5) - padding];
+            byte[] bytes = new byte[((length << 2) / 5) - padding];
             long value = 0;
             int index = 0;
             for (int i = 0; i < length; ++i) {
+                // Accumulate the characters into a long.
                 int code = string.charAt(i) - 32;
                 value = value * 85 + decodeTable[code];
+
+                // Encode every 5 characters into 4 octets.
                 if ((i + 1) % 5 == 0) {
-                    if (index < bytes.length) {
-                        bytes[index++] = (byte) ((value >>> 24) & 0xFF);
+                    for (int j = 0; j < 4; ++j) {
+                        int idx = index + 3 - j;
+                        if (idx < bytes.length) {
+                            bytes[idx] = (byte)(value & 0xFF);
+                        }
+                        value >>>= 8;
                     }
-                    if (index < bytes.length) {
-                        bytes[index++] = (byte) ((value >>> 16) & 0xFF);
-                    }
-                    if (index < bytes.length) {
-                        bytes[index++] = (byte) ((value >>> 8) & 0xFF);
-                    }
-                    if (index < bytes.length) {
-                        bytes[index++] = (byte) (value & 0xFF);
-                    }
+                    index += 4;
                     value = 0;
                 }
             }
