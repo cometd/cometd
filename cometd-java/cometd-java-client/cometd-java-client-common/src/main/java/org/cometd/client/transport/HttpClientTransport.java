@@ -54,9 +54,9 @@ public abstract class HttpClientTransport extends ClientTransport {
     }
 
     protected void storeCookies(URI uri, Map<String, List<String>> headers) {
-        headers.forEach((key, value1) -> {
+        headers.forEach((key, values) -> {
             if ("set-cookie".equalsIgnoreCase(key)) {
-                value1.forEach(value -> {
+                values.forEach(value -> {
                     HttpCookie cookie = cookieParser.parse(value);
                     if (cookie != null) {
                         cookieStore.add(uri, cookie);
