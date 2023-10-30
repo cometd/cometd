@@ -146,7 +146,7 @@
             <argument>-Xms2g</argument>
             <argument>-Xlog:gc:stderr:time,level,tags</argument>
             <argument>-XX:+PrintCommandLineFlags</argument>
-            <!--<argument>-XX:+UseParallelOldGC</argument>-->
+            <argument>-XX:+UseZGC</argument>
             <argument>-cp</argument>
             <classpath></classpath>
             <argument>${mainClass}</argument>
