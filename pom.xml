@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.cometd</groupId>
   <artifactId>cometd-project</artifactId>
-  <version>6.0.12-SNAPSHOT</version>
+  <version>6.0.11-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>CometD</name>
   <description>The CometD project is a scalable web messaging bus that uses WebSocket
@@ -57,10 +57,10 @@
   <modules>
     <module>cometd-archetypes</module>
     <module>cometd-demo</module>
-    <module>cometd-distribution</module>
     <module>cometd-documentation</module>
     <module>cometd-java</module>
     <module>cometd-javascript</module>
+    <module>cometd-distribution</module>
   </modules>
 
   <scm>
@@ -391,13 +391,14 @@
               <include>pom.xml</include>
             </includes>
             <sortPom>
+              <expandEmptyElements>false</expandEmptyElements>
               <nrOfIndentSpace>2</nrOfIndentSpace>
               <!-- default see https://github.com/Ekryd/sortpom/wiki/PredefinedSortOrderProfiles -->
               <predefinedSortOrder>recommended_2008_06</predefinedSortOrder>
               <!-- Sort properties -->
               <sortProperties>true</sortProperties>
               <!-- Sort modules -->
-              <sortModules>true</sortModules>
+              <sortModules>false</sortModules>
               <!-- Sort plugin executions -->
               <sortExecutions>true</sortExecutions>
               <!-- Sort dependencies see https://github.com/Ekryd/sortpom/wiki/SortDependencies -->

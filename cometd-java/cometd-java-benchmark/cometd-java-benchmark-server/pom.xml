@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.cometd.java</groupId>
     <artifactId>cometd-java-benchmark</artifactId>
-    <version>6.0.12-SNAPSHOT</version>
+    <version>6.0.11-SNAPSHOT</version>
   </parent>
   <artifactId>cometd-java-benchmark-server</artifactId>
   <name>CometD :: Java :: Benchmark :: Server</name>
@@ -143,7 +143,7 @@
             <argument>-XX:+PrintCommandLineFlags</argument>
             <!--<argument>-XX:+UseParallelOldGC</argument>-->
             <argument>-cp</argument>
-            <classpath />
+            <classpath/>
             <argument>${mainClass}</argument>
           </arguments>
         </configuration>

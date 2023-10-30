@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.cometd.javascript</groupId>
     <artifactId>cometd-javascript</artifactId>
-    <version>6.0.12-SNAPSHOT</version>
+    <version>6.0.11-SNAPSHOT</version>
   </parent>
   <artifactId>cometd-javascript-common</artifactId>
   <packaging>war</packaging>
@@ -46,7 +46,7 @@
           <executable>java</executable>
           <arguments>
             <argument>-cp</argument>
-            <classpath />
+            <classpath/>
             <argument>com.google.javascript.jscomp.CommandLineRunner</argument>
             <argument>--js</argument>
             <argument>src/main/webapp/js/cometd/cometd.js</argument>
