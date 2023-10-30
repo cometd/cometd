@@ -78,7 +78,7 @@ public class AuctionService extends AbstractService implements ClientSessionChan
     }
 
     public void bids(ServerSession source, ServerMessage message) {
-        try (AutoLock l = lock.lock()) {
+        try (AutoLock ignored = lock.lock()) {
             // TODO Other half of the non atomic bid hack when used in Oort
             Map<String, Object> bidMap = message.getDataAsMap();
             Integer itemId = ((Number)bidMap.get("itemId")).intValue();
@@ -108,7 +108,7 @@ public class AuctionService extends AbstractService implements ClientSessionChan
     }
 
     public void bid(ServerSession source, ServerMessage message) {
-        try (AutoLock l = lock.lock()) {
+        try (AutoLock ignored = lock.lock()) {
             Map<String, Object> bidMap = message.getDataAsMap();
             Integer itemId = ((Number)bidMap.get("itemId")).intValue();
             Double amount = Double.parseDouble(bidMap.get("amount").toString());

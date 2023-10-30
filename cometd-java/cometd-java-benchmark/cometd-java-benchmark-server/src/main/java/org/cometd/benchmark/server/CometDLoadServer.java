@@ -385,7 +385,7 @@ public class CometDLoadServer {
         @SuppressWarnings("unused")
         public void startStatistics(ServerSession remote, ServerMessage message) {
             // Multiple nodes must wait that initialization is completed
-            try (AutoLock l = lock.lock()) {
+            try (AutoLock ignored = lock.lock()) {
                 PlatformMonitor.Start start = monitor.start();
                 if (start != null) {
                     System.err.println();
@@ -408,7 +408,7 @@ public class CometDLoadServer {
 
         @SuppressWarnings("unused")
         public void stopStatistics(ServerSession remote, ServerMessage message) {
-            try (AutoLock l = lock.lock()) {
+            try (AutoLock ignored = lock.lock()) {
                 PlatformMonitor.Stop stop = monitor.stop();
                 if (stop != null) {
                     System.err.println(stop);
@@ -419,7 +419,7 @@ public class CometDLoadServer {
                     }
 
                     if (server.statisticsHandler != null) {
-                        int dispatched = server.statisticsHandler.getRequests();
+                        int dispatched = server.statisticsHandler.getRequestTotal();
                         if (dispatched > 0) {
                             System.err.printf("Requests times (total/avg/max - stddev): %d/%d/%d ms - %d%n",
                                     server.statisticsHandler.getRequestTimeTotal(),

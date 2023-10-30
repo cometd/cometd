@@ -95,6 +95,9 @@ public class Z85 {
             buffer.get(bytes);
             return encodeBytes(bytes);
         }
+
+        private Encoder() {
+        }
     }
 
     public static class Decoder {
@@ -131,6 +134,9 @@ public class Z85 {
 
         public ByteBuffer decodeByteBuffer(String string) {
             return ByteBuffer.wrap(decodeBytes(string));
+        }
+
+        private Decoder() {
         }
     }
 }

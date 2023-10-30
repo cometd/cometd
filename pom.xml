@@ -510,7 +510,7 @@
           <release>17</release>
           <showDeprecation>true</showDeprecation>
           <showWarnings>true</showWarnings>
-          <compilerArgument>-Xlint:all,-serial</compilerArgument>
+          <compilerArgument>-Xlint:all,-serial,-missing-explicit-ctor</compilerArgument>
         </configuration>
       </plugin>
       <plugin>

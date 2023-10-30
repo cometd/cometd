@@ -17,10 +17,12 @@ package org.cometd.javascript;
 
 import java.io.EOFException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.client.FutureResponseListener;
+import org.eclipse.jetty.client.CompletableResponseListener;
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.client.StringRequestContent;
@@ -35,6 +37,7 @@ import org.slf4j.LoggerFactory;
  */
 public class XMLHttpRequestExchange {
     private final CometDExchange exchange;
+    private volatile CompletableFuture<ContentResponse> completable;
 
     public XMLHttpRequestExchange(Object client, JavaScript javaScript, Object jsThis, String httpMethod, String url, boolean async) {
         exchange = new CometDExchange((XMLHttpRequestClient)client, javaScript, jsThis, httpMethod, url, async);
@@ -69,6 +72,10 @@ public class XMLHttpRequestExchange {
     }
 
     public void abort() {
+        CompletableFuture<ContentResponse> c = completable;
+        if (c != null) {
+            c.cancel(false);
+        }
         exchange.abort();
     }
 
@@ -81,10 +88,10 @@ public class XMLHttpRequestExchange {
     }
 
     public void send() throws Exception {
-        exchange.send();
+        completable = exchange.send();
         try {
             if (!exchange.isAsynchronous()) {
-                exchange.get(60, TimeUnit.SECONDS);
+                completable.get(60, TimeUnit.SECONDS);
             }
         } catch (ExecutionException x) {
             Throwable cause = x.getCause();
@@ -96,7 +103,7 @@ public class XMLHttpRequestExchange {
         }
     }
 
-    public static class CometDExchange extends FutureResponseListener {
+    public static class CometDExchange extends CompletableResponseListener {
         public enum ReadyState {
             UNSENT, OPENED, HEADERS_RECEIVED, LOADING, DONE
         }
@@ -161,15 +168,15 @@ public class XMLHttpRequestExchange {
             javaScript.invoke(sync, jsThis, "on" + event);
         }
 
-        public void send() {
+        @Override
+        public CompletableFuture<ContentResponse> send() {
             if (logger.isDebugEnabled()) {
                 logger.debug("Submitted {}", this);
             }
-            getRequest().send(this);
+            return super.send();
         }
 
         public void abort() {
-            cancel(false);
             if (logger.isDebugEnabled()) {
                 logger.debug("Aborted {}", this);
             }
