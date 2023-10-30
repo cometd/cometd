@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.cometd.javascript</groupId>
     <artifactId>cometd-javascript</artifactId>
-    <version>6.0.11-SNAPSHOT</version>
+    <version>6.0.11</version>
   </parent>
   <artifactId>cometd-javascript-tests</artifactId>
   <packaging>jar</packaging>
