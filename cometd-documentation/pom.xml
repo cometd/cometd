@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.cometd</groupId>
     <artifactId>cometd-project</artifactId>
-    <version>6.0.11</version>
+    <version>6.0.12-SNAPSHOT</version>
   </parent>
   <artifactId>cometd-documentation</artifactId>
   <name>CometD :: Reference Book</name>
@@ -105,8 +105,8 @@
             <phase>process-resources</phase>
             <configuration>
               <target>
-                <move file="${html-directory}/coderay-asciidoctor.css" tofile="${html-directory}/coderay-asciidoctor-default.css"></move>
-                <echo file="${html-directory}/coderay-asciidoctor.css"></echo>
+                <move file="${html-directory}/coderay-asciidoctor.css" tofile="${html-directory}/coderay-asciidoctor-default.css" />
+                <echo file="${html-directory}/coderay-asciidoctor.css" />
               </target>
             </configuration>
           </execution>
