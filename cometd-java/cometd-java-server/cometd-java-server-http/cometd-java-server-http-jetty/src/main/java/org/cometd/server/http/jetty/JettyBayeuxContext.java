@@ -21,16 +21,14 @@ import java.util.List;
 import java.util.Locale;
 
 import org.cometd.bayeux.server.BayeuxContext;
-import org.cometd.server.CometDRequest;
+import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Session;
 
 class JettyBayeuxContext implements BayeuxContext {
-    private final JettyCometDRequest cometDRequest;
     private final Request request;
 
-    JettyBayeuxContext(JettyCometDRequest cometDRequest, Request request) {
-        this.cometDRequest = cometDRequest;
+    JettyBayeuxContext(Request request) {
         this.request = request;
     }
 
@@ -76,11 +74,15 @@ class JettyBayeuxContext implements BayeuxContext {
 
     @Override
     public String getCookie(String name) {
-        return cometDRequest.getCookies().stream()
-            .filter(cometDCookie -> cometDCookie.name().equals(name))
-            .map(CometDRequest.CometDCookie::value)
-            .findFirst()
-            .orElse(null);
+        List<HttpCookie> cookies = Request.getCookies(request);
+        if (cookies != null) {
+            for (HttpCookie cookie : cookies) {
+                if (cookie.getName().equals(name)) {
+                    return cookie.getValue();
+                }
+            }
+        }
+        return null;
     }
 
     @Override
@@ -121,6 +123,6 @@ class JettyBayeuxContext implements BayeuxContext {
 
     @Override
     public boolean isSecure() {
-        return request.getConnectionMetaData().isSecure();
+        return request.isSecure();
     }
 }

@@ -79,9 +79,9 @@ class JakartaBayeuxContext implements BayeuxContext {
     public String getCookie(String name) {
         Cookie[] cookies = request.getCookies();
         if (cookies != null) {
-            for (Cookie c : cookies) {
-                if (name.equals(c.getName())) {
-                    return c.getValue();
+            for (Cookie cookie : cookies) {
+                if (cookie.getName().equals(name)) {
+                    return cookie.getValue();
                 }
             }
         }

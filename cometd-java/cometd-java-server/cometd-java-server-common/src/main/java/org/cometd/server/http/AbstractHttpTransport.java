@@ -268,13 +268,9 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
     }
 
     protected Collection<ServerSessionImpl> findCurrentSessions(CometDRequest request) {
-        List<CometDRequest.CometDCookie> cookies = request.getCookies();
-        if (cookies != null) {
-            for (CometDRequest.CometDCookie cookie : cookies) {
-                if (_browserCookieName.equals(cookie.name())) {
-                    return _sessions.get(cookie.value());
-                }
-            }
+        String value = request.getCookie(_browserCookieName);
+        if (value != null) {
+            return _sessions.get(value);
         }
         return null;
     }

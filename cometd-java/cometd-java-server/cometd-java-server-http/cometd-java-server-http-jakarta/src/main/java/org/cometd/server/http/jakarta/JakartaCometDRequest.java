@@ -17,8 +17,6 @@ package org.cometd.server.http.jakarta;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import jakarta.servlet.ReadListener;
 import jakarta.servlet.ServletInputStream;
@@ -42,16 +40,17 @@ class JakartaCometDRequest implements CometDRequest {
     }
 
     @Override
-    public List<CometDCookie> getCookies() {
+    public String getCookie(String name) {
         Cookie[] cookies = request.getCookies();
         if (cookies == null) {
             return null;
         }
-        List<CometDCookie> result = new ArrayList<>();
         for (Cookie cookie : cookies) {
-            result.add(new CometDCookie(cookie.getName(), cookie.getValue()));
+            if (cookie.getName().equals(name)) {
+                return cookie.getValue();
+            }
         }
-        return result;
+        return null;
     }
 
     @Override

@@ -122,7 +122,7 @@ public class CometDHandler extends Handler.Abstract {
 
         JettyCometDRequest cometDRequest = new JettyCometDRequest(request);
         JettyCometDResponse cometDResponse = new JettyCometDResponse(response);
-        JettyBayeuxContext bayeuxContext = new JettyBayeuxContext(cometDRequest, request);
+        JettyBayeuxContext bayeuxContext = new JettyBayeuxContext(request);
 
         Promise<Void> promise = new Promise<>() {
             @Override

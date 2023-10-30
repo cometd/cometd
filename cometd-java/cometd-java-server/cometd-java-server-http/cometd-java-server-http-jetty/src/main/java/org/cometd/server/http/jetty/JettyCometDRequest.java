@@ -17,19 +17,18 @@ package org.cometd.server.http.jetty;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.util.List;
 
 import org.cometd.server.CometDRequest;
-import org.eclipse.jetty.http.CookieCache;
 import org.eclipse.jetty.http.HttpCookie;
-import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.IO;
 
 class JettyCometDRequest implements CometDRequest {
     private final Request request;
-    private final CookieCache cookieCache = new CookieCache();
     private Input cometDInput;
 
     public JettyCometDRequest(Request request) {
@@ -38,23 +37,28 @@ class JettyCometDRequest implements CometDRequest {
 
     @Override
     public String getCharacterEncoding() {
-        String[] split = request.getHeaders().get(HttpHeader.CONTENT_TYPE).split(";");
-        if (split.length == 2)
-            return split[1].split("=")[1];
-        return "iso-8859-1";
+        Charset charset = Request.getCharset(request);
+        return charset == null ? "ISO-8859-1" : charset.name();
     }
 
     @Override
-    public List<CometDCookie> getCookies() {
-        List<HttpCookie> cookies = cookieCache.getCookies(request.getHeaders());
-        return cookies.stream()
-            .map(httpCookie -> new CometDCookie(httpCookie.getName(), httpCookie.getValue()))
-            .toList();
+    public String getCookie(String name) {
+        List<HttpCookie> cookies = Request.getCookies(request);
+        if (cookies == null) {
+            return null;
+        }
+        for (HttpCookie cookie : cookies) {
+            if (cookie.getName().equals(name)) {
+                return cookie.getValue();
+            }
+        }
+        return null;
     }
 
     @Override
     public String[] getParameterValues(String name) {
-        throw new UnsupportedOperationException("REMOVE API?");
+        Fields fields = Request.extractQueryParameters(request);
+        return fields.getValuesOrEmpty(name).toArray(String[]::new);
     }
 
     @Override

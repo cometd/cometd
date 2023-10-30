@@ -17,7 +17,6 @@ package org.cometd.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.List;
 
 /**
  * <p>An abstraction over HTTP requests.</p>
@@ -47,9 +46,10 @@ public interface CometDRequest {
     String getCharacterEncoding();
 
     /**
-     * @return the request cookies
+     * @return the value of the request cookie with the given name,
+     * or {@code null} if there is no such cookie
      */
-    List<CometDCookie> getCookies();
+    String getCookie(String name);
 
     /**
      * @return the input to read the request body from
@@ -68,13 +68,6 @@ public interface CometDRequest {
      * @param value the attribute value
      */
     void setAttribute(String name, Object value);
-
-    /**
-     * @param name  the cookie name
-     * @param value the cookie value
-     */
-    record CometDCookie(String name, String value) {
-    }
 
     /**
      * <p>The source of the request body.</p>
