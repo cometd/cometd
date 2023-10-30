@@ -17,6 +17,7 @@ package org.cometd.server.http.jakarta;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import jakarta.servlet.ReadListener;
 import jakarta.servlet.ServletInputStream;
@@ -54,8 +55,9 @@ class JakartaCometDRequest implements CometDRequest {
     }
 
     @Override
-    public String[] getParameterValues(String name) {
-        return request.getParameterValues(name);
+    public List<String> getParameterValues(String name) {
+        String[] values = request.getParameterValues(name);
+        return values == null ? List.of() : List.of(values);
     }
 
     @Override

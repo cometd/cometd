@@ -56,9 +56,9 @@ class JettyCometDRequest implements CometDRequest {
     }
 
     @Override
-    public String[] getParameterValues(String name) {
+    public List<String> getParameterValues(String name) {
         Fields fields = Request.extractQueryParameters(request);
-        return fields.getValuesOrEmpty(name).toArray(String[]::new);
+        return fields.getValuesOrEmpty(name);
     }
 
     @Override

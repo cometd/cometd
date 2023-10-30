@@ -17,6 +17,7 @@ package org.cometd.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.List;
 
 /**
  * <p>An abstraction over HTTP requests.</p>
@@ -38,7 +39,7 @@ public interface CometDRequest {
      * @param name the query parameter name
      * @return the values of the given query parameter
      */
-    String[] getParameterValues(String name);
+    List<String> getParameterValues(String name);
 
     /**
      * @return the charset of the request body

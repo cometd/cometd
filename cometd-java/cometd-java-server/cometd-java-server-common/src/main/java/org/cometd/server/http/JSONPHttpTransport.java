@@ -69,30 +69,30 @@ public class JSONPHttpTransport extends AbstractHttpTransport {
 
     @Override
     public boolean accept(CometDRequest request) {
-        String[] callbackValue = request.getParameterValues(getCallbackParameter());
+        List<String> callbackValue = request.getParameterValues(getCallbackParameter());
         return "GET".equals(request.getMethod()) && isCallbackValueValid(callbackValue);
     }
 
-    private boolean isCallbackValueValid(String[] callbackValues) {
-        if (callbackValues == null || callbackValues.length != 1) {
+    private boolean isCallbackValueValid(List<String> callbackValues) {
+        if (callbackValues.size() != 1) {
             return false;
         }
-        String callbackValue = callbackValues[0];
+        String callbackValue = callbackValues.get(0);
         return callbackValue.length() <= getCallbackMaxLength() && CALLBACK_PATTERN.matcher(callbackValue).matches();
     }
 
     @Override
     protected void handle(TransportContext context) {
         try {
-            String[] requestParameters = context.request().getParameterValues(MESSAGE_PARAM);
+            List<String> requestParameters = context.request().getParameterValues(MESSAGE_PARAM);
 
-            if (requestParameters == null || requestParameters.length == 0) {
+            if (requestParameters.isEmpty()) {
                 throw new IOException("Missing '" + MESSAGE_PARAM + "' request parameter");
             }
 
             List<ServerMessage.Mutable> messages;
-            if (requestParameters.length == 1) {
-                List<ServerMessage.Mutable> parsed = parseMessages(requestParameters[0]);
+            if (requestParameters.size() == 1) {
+                List<ServerMessage.Mutable> parsed = parseMessages(requestParameters.get(0));
                 messages = parsed == null ? List.of() : parsed;
             } else {
                 messages = new ArrayList<>();
@@ -123,7 +123,7 @@ public class JSONPHttpTransport extends AbstractHttpTransport {
     protected void writePrepare(TransportContext context, Promise<Void> promise) {
         CometDResponse response = context.response();
         response.setContentType("text/javascript;charset=UTF-8");
-        String callback = context.request().getParameterValues(getCallbackParameter())[0];
+        String callback = context.request().getParameterValues(getCallbackParameter()).get(0);
         response.getOutput().write(false, callback.getBytes(StandardCharsets.UTF_8), promise);
     }
 
