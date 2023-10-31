@@ -40,15 +40,15 @@ Choose archetype:
 Choose a number:
 ----
 
-As you can see, there are four archetypes available that build a skeleton application using the Dojo or jQuery JavaScript toolkits, both with the choice of using Jetty 11 and/or Spring.
-Choose Dojo with Jetty 11, which is archetype number `1`.
+As you can see, there are archetypes available that build a skeleton application using the Dojo or jQuery JavaScript toolkits, both with the choice of using Jetty and/or Spring.
+Choose Dojo with Jetty, which is archetype number `1`.
 
-Next, you have to choose the version of the archetype you want to use, typically the last version of the 7.0.x series:
+Next, you have to choose the version of the archetype you want to use, typically the last version of the 8.0.x series:
 
 ----
-Choose org.cometd.archetypes:cometd-archetype-dojo-jetty11 version:
+Choose org.cometd.archetypes:cometd-archetype-dojo-jetty12 version:
 ...
-61: 7.0.0
+81: 8.0.0
 ...
 ----
 
@@ -136,7 +136,7 @@ If you want to use a Jetty version different from CometD's default Jetty version
 
     <properties>
         ...
-        <jetty-version>11.0.1</jetty-version>
+        <jetty-version>12.0.0</jetty-version>
         ....
     </properties>
 
