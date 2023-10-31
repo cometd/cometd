@@ -141,7 +141,7 @@
         <artifactId>maven-war-plugin</artifactId>
         <configuration>
           <overlays>
-            <overlay></overlay>
+            <overlay />
             <overlay>
               <groupId>org.cometd.javascript</groupId>
               <artifactId>cometd-javascript-dojo</artifactId>

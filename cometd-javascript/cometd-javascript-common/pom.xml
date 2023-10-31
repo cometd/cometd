@@ -46,7 +46,7 @@
           <executable>java</executable>
           <arguments>
             <argument>-cp</argument>
-            <classpath></classpath>
+            <classpath />
             <argument>com.google.javascript.jscomp.CommandLineRunner</argument>
             <argument>--js</argument>
             <argument>src/main/webapp/js/cometd/cometd.js</argument>
