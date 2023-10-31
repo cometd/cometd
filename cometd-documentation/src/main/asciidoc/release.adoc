@@ -17,14 +17,16 @@ Before creating the release, the following tests should be performed:
 [[_release_create]]
 === Creating the Release
 
-----
-$ mvn release:prepare -Darguments="-DskipTests"
-----
-
-When asked, specify the version control _tag_ to be just the version number, for example `6.0.0`, not `cometd-project-6.0.0`.
+During the release process, tests are implicitly skipped to speed up the process.
 
 ----
-$ mvn release:perform -Darguments="-DskipTests"
+$ mvn release:prepare
+----
+
+When asked, make sure the version control _tag_ is just the version number, for example `6.0.0`, not `cometd-project-6.0.0`.
+
+----
+$ mvn release:perform
 ----
 
 When the Maven Release Plugin runs it activates the `release` profile, running sections of the `pom.xml` files that perform additional actions, such as building the distribution tarball.
