@@ -534,7 +534,7 @@
       <plugin>
         <artifactId>maven-release-plugin</artifactId>
         <configuration>
-          <arguments>-DskipTests -Dspotless.check.skip=true</arguments>
+          <arguments>-DskipTests</arguments>
           <autoVersionSubmodules>true</autoVersionSubmodules>
           <goals>deploy</goals>
           <preparationGoals>clean install</preparationGoals>
@@ -578,9 +578,6 @@
   <profiles>
     <profile>
       <id>release</id>
-      <properties>
-        <spotless.check.skip>true</spotless.check.skip>
-      </properties>
       <build>
         <plugins>
           <plugin>

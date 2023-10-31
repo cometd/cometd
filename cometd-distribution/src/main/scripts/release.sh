@@ -22,7 +22,7 @@ dd status=progress if=${COMETD_DIR}/cometd-distribution/target/cometd-${VERSION}
 
 echo "Uploading javadocs"
 cd ${COMETD_DIR}/cometd-java
-mvn javadoc:aggregate-jar -Dspotless.check.skip=true
+mvn javadoc:aggregate-jar
 DOCS_ROOT="/var/www/docs.cometd.org"
 DOCS_DIR="${DOCS_ROOT}/${VERSION}"
 ssh ubuntu@docs.cometd.org "sudo -u www-data mkdir -p ${DOCS_DIR}/apidocs"
