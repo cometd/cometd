@@ -73,6 +73,7 @@ git commit -m "Release ${VERSION}."
 git tag -am "Release ${VERSION}." ${VERSION}
 git push --follow-tags
 
-if yes_no "Publish to NPM ? (Y/n)" y; then
-  npm publish
-fi
+# TODO: restore when 8.0.0 is final (and remove from 7.0.x).
+#if yes_no "Publish to NPM ? (Y/n)" y; then
+#  npm publish
+#fi
