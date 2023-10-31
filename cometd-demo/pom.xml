@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.cometd</groupId>
     <artifactId>cometd-project</artifactId>
-    <version>7.0.11</version>
+    <version>7.0.12-SNAPSHOT</version>
   </parent>
   <artifactId>cometd-demo</artifactId>
   <packaging>war</packaging>
