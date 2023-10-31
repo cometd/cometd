@@ -66,8 +66,8 @@
   <scm>
     <connection>scm:git:git://github.com/cometd/cometd.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/cometd/cometd.git</developerConnection>
-    <url>https://github.com/cometd/cometd</url>
     <tag>HEAD</tag>
+    <url>https://github.com/cometd/cometd</url>
   </scm>
 
   <issueManagement>
