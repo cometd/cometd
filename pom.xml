@@ -66,6 +66,7 @@
   <scm>
     <connection>scm:git:git://github.com/cometd/cometd.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/cometd/cometd.git</developerConnection>
+    <tag>HEAD</tag>
     <url>https://github.com/cometd/cometd</url>
   </scm>
 
@@ -400,20 +401,14 @@
             <sortPom>
               <expandEmptyElements>false</expandEmptyElements>
               <nrOfIndentSpace>2</nrOfIndentSpace>
-              <!-- default see https://github.com/Ekryd/sortpom/wiki/PredefinedSortOrderProfiles -->
               <predefinedSortOrder>recommended_2008_06</predefinedSortOrder>
-              <!-- Sort properties -->
-              <sortProperties>true</sortProperties>
-              <!-- Sort modules -->
-              <sortModules>false</sortModules>
-              <!-- Sort plugin executions -->
-              <sortExecutions>true</sortExecutions>
-              <!-- Sort dependencies see https://github.com/Ekryd/sortpom/wiki/SortDependencies -->
               <sortDependencies>scope,groupId,artifactId</sortDependencies>
-              <!-- Sort dependency exclusions -->
               <sortDependencyExclusions>groupId,artifactId</sortDependencyExclusions>
-              <!-- Sort plugins: https://github.com/Ekryd/sortpom/wiki/SortPlugins -->
+              <sortExecutions>true</sortExecutions>
+              <sortModules>false</sortModules>
               <sortPlugins>groupId,artifactId</sortPlugins>
+              <sortProperties>true</sortProperties>
+              <spaceBeforeCloseEmptyElement>true</spaceBeforeCloseEmptyElement>
             </sortPom>
           </pom>
           <upToDateChecking>
