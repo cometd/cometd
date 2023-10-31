@@ -31,14 +31,12 @@ Issue the following command from a directory that does _not_ contain a `pom.xml`
 
 ----
 $ cd /tmp
-$ mvn archetype:generate -Dfilter=org.cometd.archetypes:jetty11
+$ mvn archetype:generate -Dfilter=org.cometd.archetypes:jetty12
 ----
 ----
 Choose archetype:
-1: remote -> org.cometd.archetypes:cometd-archetype-dojo-jetty11 (-)
-2: remote -> org.cometd.archetypes:cometd-archetype-jquery-jetty11 (-)
-3: remote -> org.cometd.archetypes:cometd-archetype-spring-dojo-jetty11 (-)
-4: remote -> org.cometd.archetypes:cometd-archetype-spring-jquery-jetty11 (-)
+1: remote -> org.cometd.archetypes:cometd-archetype-dojo-jetty12 (-)
+2: remote -> org.cometd.archetypes:cometd-archetype-jquery-jetty12 (-)
 Choose a number:
 ----
 
@@ -58,20 +56,20 @@ The archetype generation requires that you define several properties and generat
 
 ----
 Define value for property 'groupId': : org.cometd.primer
-Define value for property 'artifactId': : dojo-jetty11-primer
+Define value for property 'artifactId': : dojo-jetty12-primer
 Define value for property 'version':  1.0-SNAPSHOT: :
 Define value for property 'package':  org.cometd.primer: :
-[INFO] Using property: cometdVersion = 7.0.0
-[INFO] Using property: jettyVersion = 11.0.0
-[INFO] Using property: slf4jVersion = 2.0.0-alpha1
+[INFO] Using property: cometdVersion = 8.0.0
+[INFO] Using property: jettyVersion = 12.0.0
+[INFO] Using property: slf4jVersion = 2.0.9
 Confirm properties configuration:
 groupId: org.cometd.primer
-artifactId: dojo-jetty11-primer
+artifactId: dojo-jetty12-primer
 version: 1.0-SNAPSHOT
 package: org.cometd.primer
-cometdVersion: 7.0.0
-jettyVersion: 11.0.0
-slf4jVersion: 2.0.0-alpha1
+cometdVersion: 8.0.0
+jettyVersion: 12.0.0
+slf4jVersion: 2.0.9
 Y: :
 ...
 [INFO] BUILD SUCCESS
@@ -86,7 +84,7 @@ the application skeleton, since it can be easily changed afterwards.
 Then:
 
 ----
-$ cd dojo-jetty11-primer/
+$ cd dojo-jetty12-primer/
 ----
 
 The skeleton project now exists as follows:
@@ -117,7 +115,7 @@ $ mvn clean install
 $ mvn jetty:run
 ----
 
-Now point your browser at `+http://localhost:8080/dojo-jetty11-primer+`, and you should see this message:
+Now point your browser at `+http://localhost:8080/dojo-jetty12-primer+`, and you should see this message:
 
 ----
 CometD Connection Succeeded
@@ -261,7 +259,7 @@ The archetypes provide:
 
 [source,javascript,indent=0]
 ----
-include::../../../../cometd-archetypes/dojo-jetty11/src/main/resources/archetype-resources/src/main/webapp/application.js[]
+include::../../../../cometd-archetypes/cometd-archetype-dojo-jetty12/src/main/resources/archetype-resources/src/main/webapp/application.js[]
 ----
 
 Notice the following:
