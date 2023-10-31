@@ -12,6 +12,7 @@
 
   <properties>
     <html-directory>${project.build.directory}/html/reference</html-directory>
+    <maven.javadoc.skip>true</maven.javadoc.skip>
   </properties>
 
   <dependencies>

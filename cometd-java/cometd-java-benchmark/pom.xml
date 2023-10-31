@@ -16,4 +16,8 @@
     <module>cometd-java-benchmark-common</module>
     <module>cometd-java-benchmark-server</module>
   </modules>
+
+  <properties>
+    <maven.javadoc.skip>true</maven.javadoc.skip>
+  </properties>
 </project>
