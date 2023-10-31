@@ -105,8 +105,8 @@
             <phase>process-resources</phase>
             <configuration>
               <target>
-                <move file="${html-directory}/coderay-asciidoctor.css" tofile="${html-directory}/coderay-asciidoctor-default.css" />
-                <echo file="${html-directory}/coderay-asciidoctor.css" />
+                <move file="${html-directory}/coderay-asciidoctor.css" tofile="${html-directory}/coderay-asciidoctor-default.css"/>
+                <echo file="${html-directory}/coderay-asciidoctor.css"/>
               </target>
             </configuration>
           </execution>

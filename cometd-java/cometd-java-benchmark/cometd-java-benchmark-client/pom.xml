@@ -148,7 +148,7 @@
             <argument>-XX:+PrintCommandLineFlags</argument>
             <argument>-XX:+UseZGC</argument>
             <argument>-cp</argument>
-            <classpath />
+            <classpath/>
             <argument>${mainClass}</argument>
           </arguments>
         </configuration>
