@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.cometd.java</groupId>
     <artifactId>cometd-java-client-http</artifactId>
-    <version>7.0.11-SNAPSHOT</version>
+    <version>7.0.11</version>
   </parent>
   <artifactId>cometd-java-client-http-okhttp</artifactId>
   <name>CometD :: Java :: Client :: HTTP :: OkHttp</name>

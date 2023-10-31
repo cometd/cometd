@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.cometd.javascript</groupId>
     <artifactId>cometd-javascript-examples</artifactId>
-    <version>7.0.11-SNAPSHOT</version>
+    <version>7.0.11</version>
   </parent>
   <artifactId>cometd-javascript-examples-angular</artifactId>
   <packaging>war</packaging>
