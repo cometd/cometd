@@ -16,9 +16,5 @@
       <artifactId>jetty-util</artifactId>
       <version>${jetty-version}</version>
     </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-perf-helper</artifactId>
-    </dependency>
   </dependencies>
 </project>
