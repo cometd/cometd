@@ -47,7 +47,7 @@ pipeline {
  * @param cmdline the command line in "<profiles> <goals> <properties>"`format.
  * @param consoleParsers array of console parsers to run
  */
-def mavenBuild(jdk, cmdline, consoleParsers) {
+def mavenBuild(jdk, cmdline) {
   script {
     try {
       withEnv(["JAVA_HOME=${tool "$jdk"}",
