@@ -60,9 +60,6 @@ def mavenBuild(jdk, cmdline) {
     }
     finally {
       junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml'
-      if (consoleParsers != null) {
-        warnings consoleParsers: consoleParsers
-      }
     }
   }
 }
