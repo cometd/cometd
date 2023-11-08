@@ -22,7 +22,7 @@ pipeline {
             agent { node { label 'linux' } }
             steps {
               timeout(time: 1, unit: 'HOURS') {
-                mavenBuild("${env.JDK}", "clean install", [[parserName: 'Maven'], [parserName: 'Java']])
+                mavenBuild("${env.JDK}", "clean install")
                 // Collect the JaCoCo execution results.
                 jacoco exclusionPattern: '**/org/webtide/**,**/org/cometd/benchmark/**,**/org/cometd/examples/**',
                         execPattern: '**/target/jacoco.exec',
@@ -30,8 +30,9 @@ pipeline {
                         sourcePattern: '**/src/main/java'
               }
               timeout(time: 15, unit: 'MINUTES') {
-                mavenBuild("${env.JDK}", "javadoc:javadoc", null)
+                mavenBuild("${env.JDK}", "javadoc:javadoc")
               }
+              recordIssues id: "${env.JDK}", name: "Static Analysis jdk17", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), javaDoc()]
             }
           }
         }
@@ -50,7 +51,7 @@ def mavenBuild(jdk, cmdline, consoleParsers) {
   script {
     try {
       withEnv(["JAVA_HOME=${tool "$jdk"}",
-               "PATH+MAVEN=${env.JAVA_HOME}/bin:${tool "maven3.5"}/bin",
+               "PATH+MAVEN=${env.JAVA_HOME}/bin:${tool "maven3"}/bin",
                "MAVEN_OPTS=-Xms2g -Xmx4g -Djava.awt.headless=true"]) {
         configFileProvider([configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS')]) {
           sh "mvn -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -V -B -e $cmdline"
