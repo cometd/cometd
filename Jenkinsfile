@@ -27,7 +27,7 @@ pipeline {
               timeout(time: 15, unit: 'MINUTES') {
                 mavenBuild("${env.JDK}", "javadoc:javadoc")
               }
-              recordIssues id: "${env.JDK}", name: "Static Analysis jdk17", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), javaDoc()]
+              recordIssues id: "analysis-${env.JDK}", name: "Static Analysis ${env.JDK}", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), javaDoc()]
               recordCoverage(name: "Coverage ${env.JDK}", id: "coverage-${env.JDK}", tools: [[parser: 'JACOCO']], sourceCodeRetention: 'MODIFIED', sourceDirectories: [[path: 'src/main/java']])
             }
           }
