@@ -17,7 +17,7 @@ package org.cometd.examples.spring.boot;
 
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletRegistration;
-import org.cometd.annotation.server.AnnotationCometDServlet;
+import org.cometd.annotation.server.jakarta.AnnotationCometDServlet;
 import org.cometd.examples.ChatService;
 import org.cometd.examples.CometDDemoServlet;
 import org.springframework.boot.SpringApplication;
