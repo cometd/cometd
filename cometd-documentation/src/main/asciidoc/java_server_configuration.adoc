@@ -176,12 +176,15 @@ Here is the list of configuration init parameters (to be specified in `web.xml`)
 
 | browserCookieDomain
 |
-| The domain of the cookie used to identify multiple sessions (see also xref:_java_server_multiple_sessions[this section]).
-  By default there is no domain.
+| The `Domain` attribute of the cookie used to identify multiple sessions (see also xref:_java_server_multiple_sessions[this section]); by default the `Domain` attribute is not sent.
 
 | browserCookiePath
 | /
-| The path of the cookie used to identify multiple sessions (see also xref:_java_server_multiple_sessions[this section]).
+| The `Path` attribute of the cookie used to identify multiple sessions (see also xref:_java_server_multiple_sessions[this section]).
+
+| browserCookieMaxAge
+| -1
+| The `Max-Age` attribute of the cookie used to identify multiple sessions in seconds (see also xref:_java_server_multiple_sessions[this section]); if the value is negative, the `Max-Age` attribute is not sent.
 
 | browserCookieSecure
 | false
@@ -195,6 +198,10 @@ Here is the list of configuration init parameters (to be specified in `web.xml`)
 |
 | The value of the `SameSite` attribute of the cookie used to identify xref:_java_server_multiple_sessions[multiple sessions], see also xref:_java_server_configuration_advanced_cookies[this section].
   Meaningful values are `Strict`, `Lax` and `None`.
+
+| browserCookiePartitioned
+| false
+| Whether to add the `Partitioned` attribute of the cookie used to identify xref:_java_server_multiple_sessions[multiple sessions], see also xref:_java_server_configuration_advanced_cookies[this section].
 |===
 
 .WebSocket `ServerTransport` Configuration Parameters
@@ -302,10 +309,13 @@ Refer to the https://www.eclipse.org/jetty/documentation/current/cross-origin-fi
 ====== Configuring Cookies
 
 Modern browsers may require that cookies sent by a server have the `SameSite` attribute.
-https://web.dev/samesite-cookies-explained/[This article] is a good resource that explains how the `SameSite` attribute works.
+link:https://web.dev/samesite-cookies-explained/[This article] is a good resource that explains how the `SameSite` attribute works.
 
 In particular, in the case of cross-domain deployment, the CometD server should be configured to send cookies that have both the `Secure` attribute and the `SameSite=None` attribute.
 In turn, the `Secure` attribute requires that the CometD server is deployed over `https` (otherwise the browser won't send the cookie, causing the CometD communication to break).
+
+Browsers may also require that cookies sent by the server have the `Partitioned` attribute.
+link:https://developer.mozilla.org/en-US/docs/Web/Privacy/Partitioned_cookies[This article] explains how the `Partitioned` attribute is necessary when the JavaScript CometD client is embedded in a web page whose domain is different from the CometD domain (typical, for example,for chat panels embedded in a web page).
 
 Refer to the CometD xref:_java_server_configuration_transports[server configuration section] for the cookie configuration in the CometD server.
 
