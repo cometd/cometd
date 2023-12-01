@@ -22,7 +22,6 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.BayeuxServerImpl;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -96,7 +95,6 @@ public class CometDTransportNegotiationFailureTest extends AbstractCometDTranspo
 
     @ParameterizedTest
     @MethodSource("transports")
-    @Disabled("Fails due to https://github.com/eclipse/jetty.project/issues/9412")
     public void testTransportNegotiationFailureForClientWebSocketServerLongPolling(String transport) throws Exception {
         initCometDServer(transport);
 

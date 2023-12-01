@@ -28,7 +28,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import jakarta.websocket.ClientEndpointConfig;
 import jakarta.websocket.WebSocketContainer;
-
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
@@ -55,7 +54,6 @@ import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -178,7 +176,6 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         disconnectBayeuxClient(client);
     }
 
-    @Disabled("WEBSOCKET_JETTY transport does not clear previous mappings upon restart")
     @ParameterizedTest
     @MethodSource("transports")
     public void testRestartAfterConnectWithFatalException(Transport wsType) throws Exception {

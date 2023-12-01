@@ -30,7 +30,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
@@ -45,6 +44,7 @@ import org.cometd.common.AsyncFoldLeft;
 import org.cometd.common.HashMapMessage;
 import org.cometd.server.AbstractServerTransport.Scheduler;
 import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.thread.Scheduler.Task;
@@ -81,8 +81,8 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
     private boolean _metaConnectDelivery;
     private int _batch;
     private String _userAgent;
-    private long _messageTime;
-    private long _expireTime;
+    private long _messageNanos;
+    private long _expireNanos;
     private boolean _nonLazyMessages;
     private boolean _broadcastToPublisher;
     private boolean _allowMessageDeliveryDuringHandshake;
@@ -160,13 +160,13 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         Scheduler scheduler = null;
         lock.lock();
         try {
-            if (_expireTime == 0) {
-                if (_maxProcessing > 0 && (now - _messageTime) > _maxProcessing) {
+            if (_expireNanos == 0) {
+                if (_maxProcessing > 0 && (now - _messageNanos) > _maxProcessing) {
                     _logger.info("Sweeping during processing {}", this);
                     remove = true;
                 }
             } else {
-                if (now - _expireTime > 0) {
+                if (now - _expireNanos > 0) {
                     if (_logger.isDebugEnabled()) {
                         _logger.debug("Sweeping {}", this);
                     }
@@ -669,20 +669,20 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
     }
 
     public void cancelExpiration(boolean metaConnect) {
-        long now = System.nanoTime();
+        long now = NanoTime.now();
         lock.lock();
         try {
-            _messageTime = now;
+            _messageNanos = now;
             if (metaConnect) {
                 // A /meta/connect was received and possibly
                 // suspended by the server, don't sweep it.
-                _expireTime = 0;
-            } else if (_expireTime != 0) {
+                _expireNanos = 0;
+            } else if (_expireNanos != 0) {
                 // A /meta/connect was returned to
                 // the client, and another message was
                 // received, so extend the expiration.
                 long maxInterval = calculateMaxInterval(getServerTransport().getMaxInterval());
-                _expireTime = Math.max(_expireTime, now + TimeUnit.MILLISECONDS.toNanos(maxInterval));
+                _expireNanos = Math.max(_expireNanos, now + TimeUnit.MILLISECONDS.toNanos(maxInterval));
             }
         } finally {
             lock.unlock();
@@ -695,7 +695,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
     public void scheduleExpiration(long defaultInterval, long defaultMaxInterval, long metaConnectCycle) {
         long interval = calculateInterval(defaultInterval);
         long maxInterval = calculateMaxInterval(defaultMaxInterval);
-        long now = System.nanoTime();
+        long now = NanoTime.now();
         lock.lock();
         try {
             // When metaConnectCycle == 0, the /meta/connect was not suspended.
@@ -705,7 +705,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
             // which would have cancelled the session expiration.
             long currentMetaConnectCycle = getMetaConnectCycle();
             if (metaConnectCycle == 0 || metaConnectCycle == currentMetaConnectCycle) {
-                _expireTime = now + TimeUnit.MILLISECONDS.toNanos(interval + maxInterval);
+                _expireNanos = now + TimeUnit.MILLISECONDS.toNanos(interval + maxInterval);
                 if (_logger.isDebugEnabled()) {
                     _logger.debug("Scheduled expiration for {}", this);
                 }
@@ -738,8 +738,11 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         _maxInterval = maxInterval;
     }
 
-    public long getIntervalTimestamp() {
-        return _expireTime;
+    /**
+     * @return the nanoTime at which this session is expired
+     */
+    public long getIntervalNanoTime() {
+        return _expireNanos;
     }
 
     @Override
@@ -1071,12 +1074,12 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         int size;
         Scheduler scheduler;
         Object endPoint;
-        long now = System.nanoTime();
+        long now = NanoTime.now();
         lock.lock();
         try {
             cycle = getMetaConnectCycle();
-            last = now - _messageTime;
-            expire = _expireTime == 0 ? 0 : _expireTime - now;
+            last = NanoTime.elapsed(_messageNanos, now);
+            expire = _expireNanos == 0 ? 0 : NanoTime.elapsed(now, _expireNanos);
             state = _state;
             size = _queue.size();
             scheduler = _scheduler;
@@ -1114,7 +1117,7 @@ public class ServerSessionImpl implements ServerSession, Dumpable {
         }
 
         public boolean schedule(long lazyTimeout) {
-            long nextExecutionNanos = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(lazyTimeout);
+            long nextExecutionNanos = NanoTime.now() + TimeUnit.MILLISECONDS.toNanos(lazyTimeout);
             // Reschedule if the next execution is earlier than the previous one.
             if (_task == null || (_nextExecutionNanos - nextExecutionNanos) > 0) {
                 cancel();

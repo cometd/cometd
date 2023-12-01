@@ -43,7 +43,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicStampedReference;
 import java.util.concurrent.atomic.LongAdder;
 import jakarta.websocket.WebSocketContainer;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.HdrHistogram.Histogram;
@@ -78,6 +77,7 @@ import org.eclipse.jetty.toolchain.perf.HistogramSnapshot;
 import org.eclipse.jetty.toolchain.perf.MeasureConverter;
 import org.eclipse.jetty.toolchain.perf.PlatformMonitor;
 import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -503,10 +503,9 @@ public class CometDLoadClient implements MeasureConverter {
             System.err.printf("Testing %d clients in %d rooms, %d rooms/client%n", bayeuxClients.size(), rooms, roomsPerClient);
             System.err.printf("Sending %d batches of %dx%d bytes messages every %d \u00B5s%n", batches, batchSize, messageSize, batchPause);
 
-            long begin = System.nanoTime();
+            long begin = NanoTime.now();
             long expected = runBatches(channel, batches, batchSize, TimeUnit.MICROSECONDS.toNanos(batchPause), chat, randomize);
-            long end = System.nanoTime();
-            long sendElapsed = end - begin;
+            long sendElapsed = NanoTime.since(begin);
 
             PlatformMonitor.Stop stop = monitor.stop();
             System.err.println(stop);
@@ -584,11 +583,11 @@ public class CometDLoadClient implements MeasureConverter {
     }
 
     private long runBatches(String channel, int batchCount, int batchSize, long batchPauseNanos, String chat, boolean randomize) {
-        long begin = System.nanoTime();
+        long begin = NanoTime.now();
         int index = -1;
         long expected = 0;
         for (int i = 1; i <= batchCount; ++i) {
-            long pause = begin + i * batchPauseNanos - System.nanoTime();
+            long pause = i * batchPauseNanos - NanoTime.since(begin);
             if (pause > 0) {
                 nanoSleep(pause);
             }
@@ -650,7 +649,7 @@ public class CometDLoadClient implements MeasureConverter {
             message.put("user", client.hashCode());
             message.put("chat", chat);
             // Mandatory fields to record latencies
-            message.put(START_FIELD, System.nanoTime());
+            message.put(START_FIELD, NanoTime.now());
             message.put(Config.ID_FIELD, ids.incrementAndGet() + channel);
             ClientSessionChannel clientChannel = client.getChannel(getChannelId(channel + "/" + room));
             clientChannel.publish(message);
@@ -880,7 +879,7 @@ public class CometDLoadClient implements MeasureConverter {
             Map<String, Object> data = message.getDataAsMap();
             if (data != null) {
                 long startTime = ((Number)data.get(START_FIELD)).longValue();
-                long endTime = System.nanoTime();
+                long endTime = NanoTime.now();
                 start.compareAndSet(0, endTime);
                 end.set(endTime);
                 messages.incrementAndGet();
@@ -901,7 +900,7 @@ public class CometDLoadClient implements MeasureConverter {
                     arrivalTimes.remove(id);
                 }
 
-                long delayMs = TimeUnit.NANOSECONDS.toMillis(endTime - startTime);
+                long delayMs = NanoTime.millisElapsed(startTime, endTime);
                 Atomics.updateMax(maxTime, id, (int)delayMs);
 
                 updateLatencies(startTime, sendTime, arrivalTime, endTime);
@@ -984,7 +983,7 @@ public class CometDLoadClient implements MeasureConverter {
         }
 
         private void recordSentMessages(List<? extends Message> messages) {
-            long now = System.nanoTime();
+            long now = NanoTime.now();
             for (Message message : messages) {
                 Map<String, Object> data = message.getDataAsMap();
                 if (data != null && message.getChannelId().isBroadcast()) {
@@ -998,7 +997,7 @@ public class CometDLoadClient implements MeasureConverter {
         }
 
         private void recordReceivedMessages(List<Message.Mutable> messages) {
-            long now = System.nanoTime();
+            long now = NanoTime.now();
             boolean response = false;
             for (Message message : messages) {
                 Map<String, Object> data = message.getDataAsMap();

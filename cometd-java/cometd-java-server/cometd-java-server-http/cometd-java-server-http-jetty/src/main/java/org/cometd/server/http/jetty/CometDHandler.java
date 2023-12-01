@@ -17,7 +17,6 @@ package org.cometd.server.http.jetty;
 
 import java.util.Map;
 import java.util.Objects;
-
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerSession;
@@ -103,6 +102,9 @@ public class CometDHandler extends Handler.Abstract {
         }
         super.doStop();
         removeBean(bayeuxServer);
+        bayeuxServer = null;
+        Context context = ContextHandler.getCurrentContext(getServer());
+        context.removeAttribute(BayeuxServer.ATTRIBUTE);
     }
 
     public BayeuxServer getBayeuxServer() {

@@ -34,7 +34,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-
 import org.cometd.bayeux.Bayeux;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
@@ -52,6 +51,7 @@ import org.cometd.common.AsyncFoldLeft;
 import org.cometd.common.TransportException;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpCookieStore;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -387,7 +387,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         waitForStates.addAll(List.of(states));
 
         try (AutoLock ignored = lock.lock()) {
-            final long startNs = System.nanoTime();
+            final long startNs = NanoTime.now();
             long elapsedMs = 0L;
             while (true) {
                 // This check is needed to avoid that we return from waitFor() too early,
@@ -419,7 +419,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
                 if (sessionState.await(delay)) {
                     break;
                 }
-                elapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNs);
+                elapsedMs = NanoTime.millisSince(startNs);
 
                 if (logger.isDebugEnabled()) {
                     logger.debug("Waited {}/{}ms for {}, state is {}", elapsedMs, waitMs, waitForStates, sessionState.getState());
@@ -1335,7 +1335,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
                 if (unconnectTime == 0) {
                     return 0;
                 }
-                return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - unconnectTime);
+                return NanoTime.millisSince(unconnectTime);
             }
         }
 
@@ -1655,7 +1655,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         private void initUnconnectTime() {
             try (AutoLock ignored = lock.lock()) {
                 if (unconnectTime == 0) {
-                    unconnectTime = System.nanoTime();
+                    unconnectTime = NanoTime.now();
                 }
             }
         }

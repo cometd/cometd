@@ -15,12 +15,12 @@
  */
 package org.cometd.server.ext;
 
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
+import org.eclipse.jetty.util.NanoTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -106,7 +106,7 @@ public class ActivityExtension implements BayeuxServer.Extension {
      */
     public static class SessionExtension implements ServerSession.Extension {
         private static final Logger logger = LoggerFactory.getLogger(ActivityExtension.class);
-        private final AtomicLong lastActivity = new AtomicLong(System.nanoTime());
+        private final AtomicLong lastActivity = new AtomicLong(NanoTime.now());
         private final Activity activity;
         private final long maxInactivityPeriod;
 
@@ -179,11 +179,11 @@ public class ActivityExtension implements BayeuxServer.Extension {
         }
 
         protected void markActive() {
-            lastActivity.set(System.nanoTime());
+            lastActivity.set(NanoTime.now());
         }
 
         public boolean isInactive() {
-            return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - getLastActivity()) > getMaxInactivityPeriod();
+            return NanoTime.millisSince(getLastActivity()) > getMaxInactivityPeriod();
         }
 
         protected void disconnect(ServerSession session) {

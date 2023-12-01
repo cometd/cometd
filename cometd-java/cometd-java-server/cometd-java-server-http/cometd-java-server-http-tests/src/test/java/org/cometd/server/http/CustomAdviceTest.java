@@ -20,7 +20,6 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.ServerChannel;
@@ -32,6 +31,7 @@ import org.cometd.server.ServerSessionImpl;
 import org.eclipse.jetty.client.CompletableResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -233,7 +233,7 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest {
 
         // Verify that the server is aware of the interval and will not expire the session
         ServerSessionImpl session = (ServerSessionImpl)bayeux.getSession(clientId);
-        long expectedExpire = TimeUnit.NANOSECONDS.toMillis(session.getIntervalTimestamp() - System.nanoTime());
+        long expectedExpire = NanoTime.millisElapsed(NanoTime.now(), session.getIntervalNanoTime());
         Assertions.assertTrue(expectedExpire > session.getServerTransport().getMaxInterval() + newInterval / 2);
     }
 }

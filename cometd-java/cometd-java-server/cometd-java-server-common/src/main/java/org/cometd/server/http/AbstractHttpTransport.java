@@ -23,10 +23,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
@@ -44,6 +42,7 @@ import org.cometd.server.HttpException;
 import org.cometd.server.ServerMessageImpl;
 import org.cometd.server.ServerSessionImpl;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.NanoTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -562,8 +561,8 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
      */
     @Override
     protected void sweep() {
-        long now = System.nanoTime();
-        long elapsed = TimeUnit.NANOSECONDS.toMillis(now - _lastSweep);
+        long now = NanoTime.now();
+        long elapsed = NanoTime.millisElapsed(_lastSweep, now);
         if (_lastSweep != 0 && elapsed > 0) {
             // Calculate the maximum sweeps that a browser ID can be 0 as the
             // maximum interval time divided by the sweep period, doubled for safety

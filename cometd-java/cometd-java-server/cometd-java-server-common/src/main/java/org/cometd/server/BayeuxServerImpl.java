@@ -39,7 +39,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-
 import org.cometd.bayeux.Bayeux;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
@@ -60,6 +59,7 @@ import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.common.AsyncFoldLeft;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -1264,7 +1264,7 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
     public void sweep() {
         sweepTransports();
         _channels.values().forEach(ServerChannelImpl::sweep);
-        long now = System.nanoTime();
+        long now = NanoTime.now();
         for (ServerSessionImpl session : _sessions.values()) {
             session.sweep(now);
         }
@@ -1317,7 +1317,7 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
 
     @Override
     public void dump(Appendable out, String indent) throws IOException {
-        long before = System.nanoTime();
+        long beginNanos = NanoTime.now();
         List<Object> children = new ArrayList<>();
 
         children.add("dump datetime=" + Instant.now());
@@ -1357,7 +1357,7 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
         }
 
         Dumpable.dumpObjects(out, indent, this, children.toArray());
-        Dumpable.dumpObjects(out, indent, "total dump duration=" + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - before) + "ms");
+        Dumpable.dumpObjects(out, indent, "total dump duration=" + NanoTime.millisSince(beginNanos) + "ms");
     }
 
     private void handleMetaHandshake(ServerSessionImpl session, Mutable message, Promise<Boolean> promise) {
@@ -1579,7 +1579,7 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
         private SweepInfo _longestSweepInfo = new SweepInfo(Instant.EPOCH);
 
         private CompletableFuture<Void> asyncSweep() {
-            long beginNanoTime = System.nanoTime();
+            long beginNanoTime = NanoTime.now();
             AtomicLong previousNanoTime = new AtomicLong(beginNanoTime);
             AtomicLong serverChannelSweepCounter = new AtomicLong();
             AtomicLong serverSessionSweepCounter = new AtomicLong();
@@ -1590,8 +1590,8 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
 
             return CompletableFuture.runAsync(BayeuxServerImpl.this::sweepTransports, getExecutor())
                     .thenCompose(unused -> {
-                        long now = System.nanoTime();
-                        sweeperInfo.transportSweepDuration = TimeUnit.NANOSECONDS.toMillis(now - previousNanoTime.getAndSet(now));
+                        long now = NanoTime.now();
+                        sweeperInfo.transportSweepDuration = NanoTime.millisElapsed(previousNanoTime.getAndSet(now), now);
                         if (_logger.isDebugEnabled()) {
                             _logger.debug("Swept transports, took {}ms", sweeperInfo.transportSweepDuration);
                         }
@@ -1602,9 +1602,9 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
                         });
                     })
                     .thenCompose(unused -> {
-                        long now = System.nanoTime();
+                        long now = NanoTime.now();
                         sweeperInfo.serverChannelSweepCount = serverChannelSweepCounter.get();
-                        sweeperInfo.serverChannelSweepDuration = TimeUnit.NANOSECONDS.toMillis(now - previousNanoTime.getAndSet(now));
+                        sweeperInfo.serverChannelSweepDuration = NanoTime.millisElapsed(previousNanoTime.getAndSet(now), now);
                         if (_logger.isDebugEnabled()) {
                             _logger.debug("Swept server channels, {} in {}ms", sweeperInfo.serverChannelSweepCount, sweeperInfo.serverChannelSweepDuration);
                         }
@@ -1615,10 +1615,10 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
                         });
                     })
                     .thenRun(() -> {
-                        long now = System.nanoTime();
+                        long now = NanoTime.now();
                         sweeperInfo.serverSessionSweepCount = serverSessionSweepCounter.get();
-                        sweeperInfo.serverSessionSweepDuration = TimeUnit.NANOSECONDS.toMillis(now - previousNanoTime.getAndSet(now));
-                        sweeperInfo.sweepDurationNanos = now - beginNanoTime;
+                        sweeperInfo.serverSessionSweepDuration = NanoTime.millisElapsed(previousNanoTime.getAndSet(now), now);
+                        sweeperInfo.sweepDurationNanos = NanoTime.elapsed(beginNanoTime, now);
                         if (sweeperInfo.sweepDurationNanos >= _lastSweepInfo.sweepDurationNanos) {
                             _longestSweepInfo = sweeperInfo;
                         }

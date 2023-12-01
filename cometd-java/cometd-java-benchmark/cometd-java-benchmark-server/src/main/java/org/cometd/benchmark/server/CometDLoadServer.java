@@ -30,7 +30,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.Recorder;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -75,6 +74,7 @@ import org.eclipse.jetty.toolchain.perf.HistogramSnapshot;
 import org.eclipse.jetty.toolchain.perf.MeasureConverter;
 import org.eclipse.jetty.toolchain.perf.PlatformMonitor;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.websocket.server.WebSocketUpgradeHandler;
@@ -201,25 +201,19 @@ public class CometDLoadServer {
             transport = value;
         }
         AbstractWebSocketTransport wsTransport = switch (transport) {
-            case "jakarta" -> {
-                yield new WebSocketTransport(bayeuxServer) {
-                    @Override
-                    protected void writeComplete(AbstractWebSocketEndPoint.Context context, List<ServerMessage> messages) {
-                        messageLatencyExtension.complete(messages);
-                    }
-                };
-            }
-            case "jetty" -> {
-                yield new JettyWebSocketTransport(bayeuxServer) {
-                    @Override
-                    protected void writeComplete(AbstractWebSocketEndPoint.Context context, List<ServerMessage> messages) {
-                        messageLatencyExtension.complete(messages);
-                    }
-                };
-            }
-            default -> {
-                throw new IllegalArgumentException("Invalid transport: " + transport);
-            }
+            case "jakarta" -> new WebSocketTransport(bayeuxServer) {
+                @Override
+                protected void writeComplete(AbstractWebSocketEndPoint.Context context, List<ServerMessage> messages) {
+                    messageLatencyExtension.complete(messages);
+                }
+            };
+            case "jetty" -> new JettyWebSocketTransport(bayeuxServer) {
+                @Override
+                protected void writeComplete(AbstractWebSocketEndPoint.Context context, List<ServerMessage> messages) {
+                    messageLatencyExtension.complete(messages);
+                }
+            };
+            default -> throw new IllegalArgumentException("Invalid transport: " + transport);
         };
         wsTransport.setOption(AbstractWebSocketTransport.ENABLE_EXTENSION_PREFIX_OPTION + "permessage-deflate", perMessageDeflate);
         bayeuxServer.addTransport(wsTransport);
@@ -343,9 +337,7 @@ public class CometDLoadServer {
 
                 wsHandler.setHandler(new CometDHandler());
             }
-            default -> {
-                throw new IllegalArgumentException("Invalid transport: " + transport);
-            }
+            default -> throw new IllegalArgumentException("Invalid transport: " + transport);
         }
 
         // Make sure the expiration timeout is large to avoid clients to timeout
@@ -400,7 +392,6 @@ public class CometDLoadServer {
 
                     if (server.requestLatencyHandler != null) {
                         server.requestLatencyHandler.reset();
-                        server.requestLatencyHandler.doNotTrackCurrentRequest();
                     }
                 }
             }
@@ -415,7 +406,6 @@ public class CometDLoadServer {
 
                     if (server.requestLatencyHandler != null) {
                         server.requestLatencyHandler.print();
-                        server.requestLatencyHandler.doNotTrackCurrentRequest();
                     }
 
                     if (server.statisticsHandler != null) {
@@ -430,8 +420,7 @@ public class CometDLoadServer {
                                     dispatched,
                                     server.statisticsHandler.getResponses4xx() + server.statisticsHandler.getResponses5xx(),
                                     server.statisticsHandler.getRequestsActiveMax(),
-//                                    server.statisticsHandler.getStatsOnMs() == 0 ? -1 : server.statisticsHandler.getRequests() * 1000L / server.statisticsHandler.getStatsOnMs());
-                                    0); // TODO: restore the line above.
+                                    server.statisticsHandler.getRequestTotal() * 1000L / server.statisticsHandler.getStatisticsDuration().toMillis());
                         }
                     }
 
@@ -481,29 +470,27 @@ public class CometDLoadServer {
                 longRequest.set(true);
                 onLongRequestDetected(requestId, request, thread);
             }, maxRequestTime, maxRequestTime, TimeUnit.MILLISECONDS);
-            long start = System.nanoTime();
-            try {
-                return super.handle(request, response, callback);
-            } finally {
-                long end = System.nanoTime();
+            Request.addCompletionListener(request, x ->
+            {
+                long elapsed = NanoTime.since(request.getBeginNanoTime());
                 task.cancel(false);
                 if (longRequest.get()) {
-                    onLongRequestEnded(requestId, end - start);
+                    onLongRequestEnded(requestId, elapsed);
                 }
-            }
+            });
+            return super.handle(request, response, callback);
         }
 
         private void onLongRequestDetected(long requestId, Request request, Thread thread) {
             try {
-                long begin = System.nanoTime();
+                long begin = NanoTime.now();
                 StackTraceElement[] stackFrames = thread.getStackTrace();
                 StringBuilder builder = new StringBuilder();
                 formatRequest(request, builder);
                 builder.append(thread).append("\n");
                 formatStackFrames(stackFrames, builder);
-                System.err.println("Request #" + requestId + " is too slow (> " + maxRequestTime + " ms)\n" + builder);
-                long end = System.nanoTime();
-                System.err.println("Request #" + requestId + " printed in " + TimeUnit.NANOSECONDS.toMicros(end - begin) + " " + MICROS);
+                System.err.printf("Request #%d is too slow (> %d ms)%n%s%n", requestId, maxRequestTime, builder);
+                System.err.printf("Request #%d printed in %d %s%n", requestId, TimeUnit.NANOSECONDS.toMicros(NanoTime.since(begin)), MICROS);
             } catch (Exception x) {
                 x.printStackTrace();
             }
@@ -539,23 +526,16 @@ public class CometDLoadServer {
             allHistograms.add(histogram);
             return histogram;
         });
-        private final ThreadLocal<Boolean> currentEnabled = ThreadLocal.withInitial(() -> Boolean.TRUE);
 
         @Override
         public boolean handle(Request request, Response response, Callback callback) throws Exception {
-            long begin = System.nanoTime();
-            try {
-                return super.handle(request, response, callback);
-            } finally {
-                long end = System.nanoTime();
-                if (currentEnabled.get()) {
-                    if (!request.getHeaders().contains(HttpHeader.UPGRADE)) {
-                        updateLatencies(begin, end);
-                    }
-                } else {
-                    currentEnabled.set(true);
+            Request.addCompletionListener(request, x ->
+            {
+                if (!request.getHeaders().contains(HttpHeader.UPGRADE)) {
+                    updateLatencies(request.getBeginNanoTime(), NanoTime.now());
                 }
-            }
+            });
+            return super.handle(request, response, callback);
         }
 
         @Override
@@ -580,10 +560,6 @@ public class CometDLoadServer {
                 System.err.println(new HistogramSnapshot(histogram, 20, "Requests - Latency", MICROS, this));
             }
         }
-
-        public void doNotTrackCurrentRequest() {
-            currentEnabled.set(false);
-        }
     }
 
     private static class MessageLatencyExtension implements BayeuxServer.Extension, MeasureConverter {
@@ -596,7 +572,7 @@ public class CometDLoadServer {
             if (message.getChannel().startsWith(Config.CHANNEL_PREFIX)) {
                 String id = (String)message.getDataAsMap().get(Config.ID_FIELD);
                 if (id != null) {
-                    message.put(SERVER_TIME_FIELD, System.nanoTime());
+                    message.put(SERVER_TIME_FIELD, NanoTime.now());
                 }
             }
             return true;
@@ -609,7 +585,7 @@ public class CometDLoadServer {
                     if (id != null) {
                         Long serverTime = (Long)message.get(SERVER_TIME_FIELD);
                         if (serverTime != null) {
-                            latencies.recordValue(System.nanoTime() - serverTime);
+                            latencies.recordValue(NanoTime.since(serverTime));
                         }
                     }
                 }
