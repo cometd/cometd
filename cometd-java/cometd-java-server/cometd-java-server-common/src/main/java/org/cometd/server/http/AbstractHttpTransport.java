@@ -69,9 +69,11 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
     public final static String BROWSER_COOKIE_NAME_OPTION = "browserCookieName";
     public final static String BROWSER_COOKIE_DOMAIN_OPTION = "browserCookieDomain";
     public final static String BROWSER_COOKIE_PATH_OPTION = "browserCookiePath";
+    public final static String BROWSER_COOKIE_MAX_AGE_OPTION = "browserCookieMaxAge";
     public final static String BROWSER_COOKIE_SECURE_OPTION = "browserCookieSecure";
     public final static String BROWSER_COOKIE_HTTP_ONLY_OPTION = "browserCookieHttpOnly";
     public final static String BROWSER_COOKIE_SAME_SITE_OPTION = "browserCookieSameSite";
+    public final static String BROWSER_COOKIE_PARTITIONED_OPTION = "browserCookiePartitioned";
     public final static String MAX_SESSIONS_PER_BROWSER_OPTION = "maxSessionsPerBrowser";
     public final static String HTTP2_MAX_SESSIONS_PER_BROWSER_OPTION = "http2MaxSessionsPerBrowser";
     public final static String MULTI_SESSION_INTERVAL_OPTION = "multiSessionInterval";
@@ -88,9 +90,11 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
     private String _browserCookieName;
     private String _browserCookieDomain;
     private String _browserCookiePath;
+    private int _browserCookieMaxAge;
     private boolean _browserCookieSecure;
     private boolean _browserCookieHttpOnly;
     private String _browserCookieSameSite;
+    private boolean _browserCookiePartitioned;
     private int _maxSessionsPerBrowser;
     private int _http2MaxSessionsPerBrowser;
     private long _multiSessionInterval;
@@ -109,9 +113,11 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         _browserCookieName = getOption(BROWSER_COOKIE_NAME_OPTION, "BAYEUX_BROWSER");
         _browserCookieDomain = getOption(BROWSER_COOKIE_DOMAIN_OPTION, null);
         _browserCookiePath = getOption(BROWSER_COOKIE_PATH_OPTION, "/");
+        _browserCookieMaxAge = getOption(BROWSER_COOKIE_MAX_AGE_OPTION, -1);
         _browserCookieSecure = getOption(BROWSER_COOKIE_SECURE_OPTION, false);
         _browserCookieHttpOnly = getOption(BROWSER_COOKIE_HTTP_ONLY_OPTION, true);
         _browserCookieSameSite = getOption(BROWSER_COOKIE_SAME_SITE_OPTION, null);
+        _browserCookiePartitioned = getOption(BROWSER_COOKIE_PARTITIONED_OPTION, false);
         _maxSessionsPerBrowser = getOption(MAX_SESSIONS_PER_BROWSER_OPTION, 1);
         _http2MaxSessionsPerBrowser = getOption(HTTP2_MAX_SESSIONS_PER_BROWSER_OPTION, -1);
         _multiSessionInterval = getOption(MULTI_SESSION_INTERVAL_OPTION, 2000);
@@ -452,6 +458,9 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         if (_browserCookiePath != null) {
             builder.append("; Path=").append(_browserCookiePath);
         }
+        if (_browserCookieMaxAge >= 0) {
+            builder.append("; Max-Age=").append(_browserCookieMaxAge);
+        }
         if (_browserCookieHttpOnly) {
             builder.append("; HttpOnly");
         }
@@ -460,6 +469,9 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         }
         if (_browserCookieSameSite != null) {
             builder.append("; SameSite=").append(_browserCookieSameSite);
+        }
+        if (_browserCookiePartitioned) {
+            builder.append("; Partitioned");
         }
         context.response().addHeader("Set-Cookie", builder.toString());
 
