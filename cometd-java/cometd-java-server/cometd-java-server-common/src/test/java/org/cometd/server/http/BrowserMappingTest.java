@@ -245,6 +245,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
         options.put(JSONTransport.BROWSER_COOKIE_DOMAIN_OPTION, cookieDomain);
         options.put(JSONTransport.BROWSER_COOKIE_PATH_OPTION, cookiePath);
         options.put(JSONTransport.BROWSER_COOKIE_SAME_SITE_OPTION, cookieSameSite);
+        options.put(JSONTransport.BROWSER_COOKIE_PARTITIONED_OPTION, "true");
         startServer(serverTransport, options);
 
         Request handshake = newBayeuxRequest("" +
@@ -273,6 +274,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest {
         Assertions.assertTrue(parts.contains("Domain=" + cookieDomain));
         Assertions.assertTrue(parts.contains("HttpOnly"));
         Assertions.assertTrue(parts.contains("SameSite=" + cookieSameSite));
+        Assertions.assertTrue(parts.contains("Partitioned"));
     }
 
     private boolean isSuccessful(ContentResponse response) {
