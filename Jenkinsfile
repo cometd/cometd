@@ -22,16 +22,13 @@ pipeline {
             agent { node { label 'linux' } }
             steps {
               timeout(time: 1, unit: 'HOURS') {
-                mavenBuild("${env.JDK}", "clean install", [[parserName: 'Maven'], [parserName: 'Java']])
-                // Collect the JaCoCo execution results.
-                jacoco exclusionPattern: '**/org/webtide/**,**/org/cometd/benchmark/**,**/org/cometd/examples/**',
-                        execPattern: '**/target/jacoco.exec',
-                        classPattern: '**/target/classes',
-                        sourcePattern: '**/src/main/java'
+                mavenBuild("${env.JDK}", "clean install")
               }
               timeout(time: 15, unit: 'MINUTES') {
-                mavenBuild("${env.JDK}", "javadoc:javadoc", null)
+                mavenBuild("${env.JDK}", "javadoc:javadoc")
               }
+              recordIssues id: "analysis-${env.JDK}", name: "Static Analysis ${env.JDK}", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), javaDoc()]
+              recordCoverage(name: "Coverage ${env.JDK}", id: "coverage-${env.JDK}", tools: [[parser: 'JACOCO']], sourceCodeRetention: 'MODIFIED', sourceDirectories: [[path: 'src/main/java']])
             }
           }
         }
@@ -46,11 +43,11 @@ pipeline {
  * @param cmdline the command line in "<profiles> <goals> <properties>"`format.
  * @param consoleParsers array of console parsers to run
  */
-def mavenBuild(jdk, cmdline, consoleParsers) {
+def mavenBuild(jdk, cmdline) {
   script {
     try {
       withEnv(["JAVA_HOME=${tool "$jdk"}",
-               "PATH+MAVEN=${env.JAVA_HOME}/bin:${tool "maven3.5"}/bin",
+               "PATH+MAVEN=${env.JAVA_HOME}/bin:${tool "maven3"}/bin",
                "MAVEN_OPTS=-Xms2g -Xmx4g -Djava.awt.headless=true"]) {
         configFileProvider([configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS')]) {
           sh "mvn -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -V -B -e $cmdline"
@@ -59,9 +56,6 @@ def mavenBuild(jdk, cmdline, consoleParsers) {
     }
     finally {
       junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml'
-      if (consoleParsers != null) {
-        warnings consoleParsers: consoleParsers
-      }
     }
   }
 }
