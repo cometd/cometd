@@ -40,7 +40,6 @@ import jakarta.websocket.HandshakeResponse;
 import jakarta.websocket.MessageHandler;
 import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
-
 import org.cometd.bayeux.Message.Mutable;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.TransportListener;
@@ -153,16 +152,6 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
     }
 
     protected void onHandshakeResponse(HandshakeResponse response) {
-        Map<String, List<String>> headers = response.getHeaders();
-        storeCookies(URI.create(getURL()), headers);
-        _webSocketSupported = false;
-        // Must do case-insensitive search.
-        for (String name : headers.keySet()) {
-            if (HandshakeResponse.SEC_WEBSOCKET_ACCEPT.equalsIgnoreCase(name)) {
-                _webSocketSupported = true;
-                break;
-            }
-        }
     }
 
     public class WebSocketDelegate extends Delegate implements MessageHandler.Whole<String> {
