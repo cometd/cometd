@@ -152,6 +152,8 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
     }
 
     protected void onHandshakeResponse(HandshakeResponse response) {
+        Map<String, List<String>> headers = response.getHeaders();
+        storeCookies(URI.create(getURL()), headers);
     }
 
     public class WebSocketDelegate extends Delegate implements MessageHandler.Whole<String> {
