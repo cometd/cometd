@@ -24,7 +24,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -162,7 +161,7 @@ public class CometDServlet extends HttpServlet {
         }
 
         try {
-            LifeCycle.start(bayeuxServer);
+            LifeCycle.stop(bayeuxServer);
         } catch (Exception x) {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("", x);
