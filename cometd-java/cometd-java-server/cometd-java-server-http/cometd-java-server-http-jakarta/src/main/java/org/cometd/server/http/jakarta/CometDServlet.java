@@ -24,6 +24,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -146,7 +147,7 @@ public class CometDServlet extends HttpServlet {
     protected void sendError(HttpServletRequest request, HttpServletResponse response, int code, Throwable failure) {
         try {
             request.setAttribute(RequestDispatcher.ERROR_EXCEPTION, failure);
-            response.setStatus(code);
+            response.sendError(code);
         } catch (Throwable x) {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("", x);
