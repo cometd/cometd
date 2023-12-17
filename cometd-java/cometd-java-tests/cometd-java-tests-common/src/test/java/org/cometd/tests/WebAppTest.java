@@ -162,6 +162,7 @@ public class WebAppTest {
         addServerDependency(org.eclipse.jetty.io.EndPoint.class, serverClassPath);
         addServerDependency(org.eclipse.jetty.jndi.NamingContext.class, serverClassPath);
         addServerDependency(org.eclipse.jetty.ee10.plus.webapp.PlusConfiguration.class, serverClassPath);
+        addServerDependency(org.eclipse.jetty.plus.jndi.Transaction.class, serverClassPath);
         addServerDependency(org.eclipse.jetty.security.SecurityHandler.class, serverClassPath);
         addServerDependency(org.eclipse.jetty.session.SessionManager.class, serverClassPath);
         addServerDependency(org.eclipse.jetty.server.Server.class, serverClassPath);
