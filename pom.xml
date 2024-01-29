@@ -90,7 +90,7 @@
 
   <properties>
     <dojo-version>1.17.3</dojo-version>
-    <graalvm-version>22.3.4</graalvm-version>
+    <graalvm-version>22.3.5</graalvm-version>
     <jackson-version>2.16.0</jackson-version>
     <!-- tag::jetty-version[] -->
     <jetty-version>10.0.19</jetty-version>
