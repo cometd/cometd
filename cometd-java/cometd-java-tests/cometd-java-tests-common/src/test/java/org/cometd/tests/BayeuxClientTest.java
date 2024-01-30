@@ -43,7 +43,7 @@ public class BayeuxClientTest extends AbstractClientServerTest {
     @MethodSource("transports")
     public void testShortIdleTimeout(Transport transport) throws Exception {
         start(transport);
-        int idleTimeout = 500;
+        int idleTimeout = 1000;
         connector.setIdleTimeout(idleTimeout);
 
         List<Message> metaMessages = new CopyOnWriteArrayList<>();
