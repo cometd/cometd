@@ -43,7 +43,7 @@ public class BayeuxClientTest extends AbstractClientServerTest {
     @MethodSource("transports")
     public void testShortIdleTimeout(Transport transport) throws Exception {
         start(transport);
-        int idleTimeout = 1000;
+        int idleTimeout = 500;
         connector.setIdleTimeout(idleTimeout);
 
         List<Message> metaMessages = new CopyOnWriteArrayList<>();
@@ -66,7 +66,7 @@ public class BayeuxClientTest extends AbstractClientServerTest {
         bayeuxServer.getSession(client.getId()).deliver(null, "/foo", "hello 2", promise2);
         promise2.get();
 
-        disconnectBayeuxClient(client);
+        client.disconnect();
 
         assertThat("Expected 2 messages: " + fooMessages, fooMessages.size(), is(2));
         assertThat(fooMessages.get(0).getData(), is("hello 1"));
