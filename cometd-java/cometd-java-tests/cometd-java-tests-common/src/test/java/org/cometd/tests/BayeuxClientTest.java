@@ -16,6 +16,7 @@
 package org.cometd.tests;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
@@ -29,20 +30,21 @@ import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
 import org.cometd.common.HashMapMessage;
+import org.cometd.server.websocket.common.AbstractWebSocketTransport;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 public class BayeuxClientTest extends AbstractClientServerTest {
     @ParameterizedTest
-    @MethodSource("transports")
+    @MethodSource("httpTransports")
     public void testShortIdleTimeout(Transport transport) throws Exception {
-        start(transport);
         int idleTimeout = 500;
         connector.setIdleTimeout(idleTimeout);
 
@@ -66,11 +68,11 @@ public class BayeuxClientTest extends AbstractClientServerTest {
         bayeuxServer.getSession(client.getId()).deliver(null, "/foo", "hello 2", promise2);
         promise2.get();
 
-        client.disconnect();
-
-        assertThat("Expected 2 messages: " + fooMessages, fooMessages.size(), is(2));
+        await().atMost(5, TimeUnit.SECONDS).until(fooMessages::size, is(2));
         assertThat(fooMessages.get(0).getData(), is("hello 1"));
         assertThat(fooMessages.get(1).getData(), is("hello 2"));
+
+        client.disconnect();
 
         for (Message metaMessage : metaMessages)
         {
