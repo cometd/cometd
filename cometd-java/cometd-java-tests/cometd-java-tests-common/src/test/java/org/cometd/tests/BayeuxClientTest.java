@@ -15,7 +15,9 @@
  */
 package org.cometd.tests;
 
+import java.util.List;
 import java.util.Random;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -26,13 +28,59 @@ import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
+import org.cometd.common.HashMapMessage;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 public class BayeuxClientTest extends AbstractClientServerTest {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testShortIdleTimeout(Transport transport) throws Exception {
+        start(transport);
+        int idleTimeout = 500;
+        connector.setIdleTimeout(idleTimeout);
+
+        List<Message> metaMessages = new CopyOnWriteArrayList<>();
+        List<Message> fooMessages = new CopyOnWriteArrayList<>();
+
+        BayeuxClient client = newBayeuxClient(transport);
+        client.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> metaMessages.add(message));
+        client.getChannel("/foo").addListener((ClientSessionChannel.MessageListener)(channel, message) -> fooMessages.add(message));
+        client.handshake();
+
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        Promise.Completable<Boolean> promise1 = new Promise.Completable<>();
+        bayeuxServer.getSession(client.getId()).deliver(null, "/foo", "hello 1", promise1);
+        promise1.get();
+
+        Thread.sleep(2 * idleTimeout);
+
+        Promise.Completable<Boolean> promise2 = new Promise.Completable<>();
+        bayeuxServer.getSession(client.getId()).deliver(null, "/foo", "hello 2", promise2);
+        promise2.get();
+
+        disconnectBayeuxClient(client);
+
+        assertThat("Expected 2 messages: " + fooMessages, fooMessages.size(), is(2));
+        assertThat(fooMessages.get(0).getData(), is("hello 1"));
+        assertThat(fooMessages.get(1).getData(), is("hello 2"));
+
+        for (Message metaMessage : metaMessages)
+        {
+            if (metaMessage instanceof HashMapMessage map)
+            {
+                assertThat("Expected no failure: " + map, map.containsKey("failure"), is(false));
+            }
+        }
+    }
+
     @ParameterizedTest
     @MethodSource("transports")
     public void testIPv6Address(Transport transport) throws Exception {
