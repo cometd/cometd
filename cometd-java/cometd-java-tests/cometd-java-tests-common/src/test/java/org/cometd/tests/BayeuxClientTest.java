@@ -69,10 +69,8 @@ public class BayeuxClientTest extends AbstractClientServerTest {
 
         client.disconnect();
 
-        for (Message metaMessage : metaMessages)
-        {
-            if (metaMessage instanceof HashMapMessage map)
-            {
+        for (Message metaMessage : metaMessages) {
+            if (metaMessage instanceof HashMapMessage map) {
                 assertThat("Expected no failure: " + map, map.containsKey("failure"), is(false));
             }
         }
