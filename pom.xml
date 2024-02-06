@@ -60,7 +60,7 @@
     <!-- end::jetty-version[] -->
     <!-- Last GraalVM version to support Java 8 -->
     <graalvm-version>21.3.2.1</graalvm-version>
-    <slf4j-version>2.0.11</slf4j-version>
+    <slf4j-version>2.0.12</slf4j-version>
     <log4j2-version>2.22.1</log4j2-version>
     <spring-version>5.3.31</spring-version>
     <spring-boot-version>2.7.18</spring-boot-version>
