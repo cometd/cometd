@@ -26,7 +26,7 @@ public class AbstractCometDJQueryTest extends AbstractCometDTest {
 
     @Override
     protected void provideCometD(String transport) {
-        javaScript.evaluate(getClass().getResource("/js/jquery/jquery-3.6.4.js"));
+        javaScript.evaluate(getClass().getResource("/js/jquery/jquery-3.7.1.js"));
         javaScript.evaluate(getClass().getResource("/js/cometd/cometd.js"));
         javaScript.evaluate(getClass().getResource("/js/jquery/jquery.cometd.js"));
         evaluateScript("cometd", "" +
