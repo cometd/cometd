@@ -62,6 +62,10 @@ public abstract class AbstractClientServerTest {
         return EnumSet.allOf(Transport.class);
     }
 
+    public static Collection<Transport> httpTransports() {
+        return EnumSet.of(Transport.JAKARTA_HTTP, Transport.JETTY_HTTP, Transport.OKHTTP_HTTP);
+    }
+
     @RegisterExtension
     public final BeforeTestExecutionCallback printMethodName = context ->
             System.err.printf("Running %s.%s() %s%n", context.getRequiredTestClass().getSimpleName(), context.getRequiredTestMethod().getName(), context.getDisplayName());

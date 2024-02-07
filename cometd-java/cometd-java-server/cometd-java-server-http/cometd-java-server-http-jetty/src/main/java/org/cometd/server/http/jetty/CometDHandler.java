@@ -25,6 +25,7 @@ import org.cometd.server.HttpException;
 import org.cometd.server.ServerSessionImpl;
 import org.cometd.server.http.AbstractHttpTransport;
 import org.cometd.server.http.JSONHttpTransport;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
@@ -117,7 +118,7 @@ public class CometDHandler extends Handler.Abstract {
 
     @Override
     public boolean handle(Request request, Response response, Callback callback) {
-        if ("OPTIONS".equals(request.getMethod())) {
+        if (HttpMethod.OPTIONS.is(request.getMethod())) {
             serviceOptions(request, response, callback);
             return true;
         }
@@ -149,6 +150,7 @@ public class CometDHandler extends Handler.Abstract {
         if (transport == null) {
             Response.writeError(request, response, callback, HttpStatus.BAD_REQUEST_400, "Unknown Bayeux Transport");
         } else {
+            request.addIdleTimeoutListener(x -> false);
             transport.handle(bayeuxContext, cometDRequest, cometDResponse, promise);
         }
         return true;

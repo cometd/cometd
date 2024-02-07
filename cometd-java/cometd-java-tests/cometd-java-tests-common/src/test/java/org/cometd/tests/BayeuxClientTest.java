@@ -15,7 +15,9 @@
  */
 package org.cometd.tests;
 
+import java.util.List;
 import java.util.Random;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -26,13 +28,54 @@ import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
+import org.cometd.common.HashMapMessage;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 public class BayeuxClientTest extends AbstractClientServerTest {
+    @ParameterizedTest
+    @MethodSource("httpTransports")
+    public void testShortIdleTimeout(Transport transport) throws Exception {
+        int idleTimeout = 500;
+        start(transport);
+        connector.setIdleTimeout(idleTimeout);
+
+        List<Message> metaMessages = new CopyOnWriteArrayList<>();
+        List<Message> fooMessages = new CopyOnWriteArrayList<>();
+
+        BayeuxClient client = newBayeuxClient(transport);
+        client.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> metaMessages.add(message));
+        client.getChannel("/foo").addListener((ClientSessionChannel.MessageListener)(channel, message) -> fooMessages.add(message));
+        client.handshake();
+
+        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        bayeuxServer.getSession(client.getId()).deliver(null, "/foo", "hello 1", Promise.noop());
+
+        Thread.sleep(2 * idleTimeout);
+
+        bayeuxServer.getSession(client.getId()).deliver(null, "/foo", "hello 2", Promise.noop());
+
+        await().atMost(5, TimeUnit.SECONDS).until(fooMessages::size, is(2));
+        assertThat(fooMessages.get(0).getData(), is("hello 1"));
+        assertThat(fooMessages.get(1).getData(), is("hello 2"));
+
+        client.disconnect();
+
+        for (Message metaMessage : metaMessages) {
+            if (metaMessage instanceof HashMapMessage map) {
+                assertThat("Expected no failure: " + map, map.containsKey("failure"), is(false));
+            }
+        }
+    }
+
     @ParameterizedTest
     @MethodSource("transports")
     public void testIPv6Address(Transport transport) throws Exception {
