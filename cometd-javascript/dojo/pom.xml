@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.cometd.javascript</groupId>
     <artifactId>cometd-javascript</artifactId>
-    <version>6.0.12</version>
+    <version>6.0.13-SNAPSHOT</version>
   </parent>
   <artifactId>cometd-javascript-dojo</artifactId>
   <packaging>war</packaging>
