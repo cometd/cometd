@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.cometd.java</groupId>
     <artifactId>cometd-java</artifactId>
-    <version>7.0.12-SNAPSHOT</version>
+    <version>7.0.12</version>
   </parent>
   <artifactId>cometd-java-common</artifactId>
   <name>CometD :: Java :: Common</name>
