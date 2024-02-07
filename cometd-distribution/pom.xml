@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.cometd</groupId>
     <artifactId>cometd-project</artifactId>
-    <version>7.0.12</version>
+    <version>7.0.13-SNAPSHOT</version>
   </parent>
   <artifactId>cometd-distribution</artifactId>
   <packaging>pom</packaging>
