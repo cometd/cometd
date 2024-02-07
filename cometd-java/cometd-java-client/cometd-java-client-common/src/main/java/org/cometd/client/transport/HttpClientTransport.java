@@ -19,9 +19,9 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
-
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpCookieStore;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.SetCookieParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,7 +55,7 @@ public abstract class HttpClientTransport extends ClientTransport {
 
     protected void storeCookies(URI uri, Map<String, List<String>> headers) {
         headers.forEach((key, values) -> {
-            if ("set-cookie".equalsIgnoreCase(key)) {
+            if (HttpHeader.SET_COOKIE.is(key)) {
                 values.forEach(value -> {
                     HttpCookie cookie = cookieParser.parse(value);
                     if (cookie != null) {

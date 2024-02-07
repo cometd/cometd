@@ -15,13 +15,16 @@
  */
 package org.cometd.tests;
 
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
@@ -29,15 +32,19 @@ import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
 import org.cometd.common.HashMapMessage;
+import org.cometd.server.BayeuxServerImpl;
+import org.cometd.server.http.JSONHttpTransport;
 import org.eclipse.jetty.util.BlockingArrayQueue;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Assumptions;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class BayeuxClientTest extends AbstractClientServerTest {
     @ParameterizedTest
@@ -55,7 +62,7 @@ public class BayeuxClientTest extends AbstractClientServerTest {
         client.getChannel("/foo").addListener((ClientSessionChannel.MessageListener)(channel, message) -> fooMessages.add(message));
         client.handshake();
 
-        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         bayeuxServer.getSession(client.getId()).deliver(null, "/foo", "hello 1", Promise.noop());
 
@@ -79,7 +86,7 @@ public class BayeuxClientTest extends AbstractClientServerTest {
     @ParameterizedTest
     @MethodSource("transports")
     public void testIPv6Address(Transport transport) throws Exception {
-        Assumptions.assumeTrue(ipv6Available());
+        assumeTrue(ipv6Available());
 
         start(transport);
 
@@ -88,7 +95,7 @@ public class BayeuxClientTest extends AbstractClientServerTest {
         BayeuxClient client = newBayeuxClient(transport);
         client.handshake();
 
-        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Allow long poll to establish
         Thread.sleep(1000);
@@ -102,16 +109,14 @@ public class BayeuxClientTest extends AbstractClientServerTest {
         start(transport);
 
         BayeuxClient client = newBayeuxClient(transport);
-        AtomicBoolean connected = new AtomicBoolean();
-        client.getChannel(Channel.META_CONNECT).addListener((ClientSessionChannel.MessageListener)(channel, message) -> connected.set(message.isSuccessful()));
-        client.getChannel(Channel.META_HANDSHAKE).addListener((ClientSessionChannel.MessageListener)(channel, message) -> connected.set(false));
         client.handshake();
 
         String channelName = "/foo/bar";
         BlockingArrayQueue<String> messages = new BlockingArrayQueue<>();
         client.batch(() -> {
             // Subscribe and publish must be batched so that they are sent in order,
-            // otherwise it's possible that the subscribe arrives to the server after the publish
+            // otherwise it's possible that the subscribe message arrives to the
+            // server after the publish message.
             client.getChannel(channelName).subscribe((channel, message) -> {
                 messages.add(channel.getId());
                 messages.add(message.getData().toString());
@@ -119,10 +124,10 @@ public class BayeuxClientTest extends AbstractClientServerTest {
             client.getChannel(channelName).publish("hello");
         });
 
-        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+        assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        Assertions.assertEquals(channelName, messages.poll(1, TimeUnit.SECONDS));
-        Assertions.assertEquals("hello", messages.poll(1, TimeUnit.SECONDS));
+        assertEquals(channelName, messages.poll(1, TimeUnit.SECONDS));
+        assertEquals("hello", messages.poll(1, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -142,14 +147,14 @@ public class BayeuxClientTest extends AbstractClientServerTest {
         });
 
         client.handshake();
-        Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+        assertTrue(client.waitFor(5000, BayeuxClient.State.DISCONNECTED));
 
         disconnectBayeuxClient(client);
     }
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void loadTest(Transport transport) throws Exception {
+    public void testLoad(Transport transport) throws Exception {
         start(transport);
 
         try {
@@ -186,12 +191,11 @@ public class BayeuxClientTest extends AbstractClientServerTest {
                 });
 
                 clients[i].handshake();
-                Assertions.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+                assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
             }
 
-            Assertions.assertEquals(clients.length, connections.get());
+            assertEquals(clients.length, connections.get());
 
-            long start0 = System.nanoTime();
             for (int i = 0; i < publish; i++) {
                 int sender = random.nextInt(clients.length);
                 String channel = "/channel/" + random.nextInt(rooms);
@@ -206,16 +210,10 @@ public class BayeuxClientTest extends AbstractClientServerTest {
 
             int expected = clients.length * publish / rooms;
 
-            long start = System.nanoTime();
-            while (received.get() < expected && TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - start) < 10) {
-                Thread.sleep(100);
-            }
-            logger.info("{} m/s", (received.get() * 1000 * 1000 * 1000L) / (System.nanoTime() - start0));
-
-            Assertions.assertEquals(expected, received.get());
+            await().atMost(5, TimeUnit.SECONDS).until(received::get, Matchers.is(expected));
 
             for (BayeuxClient client : clients) {
-                Assertions.assertTrue(client.disconnect(1000));
+                assertTrue(client.disconnect(1000));
             }
         } catch (Throwable x) {
             switch (transport) {
@@ -226,6 +224,35 @@ public class BayeuxClientTest extends AbstractClientServerTest {
                 default:
                     throw x;
             }
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("httpTransports")
+    public void testCookieWithExpiresAttribute(Transport transport) throws Exception {
+        Map<String, String> serverOptions = serverOptions(transport);
+        serverOptions.put(BayeuxServerImpl.TRANSPORTS_OPTION, TestJSONHttpTransport.class.getName());
+        start(transport, serverOptions);
+
+        BayeuxClient client = newBayeuxClient(transport);
+        client.handshake();
+
+        // If the cookie is not parsed correctly, BayeuxClient cannot connect.
+        assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        disconnectBayeuxClient(client);
+    }
+
+    public static class TestJSONHttpTransport extends JSONHttpTransport {
+        public TestJSONHttpTransport(BayeuxServerImpl bayeux) {
+            super(bayeux);
+        }
+
+        @Override
+        protected void newBrowserCookie(StringBuilder builder, String name, String value, boolean secure) {
+            super.newBrowserCookie(builder, name, value, secure);
+            builder.append("; Expires=");
+            DateTimeFormatter.RFC_1123_DATE_TIME.formatTo(ZonedDateTime.now(ZoneOffset.UTC).plusYears(1), builder);
         }
     }
 }

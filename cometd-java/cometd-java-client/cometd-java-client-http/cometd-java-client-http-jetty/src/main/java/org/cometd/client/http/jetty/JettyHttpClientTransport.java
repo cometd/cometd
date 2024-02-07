@@ -26,7 +26,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
 import org.cometd.client.http.common.AbstractHttpClientTransport;
@@ -230,12 +229,12 @@ public class JettyHttpClientTransport extends AbstractHttpClientTransport {
         @Override
         public boolean onHeader(Response response, HttpField field) {
             if (response.getStatus() == HttpStatus.OK_200) {
-                HttpHeader header = field.getHeader();
-                if (header == HttpHeader.SET_COOKIE || header == HttpHeader.SET_COOKIE2) {
+                String name = field.getName();
+                if (HttpHeader.SET_COOKIE.is(name)) {
                     // We do not allow cookies to be handled by HttpClient, since one
                     // HttpClient instance is shared by multiple BayeuxClient instances.
                     // Instead, we store the cookies in the BayeuxClient instance.
-                    Map<String, List<String>> cookies = Map.of(field.getName(), field.getValueList());
+                    Map<String, List<String>> cookies = Map.of(field.getName(), List.of(field.getValue()));
                     storeCookies(cookieURI, cookies);
                     return false;
                 }

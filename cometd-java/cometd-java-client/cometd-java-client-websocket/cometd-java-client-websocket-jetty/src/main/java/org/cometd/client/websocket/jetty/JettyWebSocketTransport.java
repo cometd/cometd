@@ -32,7 +32,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 import org.cometd.bayeux.Message.Mutable;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.TransportListener;
@@ -42,6 +41,7 @@ import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
@@ -167,7 +167,11 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport implemen
                 if (v == null) {
                     v = new ArrayList<>(1);
                 }
-                v.addAll(field.getValueList());
+                if (HttpHeader.SET_COOKIE.is(k)) {
+                    v.add(field.getValue());
+                } else {
+                    v.addAll(field.getValueList());
+                }
                 return v;
             });
         });

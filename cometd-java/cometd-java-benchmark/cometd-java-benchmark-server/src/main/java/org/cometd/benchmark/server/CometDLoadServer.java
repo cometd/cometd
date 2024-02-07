@@ -500,7 +500,7 @@ public class CometDLoadServer {
             builder.append(request.getHttpURI()).append("\n");
             for (HttpField field : request.getHeaders()) {
                 String name = field.getName();
-                builder.append(name).append("=").append(field.getValueList()).append("\n");
+                builder.append(name).append("=").append(field.getValue()).append("\n");
             }
             builder.append(Request.getRemoteAddr(request)).append(":").append(Request.getRemotePort(request)).append(" => ");
             builder.append(Request.getLocalAddr(request)).append(":").append(Request.getLocalPort(request)).append("\n");
