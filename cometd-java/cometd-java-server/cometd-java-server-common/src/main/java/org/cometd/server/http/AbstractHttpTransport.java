@@ -131,6 +131,38 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         }
     }
 
+    protected String getBrowserCookieName() {
+        return _browserCookieName;
+    }
+
+    protected String getBrowserCookieDomain() {
+        return _browserCookieDomain;
+    }
+
+    protected String getBrowserCookiePath() {
+        return _browserCookiePath;
+    }
+
+    protected int getBrowserCookieMaxAge() {
+        return _browserCookieMaxAge;
+    }
+
+    protected boolean isBrowserCookieSecure() {
+        return _browserCookieSecure;
+    }
+
+    protected boolean isBrowserCookieHttpOnly() {
+        return _browserCookieHttpOnly;
+    }
+
+    protected String getBrowserCookieSameSite() {
+        return _browserCookieSameSite;
+    }
+
+    protected boolean isBrowserCookiePartitioned() {
+        return _browserCookiePartitioned;
+    }
+
     protected long getMultiSessionInterval() {
         return _multiSessionInterval;
     }
@@ -451,31 +483,39 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
 
         // Need to support the SameSite attribute so build the cookie manually.
         builder.setLength(0);
-        builder.append(_browserCookieName).append("=").append(browserId);
-        if (_browserCookieDomain != null) {
-            builder.append("; Domain=").append(_browserCookieDomain);
-        }
-        if (_browserCookiePath != null) {
-            builder.append("; Path=").append(_browserCookiePath);
-        }
-        if (_browserCookieMaxAge >= 0) {
-            builder.append("; Max-Age=").append(_browserCookieMaxAge);
-        }
-        if (_browserCookieHttpOnly) {
-            builder.append("; HttpOnly");
-        }
-        if (context.bayeuxContext().isSecure() && _browserCookieSecure) {
-            builder.append("; Secure");
-        }
-        if (_browserCookieSameSite != null) {
-            builder.append("; SameSite=").append(_browserCookieSameSite);
-        }
-        if (_browserCookiePartitioned) {
-            builder.append("; Partitioned");
-        }
+        newBrowserCookie(builder, getBrowserCookieName(), browserId, context.bayeuxContext().isSecure());
         context.response().addHeader("Set-Cookie", builder.toString());
 
         return browserId;
+    }
+
+    protected void newBrowserCookie(StringBuilder builder, String name, String value, boolean secure) {
+        builder.append(name).append("=").append(value);
+        String domain = getBrowserCookieDomain();
+        if (domain != null) {
+            builder.append("; Domain=").append(domain);
+        }
+        String path = getBrowserCookiePath();
+        if (path != null) {
+            builder.append("; Path=").append(path);
+        }
+        int maxAge = getBrowserCookieMaxAge();
+        if (maxAge >= 0) {
+            builder.append("; Max-Age=").append(maxAge);
+        }
+        if (isBrowserCookieHttpOnly()) {
+            builder.append("; HttpOnly");
+        }
+        if (secure && isBrowserCookieSecure()) {
+            builder.append("; Secure");
+        }
+        String sameSite = getBrowserCookieSameSite();
+        if (sameSite != null) {
+            builder.append("; SameSite=").append(sameSite);
+        }
+        if (isBrowserCookiePartitioned()) {
+            builder.append("; Partitioned");
+        }
     }
 
     /**
