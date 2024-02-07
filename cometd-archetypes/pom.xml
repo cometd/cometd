@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.cometd</groupId>
     <artifactId>cometd-project</artifactId>
-    <version>6.0.12-SNAPSHOT</version>
+    <version>6.0.12</version>
   </parent>
   <groupId>org.cometd.archetypes</groupId>
   <artifactId>cometd-archetypes</artifactId>
