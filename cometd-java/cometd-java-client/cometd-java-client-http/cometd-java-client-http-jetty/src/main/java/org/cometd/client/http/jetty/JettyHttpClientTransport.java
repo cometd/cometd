@@ -107,7 +107,7 @@ public class JettyHttpClientTransport extends AbstractHttpClientTransport {
             List<HttpCookie> cookies = getCookies(cookieURI);
             StringBuilder value = new StringBuilder(cookies.size() * 32);
             for (HttpCookie cookie : cookies) {
-                if (value.length() > 0) {
+                if (!value.isEmpty()) {
                     value.append("; ");
                 }
                 value.append(cookie.getName()).append("=").append(cookie.getValue());
@@ -234,7 +234,7 @@ public class JettyHttpClientTransport extends AbstractHttpClientTransport {
                     // We do not allow cookies to be handled by HttpClient, since one
                     // HttpClient instance is shared by multiple BayeuxClient instances.
                     // Instead, we store the cookies in the BayeuxClient instance.
-                    Map<String, List<String>> cookies = Map.of(field.getName(), List.of(field.getValue()));
+                    Map<String, List<String>> cookies = Map.of(name, List.of(field.getValue()));
                     storeCookies(cookieURI, cookies);
                     return false;
                 }
