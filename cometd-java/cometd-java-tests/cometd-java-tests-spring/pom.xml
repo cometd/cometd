@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.cometd.java.tests</groupId>
     <artifactId>cometd-java-tests</artifactId>
-    <version>5.0.17</version>
+    <version>5.0.18-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
