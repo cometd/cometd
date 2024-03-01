@@ -28,7 +28,7 @@ pipeline {
                 mavenBuild("${env.JDK}", "javadoc:javadoc")
               }
               recordIssues id: "analysis-${env.JDK}", name: "Static Analysis ${env.JDK}", aggregatingResults: true, enabledForFailure: true,
-                           tools: [mavenConsole(), java(), checkStyle(), javaDoc()], skipPublishingChecks: true, blameDisabled: true
+                           tools: [mavenConsole(), java(), checkStyle(), javaDoc()], skipPublishingChecks: true, skipBlames: true
               recordCoverage name: "Coverage ${env.JDK}", id: "coverage-${env.JDK}", tools: [[parser: 'JACOCO']], sourceCodeRetention: 'LAST_BUILD',
                               sourceDirectories: [[path: 'src/main/java']]
             }
