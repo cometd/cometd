@@ -95,12 +95,12 @@
     <!-- tag::jetty-version[] -->
     <jetty-version>11.0.20</jetty-version>
     <!-- end::jetty-version[] -->
-    <log4j2-version>2.22.1</log4j2-version>
+    <log4j2-version>2.23.0</log4j2-version>
     <okhttp-version>4.12.0</okhttp-version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <slf4j-version>2.0.12</slf4j-version>
-    <spring-boot-version>3.1.6</spring-boot-version>
-    <spring-version>6.0.14</spring-version>
+    <spring-boot-version>3.1.9</spring-boot-version>
+    <spring-version>6.0.17</spring-version>
   </properties>
 
   <dependencyManagement>
@@ -334,7 +334,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
-          <version>3.5.1</version>
+          <version>3.5.2</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -362,12 +362,12 @@
         <plugin>
           <groupId>org.asciidoctor</groupId>
           <artifactId>asciidoctor-maven-plugin</artifactId>
-          <version>2.2.6</version>
+          <version>3.0.0</version>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>exec-maven-plugin</artifactId>
-          <version>3.1.1</version>
+          <version>3.2.0</version>
         </plugin>
         <plugin>
           <groupId>org.eclipse.jetty</groupId>
