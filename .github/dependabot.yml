@@ -23,6 +23,8 @@ updates:
         versions: [ ">=6.0.0" ]
       - dependency-name: "org.springframework.boot:*"
         versions: [ ">=3.0.0" ]
+      - dependency-name: "org.asciidoctor:asciidoctor-maven-plugin"
+        versions: [ ">=3.0.0" ]
 
   - package-ecosystem: "maven"
     directory: "/"
