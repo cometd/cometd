@@ -108,7 +108,7 @@
       <dependency>
         <groupId>com.google.javascript</groupId>
         <artifactId>closure-compiler</artifactId>
-        <version>v20231112</version>
+        <version>v20240317</version>
       </dependency>
       <dependency>
         <groupId>com.jwebmp</groupId>
