@@ -15,20 +15,19 @@
  */
 
 import {RequestTransport} from "./RequestTransport.js";
-import {Transport} from "./Transport.js";
 
-export function CallbackPollingTransport() {
-    const _super = new RequestTransport();
-    const _self = Transport.derive(_super);
-    let jsonp = 0;
+export class CallbackPollingTransport extends RequestTransport {
+    #jsonp = 0;
 
-    _self.accept = (version, crossDomain, url) => true;
+    accept(version, crossDomain, url) {
+        return true;
+    }
 
-    _self.jsonpSend = (packet) => {
+    jsonpSend(packet) {
         const head = document.getElementsByTagName("head")[0];
         const script = document.createElement("script");
 
-        const callbackName = "_cometd_jsonp_" + jsonp++;
+        const callbackName = "_cometd_jsonp_" + this.#jsonp++;
         window[callbackName] = (responseText) => {
             head.removeChild(script);
             delete window[callbackName];
@@ -41,41 +40,36 @@ export function CallbackPollingTransport() {
         url += "&message=" + encodeURIComponent(packet.body);
         script.src = url;
         script.async = packet.sync !== true;
-        script.type = "application/javascript";
+        script.type = "text/javascript";
         script.onerror = (e) => {
             packet.onError("jsonp " + e.type);
         };
         head.appendChild(script);
     };
 
-    function _failTransportFn(envelope, request, x) {
-        return () => {
-            this.transportFailure(envelope, request, "error", x);
-        };
-    }
-
-    _self.transportSend = function(envelope, request) {
+    transportSend(envelope, request) {
         // Microsoft Internet Explorer has a 2083 URL max length
-        // We must ensure that we stay within that length
+        // We must ensure that we stay within that length.
         let start = 0;
         let length = envelope.messages.length;
         const lengths = [];
         while (length > 0) {
-            // Encode the messages because all brackets, quotes, commas, colons, etc
-            // present in the JSON will be URL encoded, taking many more characters
+            // Encode the messages because all brackets, quotes, commas, colons, etc.
+            // present in the JSON will be URL encoded, taking many more characters.
             const json = JSON.stringify(envelope.messages.slice(start, start + length));
             const urlLength = envelope.url.length + encodeURI(json).length;
 
-            const maxLength = this.getConfiguration().maxURILength;
+            const maxLength = this.configuration.maxURILength;
             if (urlLength > maxLength) {
                 if (length === 1) {
                     const x = "Bayeux message too big (" + urlLength + " bytes, max is " + maxLength + ") " +
-                        "for transport " + this.getType();
+                        "for transport " + this;
                     // Keep the semantic of calling callbacks asynchronously.
-                    this.setTimeout(_failTransportFn.call(this, envelope, request, x), 0);
-                    return;
+                    this.setTimeout(() => this.transportFailure(envelope, request, {
+                        exception: x
+                    }), 0);
+                    return false;
                 }
-
                 --length;
                 continue;
             }
@@ -91,14 +85,14 @@ export function CallbackPollingTransport() {
         if (lengths.length > 1) {
             let begin = 0;
             let end = lengths[0];
-            this._debug("Transport", this.getType(), "split", envelope.messages.length, "messages into", lengths.join(" + "));
-            envelopeToSend = this._mixin(false, {}, envelope);
+            this.debug("Transport", this, "split", envelope.messages.length, "messages into", lengths.join(" + "));
+            envelopeToSend = this.cometd._mixin(false, {}, envelope);
             envelopeToSend.messages = envelope.messages.slice(begin, end);
             envelopeToSend.onSuccess = envelope.onSuccess;
             envelopeToSend.onFailure = envelope.onFailure;
 
             for (let i = 1; i < lengths.length; ++i) {
-                const nextEnvelope = this._mixin(false, {}, envelope);
+                const nextEnvelope = this.cometd._mixin(false, {}, envelope);
                 begin = end;
                 end += lengths[i];
                 nextEnvelope.messages = envelope.messages.slice(begin, end);
@@ -108,7 +102,7 @@ export function CallbackPollingTransport() {
             }
         }
 
-        this._debug("Transport", this.getType(), "sending request", request.id, "envelope", envelopeToSend);
+        this.debug("Transport", this, "sending request", request.id, "envelope", envelopeToSend);
 
         try {
             let sameStack = true;
@@ -116,7 +110,7 @@ export function CallbackPollingTransport() {
                 transport: this,
                 url: envelopeToSend.url,
                 sync: envelopeToSend.sync,
-                headers: this.getConfiguration().requestHeaders,
+                headers: this.configuration.requestHeaders,
                 body: JSON.stringify(envelopeToSend.messages),
                 onSuccess: (responses) => {
                     let success = false;
@@ -131,7 +125,7 @@ export function CallbackPollingTransport() {
                             this.transportSuccess(envelopeToSend, request, received);
                         }
                     } catch (x) {
-                        this._debug(x);
+                        this.debug(x);
                         if (!success) {
                             this.transportFailure(envelopeToSend, request, {
                                 exception: x
@@ -166,6 +160,4 @@ export function CallbackPollingTransport() {
             return false;
         }
     };
-
-    return _self;
 }

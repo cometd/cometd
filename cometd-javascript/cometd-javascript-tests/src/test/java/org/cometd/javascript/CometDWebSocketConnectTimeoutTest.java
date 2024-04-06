@@ -52,9 +52,9 @@ public class CometDWebSocketConnectTimeoutTest extends AbstractCometDWebSocketTe
                 const wsLatch = new Latch(1);
                 const lpLatch = new Latch(1);
                 cometd.addListener('/meta/handshake', message => {
-                   if (cometd.getTransport().getType() === 'websocket' && !message.successful) {
+                   if (cometd.getTransport().type === 'websocket' && !message.successful) {
                        wsLatch.countDown();
-                   } else if (cometd.getTransport().getType() === 'long-polling' && message.successful) {
+                   } else if (cometd.getTransport().type === 'long-polling' && message.successful) {
                        lpLatch.countDown();
                    }
                 });
@@ -81,7 +81,7 @@ public class CometDWebSocketConnectTimeoutTest extends AbstractCometDWebSocketTe
         evaluateScript("""
                 const handshakeLatch = new Latch(1);
                 cometd.addListener('/meta/handshake', message => {
-                   if (cometd.getTransport().getType() === 'websocket' && message.successful) {
+                   if (cometd.getTransport().type === 'websocket' && message.successful) {
                        handshakeLatch.countDown();
                    }
                 });

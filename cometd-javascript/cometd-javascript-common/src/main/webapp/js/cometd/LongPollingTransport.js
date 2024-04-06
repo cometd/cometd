@@ -15,32 +15,33 @@
  */
 
 import {RequestTransport} from "./RequestTransport.js";
-import {Transport} from "./Transport.js";
 
-export function LongPollingTransport() {
-    const _super = new RequestTransport();
-    const _self = Transport.derive(_super);
-    // By default, support cross domain
-    let _supportsCrossDomain = true;
+export class LongPollingTransport extends RequestTransport {
+    // By default, support cross domain.
+    #supportsCrossDomain = true;
 
-    _self.accept = (version, crossDomain, url) => _supportsCrossDomain || !crossDomain;
+    accept(version, crossDomain, url) {
+        return this.#supportsCrossDomain || !crossDomain;
+    }
 
-    _self.newXMLHttpRequest = () => new window.XMLHttpRequest();
+    #newXMLHttpRequest() {
+        return new window.XMLHttpRequest();
+    }
 
-    function _copyContext(xhr) {
+    #copyContext(xhr) {
         try {
             // Copy external context, to be used in other environments.
-            xhr.context = _self.context;
+            xhr.context = this.context;
         } catch (e) {
             // May happen if XHR is wrapped by Object.seal(),
             // Object.freeze(), or Object.preventExtensions().
-            _self._debug("Could not copy transport context into XHR", e);
+            this.debug("Could not copy transport context into XHR", e);
         }
     }
 
-    _self.xhrSend = (packet) => {
-        const xhr = _self.newXMLHttpRequest();
-        _copyContext(xhr);
+    xhrSend(packet) {
+        const xhr = this.#newXMLHttpRequest();
+        this.#copyContext(xhr);
         xhr.withCredentials = true;
         xhr.open("POST", packet.url, packet.sync !== true);
         const headers = packet.headers;
@@ -51,7 +52,7 @@ export function LongPollingTransport() {
                 }
             }
         }
-        xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+        xhr.setRequestHeader("Content-Type", "application/json");
         xhr.onload = () => {
             if (xhr.status === 200) {
                 packet.onSuccess(xhr.responseText);
@@ -66,8 +67,8 @@ export function LongPollingTransport() {
         return xhr;
     };
 
-    _self.transportSend = function(envelope, request) {
-        this._debug("Transport", this.getType(), "sending request", request.id, "envelope", envelope);
+    transportSend(envelope, request) {
+        this.debug("Transport", this, "sending request", request.id, "envelope", envelope);
 
         try {
             let sameStack = true;
@@ -75,15 +76,15 @@ export function LongPollingTransport() {
                 transport: this,
                 url: envelope.url,
                 sync: envelope.sync,
-                headers: this.getConfiguration().requestHeaders,
+                headers: this.configuration.requestHeaders,
                 body: this.convertToJSON(envelope.messages),
                 onSuccess: (response) => {
-                    this._debug("Transport", this.getType(), "received response", response);
+                    this.debug("Transport", this, "received response", response);
                     let success = false;
                     try {
                         const received = this.convertToMessages(response);
                         if (received.length === 0) {
-                            _supportsCrossDomain = false;
+                            this.#supportsCrossDomain = false;
                             this.transportFailure(envelope, request, {
                                 httpCode: 204
                             });
@@ -92,9 +93,9 @@ export function LongPollingTransport() {
                             this.transportSuccess(envelope, request, received);
                         }
                     } catch (x) {
-                        this._debug(x);
+                        this.debug(x);
                         if (!success) {
-                            _supportsCrossDomain = false;
+                            this.#supportsCrossDomain = false;
                             const failure = {
                                 exception: x
                             };
@@ -104,8 +105,8 @@ export function LongPollingTransport() {
                     }
                 },
                 onError: (reason, exception) => {
-                    this._debug("Transport", this.getType(), "received error", reason, exception);
-                    _supportsCrossDomain = false;
+                    this.debug("Transport", this, "received error", reason, exception);
+                    this.#supportsCrossDomain = false;
                     const failure = {
                         reason: reason,
                         exception: exception
@@ -124,8 +125,8 @@ export function LongPollingTransport() {
             sameStack = false;
             return true;
         } catch (x) {
-            this._debug("Transport", this.getType(), "exception:", x);
-            _supportsCrossDomain = false;
+            this.debug("Transport", this, "exception:", x);
+            this.#supportsCrossDomain = false;
             // Keep the semantic of calling callbacks asynchronously.
             this.setTimeout(() => {
                 this.transportFailure(envelope, request, {
@@ -136,10 +137,8 @@ export function LongPollingTransport() {
         }
     };
 
-    _self.reset = (init) => {
-        _super.reset(init);
-        _supportsCrossDomain = true;
+    reset(init) {
+        super.reset(init);
+        this.#supportsCrossDomain = true;
     };
-
-    return _self;
 }

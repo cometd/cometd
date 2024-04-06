@@ -17,79 +17,77 @@
 import {Transport} from "./Transport.js";
 
 /**
- * Base object with the common functionality for transports based on requests.
+ * Base class with the common functionality for transports based on requests.
  * The key responsibility is to allow at most 2 outstanding requests to the server,
  * to avoid that requests are sent behind a long poll.
  * To achieve this, we have one reserved request for the long poll, and all other
  * requests are serialized one after the other.
  */
-export function RequestTransport() {
-    const _super = new Transport();
-    const _self = Transport.derive(_super);
-    let _requestIds = 0;
-    let _metaConnectRequest = null;
-    let _requests = [];
-    let _envelopes = [];
+export class RequestTransport extends Transport {
+    #requestIds = 0;
+    #metaConnectRequest = null;
+    #requests = [];
+    #envelopes = [];
 
-    function _coalesceEnvelopes(envelope) {
-        while (_envelopes.length > 0) {
-            const envelopeAndRequest = _envelopes[0];
+    #coalesceEnvelopes(envelope) {
+        while (this.#envelopes.length > 0) {
+            const envelopeAndRequest = this.#envelopes[0];
             const newEnvelope = envelopeAndRequest[0];
             const newRequest = envelopeAndRequest[1];
             if (newEnvelope.url === envelope.url &&
                 newEnvelope.sync === envelope.sync) {
-                _envelopes.shift();
+                this.#envelopes.shift();
                 envelope.messages = envelope.messages.concat(newEnvelope.messages);
-                this._debug("Coalesced", newEnvelope.messages.length, "messages from request", newRequest.id);
+                this.debug("Coalesced", newEnvelope.messages.length, "messages from request", newRequest.id);
                 continue;
             }
             break;
         }
     }
 
-    function _onTransportTimeout(envelope, request, delay) {
-        const result = this._notifyTransportTimeout(envelope.messages);
+    #onTransportTimeout(envelope, request, delay) {
+        const result = this.notifyTransportTimeout(envelope.messages);
         if (result > 0) {
-            this._debug("Transport", this.getType(), "extended waiting for message replies of request", request.id, ":", result, "ms");
+            this.debug("Transport", this, "extended waiting for message replies of request", request.id, ":", result, "ms");
             request.timeout = this.setTimeout(() => {
-                _onTransportTimeout.call(this, envelope, request, delay + result);
+                this.#onTransportTimeout(envelope, request, delay + result);
             }, result);
         } else {
             request.expired = true;
-            const errorMessage = "Transport " + this.getType() + " expired waiting for message replies of request " + request.id + ": " + delay + " ms";
+            const errorMessage = "Transport " + this + " expired waiting for message replies of request " + request.id + ": " + delay + " ms";
             const failure = {
                 reason: errorMessage
             };
             const xhr = request.xhr;
             failure.httpCode = this.xhrStatus(xhr);
             this.abortXHR(xhr);
-            this._debug(errorMessage);
+            this.debug(errorMessage);
             this.complete(request, false, request.metaConnect);
             envelope.onFailure(xhr, envelope.messages, failure);
         }
     }
 
-    function _transportSend(envelope, request) {
+    #transportSend(envelope, request) {
         if (this.transportSend(envelope, request)) {
             request.expired = false;
 
             if (!envelope.sync) {
-                let delay = this.getConfiguration().maxNetworkDelay;
+                let delay = this.configuration.maxNetworkDelay;
                 if (request.metaConnect === true) {
-                    delay += this.getAdvice().timeout;
+                    delay += this.advice.timeout;
                 }
 
-                this._debug("Transport", this.getType(), "started waiting for message replies of request", request.id, ":", delay, "ms");
+                this.debug("Transport", this, "started waiting for message replies of request", request.id, ":", delay, "ms");
 
                 request.timeout = this.setTimeout(() => {
-                    _onTransportTimeout.call(this, envelope, request, delay);
+                    this.#onTransportTimeout(envelope, request, delay);
                 }, delay);
             }
         }
     }
 
-    function _queueSend(envelope) {
-        const requestId = ++_requestIds;
+    #queueSend(envelope) {
+        const requestId = ++this.#requestIds;
         const request = {
             id: requestId,
             metaConnect: false,
@@ -97,42 +95,42 @@ export function RequestTransport() {
         };
 
         // Consider the /meta/connect requests which should always be present.
-        if (_requests.length < this.getConfiguration().maxConnections - 1) {
-            _requests.push(request);
-            _transportSend.call(this, envelope, request);
+        if (this.#requests.length < this.configuration.maxConnections - 1) {
+            this.#requests.push(request);
+            this.#transportSend(envelope, request);
         } else {
-            this._debug("Transport", this.getType(), "queueing request", requestId, "envelope", envelope);
-            _envelopes.push([envelope, request]);
+            this.debug("Transport", this, "queueing request", requestId, "envelope", envelope);
+            this.#envelopes.push([envelope, request]);
         }
     }
 
-    function _metaConnectComplete(request) {
+    #metaConnectComplete(request) {
         const requestId = request.id;
-        this._debug("Transport", this.getType(), "/meta/connect complete, request", requestId);
-        if (_metaConnectRequest !== null && _metaConnectRequest.id !== requestId) {
+        this.debug("Transport", this, "/meta/connect complete, request", requestId);
+        if (this.#metaConnectRequest !== null && this.#metaConnectRequest.id !== requestId) {
             throw "/meta/connect request mismatch, completing request " + requestId;
         }
-        _metaConnectRequest = null;
+        this.#metaConnectRequest = null;
     }
 
-    function _complete(request, success) {
-        const index = _requests.indexOf(request);
+    #complete(request, success) {
+        const index = this.#requests.indexOf(request);
         // The index can be negative if the request has been aborted
         if (index >= 0) {
-            _requests.splice(index, 1);
+            this.#requests.splice(index, 1);
         }
 
-        if (_envelopes.length > 0) {
-            const envelopeAndRequest = _envelopes.shift();
+        if (this.#envelopes.length > 0) {
+            const envelopeAndRequest = this.#envelopes.shift();
             const nextEnvelope = envelopeAndRequest[0];
             const nextRequest = envelopeAndRequest[1];
-            this._debug("Transport dequeued request", nextRequest.id);
+            this.debug("Transport dequeued request", nextRequest.id);
             if (success) {
-                if (this.getConfiguration().autoBatch) {
-                    _coalesceEnvelopes.call(this, nextEnvelope);
+                if (this.configuration.autoBatch) {
+                    this.#coalesceEnvelopes(nextEnvelope);
                 }
-                _queueSend.call(this, nextEnvelope);
-                this._debug("Transport completed request", request.id, nextEnvelope);
+                this.#queueSend(nextEnvelope);
+                this.debug("Transport", this, "completed request", request.id, nextEnvelope);
             } else {
                 // Keep the semantic of calling callbacks asynchronously.
                 this.setTimeout(() => {
@@ -148,11 +146,11 @@ export function RequestTransport() {
         }
     }
 
-    _self.complete = function(request, success, metaConnect) {
+    complete(request, success, metaConnect) {
         if (metaConnect) {
-            _metaConnectComplete.call(this, request);
+            this.#metaConnectComplete(request);
         } else {
-            _complete.call(this, request, success);
+            this.#complete(request, success);
         }
     };
 
@@ -162,14 +160,14 @@ export function RequestTransport() {
      * @param request the request information
      * @return {boolean} whether the send succeeded
      */
-    _self.transportSend = (envelope, request) => {
+    transportSend(envelope, request) {
         throw "Abstract";
     };
 
-    _self.transportSuccess = function(envelope, request, responses) {
+    transportSuccess(envelope, request, responses) {
         if (!request.expired) {
             this.clearTimeout(request.timeout);
-            this._debug("Transport", this.getType(), "cancelled waiting for message replies");
+            this.debug("Transport", this, "cancelled waiting for message replies");
             this.complete(request, true, request.metaConnect);
             if (responses && responses.length > 0) {
                 envelope.onSuccess(responses);
@@ -181,45 +179,45 @@ export function RequestTransport() {
         }
     };
 
-    _self.transportFailure = function(envelope, request, failure) {
+    transportFailure(envelope, request, failure) {
         if (!request.expired) {
             this.clearTimeout(request.timeout);
-            this._debug("Transport", this.getType(), "cancelled waiting for failed message replies");
+            this.debug("Transport", this, "cancelled waiting for failed message replies");
             this.complete(request, false, request.metaConnect);
             envelope.onFailure(request.xhr, envelope.messages, failure);
         }
     };
 
-    function _metaConnectSend(envelope) {
-        if (_metaConnectRequest !== null) {
-            throw ("Concurrent /meta/connect requests not allowed, request id=" + _metaConnectRequest.id + " not yet completed");
+    #metaConnectSend(envelope) {
+        if (this.#metaConnectRequest !== null) {
+            throw "Concurrent /meta/connect requests not allowed, request id=" + this.#metaConnectRequest.id + " not yet completed";
         }
 
-        const requestId = ++_requestIds;
-        this._debug("Transport", this.getType(), "/meta/connect send, request", requestId, "envelope", envelope);
+        const requestId = ++this.#requestIds;
+        this.debug("Transport", this, "/meta/connect send, request", requestId, "envelope", envelope);
         const request = {
             id: requestId,
             metaConnect: true,
             envelope: envelope
         };
-        _transportSend.call(this, envelope, request);
-        _metaConnectRequest = request;
+        this.#transportSend(envelope, request);
+        this.#metaConnectRequest = request;
     }
 
-    _self.send = function(envelope, metaConnect) {
+    send(envelope, metaConnect) {
         if (metaConnect) {
-            _metaConnectSend.call(this, envelope);
+            this.#metaConnectSend(envelope);
         } else {
-            _queueSend.call(this, envelope);
+            this.#queueSend(envelope);
         }
     };
 
-    _self.abort = function() {
-        _super.abort();
-        for (let i = 0; i < _requests.length; ++i) {
-            const request = _requests[i];
+    abort() {
+        super.abort();
+        for (let i = 0; i < this.#requests.length; ++i) {
+            const request = this.#requests[i];
             if (request) {
-                this._debug("Aborting request", request);
+                this.debug("Aborting request", request);
                 if (!this.abortXHR(request.xhr)) {
                     this.transportFailure(request.envelope, request, {
                         reason: "abort"
@@ -227,9 +225,9 @@ export function RequestTransport() {
                 }
             }
         }
-        const metaConnectRequest = _metaConnectRequest;
+        const metaConnectRequest = this.#metaConnectRequest;
         if (metaConnectRequest) {
-            this._debug("Aborting /meta/connect request", metaConnectRequest);
+            this.debug("Aborting /meta/connect request", metaConnectRequest);
             if (!this.abortXHR(metaConnectRequest.xhr)) {
                 this.transportFailure(metaConnectRequest.envelope, metaConnectRequest, {
                     reason: "abort"
@@ -239,36 +237,34 @@ export function RequestTransport() {
         this.reset(true);
     };
 
-    _self.reset = (init) => {
-        _super.reset(init);
-        _metaConnectRequest = null;
-        _requests = [];
-        _envelopes = [];
+    reset(init) {
+        super.reset(init);
+        this.#metaConnectRequest = null;
+        this.#requests = [];
+        this.#envelopes = [];
     };
 
-    _self.abortXHR = function(xhr) {
+    abortXHR(xhr) {
         if (xhr) {
             try {
                 const state = xhr.readyState;
                 xhr.abort();
                 return state !== window.XMLHttpRequest.UNSENT;
             } catch (x) {
-                this._debug(x);
+                this.debug(x);
             }
         }
         return false;
     };
 
-    _self.xhrStatus = function(xhr) {
+    xhrStatus(xhr) {
         if (xhr) {
             try {
                 return xhr.status;
             } catch (x) {
-                this._debug(x);
+                this.debug(x);
             }
         }
         return -1;
     };
-
-    return _self;
 }

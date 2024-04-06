@@ -71,7 +71,7 @@ public class CometDWebSocketHeaderRemovedTest extends AbstractCometDWebSocketTes
                 
                 const latch = new Latch(1);
                 cometd.addListener('/meta/handshake', message => {
-                   if (cometd.getTransport().getType() === 'long-polling' && message.successful) {
+                   if (cometd.getTransport().type === 'long-polling' && message.successful) {
                        latch.countDown();
                    }
                 });

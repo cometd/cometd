@@ -15,13 +15,28 @@
  */
 
 /**
- * Utility functions.
+ * Base class for CometD extensions.
  */
-export const Utils = {
-    isString(value) {
-        if (value === undefined || value === null) {
-            return false;
-        }
-        return typeof value === "string" || value instanceof String;
+export class Extension {
+    #cometd;
+
+    registered(name, cometd) {
+        this.#cometd = cometd;
     }
-};
+
+    unregistered() {
+        this.#cometd = null;
+    }
+
+    get cometd() {
+        return this.#cometd;
+    }
+
+    incoming(message) {
+        return message;
+    }
+
+    outgoing(message) {
+        return message;
+    }
+}

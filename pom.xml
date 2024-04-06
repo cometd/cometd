@@ -105,11 +105,6 @@
   <dependencyManagement>
     <dependencies>
       <dependency>
-        <groupId>com.google.javascript</groupId>
-        <artifactId>closure-compiler</artifactId>
-        <version>v20240317</version>
-      </dependency>
-      <dependency>
         <groupId>jakarta.annotation</groupId>
         <artifactId>jakarta.annotation-api</artifactId>
         <!-- Must stay at 2.0.x for Jakarta EE 9 -->

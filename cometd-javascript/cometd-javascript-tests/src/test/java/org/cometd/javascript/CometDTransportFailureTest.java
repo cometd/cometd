@@ -70,7 +70,7 @@ public class CometDTransportFailureTest extends AbstractCometDWebSocketTest {
                 cometd.addListener('/meta/connect', message => {
                     ++connects;
                     if (connects === 3 && message.successful) {
-                        url = cometd.getTransport().getURL();
+                        url = cometd.getTransport().url;
                         latch.countDown();
                     }
                 });
@@ -122,7 +122,7 @@ public class CometDTransportFailureTest extends AbstractCometDWebSocketTest {
                 cometd.addListener('/meta/connect', message => {
                     ++connects;
                     if (connects === 3 && message.successful) {
-                        transport = cometd.getTransport().getType();
+                        transport = cometd.getTransport().type;
                         latch.countDown();
                     }
                 });

@@ -47,7 +47,7 @@
                 url: packet.url,
                 async: packet.sync !== true,
                 type: 'POST',
-                contentType: 'application/json;charset=UTF-8',
+                contentType: 'application/json',
                 data: packet.body,
                 global: false,
                 xhrFields: {

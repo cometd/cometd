@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import {Extension} from "./Extension.js";
+
 /**
  * This client-side extension enables the client to acknowledge to the server
  * the messages that the client has received.
@@ -28,26 +30,25 @@
  * Messages are not acknowledged one by one, but instead a batch of messages is
  * acknowledged when the /meta/connect returns.
  */
-export function AckExtension() {
-    let _cometd;
-    let _serverSupportsAcks = false;
-    let _batch;
+export class AckExtension extends Extension {
+    #serverSupportsAcks = false;
+    #batch = 0;
 
-    function _debug(text, args) {
-        _cometd._debug(text, args);
+    #debug(text, args) {
+        this.cometd._debug(text, args);
     }
 
-    this.registered = (name, cometd) => {
-        _cometd = cometd;
-        _debug("AckExtension: executing registration callback");
+    registered(name, cometd) {
+        super.registered(name, cometd);
+        this.#debug("AckExtension: executing registration callback");
     };
 
-    this.unregistered = () => {
-        _debug("AckExtension: executing unregistration callback");
-        _cometd = null;
+    unregistered() {
+        this.#debug("AckExtension: executing unregistration callback");
+        super.unregistered();
     };
 
-    this.incoming = (message) => {
+    incoming(message) {
         const channel = message.channel;
         const ext = message.ext;
         if (channel === "/meta/handshake") {
@@ -55,39 +56,39 @@ export function AckExtension() {
                 const ackField = ext.ack;
                 if (typeof ackField === "object") {
                     // New format.
-                    _serverSupportsAcks = ackField.enabled === true;
+                    this.#serverSupportsAcks = ackField.enabled === true;
                     const batch = ackField.batch;
                     if (typeof batch === "number") {
-                        _batch = batch;
+                        this.#batch = batch;
                     }
                 } else {
                     // Old format.
-                    _serverSupportsAcks = ackField === true;
+                    this.#serverSupportsAcks = ackField === true;
                 }
             }
-            _debug("AckExtension: server supports acknowledgements", _serverSupportsAcks);
-        } else if (channel === "/meta/connect" && message.successful && _serverSupportsAcks) {
+            this.#debug("AckExtension: server supports acknowledgements", this.#serverSupportsAcks);
+        } else if (channel === "/meta/connect" && message.successful && this.#serverSupportsAcks) {
             if (ext && typeof ext.ack === "number") {
-                _batch = ext.ack;
-                _debug("AckExtension: server sent batch", _batch);
+                this.#batch = ext.ack;
+                this.#debug("AckExtension: server sent batch", this.#batch);
             }
         }
         return message;
     };
 
-    this.outgoing = (message) => {
+    outgoing(message) {
         const channel = message.channel;
         if (!message.ext) {
             message.ext = {};
         }
         if (channel === "/meta/handshake") {
-            message.ext.ack = _cometd && _cometd.ackEnabled !== false;
-            _serverSupportsAcks = false;
-            _batch = 0;
+            message.ext.ack = this.cometd && this.cometd.ackEnabled !== false;
+            this.#serverSupportsAcks = false;
+            this.#batch = 0;
         } else if (channel === "/meta/connect") {
-            if (_serverSupportsAcks) {
-                message.ext.ack = _batch;
-                _debug("AckExtension: client sending batch", _batch);
+            if (this.#serverSupportsAcks) {
+                message.ext.ack = this.#batch;
+                this.#debug("AckExtension: client sending batch", this.#batch);
             }
         }
         return message;

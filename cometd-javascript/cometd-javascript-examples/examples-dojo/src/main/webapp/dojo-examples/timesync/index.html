@@ -13,6 +13,7 @@
         var tick = function() {
             var now = dojox.cometd.timesync.getServerDate();
             dojo.byId("time").innerHTML = now.toUTCString();
+            // TODO: getTimeOffsetSamples() has been removed.
             dojo.byId("offset").innerHTML = dojox.cometd.timesync.getTimeOffset() + "  from samples " + dojox.cometd.timesync.getTimeOffsetSamples().join();
             now = now.getTime();
             var next = "" + (1 + now / 1000);

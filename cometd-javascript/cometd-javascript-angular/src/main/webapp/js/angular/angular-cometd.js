@@ -24,7 +24,7 @@ angular.module('cometd', [])
                 var xhr = {};
 
                 var hdrs = packet.headers || {};
-                hdrs['Content-Type'] = 'application/json;charset=UTF-8';
+                hdrs['Content-Type'] = 'application/json';
 
                 $http.post(packet.url, packet.body, {
                     headers: hdrs,
