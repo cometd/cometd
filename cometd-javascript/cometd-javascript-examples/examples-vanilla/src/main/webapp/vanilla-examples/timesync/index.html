@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>CometD TimeSync Demo</title>
+  <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Varela+Round">
+  <script type="module">
+      import {CometD} from "../../js/cometd/cometd.js";
+      import {TimeSyncExtension} from "../../js/cometd/TimeSyncExtension.js";
+
+      window.addEventListener("DOMContentLoaded", () => {
+          const cometd = new CometD();
+          cometd.registerExtension("timesync", new TimeSyncExtension({
+              maxSamples: 3
+          }));
+          cometd.init(location.href.replace(/\/vanilla-examples\/.*$/, '') + "/cometd");
+
+          const tick = function() {
+              const timeSync = cometd.getExtension("timesync");
+              const date = timeSync.getServerDate();
+              document.getElementById("time").innerHTML = date.toUTCString();
+              document.getElementById("offset").innerHTML = timeSync.getTimeOffset();
+              document.getElementById("lag").innerHTML = timeSync.getNetworkLag();
+              const time = date.getTime();
+              timeSync.setTimeout(tick, time + 500);
+          };
+
+          cometd.setTimeout(tick, 500);
+          window.onbeforeunload = () => cometd.disconnect();
+      });
+  </script>
+  <style>
+      body {
+          font-family: "Varela Round", sans-serif;
+          color: #333;
+      }
+      a:hover, a:visited {
+          color: #333;
+      }
+      a:active {
+          color: #E52;
+      }
+  </style>
+</head>
+<body>
+
+<h1>TimeSync Demo</h1>
+
+<a href="../..">Main Demo Index</a><br/>
+
+<p>
+  This test uses the TimeSync extension to calculate a time offset with the server.
+</p>
+<p>
+  The time displayed below is the server time and should be the same for all clients
+  no matter what their local clocks are set to.
+</p>
+
+<p>
+  The accuracy should improve as each /meta/connect message is received.
+</p>
+<p>
+  If the client and server are on the same machine, then the algorithm will likely
+  detect good accuracy and not send any further sample.
+</p>
+
+<div id="time"></div>
+<div>
+offset=<span id="offset"></span>, lag=<span id="lag"></span>
+</div>
+</body>
+</html>
