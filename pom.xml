@@ -113,7 +113,7 @@
         <groupId>jakarta.annotation</groupId>
         <artifactId>jakarta.annotation-api</artifactId>
         <!-- Must stay at 2.0.x for Jakarta EE 9 -->
-        <version>2.1.1</version>
+        <version>3.0.0</version>
       </dependency>
       <dependency>
         <groupId>jakarta.inject</groupId>
