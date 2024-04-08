@@ -687,7 +687,6 @@ export class CometD {
 
     /**
      * Starts the batch of messages to be sent in a single request.
-     * @see endBatch
      */
     #startBatch() {
         ++this.#batch;
@@ -706,7 +705,6 @@ export class CometD {
      * Ends the batch of messages to be sent in a single request,
      * optionally sending messages present in the message queue depending
      * on the given argument.
-     * @see _startBatch()
      */
     #endBatch() {
         --this.#batch;
@@ -884,9 +882,9 @@ export class CometD {
     #delayedHandshake(delay) {
         this.#setStatus("handshaking");
 
-        // We will call _handshake() which will reset _clientId, but we want to avoid
-        // that between the end of this method and the call to _handshake() someone may
-        // call publish() (or other methods that call _queueSend()).
+        // We will call #handshake() which will reset #clientId, but we want to avoid
+        // that between the end of this method and the call to #handshake() someone may
+        // call publish() (or other methods that call #queueSend()).
         this.#internalBatch = true;
 
         this.#delayedSend(() => {
@@ -1092,7 +1090,7 @@ export class CometD {
             this.#clientId = message.clientId;
 
             // End the internal batch and allow held messages from the application
-            // to go to the server (see _handshake() where we start the internal batch).
+            // to go to the server (see #handshake() where we start the internal batch).
             this.#internalBatch = false;
             this.#flushBatch();
 
@@ -1491,7 +1489,6 @@ export class CometD {
      * @param transport the transport object
      * @param index the index at which this transport is to be registered
      * @return true if the transport has been registered, false otherwise
-     * @see #unregisterTransport(type)
      */
     registerTransport(type, transport, index) {
         const result = this.#transports.add(type, transport, index);
@@ -1560,8 +1557,6 @@ export class CometD {
      * via a handshake and a subsequent connect.
      * @param configuration the configuration object
      * @param handshakeProps an object to be merged with the handshake message
-     * @see #configure(configuration)
-     * @see #handshake(handshakeProps)
      */
     init(configuration, handshakeProps) {
         this.configure(configuration);
@@ -1618,7 +1613,6 @@ export class CometD {
      * Messages are held in a queue and not sent until {@link #endBatch()} is called.
      * If startBatch() is called multiple times, then an equal number of endBatch()
      * calls must be made to close and send the batch of messages.
-     * @see #endBatch()
      */
     startBatch() {
         this.#startBatch();
@@ -1627,7 +1621,6 @@ export class CometD {
     /**
      * Marks the end of a batch of application messages to be sent to the server
      * in a single request.
-     * @see #startBatch()
      */
     endBatch() {
         this.#endBatch();
@@ -1667,7 +1660,6 @@ export class CometD {
      *
      * @param {String} event the type of transport event
      * @param {Function} callback the function associate to the given transport event
-     * @see #removeTransportListener
      */
     addTransportListener(event, callback) {
         if (event !== "timeout") {
@@ -1685,7 +1677,6 @@ export class CometD {
      * @param {String} event the type of transport event
      * @param {Function} callback the function disassociate from the given transport event
      * @return {boolean} whether the disassociation was successful
-     * @see #addTransportListener
      */
     removeTransportListener(event, callback) {
         const callbacks = this.#transportListeners[event];
@@ -1710,7 +1701,6 @@ export class CometD {
      * @param scope the scope of the callback, may be omitted
      * @param callback the callback to call when a message is sent to the channel
      * @returns the subscription handle to be passed to {@link #removeListener(object)}
-     * @see #removeListener(subscription)
      */
     addListener(channel, scope, callback) {
         if (arguments.length < 2) {
@@ -1726,7 +1716,6 @@ export class CometD {
     /**
      * Removes the subscription obtained with a call to {@link #addListener(string, object, function)}.
      * @param subscription the subscription to unsubscribe.
-     * @see #addListener(channel, scope, callback)
      */
     removeListener(subscription) {
         // Beware of subscription.id == 0, which is falsy => cannot use !subscription.id
@@ -2000,11 +1989,11 @@ export class CometD {
         if (CometD.#isFunction(content)) {
             callback = content;
             content = {};
-            timeout = _config.maxNetworkDelay;
+            timeout = this.#config.maxNetworkDelay;
             callProps = undefined;
         } else if (CometD.#isFunction(timeout)) {
             callback = timeout;
-            timeout = _config.maxNetworkDelay;
+            timeout = this.#config.maxNetworkDelay;
             callProps = undefined;
         } else if (CometD.#isFunction(callProps)) {
             callback = callProps;
@@ -2125,7 +2114,6 @@ export class CometD {
      * after 1 second, then after 2 seconds, then after 3 seconds, etc. So for example with 15 seconds of
      * elapsed time, there will be 5 retries (at 1, 3, 6, 10 and 15 seconds elapsed).
      * @param period the backoff period to set
-     * @see #getBackoffIncrement()
      */
     setBackoffIncrement(period) {
         this.#config.backoffIncrement = period;
@@ -2133,7 +2121,6 @@ export class CometD {
 
     /**
      * Returns the backoff period used to increase the backoff time when retrying an unsuccessful or failed message.
-     * @see #setBackoffIncrement(period)
      */
     getBackoffIncrement() {
         return this.#config.backoffIncrement;
@@ -2149,7 +2136,6 @@ export class CometD {
     /**
      * Increases the backoff period up to the maximum value configured.
      * @returns the backoff period after increment
-     * @see getBackoffIncrement
      */
     increaseBackoffPeriod() {
         return this.#increaseBackoff();
@@ -2189,7 +2175,6 @@ export class CometD {
      * @param name the name of the extension
      * @param extension the extension to register
      * @return true if the extension was registered, false otherwise
-     * @see unregisterExtension
      */
     registerExtension(name, extension) {
         if (arguments.length < 2) {

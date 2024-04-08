@@ -1,28 +1,37 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Comet Echo RPC Demo</title>
-    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Varela+Round">
-    <script data-main="echo"  src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.js"></script>
-    <style>
-        body {
-            font-family: "Varela Round", sans-serif;
-            color: #333;
-        }
-        input {
-            margin: 0;
-            font-family: "Varela Round", sans-serif;
-        }
-        button {
-            font-family: "Varela Round", sans-serif;
-        }
-        a:hover, a:visited {
-            color: #333;
-        }
-        a:active {
-            color: #E52;
-        }
-    </style>
+  <title>Comet Echo RPC Demo</title>
+  <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Varela+Round">
+  <script type="importmap">
+    {
+      "imports": {
+        "jquery": "https://code.jquery.com/jquery-3.7.1.js",
+        "cometd/": "../../js/cometd/",
+        "jquery/cometd": "../../js/jquery/jquery.cometd.js"
+      }
+    }
+  </script>
+  <script type="module" src="echo.js"></script>
+  <style>
+      body {
+          font-family: "Varela Round", sans-serif;
+          color: #333;
+      }
+      input {
+          margin: 0;
+          font-family: "Varela Round", sans-serif;
+      }
+      button {
+          font-family: "Varela Round", sans-serif;
+      }
+      a:hover, a:visited {
+          color: #333;
+      }
+      a:active {
+          color: #E52;
+      }
+  </style>
 </head>
 <body>
 
@@ -31,16 +40,16 @@
 <a href="../..">Main Demo Index</a><br/>
 
 <p>
-    Echoes data to ONLY this client using RPC style messaging via CometD.
+  Echoes data to ONLY this client using RPC style messaging via CometD.
 </p>
 <p>
-    Requires a server side component listening on channel "/service/echo"
-    which echoes messages directly to this client.
+  Requires a server side component listening on channel "/service/echo"
+  which echoes messages directly to this client.
 </p>
 
 <div>
-    <label for="phrase">Echo: </label><input id="phrase" type="text" />
-    <input id="sendB" class="button" type="submit" name="join" value="Send"/>
+  <label for="phrase">Echo: </label><input id="phrase" type="text"/>
+  <input id="sendB" class="button" type="submit" name="join" value="Send"/>
 </div>
 <pre id="responses"></pre>
 </body>

@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-"use strict";
-
 import {CometD} from "../../js/cometd/cometd.js";
+import {AckExtension} from "../../js/cometd/AckExtension.js";
 import {ReloadExtension} from "../../js/cometd/ReloadExtension.js";
 
 const STATE_KEY = "org.cometd.demo.state";
@@ -27,12 +26,12 @@ window.addEventListener("DOMContentLoaded", () => {
     window.sessionStorage.removeItem(STATE_KEY);
     const state = jsonState ? JSON.parse(jsonState) : null;
 
-    const chat = new Chat(state);
+    const chat = new Chat();
 
     // Restore the state, if present.
     if (state) {
         setTimeout(() => {
-            // This will perform the handshake
+            // This will perform the handshake.
             chat.join(state.userName);
         }, 0);
 
@@ -41,7 +40,7 @@ window.addEventListener("DOMContentLoaded", () => {
         _id("altServer").value = state.altServer;
     }
 
-    // Setup UI.
+    // Set up the UI.
     _show(_id("join"));
     _hide(_id("joined"));
     _id("altServer").autocomplete = "off";
@@ -52,13 +51,13 @@ window.addEventListener("DOMContentLoaded", () => {
     _id("leaveButton").onclick = () => chat.leave();
     _id("username").autocomplete = "off";
     _id("username").focus();
-    _id("username").onkeyup = e => {
+    _id("username").onkeyup = (e) => {
         if (e.key === "Enter") {
             chat.join(_id("username").value);
         }
     };
     _id("phrase").autocomplete = "off";
-    _id("phrase").onkeyup = e => {
+    _id("phrase").onkeyup = (e) => {
         if (e.key === "Enter") {
             chat.send();
         }
@@ -75,12 +74,13 @@ class Chat {
     #membersSubscription;
 
     constructor() {
+        this.#cometd.registerExtension("ack", new AckExtension());
         this.#cometd.registerExtension("reload", new ReloadExtension());
-        this.#cometd.addListener("/meta/handshake", m => this.#metaHandshake(m));
-        this.#cometd.addListener("/meta/connect", m => this.#metaConnect(m));
+        this.#cometd.addListener("/meta/handshake", (m) => this.#metaHandshake(m));
+        this.#cometd.addListener("/meta/connect", (m) => this.#metaConnect(m));
 
         window.onbeforeunload = () => {
-            // Save the application state only if the user was chatting
+            // Save the application state only if the user was chatting.
             if (this.#userName) {
                 this.#cometd.reload();
                 window.sessionStorage.setItem(STATE_KEY, JSON.stringify({
@@ -94,7 +94,6 @@ class Chat {
             }
         };
     }
-
 
     join(userName) {
         this.#disconnecting = false;
@@ -246,12 +245,12 @@ class Chat {
     }
 
     #subscribe() {
-        this.#chatSubscription = this.#cometd.subscribe("/chat/demo", m => this.#receive(m));
-        this.#membersSubscription = this.#cometd.subscribe("/members/demo", m => this.#members(m));
+        this.#chatSubscription = this.#cometd.subscribe("/chat/demo", (m) => this.#receive(m));
+        this.#membersSubscription = this.#cometd.subscribe("/members/demo", (m) => this.#members(m));
     }
 
     #connectionInitialized() {
-        // first time connection for this client, so subscribe tell everybody.
+        // First time connection for this client, so subscribe tell everybody.
         this.#cometd.batch(() => {
             this.#subscribe();
             this.#cometd.publish("/chat/demo", {

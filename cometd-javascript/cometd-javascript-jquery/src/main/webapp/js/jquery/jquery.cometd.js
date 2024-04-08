@@ -14,107 +14,85 @@
  * limitations under the License.
  */
 
+import "jquery";
+import {CometD} from "cometd/cometd.js";
+import {LongPollingTransport} from "cometd/LongPollingTransport.js";
+import {CallbackPollingTransport} from "cometd/CallbackPollingTransport.js";
+import {WebSocketTransport} from "cometd/WebSocketTransport.js";
 
-(function(root, factory) {
-    if (typeof exports === 'object') {
-        module.exports = factory(require('jquery'), require('cometd/cometd'));
-    } else if (typeof define === 'function' && define.amd) {
-        define(['jquery', 'cometd/cometd'], factory);
-    } else {
-        factory(jQuery, root.org.cometd);
-    }
-}(this, function($, cometdModule) {
-    function _setHeaders(xhr, headers) {
-        if (headers) {
-            for (var headerName in headers) {
-                if (headers.hasOwnProperty(headerName)) {
-                    if (headerName.toLowerCase() === 'content-type') {
-                        continue;
-                    }
-                    xhr.setRequestHeader(headerName, headers[headerName]);
+function _setHeaders(xhr, headers) {
+    if (headers) {
+        for (const headerName in headers) {
+            if (headers.hasOwnProperty(headerName)) {
+                if (headerName.toLowerCase() === 'content-type') {
+                    continue;
                 }
+                xhr.setRequestHeader(headerName, headers[headerName]);
             }
         }
     }
+}
 
-    // Remap toolkit-specific transport calls.
-    function LongPollingTransport() {
-        var _super = new cometdModule.LongPollingTransport();
-        var that = cometdModule.Transport.derive(_super);
-
-        that.xhrSend = function(packet) {
-            return $.ajax({
-                url: packet.url,
-                async: packet.sync !== true,
-                type: 'POST',
-                contentType: 'application/json',
-                data: packet.body,
-                global: false,
-                xhrFields: {
-                    // For asynchronous calls.
-                    withCredentials: true
-                },
-                beforeSend: function(xhr) {
-                    // For synchronous calls.
-                    xhr.withCredentials = true;
-                    _setHeaders(xhr, packet.headers);
-                    // Returning false will abort the XHR send.
-                    return true;
-                },
-                success: packet.onSuccess,
-                error: function(xhr, reason, exception) {
-                    packet.onError(reason, exception);
-                }
-            });
-        };
-
-        return that;
+class jqLongPollingTransport extends LongPollingTransport {
+    xhrSend(packet) {
+        return $.ajax({
+            url: packet.url,
+            async: packet.sync !== true,
+            type: 'POST',
+            contentType: 'application/json',
+            data: packet.body,
+            global: false,
+            xhrFields: {
+                // For asynchronous calls.
+                withCredentials: true
+            },
+            beforeSend: function(xhr) {
+                // For synchronous calls.
+                xhr.withCredentials = true;
+                _setHeaders(xhr, packet.headers);
+                // Returning false will abort the XHR send.
+                return true;
+            },
+            success: packet.onSuccess,
+            error: function(xhr, reason, exception) {
+                packet.onError(reason, exception);
+            }
+        });
     }
+}
 
-    function CallbackPollingTransport() {
-        var _super = new cometdModule.CallbackPollingTransport();
-        var that = cometdModule.Transport.derive(_super);
-
-        that.jsonpSend = function(packet) {
-            $.ajax({
-                url: packet.url,
-                async: packet.sync !== true,
-                type: 'GET',
-                dataType: 'jsonp',
-                jsonp: 'jsonp',
-                data: {
-                    // In callback-polling, the content must be sent via the 'message' parameter.
-                    message: packet.body
-                },
-                beforeSend: function(xhr) {
-                    _setHeaders(xhr, packet.headers);
-                    // Returning false will abort the XHR send.
-                    return true;
-                },
-                success: packet.onSuccess,
-                error: function(xhr, reason, exception) {
-                    packet.onError(reason, exception);
-                }
-            });
-        };
-
-        return that;
+class jqCallbackPollingTransport extends CallbackPollingTransport {
+    jsonpSend(packet) {
+        $.ajax({
+            url: packet.url,
+            async: packet.sync !== true,
+            type: 'GET',
+            dataType: 'jsonp',
+            jsonp: 'jsonp',
+            data: {
+                // In callback-polling, the content must be sent via the 'message' parameter.
+                message: packet.body
+            },
+            beforeSend: function(xhr) {
+                _setHeaders(xhr, packet.headers);
+                // Returning false will abort the XHR send.
+                return true;
+            },
+            success: packet.onSuccess,
+            error: function(xhr, reason, exception) {
+                packet.onError(reason, exception);
+            }
+        });
     }
+}
 
-    $.CometD = function(name) {
-        var cometd = new cometdModule.CometD(name);
-        cometd.unregisterTransports();
-        // Registration order is important.
-        if (window.WebSocket) {
-            cometd.registerTransport('websocket', new cometdModule.WebSocketTransport());
-        }
-        cometd.registerTransport('long-polling', new LongPollingTransport());
-        cometd.registerTransport('callback-polling', new CallbackPollingTransport());
+export const cometd = new CometD();
+cometd.unregisterTransports();
+// Registration order is important.
+if (window.WebSocket) {
+    cometd.registerTransport('websocket', new WebSocketTransport());
+}
+cometd.registerTransport('long-polling', new jqLongPollingTransport());
+cometd.registerTransport('callback-polling', new jqCallbackPollingTransport());
 
-        return cometd;
-    };
-
-    // The default cometd instance.
-    $.cometd = new $.CometD();
-    return $.cometd;
-}));
+$.cometd = cometd;
