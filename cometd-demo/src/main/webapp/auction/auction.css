@@ -1,0 +1,169 @@
+body {
+    font-family: "Varela Round", sans-serif;
+    color: #333;
+    width: 800px;
+    text-align: justify;
+}
+
+#login {
+    background-color: blue;
+    color: #eee;
+    padding: 20px;
+    display: grid;
+    grid-template-columns: 6fr 6fr 1fr;
+    align-items: center;
+}
+
+#login label {
+    font-size: 2em;
+    justify-self: start;
+}
+
+#login-name {
+    justify-self: end;
+}
+
+#login-button {
+    justify-self: start;
+    margin-left: 10px;
+}
+
+#auction {
+    display: grid;
+}
+
+#banner {
+    background-color: blue;
+    color: #eee;
+    font-size: 1.75em;
+    padding: 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+}
+
+#banner-title {
+    justify-self: start;
+}
+
+#banner-user {
+    justify-self: end;
+}
+
+#catalog {
+    padding-top: 5px;
+    padding-bottom: 5px;
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+}
+
+#catalog-categories {
+    background-color: #ddd;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+#categories {
+    padding-top: 20px;
+    padding-bottom: 10px;
+}
+
+#categories div:nth-child(odd) {
+    background-color: #eee;
+}
+
+#categories div {
+    padding: 5px;
+    cursor: pointer;
+}
+
+#categories div.selected {
+    background-color: #dff;
+}
+
+#items {
+    background-color: #fff;
+    padding: 20px;
+    display: grid;
+    grid-template-columns: auto;
+}
+
+#items > div {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+}
+
+#items > div .title {
+    color: #800;
+}
+
+#items > div div {
+    padding-bottom: 10px
+}
+
+#my-bids {
+    background-color: #49b;
+    color: #eee;
+}
+
+#my-bids h2 {
+    padding-left: 20px;
+}
+
+#my-bids table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#my-bids th {
+    background-color: #ddd;
+    color: #333;
+    padding: 5px;
+    border: 2px solid #eee;
+}
+
+#bids {
+    background-color: #eee;
+    color: #333;
+}
+
+#bids td {
+    border: 2px solid #eee;
+}
+
+#bids td.other {
+    background-color: #f66;
+}
+
+#bids td.self {
+    background-color: #0f6;
+}
+
+#chat {
+    margin-top: 5px;
+    background-color: #999;
+    display: grid;
+    grid-template-columns: auto;
+}
+
+#chat-banner h2 {
+    padding-left: 5px;
+}
+
+#chat-room {
+    background-color: #eee;
+    padding: 5px;
+    display: grid;
+    grid-template-columns: 4fr 1fr 1fr;
+}
+
+#chat-messages .system {
+    font-style: italic;
+}
+
+#chat-members {
+    padding-left: 5px;
+}
+
+#chat-control {
+    padding: 5px;
+}

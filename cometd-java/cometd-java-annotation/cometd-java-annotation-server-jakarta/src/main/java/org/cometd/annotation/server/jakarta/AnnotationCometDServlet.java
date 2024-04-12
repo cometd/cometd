@@ -55,6 +55,7 @@ public class AnnotationCometDServlet extends CometDServlet {
         super.init();
 
         processor = newServerAnnotationProcessor(getBayeuxServer());
+        getServletContext().setAttribute(ServerAnnotationProcessor.class.getName(), processor);
 
         String servicesParam = getInitParameter("services");
         if (servicesParam != null && servicesParam.length() > 0) {

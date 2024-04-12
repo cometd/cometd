@@ -14,24 +14,26 @@
  * limitations under the License.
  */
 
-package org.webtide.demo.auction.dao;
+package org.cometd.demo.auction;
 
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import org.webtide.demo.auction.Bidder;
+import java.util.Map;
+import org.eclipse.jetty.util.ajax.JSON;
+import org.eclipse.jetty.util.ajax.JSON.Output;
 
-public class BidderDao {
-    static final ConcurrentMap<String, Bidder> _bidders = new ConcurrentHashMap<>();
-
-    public Bidder getBidder(String username) {
-        return _bidders.get(username);
+public record Category(int id, String name, String description) implements Comparable<Category>, JSON.Convertible {
+    @Override
+    public int compareTo(Category o) {
+        return name().compareTo(o.name());
     }
 
-    public boolean addBidder(Bidder bidder) {
-        return _bidders.putIfAbsent(bidder.getUsername(), bidder.clone()) == null;
+    @Override
+    public void fromJSON(Map<String, Object> object) {
     }
 
-    public void saveBidder(Bidder bidder) {
-        _bidders.put(bidder.getUsername(), bidder.clone());
+    @Override
+    public void toJSON(Output out) {
+        out.add("id", id());
+        out.add("name", name());
+        out.add("description", description());
     }
 }

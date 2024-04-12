@@ -14,16 +14,22 @@
  * limitations under the License.
  */
 
-package org.webtide.demo.auction;
+package org.cometd.demo.auction;
 
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
+import java.util.Map;
+import org.eclipse.jetty.util.ajax.JSON;
+import org.eclipse.jetty.util.ajax.JSON.Output;
 
-public class Utils {
+public record Item(int id, String name, Category category, String description, double price) implements JSON.Convertible {
+    @Override
+    public void fromJSON(Map<String, Object> object) {
+    }
 
-    private static final NumberFormat cashAmount = new DecimalFormat("$#,##0.00");
-
-    public static String formatCurrency(double amount) {
-        return cashAmount.format(amount);
+    @Override
+    public void toJSON(Output out) {
+        out.add("id", id());
+        out.add("name", name());
+        out.add("description", description());
+        out.add("categoryId", category.id());
     }
 }

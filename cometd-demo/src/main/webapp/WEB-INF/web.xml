@@ -94,7 +94,7 @@
   <!-- Auction demo Servlet-->
   <servlet>
     <servlet-name>auctionDemo</servlet-name>
-    <servlet-class>org.webtide.demo.auction.AuctionServlet</servlet-class>
+    <servlet-class>org.cometd.demo.auction.AuctionServlet</servlet-class>
     <load-on-startup>5</load-on-startup>
   </servlet>
 
