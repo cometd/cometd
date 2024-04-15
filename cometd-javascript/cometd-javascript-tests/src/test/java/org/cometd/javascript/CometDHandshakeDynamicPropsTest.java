@@ -58,6 +58,7 @@ public class CometDHandshakeDynamicPropsTest extends AbstractCometDLongPollingTe
                             outHandshake = message;
                             outLatch.countDown();
                         }
+                        return message;
                     }
                 });
                 let inHandshake;

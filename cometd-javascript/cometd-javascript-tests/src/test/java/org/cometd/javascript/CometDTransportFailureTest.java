@@ -50,7 +50,7 @@ public class CometDTransportFailureTest extends AbstractCometDWebSocketTest {
                 
                 // Replace the transport failure logic.
                 const oTF = cometd.onTransportFailure;
-                cometd.onTransportFailure = function(message, failureInfo, failureHandler) {
+                cometd.onTransportFailure = (message, failureInfo, failureHandler) => {
                     if (message.channel === '/meta/connect') {
                         failureInfo.action = 'retry';
                         failureInfo.delay = 0;

@@ -66,7 +66,7 @@ export class WebSocketTransport extends Transport {
             }
         }
         context.envelopes[messageIds.join(",")] = [envelope, metaConnect];
-        this.debug("Transport", this, "stored envelope, envelopes", context.envelopes);
+        this.debug("Transport", this.type, "stored envelope, envelopes", context.envelopes);
     }
 
     #removeEnvelope(context, messageIds) {
@@ -93,7 +93,7 @@ export class WebSocketTransport extends Transport {
             }
         }
         if (removed) {
-            this.debug("Transport", this, "removed envelope, envelopes", envelopes);
+            this.debug("Transport", this.type, "removed envelope, envelopes", envelopes);
         }
     }
 
@@ -108,7 +108,7 @@ export class WebSocketTransport extends Transport {
 
         // Mangle the URL, changing the scheme from "http" to "ws".
         const url = this.cometd.getURL().replace(/^http/, "ws");
-        this.debug("Transport", this, "connecting to URL", url);
+        this.debug("Transport", this.type, "connecting to URL", url);
 
         try {
             const protocol = this.configuration.protocol;
@@ -126,7 +126,7 @@ export class WebSocketTransport extends Transport {
         const connectTimeout = this.configuration.connectTimeout;
         if (connectTimeout > 0) {
             context.connectTimer = this.setTimeout(() => {
-                this.debug("Transport", this, "timed out while connecting to URL", url, ":", connectTimeout, "ms");
+                this.debug("Transport", this.type, "timed out while connecting to URL", url, ":", connectTimeout, "ms");
                 // The connection was not opened, close anyway.
                 this.#forceClose(context, {
                     code: 1000,
@@ -136,7 +136,7 @@ export class WebSocketTransport extends Transport {
         }
 
         const onopen = () => {
-            this.debug("Transport", this, "onopen", context);
+            this.debug("Transport", this.type, "onopen", context);
             if (context.connectTimer) {
                 this.clearTimeout(context.connectTimer);
             }
@@ -162,7 +162,7 @@ export class WebSocketTransport extends Transport {
         // are performed only if it's the same connection.
         const onclose = (event) => {
             event = event || {code: 1000};
-            this.debug("Transport", this, "onclose", context, event, "connecting", this.#connecting, "current", this.#context);
+            this.debug("Transport", this.type, "onclose", context, event, "connecting", this.#connecting, "current", this.#context);
 
             if (context.connectTimer) {
                 this.clearTimeout(context.connectTimer);
@@ -172,7 +172,7 @@ export class WebSocketTransport extends Transport {
         };
 
         const onmessage = (wsMessage) => {
-            this.debug("Transport", this, "onmessage", wsMessage, context);
+            this.debug("Transport", this.type, "onmessage", wsMessage, context);
             this.#onMessage(context, wsMessage);
         };
 
@@ -187,18 +187,18 @@ export class WebSocketTransport extends Transport {
         };
         context.webSocket.onmessage = onmessage;
 
-        this.debug("Transport", this, "configured callbacks on", context);
+        this.debug("Transport", this.type, "configured callbacks on", context);
     }
 
     #onTransportTimeout(context, message, delay) {
         const result = this.notifyTransportTimeout([message]);
         if (result > 0) {
-            this.debug("Transport", this, "extended waiting for message replies:", result, "ms");
+            this.debug("Transport", this.type, "extended waiting for message replies:", result, "ms");
             context.timeouts[message.id] = this.setTimeout(() => {
                 this.#onTransportTimeout(context, message, delay + result);
             }, result);
         } else {
-            this.debug("Transport", this, "expired waiting for message reply", message.id, ":", delay, "ms");
+            this.debug("Transport", this.type, "expired waiting for message reply", message.id, ":", delay, "ms");
             this.#forceClose(context, {
                 code: 1000,
                 reason: "Message Timeout"
@@ -211,7 +211,7 @@ export class WebSocketTransport extends Transport {
         try {
             json = this.convertToJSON(envelope.messages);
         } catch (x) {
-            this.debug("Transport", this, "exception:", x);
+            this.debug("Transport", this.type, "exception:", x);
             const mIds = [];
             for (let j = 0; j < envelope.messages.length; ++j) {
                 const m = envelope.messages[j];
@@ -228,7 +228,7 @@ export class WebSocketTransport extends Transport {
         }
 
         context.webSocket.send(json);
-        this.debug("Transport", this, "sent", envelope, "/meta/connect =", metaConnect);
+        this.debug("Transport", this.type, "sent", envelope, "/meta/connect =", metaConnect);
 
         // Manage the timeout waiting for the response.
         let delay = this.configuration.maxNetworkDelay;
@@ -248,7 +248,7 @@ export class WebSocketTransport extends Transport {
             }
         }
 
-        this.debug("Transport", this, "started waiting for message replies", delay, "ms, messageIds:", messageIds, ", timeouts:", context.timeouts);
+        this.debug("Transport", this.type, "started waiting for message replies", delay, "ms, messageIds:", messageIds, ", timeouts:", context.timeouts);
     }
 
     _notifySuccess(fn, messages) {
@@ -286,7 +286,7 @@ export class WebSocketTransport extends Transport {
 
     #onOpen(context) {
         const envelopes = context.envelopes;
-        this.debug("Transport", this, "opened", context, "pending messages", envelopes);
+        this.debug("Transport", this.type, "opened", context, "pending messages", envelopes);
         for (let key in envelopes) {
             if (envelopes.hasOwnProperty(key)) {
                 const element = envelopes[key];
@@ -301,7 +301,7 @@ export class WebSocketTransport extends Transport {
     };
 
     #onMessage(context, wsMessage) {
-        this.debug("Transport", this, "received websocket message", wsMessage, context);
+        this.debug("Transport", this.type, "received websocket message", wsMessage, context);
 
         let close = false;
         const messages = this.convertToMessages(wsMessage.data);
@@ -320,7 +320,7 @@ export class WebSocketTransport extends Transport {
                     if (timeout) {
                         this.clearTimeout(timeout);
                         delete context.timeouts[message.id];
-                        this.debug("Transport", this, "removed timeout for message", message.id, ", timeouts", context.timeouts);
+                        this.debug("Transport", this.type, "removed timeout for message", message.id, ", timeouts", context.timeouts);
                     }
                 }
             }
@@ -344,7 +344,7 @@ export class WebSocketTransport extends Transport {
     };
 
     #onClose(context, event) {
-        this.debug("Transport", this, "closed", context, event);
+        this.debug("Transport", this.type, "closed", context, event);
 
         if (this.#sameContext(context)) {
             // Remember if we were able to connect.
@@ -385,13 +385,13 @@ export class WebSocketTransport extends Transport {
     };
 
     accept(version, crossDomain, url) {
-        this.debug("Transport", this, "accept, supported:", this.#webSocketSupported);
+        this.debug("Transport", this.type, "accept, supported:", this.#webSocketSupported);
         // Using !! to return a boolean (and not the WebSocket object).
         return this.#webSocketSupported && !!window.WebSocket && this.cometd.websocketEnabled !== false;
     };
 
     send(envelope, metaConnect) {
-        this.debug("Transport", this, "sending", envelope, "/meta/connect =", metaConnect);
+        this.debug("Transport", this.type, "sending", envelope, "/meta/connect =", metaConnect);
         this.#send(this.#context, envelope, metaConnect);
     };
 

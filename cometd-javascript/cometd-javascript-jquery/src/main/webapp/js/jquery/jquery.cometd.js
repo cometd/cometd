@@ -24,7 +24,7 @@ function _setHeaders(xhr, headers) {
     if (headers) {
         for (const headerName in headers) {
             if (headers.hasOwnProperty(headerName)) {
-                if (headerName.toLowerCase() === 'content-type') {
+                if (headerName.toLowerCase() === "content-type") {
                     continue;
                 }
                 xhr.setRequestHeader(headerName, headers[headerName]);
@@ -38,8 +38,8 @@ class jqLongPollingTransport extends LongPollingTransport {
         return $.ajax({
             url: packet.url,
             async: packet.sync !== true,
-            type: 'POST',
-            contentType: 'application/json',
+            type: "POST",
+            contentType: "application/json",
             data: packet.body,
             global: false,
             xhrFields: {
@@ -66,9 +66,9 @@ class jqCallbackPollingTransport extends CallbackPollingTransport {
         $.ajax({
             url: packet.url,
             async: packet.sync !== true,
-            type: 'GET',
-            dataType: 'jsonp',
-            jsonp: 'jsonp',
+            type: "GET",
+            dataType: "jsonp",
+            jsonp: "jsonp",
             data: {
                 // In callback-polling, the content must be sent via the 'message' parameter.
                 message: packet.body
@@ -90,9 +90,9 @@ export const cometd = new CometD();
 cometd.unregisterTransports();
 // Registration order is important.
 if (window.WebSocket) {
-    cometd.registerTransport('websocket', new WebSocketTransport());
+    cometd.registerTransport("websocket", new WebSocketTransport());
 }
-cometd.registerTransport('long-polling', new jqLongPollingTransport());
-cometd.registerTransport('callback-polling', new jqCallbackPollingTransport());
+cometd.registerTransport("long-polling", new jqLongPollingTransport());
+cometd.registerTransport("callback-polling", new jqCallbackPollingTransport());
 
 $.cometd = cometd;

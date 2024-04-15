@@ -50,7 +50,7 @@ public class CometDAckExtensionTest extends AbstractCometDTransportsTest {
                 let clientSupportsAck = false;
                 cometd.registerExtension('test', {
                     outgoing: message => {
-                        if (message.channel == '/meta/handshake') {
+                        if (message.channel === '/meta/handshake') {
                             clientSupportsAck = message.ext && message.ext.ack;
                         }
                         return message;
@@ -89,13 +89,13 @@ public class CometDAckExtensionTest extends AbstractCometDTransportsTest {
                 let outAckId;
                 cometd.registerExtension('test', {
                     incoming: message => {
-                       if (message.channel == '/meta/connect') {
+                       if (message.channel === '/meta/connect') {
                            inAckId = message.ext && message.ext.ack;
                        }
                        return message;
                     },
                     outgoing: message => {
-                       if (message.channel == '/meta/connect') {
+                       if (message.channel === '/meta/connect') {
                            outAckId = message.ext && message.ext.ack;
                        }
                        return message;

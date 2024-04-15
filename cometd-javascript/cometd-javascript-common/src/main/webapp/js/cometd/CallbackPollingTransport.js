@@ -24,8 +24,8 @@ export class CallbackPollingTransport extends RequestTransport {
     }
 
     jsonpSend(packet) {
-        const head = document.getElementsByTagName("head")[0];
-        const script = document.createElement("script");
+        const head = window.document.getElementsByTagName("head")[0];
+        const script = window.document.createElement("script");
 
         const callbackName = "_cometd_jsonp_" + this.#jsonp++;
         window[callbackName] = (responseText) => {
@@ -85,7 +85,7 @@ export class CallbackPollingTransport extends RequestTransport {
         if (lengths.length > 1) {
             let begin = 0;
             let end = lengths[0];
-            this.debug("Transport", this, "split", envelope.messages.length, "messages into", lengths.join(" + "));
+            this.debug("Transport", this.type, "split", envelope.messages.length, "messages into", lengths.join(" + "));
             envelopeToSend = this.cometd._mixin(false, {}, envelope);
             envelopeToSend.messages = envelope.messages.slice(begin, end);
             envelopeToSend.onSuccess = envelope.onSuccess;
@@ -102,7 +102,7 @@ export class CallbackPollingTransport extends RequestTransport {
             }
         }
 
-        this.debug("Transport", this, "sending request", request.id, "envelope", envelopeToSend);
+        this.debug("Transport", this.type, "sending request", request.id, "envelope", envelopeToSend);
 
         try {
             let sameStack = true;

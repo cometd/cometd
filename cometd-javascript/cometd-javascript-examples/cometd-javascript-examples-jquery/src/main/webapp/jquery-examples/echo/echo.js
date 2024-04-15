@@ -33,7 +33,7 @@ $(() => {
     const phrase = $("#phrase");
     phrase.attr("autocomplete", "OFF");
     phrase.on("keyup", (e) => {
-        if (e.key === 'Enter') {
+        if (e.key === "Enter") {
             echoRpc(phrase.val());
             phrase.val("");
             return false;

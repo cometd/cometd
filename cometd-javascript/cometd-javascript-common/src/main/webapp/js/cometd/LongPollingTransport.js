@@ -68,7 +68,7 @@ export class LongPollingTransport extends RequestTransport {
     };
 
     transportSend(envelope, request) {
-        this.debug("Transport", this, "sending request", request.id, "envelope", envelope);
+        this.debug("Transport", this.type, "sending request", request.id, "envelope", envelope);
 
         try {
             let sameStack = true;
@@ -79,7 +79,7 @@ export class LongPollingTransport extends RequestTransport {
                 headers: this.configuration.requestHeaders,
                 body: this.convertToJSON(envelope.messages),
                 onSuccess: (response) => {
-                    this.debug("Transport", this, "received response", response);
+                    this.debug("Transport", this.type, "received response", response);
                     let success = false;
                     try {
                         const received = this.convertToMessages(response);
@@ -105,7 +105,7 @@ export class LongPollingTransport extends RequestTransport {
                     }
                 },
                 onError: (reason, exception) => {
-                    this.debug("Transport", this, "received error", reason, exception);
+                    this.debug("Transport", this.type, "received error", reason, exception);
                     this.#supportsCrossDomain = false;
                     const failure = {
                         reason: reason,
@@ -125,7 +125,7 @@ export class LongPollingTransport extends RequestTransport {
             sameStack = false;
             return true;
         } catch (x) {
-            this.debug("Transport", this, "exception:", x);
+            this.debug("Transport", this.type, "exception:", x);
             this.#supportsCrossDomain = false;
             // Keep the semantic of calling callbacks asynchronously.
             this.setTimeout(() => {

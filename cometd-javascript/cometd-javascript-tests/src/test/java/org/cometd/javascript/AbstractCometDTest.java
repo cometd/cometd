@@ -16,6 +16,7 @@
 
 package org.cometd.javascript;
 
+import java.net.URL;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
@@ -169,66 +170,73 @@ public abstract class AbstractCometDTest {
         SessionStorage sessionStorage = new SessionStorage(sessionStore);
         javaScript.put("sessionStorage", sessionStorage);
 
-        javaScript.evaluate(getClass().getResource("/browser.js"));
+        javaScript.evaluate(getClass().getResource("/browser.js"), false);
         javaScript.bindings().getMember("window").putMember("location", contextURL);
     }
 
     protected void provideCometD(String transport) {
-        javaScript.evaluate(getClass().getResource("/js/cometd/cometd.js"));
-        evaluateScript("cometd", """
-                import {CometD} from "./js/cometd/cometd.js";
+        URL resource = getClass().getResource("/js/cometd/cometd.js");
+        String script = """
+                import {CometD} from '$P';
+
                 const cometd = new CometD();
+                globalThis.cometd = cometd;
+
                 const originalTransports = {};
-                originalTransports["websocket"] = cometd.findTransport("websocket");
-                originalTransports["long-polling"] = cometd.findTransport("long-polling");
-                originalTransports["callback-polling"] = cometd.findTransport("callback-polling");
-                """);
+                globalThis.originalTransports = originalTransports;
+                originalTransports['websocket'] = cometd.findTransport('websocket');
+                originalTransports['long-polling'] = cometd.findTransport('long-polling');
+                originalTransports['callback-polling'] = cometd.findTransport('callback-polling');
+                """.replace("$P", resource.getPath());
         if (transport != null) {
-            evaluateScript("only_" + transport, """
+            script += """
                     cometd.unregisterTransports();
-                    cometd.registerTransport("$T", originalTransports["$T"]);
-                    """.replace("$T", transport));
+                    cometd.registerTransport('$T', originalTransports['$T']);
+                    """.replace("$T", transport);
         }
+        // Extension *.mjs makes GraalVM read the script as an ES6 module.
+        evaluateScript("cometd.mjs", script);
     }
 
     protected void provideTimestampExtension() {
-        javaScript.evaluate(getClass().getResource("/js/cometd/TimeStampExtension.js"));
-        javaScript.evaluate("timestamp_extension", """
-            import {TimeStampExtension} from "./js/cometd/TimeStampExtension.js";
-            cometd.registerExtension('timestamp', new TimeStampExtension());
-            """);
+        URL resource = getClass().getResource("/js/cometd/TimeStampExtension.js");
+        javaScript.evaluate("timestamp_extension.mjs", """
+                import {TimeStampExtension} from '$P';
+                cometd.registerExtension('timestamp', new TimeStampExtension());
+                """.replace("$P", resource.getPath()));
     }
 
     protected void provideTimesyncExtension() {
-        javaScript.evaluate(getClass().getResource("/js/cometd/TimeSyncExtension.js"));
-        javaScript.evaluate("timesync_extension", """
-            import {TimeSyncExtension} from "./js/cometd/TimeSyncExtension.js";
-            cometd.registerExtension('timesync', new TimeSyncExtension());
-            """);
+        URL resource = getClass().getResource("/js/cometd/TimeSyncExtension.js");
+        javaScript.evaluate("timesync_extension.mjs", """
+                import {TimeSyncExtension} from '$P';
+                cometd.registerExtension('timesync', new TimeSyncExtension());
+                """.replace("$P", resource.getPath()));
     }
 
     protected void provideMessageAcknowledgeExtension() {
-        javaScript.evaluate(getClass().getResource("/js/cometd/AckExtension.js"));
-        javaScript.evaluate("ack_extension", """
-            import {AckExtension} from "./js/cometd/AckExtension.js";
-            cometd.registerExtension('ack', new AckExtension());
-            """);
+        URL resource = getClass().getResource("/js/cometd/AckExtension.js");
+        javaScript.evaluate("ack_extension.mjs", """
+                import {AckExtension} from '$P';
+                cometd.registerExtension('ack', new AckExtension());
+                """.replace("$P", resource.getPath()));
     }
 
-    protected void provideReloadExtension() {
-        javaScript.evaluate(getClass().getResource("/js/cometd/ReloadExtension.js"));
-        javaScript.evaluate("reload_extension", """
-            import {ReloadExtension} from "./js/cometd/ReloadExtension.js";
-            cometd.registerExtension('reload', new ReloadExtension());
-            """);
+    protected URL provideReloadExtension() {
+        URL resource = getClass().getResource("/js/cometd/ReloadExtension.js");
+        javaScript.evaluate("reload_extension.mjs", """
+                import {ReloadExtension} from '$P';
+                cometd.registerExtension('reload', new ReloadExtension());
+                """.replace("$P", resource.getPath()));
+        return resource;
     }
 
     protected void provideBinaryExtension() {
-        javaScript.evaluate(getClass().getResource("/js/cometd/BinaryExtension.js"));
-        javaScript.evaluate("binary_extension", """
-            import {BinaryExtension} from "./js/cometd/BinaryExtension.js";
-            cometd.registerExtension('binary', new BinaryExtension());
-            """);
+        URL resource = getClass().getResource("/js/cometd/BinaryExtension.js");
+        javaScript.evaluate("binary_extension.mjs", """
+                import {BinaryExtension} from '$P';
+                cometd.registerExtension('binary', new BinaryExtension());
+                """.replace("$P", resource.getPath()));
     }
 
     protected void destroyPage() throws Exception {

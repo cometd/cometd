@@ -35,6 +35,7 @@ public class CometDPublishHeldUntilHandshookTest extends AbstractCometDTransport
                 cometd.registerExtension('test', {
                     outgoing: message => {
                         channels.push(message.channel);
+                        return message;
                     }
                 });
                 cometd.addListener('/meta/handshake', () => {

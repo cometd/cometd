@@ -141,11 +141,15 @@ public class JavaScript implements Runnable {
     }
 
     @SuppressWarnings("unchecked")
-    public <T> T evaluate(URL url) {
+    public <T> T evaluate(URL url, boolean asModule) {
         FutureTask<T> task = new FutureTask<>(() -> {
             context.enter();
             try {
-                return (T)context.eval(Source.newBuilder("js", url).build());
+                Source.Builder sourceBuilder = Source.newBuilder("js", url);
+                if (asModule) {
+                    sourceBuilder = sourceBuilder.mimeType("application/javascript+module");
+                }
+                return (T)context.eval(sourceBuilder.build());
             } catch (Throwable x) {
                 throw new JavaScriptException(x);
             } finally {
@@ -159,7 +163,8 @@ public class JavaScript implements Runnable {
         FutureTask<T> task = new FutureTask<>(() -> {
             context.enter();
             try {
-                return convert(context.eval(Source.newBuilder("js", code, name).build()));
+                Source.Builder sourceBuilder = Source.newBuilder("js", code, name);
+                return convert(context.eval(sourceBuilder.build()));
             } catch (Throwable x) {
                 throw new JavaScriptException(x);
             } finally {

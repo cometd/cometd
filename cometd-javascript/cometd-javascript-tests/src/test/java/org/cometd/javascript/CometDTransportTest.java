@@ -16,6 +16,7 @@
 
 package org.cometd.javascript;
 
+import java.net.URL;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -26,24 +27,30 @@ public class CometDTransportTest extends AbstractCometDTransportsTest {
     public void testTransport(String transport) throws Exception {
         initCometDServer(transport);
 
-        evaluateScript("""
-                const readyLatch = new Latch(1);
-                function LocalTransport() {
-                    const _super = new cometdModule.RequestTransport();
-                    const that = cometdModule.Transport.derive(_super);
-                    let _sends = 0;
+        URL resource = getClass().getResource("/js/cometd/RequestTransport.js");
+        evaluateScript("LocalTransport.mjs", """
+                import {RequestTransport} from '$P';
+                
+                globalThis.LocalTransport = class extends RequestTransport {
+                    #sends = 0;
+                    #readyLatch;
 
-                    that.getSends = () => { return _sends; };
+                    constructor(readyLatch) {
+                        super();
+                        this.#readyLatch = readyLatch;
+                    }
 
-                    that.accept = () => {
+                    getSends() { return this.#sends; };
+
+                    accept() {
                         return true;
                     };
 
-                    that.transportSend = function(envelope, request) {
-                        ++_sends;
+                    transportSend(envelope, request) {
+                        ++this.#sends;
                         let response;
                         let timeout;
-                        switch (_sends) {
+                        switch (this.#sends) {
                             case 1:
                                 response = JSON.stringify([{
                                     "successful": true,
@@ -86,7 +93,7 @@ public class CometDTransportTest extends AbstractCometDTransportsTest {
                                     }
                                 }]);
                                 timeout = 5000;
-                                readyLatch.countDown();
+                                this.#readyLatch.countDown();
                                 break;
                             case 4:
                                 response = JSON.stringify([{
@@ -99,22 +106,24 @@ public class CometDTransportTest extends AbstractCometDTransportsTest {
                             default:
                                 throw 'Test Error';
                         }
-                        
-                        // Respond asynchronously.
-                        const self = this;
-                        setTimeout(() => {
-                            self.transportSuccess(envelope, request, self.convertToMessages(response));
-                        }, timeout);
-                    };
 
-                    return that;
+                        // Respond asynchronously.
+                        cometd.setTimeout(() => {
+                            this.transportSuccess(envelope, request, this.convertToMessages(response));
+                        }, timeout);
+                    }
                 }
-                const localTransport = new LocalTransport();
+                """.replace("$P", resource.getPath()));
+
+        evaluateScript("""
+                const readyLatch = new Latch(1);
+                const localTransport = new LocalTransport(readyLatch);
+
                 cometd.unregisterTransports();
                 // The server does not support a 'local' transport, so use 'long-polling'.
                 const registered = cometd.registerTransport('long-polling', localTransport);
                 window.assert(registered === true, 'local transport not registered');
-                                
+
                 cometd.init({url: '$U', logLevel: '$L'});
                 """.replace("$U", cometdURL).replace("$L", getLogLevel()));
 

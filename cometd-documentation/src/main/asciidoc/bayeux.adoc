@@ -1376,7 +1376,7 @@ The 2 connection limit can be consumed by outstanding connect meta messages from
 
 ==== Server-side Multiple clients detection
 
-It is RECOMMENDED that Bayeux server implementations use the cookie "BAYEUX_BROWSER"to identify an HTTP client and to thus detect multiple Bayeux clients running within the same HTTP client.
+It is RECOMMENDED that Bayeux server implementations use the cookie "BAYEUX_BROWSER" to identify an HTTP client and to thus detect multiple Bayeux clients running within the same HTTP client.
 Once detected, the server SHOULD not wait for messages in connect and SHOULD use the advice interval mechanism to establish traditional polling.
 
 ==== Client-side Multiple clients handling

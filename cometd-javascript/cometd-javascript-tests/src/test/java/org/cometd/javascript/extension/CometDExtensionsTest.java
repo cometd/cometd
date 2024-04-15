@@ -165,6 +165,7 @@ public class CometDExtensionsTest extends AbstractCometDTransportsTest {
                         if (message.channel === '$C' && message.out_ext2 === 1) {
                             message.out_ext1 = 1;
                         }
+                        return message;
                     }
                 });
                 cometd.registerExtension('ext2', {
@@ -178,6 +179,7 @@ public class CometDExtensionsTest extends AbstractCometDTransportsTest {
                         if (message.channel === '$C' && message.out_ext1 !== 1) {
                             message.out_ext2 = 1;
                         }
+                        return message;
                     }
                 });
                 """.replace("$C", channelName));

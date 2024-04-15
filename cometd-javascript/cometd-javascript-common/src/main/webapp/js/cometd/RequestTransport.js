@@ -48,7 +48,7 @@ export class RequestTransport extends Transport {
     #onTransportTimeout(envelope, request, delay) {
         const result = this.notifyTransportTimeout(envelope.messages);
         if (result > 0) {
-            this.debug("Transport", this, "extended waiting for message replies of request", request.id, ":", result, "ms");
+            this.debug("Transport", this.type, "extended waiting for message replies of request", request.id, ":", result, "ms");
             request.timeout = this.setTimeout(() => {
                 this.#onTransportTimeout(envelope, request, delay + result);
             }, result);
@@ -77,7 +77,7 @@ export class RequestTransport extends Transport {
                     delay += this.advice.timeout;
                 }
 
-                this.debug("Transport", this, "started waiting for message replies of request", request.id, ":", delay, "ms");
+                this.debug("Transport", this.type, "started waiting for message replies of request", request.id, ":", delay, "ms");
 
                 request.timeout = this.setTimeout(() => {
                     this.#onTransportTimeout(envelope, request, delay);
@@ -99,14 +99,14 @@ export class RequestTransport extends Transport {
             this.#requests.push(request);
             this.#transportSend(envelope, request);
         } else {
-            this.debug("Transport", this, "queueing request", requestId, "envelope", envelope);
+            this.debug("Transport", this.type, "queueing request", requestId, "envelope", envelope);
             this.#envelopes.push([envelope, request]);
         }
     }
 
     #metaConnectComplete(request) {
         const requestId = request.id;
-        this.debug("Transport", this, "/meta/connect complete, request", requestId);
+        this.debug("Transport", this.type, "/meta/connect complete, request", requestId);
         if (this.#metaConnectRequest !== null && this.#metaConnectRequest.id !== requestId) {
             throw "/meta/connect request mismatch, completing request " + requestId;
         }
@@ -130,7 +130,7 @@ export class RequestTransport extends Transport {
                     this.#coalesceEnvelopes(nextEnvelope);
                 }
                 this.#queueSend(nextEnvelope);
-                this.debug("Transport", this, "completed request", request.id, nextEnvelope);
+                this.debug("Transport", this.type, "completed request", request.id, nextEnvelope);
             } else {
                 // Keep the semantic of calling callbacks asynchronously.
                 this.setTimeout(() => {
@@ -167,7 +167,7 @@ export class RequestTransport extends Transport {
     transportSuccess(envelope, request, responses) {
         if (!request.expired) {
             this.clearTimeout(request.timeout);
-            this.debug("Transport", this, "cancelled waiting for message replies");
+            this.debug("Transport", this.type, "cancelled waiting for message replies");
             this.complete(request, true, request.metaConnect);
             if (responses && responses.length > 0) {
                 envelope.onSuccess(responses);
@@ -182,7 +182,7 @@ export class RequestTransport extends Transport {
     transportFailure(envelope, request, failure) {
         if (!request.expired) {
             this.clearTimeout(request.timeout);
-            this.debug("Transport", this, "cancelled waiting for failed message replies");
+            this.debug("Transport", this.type, "cancelled waiting for failed message replies");
             this.complete(request, false, request.metaConnect);
             envelope.onFailure(request.xhr, envelope.messages, failure);
         }
@@ -194,7 +194,7 @@ export class RequestTransport extends Transport {
         }
 
         const requestId = ++this.#requestIds;
-        this.debug("Transport", this, "/meta/connect send, request", requestId, "envelope", envelope);
+        this.debug("Transport", this.type, "/meta/connect send, request", requestId, "envelope", envelope);
         const request = {
             id: requestId,
             metaConnect: true,

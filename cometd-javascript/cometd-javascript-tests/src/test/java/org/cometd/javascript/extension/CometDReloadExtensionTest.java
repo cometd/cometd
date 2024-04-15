@@ -16,6 +16,7 @@
 
 package org.cometd.javascript.extension;
 
+import java.net.URL;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
@@ -33,25 +34,22 @@ public class CometDReloadExtensionTest extends AbstractCometDTransportsTest {
     public void testReloadWithConfiguration(String transport) throws Exception {
         initCometDServer(transport);
 
-        evaluateScript("const readyLatch = new Latch(1);");
-        Latch readyLatch = javaScript.get("readyLatch");
         String attributeName = "reload.test";
-        provideReloadExtension();
-        evaluateScript("""
+        URL resource = provideReloadExtension();
+        evaluateScript(attributeName + ".mjs", """
+                import {ReloadExtension} from '$P';
+                
                 cometd.unregisterExtension('reload');
-                cometd.registerExtension('reload', new cometdModule.ReloadExtension({
+                cometd.registerExtension('reload', new ReloadExtension({
                     name: '$A'
                 }));
 
                 cometd.configure({url: '$U', logLevel: '$L'});
-                cometd.addListener('/meta/connect', message => {
-                   if (message.successful) {
-                       readyLatch.countDown();
-                   }
-                });
-                """.replace("$U", cometdURL).replace("$L", getLogLevel()).replace("$A", attributeName));
-        evaluateScript("cometd.handshake();");
-        Assertions.assertTrue(readyLatch.await(5000));
+                cometd.handshake();
+                """.replace("$P", resource.getPath())
+                .replace("$U", cometdURL)
+                .replace("$L", getLogLevel())
+                .replace("$A", attributeName));
 
         // Wait that the long poll is established before reloading
         Thread.sleep(metaConnectPeriod / 2);
@@ -78,19 +76,11 @@ public class CometDReloadExtensionTest extends AbstractCometDTransportsTest {
             }
         });
 
-        evaluateScript("const readyLatch = new Latch(1);");
-        Latch readyLatch = javaScript.get("readyLatch");
         provideReloadExtension();
         evaluateScript("""
                 cometd.configure({url: '$U', logLevel: '$L'});
-                cometd.addListener('/meta/connect', message => {
-                   if (message.successful) {
-                       readyLatch.countDown();
-                   }
-                });
                 cometd.handshake();
                 """.replace("$U", cometdURL).replace("$L", getLogLevel()));
-        Assertions.assertTrue(readyLatch.await(5000));
 
         // Wait that the long poll is established before reloading
         Thread.sleep(metaConnectPeriod / 2);
@@ -101,12 +91,12 @@ public class CometDReloadExtensionTest extends AbstractCometDTransportsTest {
         destroyPage();
         initPage(transport);
 
-        evaluateScript("const readyLatch = new Latch(1);");
-        readyLatch = javaScript.get("readyLatch");
         provideReloadExtension();
         evaluateScript("""
                 cometd.configure({url: '$U', logLevel: '$L'});
+                
                 let ext;
+                const readyLatch = new Latch(1);
                 cometd.addListener('/meta/handshake', message => {
                    if (message.successful) {
                       ext = message.ext;
@@ -117,8 +107,10 @@ public class CometDReloadExtensionTest extends AbstractCometDTransportsTest {
                        readyLatch.countDown();
                    }
                 });
+                
                 cometd.handshake();
                 """.replace("$U", cometdURL).replace("$L", getLogLevel()));
+        Latch readyLatch = javaScript.get("readyLatch");
         Assertions.assertTrue(readyLatch.await(5000));
 
         evaluateScript("""
@@ -261,7 +253,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTransportsTest {
         String newClientId = evaluateScript("cometd.getClientId();");
         Assertions.assertEquals(clientId, newClientId);
 
-        String transportType = evaluateScript("cometd.getTransport().getType();");
+        String transportType = evaluateScript("cometd.getTransport().type;");
         Assertions.assertEquals(transportName, transportType);
 
         evaluateScript("cometd.disconnect();");
@@ -357,13 +349,16 @@ public class CometDReloadExtensionTest extends AbstractCometDTransportsTest {
         latch = javaScript.get("latch");
         Assertions.assertTrue(latch.await(5000));
 
+        // Wait for all the messages to arrive from the server.
+        Thread.sleep(1000);
+
         evaluateScript("""
                 // Check that handshake was faked.
                 window.assert(extHandshake === null, 'extHandshake');
                 window.assert(rcvHandshake !== null, 'rcvHandshake');
                 // Check that subscription went out.
                 window.assert(extSubscribe !== null, 'extSubscribe');
-                window.assert(rcvSubscribe === null, 'rcvSubscribe');
+                window.assert(rcvSubscribe !== null, 'rcvSubscribe');
                 // Check that publish went out.
                 window.assert(extPublish !== null, 'extPublish');
                 """);
@@ -373,8 +368,6 @@ public class CometDReloadExtensionTest extends AbstractCometDTransportsTest {
 
     private void evaluateApplication() {
         evaluateScript("""
-                const latch = new Latch(1);
-                                
                 cometd.configure({url: '$U', logLevel: '$L'});
 
                 let extHandshake = null;
@@ -389,6 +382,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTransportsTest {
                        } else if (!/^\\/meta\\//.test(message.channel)) {
                            extPublish = message;
                        }
+                       return message;
                    }
                 });
                 """.replace("$U", cometdURL).replace("$L", getLogLevel()));
@@ -400,7 +394,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTransportsTest {
                 const _receive = cometd.receive;
                 cometd.receive = message => {
                    cometd._debug('Received message', JSON.stringify(message));
-                   _receive(message);
+                   _receive.call(cometd, message);
                    if (message.channel === '/meta/handshake') {
                        rcvHandshake = message;
                    } else if (message.channel === '/meta/subscribe') {
@@ -408,6 +402,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTransportsTest {
                    }
                 };
 
+                const latch = new Latch(1);
                 let _connected = false;
                 function _init(message) {
                    const wasConnected = _connected;

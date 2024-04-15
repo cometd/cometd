@@ -1066,7 +1066,7 @@ export class CometD {
             failureInfo.action = "none";
         }
 
-        this.onTransportFailure(message, failureInfo, this.#handleTransportFailure);
+        this.onTransportFailure(message, failureInfo, (failureInfo) => this.#handleTransportFailure(failureInfo));
     }
 
     #handshakeResponse(message) {
@@ -1159,7 +1159,7 @@ export class CometD {
             failureInfo.action = "none";
         }
 
-        this.onTransportFailure(message, failureInfo, this.#handleTransportFailure);
+        this.onTransportFailure(message, failureInfo, (failureInfo) => this.#handleTransportFailure(failureInfo));
     }
 
     #connectResponse(message) {

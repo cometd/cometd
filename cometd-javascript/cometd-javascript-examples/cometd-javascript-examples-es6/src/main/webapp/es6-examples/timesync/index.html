@@ -12,7 +12,7 @@
           cometd.registerExtension("timesync", new TimeSyncExtension({
               maxSamples: 3
           }));
-          cometd.init(location.href.replace(/\/es6-examples\/.*$/, '') + "/cometd");
+          cometd.init(location.href.replace(/\/es6-examples\/.*$/, "") + "/cometd");
 
           const tick = function() {
               const timeSync = cometd.getExtension("timesync");

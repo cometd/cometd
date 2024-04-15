@@ -34,17 +34,23 @@ public class CometDCharsetTest extends AbstractCometDTransportsTest {
         String chinese = "\u2ee2"; // cjk's horse
 
         evaluateScript("""
-                cometd.init({url: '$U', logLevel: '$L'});
-                const latch = new Latch(1);
                 let data;
-                cometd.subscribe('/echo', message => { data = message.data; latch.countDown(); });
-                cometd.publish('/echo', {
-                    cyrillic: '$CY',
-                    greek: '$GR',
-                    hebrew: '$HE',
-                    arabic: '$AR',
-                    hiragana: '$HI',
-                    chinese: '$CH'
+                const latch = new Latch(1);
+                cometd.configure({url: '$U', logLevel: '$L'});
+                cometd.handshake((m) => {
+                    if (m.successful) {
+                        cometd.batch(() => {
+                            cometd.subscribe('/echo', message => { data = message.data; latch.countDown(); });
+                            cometd.publish('/echo', {
+                                cyrillic: '$CY',
+                                greek: '$GR',
+                                hebrew: '$HE',
+                                arabic: '$AR',
+                                hiragana: '$HI',
+                                chinese: '$CH'
+                            });
+                        });
+                    }
                 });
                 """.replace("$U", cometdURL).replace("$L", getLogLevel())
                 .replace("$CY", cyrillic)
