@@ -12,8 +12,7 @@
   <name>CometD :: JavaScript :: Examples</name>
 
   <modules>
-    <module>examples-angular</module>
-    <module>examples-jquery</module>
-    <module>examples-vanilla</module>
+    <module>cometd-javascript-examples-jquery</module>
+    <module>cometd-javascript-examples-vanilla</module>
   </modules>
 </project>

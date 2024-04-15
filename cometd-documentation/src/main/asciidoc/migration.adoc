@@ -845,3 +845,5 @@ The `Oort` and `Seti` classes independent of Jakarta EE 10 have been moved from 
 <1> `schemaLocation` attribute changed URI path
 <2> `version` attribute changed from `5.0` to `6.0`
 |===
+
+// TODO: add a section to JavaScript changes

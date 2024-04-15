@@ -13,7 +13,6 @@
   <name>CometD :: JavaScript</name>
 
   <modules>
-    <module>cometd-javascript-angular</module>
     <module>cometd-javascript-common</module>
     <module>cometd-javascript-examples</module>
     <module>cometd-javascript-jquery</module>

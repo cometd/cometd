@@ -23,7 +23,7 @@ import {CometD} from "cometd/cometd.js";
 const cometd = new CometD();
 ----
 
-CometD also provides _bindings_ for JavaScript toolkits, currently https://jquery.com/[jQuery] and https://angularjs.org/[Angular 1].
+CometD also provides _bindings_ for JavaScript toolkits, currently https://jquery.com/[jQuery].
 
 This means that the CometD JavaScript implementation is written in pure JavaScript with no dependencies on the toolkits, and that the toolkit bindings add the syntactic sugar that makes the CometD APIs feel like they are native to the toolkit.
 For example, it is possible to refer to a default `cometd` object when using jQuery, using the following notation:

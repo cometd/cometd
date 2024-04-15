@@ -3,6 +3,15 @@
 <head>
   <title>CometD Reload Demo</title>
   <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Varela+Round">
+  <script type="importmap">
+    {
+      "imports": {
+        "jquery": "https://code.jquery.com/jquery-3.7.1.js",
+        "cometd/": "../../js/cometd/",
+        "jquery/cometd": "../../js/jquery/jquery.cometd.js"
+      }
+    }
+  </script>
   <script type="module" src="application.js"></script>
   <style>
       body {
@@ -35,8 +44,7 @@
 
 <blockquote>
   <a href=".">RELOAD</a>,
-  <a href="../../jquery-examples/reload/">JQUERY</a>,
-  <a href="../../angular-examples/reload/">ANGULAR</a>,
+  <a href="../../vanilla-examples/reload/">VANILLA</a>,
 </blockquote>
 
 <p>
@@ -63,7 +71,7 @@
 </blockquote>
 
 <p>
-  A full-fledged reload example is available in the <a href="../../jquery-examples/chat/">jQuery chat example</a>.
+  A full-fledged reload example is available in the <a href="../chat/">jQuery chat example</a>.
 </p>
 
 </body>
