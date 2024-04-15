@@ -7,26 +7,16 @@ This extension requires only the client-side extension.
 
 ==== Enabling the Client-side Extension
 
-The `dojox/cometd/reload.js` provides the client side extension binding for Dojo, and it is sufficient to use Dojo's `dojo.require` mechanism:
+`Reload.js` provides the client side extension implementation, and it is sufficient to import and register an instance with the CometD object:
 
 [source,javascript]
 ----
-require(["dojox/cometd", "dojox/cometd/reload"], function(cometd) {
-    ...
-});
+import {ReloadExtension} from "cometd/ReloadExtension.js";
+
+cometd.registerExtension("reload", new ReloadExtension());
 ----
 
-The example above is valid also when using the `require()` syntax with jQuery.
-
-The file `jquery.cometd-reload.js` provides the client-side extension binding for jQuery:
-
-[source,html]
-----
-<script type="text/javascript" src="ReloadExtension.js"></script>
-<script type="text/javascript" src="jquery.cometd-reload.js"></script>
-----
-
-In both Dojo and jQuery extension bindings, the extension is registered on the default `cometd` object under the name "reload".
+The example above is valid also when using the jQuery binding.
 
 [[_extensions_reload_configuration]]
 ==== Configuring the Reload Extension
@@ -53,7 +43,6 @@ To reconfigure the reload extension:
 +
 [source,javascript]
 ----
-var cometd = dojox.cometd; // Use $.cometd if using jquery
 cometd.getExtension('reload').configure({
     name: 'com.acme.Company.reload'
 });
@@ -62,8 +51,6 @@ cometd.getExtension('reload').configure({
 +
 [source,javascript]
 ----
-var cometd = dojox.cometd; // Use $.cometd if using jquery
-...
 cometd.reload({
     name: 'com.acme.Company.reload'
 });
@@ -107,7 +94,7 @@ Over the years, browsers, platforms and specifications have tried to clear the c
 
 As a rule of thumb, function `cometd.reload()` should be called from an event handler that allows to write to the `SessionStorage`.
 
-Typically the `window.onbeforeunload` event is a good place to call `cometd.reload()`, but historically the `window.onunload` event worked too in most browser/platform combinations.
+Typically, the `window.onbeforeunload` event is a good place to call `cometd.reload()`, but historically the `window.onunload` event worked too in most browser/platform combinations.
 More recently, the `window.onpagehide` event was defined (although with a slightly different semantic) and should work too.
 
 Applications should start binding the `cometd.reload()` call to the `window.onbeforeunload` event and then test/experiment if that is the right event.
@@ -118,34 +105,20 @@ Unfortunately the confusion about an _unload_ event is not completely cleared ye
 
 A simple example follows:
 
-[source,html]
+[source,javascript]
 ----
-<html>
-  <head>
-    <script type="text/javascript" src="dojo.js"></script>
-    <script type="text/javascript">
-      require(["dojo", "dojo/on", "dojox/cometd", "dojox/cometd/reload", "dojo/domReady!"],
-        function(dojo, on, cometd) {
-          cometd.configure({ url: "http://localhost:8080/context/cometd", logLevel: "info" });
+import {CometD} from "cometd/cometd.js";
+import {ReloadExtension} from "cometd/ReloadExtension.js";
 
-          // Always subscribe to channels from successful handshake listeners.
-          cometd.addListener("/meta/handshake", new function(m) {
-            if (m.successful) {
-              cometd.subscribe("/some/channel", function() { ... });
-              cometd.subscribe("/some/other/channel", function() { ... });
-            }
-          });
+window.addEventListener("DOMContentLoaded", () => {
+    const cometd = new CometD();
+    cometd.registerExtension("reload", new ReloadExtension());
+    cometd.configure({ url: "http://localhost:8080/context/cometd", logLevel: "info" });
 
-          // Upon the unload event, call cometd.reload().
-          on(window, "beforeunload", cometd.reload);
+    // Upon the unload event, call cometd.reload().
+    window.onbeforeunload = () => cometd.reload();
 
-          // Finally, handshake.
-          cometd.handshake();
-        });
-    </script>
-  </head>
-  <body>
-    ...
-  </body>
-</html>
+    // After the configuration is complete, handshake.
+    cometd.handshake();
+});
 ----

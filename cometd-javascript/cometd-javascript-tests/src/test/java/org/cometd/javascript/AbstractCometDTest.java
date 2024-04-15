@@ -176,54 +176,59 @@ public abstract class AbstractCometDTest {
     protected void provideCometD(String transport) {
         javaScript.evaluate(getClass().getResource("/js/cometd/cometd.js"));
         evaluateScript("cometd", """
-                const cometdModule = org.cometd;
-                const cometd = new cometdModule.CometD();
+                import {CometD} from "./js/cometd/cometd.js";
+                const cometd = new CometD();
                 const originalTransports = {};
-                originalTransports['websocket'] = new cometdModule.WebSocketTransport();
-                originalTransports['long-polling'] = new cometdModule.LongPollingTransport();
-                originalTransports['callback-polling'] = new cometdModule.CallbackPollingTransport();
-                if (window.WebSocket) {
-                    cometd.registerTransport('websocket', originalTransports['websocket']);
-                }
-                cometd.registerTransport('long-polling', originalTransports['long-polling']);
-                cometd.registerTransport('callback-polling', originalTransports['callback-polling']);
+                originalTransports["websocket"] = cometd.findTransport("websocket");
+                originalTransports["long-polling"] = cometd.findTransport("long-polling");
+                originalTransports["callback-polling"] = cometd.findTransport("callback-polling");
                 """);
         if (transport != null) {
             evaluateScript("only_" + transport, """
                     cometd.unregisterTransports();
-                    cometd.registerTransport('$T', originalTransports['$T']);
+                    cometd.registerTransport("$T", originalTransports["$T"]);
                     """.replace("$T", transport));
         }
     }
 
     protected void provideTimestampExtension() {
         javaScript.evaluate(getClass().getResource("/js/cometd/TimeStampExtension.js"));
-        javaScript.evaluate("timestamp_extension", "" +
-                "cometd.registerExtension('timestamp', new cometdModule.TimeStampExtension());");
+        javaScript.evaluate("timestamp_extension", """
+            import {TimeStampExtension} from "./js/cometd/TimeStampExtension.js";
+            cometd.registerExtension('timestamp', new TimeStampExtension());
+            """);
     }
 
     protected void provideTimesyncExtension() {
         javaScript.evaluate(getClass().getResource("/js/cometd/TimeSyncExtension.js"));
-        javaScript.evaluate("timesync_extension", "" +
-                "cometd.registerExtension('timesync', new cometdModule.TimeSyncExtension());");
+        javaScript.evaluate("timesync_extension", """
+            import {TimeSyncExtension} from "./js/cometd/TimeSyncExtension.js";
+            cometd.registerExtension('timesync', new TimeSyncExtension());
+            """);
     }
 
     protected void provideMessageAcknowledgeExtension() {
         javaScript.evaluate(getClass().getResource("/js/cometd/AckExtension.js"));
-        javaScript.evaluate("ack_extension", "" +
-                "cometd.registerExtension('ack', new cometdModule.AckExtension());");
+        javaScript.evaluate("ack_extension", """
+            import {AckExtension} from "./js/cometd/AckExtension.js";
+            cometd.registerExtension('ack', new AckExtension());
+            """);
     }
 
     protected void provideReloadExtension() {
         javaScript.evaluate(getClass().getResource("/js/cometd/ReloadExtension.js"));
-        javaScript.evaluate("reload_extension", "" +
-                "cometd.registerExtension('reload', new cometdModule.ReloadExtension());");
+        javaScript.evaluate("reload_extension", """
+            import {ReloadExtension} from "./js/cometd/ReloadExtension.js";
+            cometd.registerExtension('reload', new ReloadExtension());
+            """);
     }
 
     protected void provideBinaryExtension() {
         javaScript.evaluate(getClass().getResource("/js/cometd/BinaryExtension.js"));
-        javaScript.evaluate("binary_extension", "" +
-                "cometd.registerExtension('binary', new cometdModule.BinaryExtension());");
+        javaScript.evaluate("binary_extension", """
+            import {BinaryExtension} from "./js/cometd/BinaryExtension.js";
+            cometd.registerExtension('binary', new BinaryExtension());
+            """);
     }
 
     protected void destroyPage() throws Exception {

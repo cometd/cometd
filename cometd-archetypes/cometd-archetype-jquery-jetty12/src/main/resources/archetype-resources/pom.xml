@@ -10,8 +10,8 @@
   <version>${version}</version>
 
   <properties>
-    <cometd-version>${cometdVersion}</cometd-version>
-    <jetty-version>${jettyVersion}</jetty-version>
+    <cometd-version>${cometd-version}</cometd-version>
+    <jetty-version>${jetty-version}</jetty-version>
   </properties>
 
   <build>
@@ -19,7 +19,7 @@
     <plugins>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.13.0</version>
+        <version>${maven-compiler-plugin-version}</version>
         <configuration>
           <source>17</source>
           <target>17</target>
@@ -28,13 +28,17 @@
       </plugin>
       <plugin>
         <artifactId>maven-war-plugin</artifactId>
-        <version>3.4.0</version>
+        <version>${maven-war-plugin-version}</version>
         <configuration>
           <overlays>
             <overlay />
             <overlay>
               <groupId>org.cometd.javascript</groupId>
               <artifactId>cometd-javascript-jquery</artifactId>
+              <excludes>
+                <exclude>META-INF/**</exclude>
+                <exclude>WEB-INF/web.xml</exclude>
+              </excludes>
             </overlay>
           </overlays>
         </configuration>
@@ -57,7 +61,7 @@
     <dependency>
       <groupId>jakarta.servlet</groupId>
       <artifactId>jakarta.servlet-api</artifactId>
-      <version>6.0.0</version>
+      <version>${jakarta-servlet-version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -93,6 +97,11 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-slf4j-impl</artifactId>
+      <version>${jetty-version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util</artifactId>
       <version>${jetty-version}</version>
     </dependency>
@@ -100,11 +109,6 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util-ajax</artifactId>
       <version>${jetty-version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-simple</artifactId>
-      <version>${slf4jVersion}</version>
     </dependency>
   </dependencies>
 

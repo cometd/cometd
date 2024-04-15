@@ -13,41 +13,30 @@ Please refer to those sibling projects for further information if you need Comet
 
 In the documentation that follows, you will find information about the client-side JavaScript library to be used in browsers.
 
-The CometD JavaScript library is a portable JavaScript implementation with a _vanilla_ implementation, entirely based on pure JavaScript and the standard objects available in the browser environment, and _bindings_ for the major JavaScript toolkits, currently https://dojotoolkit.org/[Dojo], https://jquery.com/[jQuery] and https://angularjs.org/[Angular 1].
-
-This means that the CometD Bayeux JavaScript implementation is written in pure JavaScript with no dependencies on the toolkits, and that the toolkit bindings add the syntactic sugar that makes the Bayeux APIs feel like they are native to the toolkit.
-For example, it is possible to refer to the standard `cometd` object using the following notations:
+The CometD JavaScript library is a portable JavaScript implementation with a _vanilla_ implementation, entirely based on pure EcmaScript 6 and the standard objects available in the browser environment.
+This implementation is what most applications should use.
 
 [source,javascript]
 ----
-// CommonJS style.
-var cometd = require('cometd');
+import {CometD} from "cometd/cometd.js";
 
-// AMD style.
-require(['cometd'], function(cometd) {
-    ...
-});
-
-// Vanilla JavaScript style.
-var cometd = new org.cometd.CometD();
-
-// jQuery style.
-var cometd = $.cometd;
-
-// Angular style.
-angular.module('cometdApp', ['cometd'])
-    .controller('cometdCtrl', ['cometd'], function(cometd) {
-        ...
-    });
-
-// Old Dojo style.
-var cometd = dojox.cometd;
+const cometd = new CometD();
 ----
 
-If you followed xref:_primer[the primer], you might have noticed that the skeleton project proposes you to reference both the portable implementation, under `cometd/cometd.js`, and one binding -- for example Dojo's -- under `dojox/cometd.js`.
-For jQuery, the binding is under `jquery/jquery.cometd.js`.
-The use of the Bayeux APIs from the JavaScript toolkits is almost identical, and the following sections do not refer to a particular toolkit.
-Small differences surface only when passing callback functions to the Bayeux API, where Dojo users might use `hitch()`, while jQuery users might prefer an anonymous function approach.
+CometD also provides _bindings_ for JavaScript toolkits, currently https://jquery.com/[jQuery] and https://angularjs.org/[Angular 1].
+
+This means that the CometD JavaScript implementation is written in pure JavaScript with no dependencies on the toolkits, and that the toolkit bindings add the syntactic sugar that makes the CometD APIs feel like they are native to the toolkit.
+For example, it is possible to refer to a default `cometd` object when using jQuery, using the following notation:
+
+[source,javascript]
+----
+// jQuery style.
+import "jquery/jquery.cometd.js";
+
+$.cometd.handshake();
+----
+
+The CometD APIs remain the same whether you use a binding or not, and the following sections do not refer to a particular binding.
 
 The following sections present details about the JavaScript Bayeux APIs and their implementation secrets.
 

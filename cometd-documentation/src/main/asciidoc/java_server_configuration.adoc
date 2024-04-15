@@ -255,15 +255,15 @@ This minimizes the server configuration to make browser work easily with CometD.
 A more complex setup is to have your main application deployed to domain `app.domain.com` and the CometD server to `cometd.domain.com`.
 The JavaScript file `cometd.js` will be served from domain `app.domain.com`, while CometD messages will be sent to and received from domain `cometd.domain.com`.
 
-This is a cross-domain deployment and requires configuring the `CrossOriginFilter` (see xref:_java_server_configuration_advanced_cross_origin_filter[this section]) to allow the JavaScript file downloaded from `app.domain.com` to be able to communicate with the `cometd.domain.com` server.
+This is a cross-origin deployment and requires configuring the `CrossOriginFilter` (see xref:_java_server_configuration_advanced_cross_origin_filter[this section]) to allow the JavaScript file downloaded from `app.domain.com` to be able to communicate with the `cometd.domain.com` server.
 
-Furthermore, a cross-domain deployment may require a more advanced configuration of the HTTP cookies that the CometD server sends to clients, see xref:_java_server_configuration_advanced_cookies[this section].
+Furthermore, a cross-origin deployment may require a more advanced configuration of the HTTP cookies that the CometD server sends to clients, see xref:_java_server_configuration_advanced_cookies[this section].
 
 [[_java_server_configuration_advanced_cross_origin_filter]]
 ====== Configuring the `CrossOriginFilter`
 
 Independently of the Servlet Container you are using, Jetty provides a standard, portable, `org.eclipse.jetty.ee10.servlets.CrossOriginFilter`.
-This filter implements the https://www.w3.org/TR/access-control/[Cross-Origin Resource Sharing] specification, and allows recent browsers that implement it to perform cross-domain JavaScript requests (see also xref:_javascript_transports[the JavaScript transports section]).
+This filter implements the https://www.w3.org/TR/access-control/[Cross-Origin Resource Sharing] specification, and allows recent browsers that implement it to perform cross-origin JavaScript requests (see also xref:_javascript_transports[the JavaScript transports section]).
 
 Here is an example of `web.xml` configuration for the `CrossOriginFilter`:
 
@@ -309,13 +309,13 @@ Refer to the https://www.eclipse.org/jetty/documentation/current/cross-origin-fi
 ====== Configuring Cookies
 
 Modern browsers may require that cookies sent by a server have the `SameSite` attribute.
-link:https://web.dev/samesite-cookies-explained/[This article] is a good resource that explains how the `SameSite` attribute works.
+https://web.dev/samesite-cookies-explained/[This article] is a good resource that explains how the `SameSite` attribute works.
 
-In particular, in the case of cross-domain deployment, the CometD server should be configured to send cookies that have both the `Secure` attribute and the `SameSite=None` attribute.
+In particular, in the case of cross-origin deployment, the CometD server should be configured to send cookies that have both the `Secure` attribute and the `SameSite=None` attribute.
 In turn, the `Secure` attribute requires that the CometD server is deployed over `https` (otherwise the browser won't send the cookie, causing the CometD communication to break).
 
 Browsers may also require that cookies sent by the server have the `Partitioned` attribute.
-link:https://developer.mozilla.org/en-US/docs/Web/Privacy/Partitioned_cookies[This article] explains how the `Partitioned` attribute is necessary when the JavaScript CometD client is embedded in a web page whose domain is different from the CometD domain (typical, for example,for chat panels embedded in a web page).
+https://developer.mozilla.org/en-US/docs/Web/Privacy/Partitioned_cookies[This article] explains how the `Partitioned` attribute is necessary when the JavaScript CometD client is embedded in a web page whose domain is different from the CometD domain (typical, for example,for chat panels embedded in a web page).
 
 Refer to the CometD xref:_java_server_configuration_transports[server configuration section] for the cookie configuration in the CometD server.
 

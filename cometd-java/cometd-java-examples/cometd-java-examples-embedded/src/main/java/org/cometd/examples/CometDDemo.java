@@ -70,9 +70,6 @@ public class CometDDemo {
                 URI.create("../../../cometd-javascript/common/src/main/webapp/"),
                 URI.create("../../../cometd-javascript/jquery/src/main/webapp/"),
                 URI.create("../../../cometd-javascript/examples-jquery/src/main/webapp/"),
-                URI.create("../../../cometd-javascript/dojo/src/main/webapp/"),
-                URI.create("../../../cometd-javascript/examples-dojo/src/main/webapp/"),
-                URI.create("../../../cometd-demo/target/war/work/org.cometd.javascript/cometd-javascript-dojo/"),
                 URI.create("../../../cometd-demo/target/war/work/org.cometd.javascript/cometd-javascript-jquery/")
         )));
 

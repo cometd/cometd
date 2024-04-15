@@ -13,7 +13,6 @@
 
   <modules>
     <module>examples-angular</module>
-    <module>examples-dojo</module>
     <module>examples-jquery</module>
     <module>examples-vanilla</module>
   </modules>

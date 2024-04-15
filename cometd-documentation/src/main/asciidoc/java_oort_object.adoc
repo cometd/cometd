@@ -74,7 +74,7 @@ Applications can implement these listeners to be notified of entry or element up
 
 [IMPORTANT]
 ====
-`OortMap` is different from typical distributed hash tables such as link:https://en.wikipedia.org/wiki/Hazelcast[Hazelcast].
+`OortMap` is different from typical distributed hash tables such as https://en.wikipedia.org/wiki/Hazelcast[Hazelcast].
 
 A typical distributed hash table behaves like a single `Map` whose entries are not owned by a particular node, but instead are distributed across the cluster (so that every node operates as if the distributed `Map` was local).
 

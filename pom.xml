@@ -89,12 +89,14 @@
   </distributionManagement>
 
   <properties>
-    <dojo-version>1.17.3</dojo-version>
     <graalvm-version>24.0.0</graalvm-version>
     <jackson-version>2.17.0</jackson-version>
+    <jakarta-servlet-version>6.0.0</jakarta-servlet-version>
     <!-- tag::jetty-version[] -->
     <jetty-version>12.0.8</jetty-version>
     <!-- end::jetty-version[] -->
+    <maven-compiler-plugin-version>3.13.0</maven-compiler-plugin-version>
+    <maven-war-plugin-version>3.4.0</maven-war-plugin-version>
     <okhttp-version>4.12.0</okhttp-version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <slf4j-version>2.0.12</slf4j-version>
@@ -128,7 +130,7 @@
       <dependency>
         <groupId>jakarta.servlet</groupId>
         <artifactId>jakarta.servlet-api</artifactId>
-        <version>6.0.0</version>
+        <version>${jakarta-servlet-version}</version>
         <scope>provided</scope>
       </dependency>
       <dependency>
@@ -278,7 +280,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.13.0</version>
+          <version>${maven-compiler-plugin-version}</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -359,7 +361,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-war-plugin</artifactId>
-          <version>3.4.0</version>
+          <version>${maven-war-plugin-version}</version>
         </plugin>
         <plugin>
           <groupId>org.asciidoctor</groupId>
@@ -430,7 +432,6 @@
               <includes>
                 <include>**/*.java</include>
                 <include>cometd-javascript/common/**/cometd-header.js</include>
-                <include>cometd-javascript/dojo/**/*.js</include>
                 <include>cometd-javascript/jquery/**/*.js</include>
               </includes>
               <excludes>

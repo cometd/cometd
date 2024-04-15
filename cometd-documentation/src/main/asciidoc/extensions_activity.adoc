@@ -7,7 +7,7 @@ This is a server-side only extension implemented by class `org.cometd.server.ext
 
 This extension is useful because the Bayeux Protocol (see also xref:_bayeux[the Bayeux protocol section]) uses a heart-beat mechanism (over the `/meta/connect` channel) that prevents servers to declare resources such as connections or transport sessions (for example, Servlet's `HttpSession`) as idle, and therefore prevents servers to close or destroy resources when they are idle for a long time.
 
-A specific example is the following: when the `long-polling` CometD transport is used, the heart-beat mechanism consist of a HTTP POST request to the server.
+A specific example is the following: when the `long-polling` CometD transport is used, the heart-beat mechanism consist of an HTTP POST request to the server.
 Even if the CometD client is completely idle (for example, the user went to lunch), the heart-beat mechanism continues to send POSTs at a regular interval to the server.
 If the server's `web.xml` is configured with a `<session-timeout>` element, that destroys the `HttpSession` after 30 minutes of inactivity, then the `HttpSession` will never be destroyed because the heart-beat mechanism looks like a legitimate HTTP request to the server, and it never stops.
 The server cannot know that those POSTs are just heart-beats.

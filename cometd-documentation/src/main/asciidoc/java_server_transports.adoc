@@ -67,6 +67,6 @@ Including the right dependencies in your web application is very easy if you use
 
 If you are not using Maven, you need to make sure that above dependency and its transitive dependencies are present in the `WEB-INF/lib` directory of your web application `.war` file.
 
-If you have configured your web application to support cross-domain HTTP calls (see also xref:_java_server_configuration_advanced[this section]), you do not need to worry because the `CrossOriginFilter` is by default disabled for the WebSocket protocol.
+If you have configured your web application to support cross-origin HTTP calls (see also xref:_java_server_configuration_advanced[this section]), you do not need to worry because the `CrossOriginFilter` is by default disabled for the WebSocket protocol.
 
 If you plan to use the `websocket` _client_ transport in your web application, and you are not using Maven, make sure to read xref:_java_client_transports[the Java client transports section].

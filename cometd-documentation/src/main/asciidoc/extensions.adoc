@@ -50,38 +50,34 @@ ExtensionB.outgoing(...);
 ExtensionA.outgoing(...);
 ----
 
-The next sections describe the JavaScript CometD Extensions; they follow the same pattern the portable JavaScript CometD implementation uses: a portable implementation of the extension with _bindings_ for the specific JavaScript toolkit, currently Dojo and jQuery.
+The next sections describe the JavaScript CometD Extensions; they follow the same pattern the portable JavaScript CometD implementation uses: a portable implementation of the extension with _bindings_ for the specific JavaScript toolkit, currently jQuery.
 
 [[_extensions_writing]]
 === Writing the Extension
 
-An extension is a JavaScript object with four optional functions:
+An extension is a JavaScript class that extends `Extension`, which defines four optional methods:
 
+* `registered(name, cometd)` -- called when the extension is registered
 * `outgoing(message)` -- called just before a message is sent
 * `incoming(message)` -- called just after a message is received
-* `registered(name, cometd)` -- called when the extension is registered
 * `unregistered()` -- called when the extension is unregistered
 
-These functions are optional; you can use only one, or maybe two, three, or all of them.
-If they are present, CometD invokes them at the proper time.
+These methods are optional; you can override only one, or maybe two, three, or all of them.
+If they are present, the CometD implementation invokes them at the proper time.
 
-Writing an extension that logs and counts the long polls is quite easy: you need a reference to the `cometd` object that has the logging functions, and you need only the outgoing extension function:
+Writing an extension that logs and counts the long polls is quite easy: you need a reference to the `cometd` object that provides the logging functions (available from `Extension`), and you need only to override the `outgoing()` method:
 
 [source,javascript]
 ----
-var LoggerExt = function() {
-    var _cometd;
-    var _counter;
+import {Extension} from "cometd/Extension.js";
 
-    this.registered = function(name, cometd) {
-        // Store the cometd object reference
-        _cometd = cometd;
-    };
+class LoggerExt extends Extension {
+    #counter = 0;
 
-    this.outgoing = function(message) {
+    outgoing(message) {
         if (message.channel === '/meta/connect') {
-            // Log the long poll
-            _cometd._info('bayeux connect');
+            // Log the /meta/connect.
+            this.cometd._info('bayeux /meta/connect');
 
             // Count the long polls
             if (!message.ext) {
@@ -93,15 +89,16 @@ var LoggerExt = function() {
             if (!message.ext.logger.counter) {
                 message.ext.logger.counter = 0;
             }
-            message.ext.logger.counter = ++_counter;
+            message.ext.logger.counter = ++this.#counter;
         }
+        return message;
     };
-};
+}
 ----
 
-Notice that meta messages are also passed to the extension functions; you normally have to filter the messages that the extension function receives by looking at the channel or at some other message value.
+Note that meta messages are also passed to the extension functions; you normally have to filter the messages that the extension function receives by looking at the channel or at some other message value.
 
-Notice also that you can modify the message by adding fields, normally in the `ext` field.
+Note also that you can modify the message by adding fields, normally in the `ext` field.
 
 [NOTE]
 ====
@@ -110,10 +107,12 @@ Be careful not to overwrite the `ext` field, which other extensions might have s
 It is also a good practice to group extension fields so that there is no clash with other extensions (in the example above, the field `counter` is _grouped_ in the `message.ext.logger` object).
 ====
 
-The `outgoing()` and `incoming()` functions can avoid  returning something, or returning the message itself (or another message object).
-This means that the extension has processed the message and therefore other extensions, if present, can process it, or the implementation can process the message (either by sending it to the server -- for outgoing extensions -- or by notifying listeners -- for incoming extensions).
+The `outgoing()` and `incoming()` methods must return the message (possibly a modified version, or another instance), or `null`.
 
-If the extension function returns `null`, the processing should stop: other extensions do not process the message, and CometD does not further process it.
+Returning the message means that the extension has processed the message and therefore other extensions, if present, can process it.
+After all the extensions have processed the message, the CometD implementation processes the message either by sending it to the server (for outgoing extensions) or by notifying listeners (for incoming extensions).
+
+If the extension method returns `null`, the processing stops: other extensions are not invoked to process the message, and the CometD implementation does not further process it.
 CometD does not send the message to the server, nor notify listeners.
 
 [[_extensions_registering]]
@@ -129,7 +128,7 @@ Following the example above, you can register the extension like this:
 
 [source,javascript]
 ----
-cometd.registerExtension('loggerExt', new LoggerExt());
+cometd.registerExtension("loggerExt", new LoggerExt());
 ----
 
 From now on, the meta connect messages are modified to carry the counter from the example extension above.
@@ -138,7 +137,7 @@ Unregistering the extension is similar:
 
 [source,javascript]
 ----
-cometd.unregisterExtension('loggerExt');
+cometd.unregisterExtension("loggerExt");
 ----
 
 It is not possible to register two extensions under the same name.
@@ -151,22 +150,22 @@ The JavaScript CometD API provides a way to define the global extension exceptio
 
 [source,javascript]
 ----
-cometd.onExtensionException = function(exception, extensionName, outgoing, message) {
-    // Uh-oh, something went wrong, disable this extension
-    // Object "this" points to the CometD object
-    this.unregisterExtension(extensionName);
+cometd.onExtensionException = (exception, extensionName, outgoing, message) => {
+    // Uh-oh, something went wrong, disable this extension.
+    cometd.unregisterExtension(extensionName);
 
-    // If the message is going to the server, add the error to the message
+    // If the message is going to the server, add the error to the message.
     if (outgoing) {
-        // Assume you have created the message structure below
+        // Assume you have created the message structure below.
         var badExtension = message.ext.badExtensions[extensionName];
         badExtension.exception = exception;
     }
 }
 ----
 
-Be _very_ careful to use the CometD object to publish messages within the extension exception handler, or you might end up in an infinite loop (the extensions process the publish message, which might fail and call again the extension exception handler).
-If the extension exception handler itself throws an exception, this exception is logged at level "info" and the CometD implementation does not break.
+Be _very_ careful to use the CometD object to publish messages within the extension exception handler, or you might end up in an infinite loop.
+The extensions process the published message, which might fail and call again the extension exception handler.
+If the extension exception handler itself throws an exception, this exception is logged at level `info` and the CometD implementation does not break.
 
 [NOTE]
 ====

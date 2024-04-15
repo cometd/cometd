@@ -1,14 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <archetype-descriptor name="cometd-archetype-jquery-jetty">
   <requiredProperties>
-    <requiredProperty key="jettyVersion">
-      <defaultValue>${jetty-version}</defaultValue>
-    </requiredProperty>
-    <requiredProperty key="cometdVersion">
+    <requiredProperty key="cometd-version">
       <defaultValue>${project.version}</defaultValue>
     </requiredProperty>
-    <requiredProperty key="slf4jVersion">
-      <defaultValue>${slf4j-version}</defaultValue>
+    <requiredProperty key="jetty-version">
+      <defaultValue>${jetty-version}</defaultValue>
+    </requiredProperty>
+    <requiredProperty key="jakarta-servlet-version">
+      <defaultValue>${jakarta-servlet-version}</defaultValue>
+    </requiredProperty>
+    <requiredProperty key="maven-compiler-plugin-version">
+      <defaultValue>${maven-compiler-plugin-version}</defaultValue>
+    </requiredProperty>
+    <requiredProperty key="maven-war-plugin-version">
+      <defaultValue>${maven-war-plugin-version}</defaultValue>
     </requiredProperty>
   </requiredProperties>
 
@@ -17,6 +23,12 @@
       <directory>src/main/java</directory>
       <includes>
         <include>**/*.java</include>
+      </includes>
+    </fileSet>
+    <fileSet encoding="UTF-8">
+      <directory>src/main/resources</directory>
+      <includes>
+        <include>*.properties</include>
       </includes>
     </fileSet>
     <fileSet filtered="true" encoding="UTF-8">

@@ -12,8 +12,8 @@ It is normally safe to ignore if the `disconnect()` call has been successful or 
 
 [TIP]
 ====
-If you are debugging your application with Firebug, and you shut down the server, you see in the Firebug console the attempts to reconnect.
-To stop those attempts,  type in the Firebug command line: `dojox.cometd.disconnect()` (for Dojo) or `$.cometd.disconnect()` (for jQuery).
+If you are debugging your JavaScript application, and you shut down the server, you see in the debugger console the attempts to reconnect.
+To stop those attempts,  you can type `cometd.disconnect()` in the debugger console.
 ====
 
 In case you really want to know whether the server received the disconnect request, you can pass a callback function to the `disconnect()` function:
@@ -22,7 +22,7 @@ In case you really want to know whether the server received the disconnect reque
 ----
 cometd.disconnect(function(disconnectReply) {
     if (disconnectReply.successful) {
-        // Server truly received the disconnect request
+        // Server truly received the disconnect request.
     }
 });
 ----

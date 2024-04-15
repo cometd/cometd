@@ -14,8 +14,9 @@
   <description>${project.version} - CometD archetype for creating a server-side event-driven web application</description>
 
   <modules>
-    <module>cometd-archetype-dojo-jetty12</module>
+    <module>cometd-archetype-es6-jetty12</module>
     <module>cometd-archetype-jquery-jetty12</module>
+    <module>cometd-archetype-spring-es6-jetty12</module>
     <module>cometd-archetype-spring-jquery-jetty12</module>
   </modules>
 

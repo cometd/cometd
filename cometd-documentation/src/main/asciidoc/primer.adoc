@@ -35,18 +35,18 @@ $ mvn archetype:generate -Dfilter=org.cometd.archetypes:jetty12
 ----
 ----
 Choose archetype:
-1: remote -> org.cometd.archetypes:cometd-archetype-dojo-jetty12 (-)
+1: remote -> org.cometd.archetypes:cometd-archetype-es6-jetty12 (-)
 2: remote -> org.cometd.archetypes:cometd-archetype-jquery-jetty12 (-)
 Choose a number:
 ----
 
-As you can see, there are archetypes available that build a skeleton application using the Dojo or jQuery JavaScript toolkits, both with the choice of using Jetty and/or Spring.
-Choose Dojo with Jetty, which is archetype number `1`.
+As you can see, there are archetypes available that build a skeleton application using plain ES6 or using http://jquery.com[jQuery], both with the choice of using Jetty and/or Spring.
+Choose ES6 with Jetty, which in the example above is archetype number `1` (it may have a different number for you).
 
 Next, you have to choose the version of the archetype you want to use, typically the last version of the 8.0.x series:
 
 ----
-Choose org.cometd.archetypes:cometd-archetype-dojo-jetty12 version:
+Choose org.cometd.archetypes:cometd-archetype-vanilla-jetty12 version:
 ...
 81: 8.0.0
 ...
@@ -56,20 +56,20 @@ The archetype generation requires that you define several properties and generat
 
 ----
 Define value for property 'groupId': : org.cometd.primer
-Define value for property 'artifactId': : dojo-jetty12-primer
+Define value for property 'artifactId': : vanilla-jetty12-primer
 Define value for property 'version':  1.0-SNAPSHOT: :
 Define value for property 'package':  org.cometd.primer: :
-[INFO] Using property: cometdVersion = 8.0.0
-[INFO] Using property: jettyVersion = 12.0.0
-[INFO] Using property: slf4jVersion = 2.0.9
+[INFO] Using property: cometd-version = 8.0.0
+[INFO] Using property: jetty-version = 12.0.0
+...
 Confirm properties configuration:
 groupId: org.cometd.primer
-artifactId: dojo-jetty12-primer
+artifactId: vanilla-jetty12-primer
 version: 1.0-SNAPSHOT
 package: org.cometd.primer
-cometdVersion: 8.0.0
-jettyVersion: 12.0.0
-slf4jVersion: 2.0.9
+cometd-version: 8.0.0
+jetty-version: 12.0.0
+...
 Y: :
 ...
 [INFO] BUILD SUCCESS
@@ -84,7 +84,7 @@ the application skeleton, since it can be easily changed afterwards.
 Then:
 
 ----
-$ cd dojo-jetty12-primer/
+$ cd vanilla-jetty12-primer/
 ----
 
 The skeleton project now exists as follows:
@@ -101,6 +101,8 @@ $ tree .
         |           `-- primer
         |               |-- CometDInitializer.java
         |               `-- HelloService.java
+        +-- resources
+        |   `-- jetty-logging.properties
         `-- webapp
             |-- application.js
             |-- index.jsp
@@ -115,11 +117,11 @@ $ mvn clean install
 $ mvn jetty:run
 ----
 
-Now point your browser at `+http://localhost:8080/dojo-jetty12-primer+`, and you should see this message:
+Now point your browser at `+http://localhost:8080/vanilla-jetty12-primer+`, and you should see this message:
 
 ----
-CometD Connection Succeeded
 Server Says: Hello, World
+CometD Connection Established
 ----
 
 That's it.
@@ -132,12 +134,12 @@ If you want to use a Jetty version different from CometD's default Jetty version
 ----
 <project ... >
 
-    ....
+    ...
 
     <properties>
         ...
         <jetty-version>12.0.0</jetty-version>
-        ....
+        ...
     </properties>
 
     ...
@@ -150,79 +152,39 @@ Then you just need to re-build and re-run the project as explained above.
 [[_primer_non_maven_way]]
 ==== The Non-Maven Way
 
-The first step is to configure your favorite JavaScript toolkit, in the example Dojo, that the web container must serve.
-Using the Maven Way, this is obtained automatically by overlaying the CometD Dojo bindings WAR file, `cometd-javascript-dojo-<version>.war`, but here you must do it manually (the `cometd-javascript-dojo-<version>.war` is located in the `cometd-javascript/dojo/target` directory of the CometD distribution).
+The client-side files necessary to set up a CometD project can be obtained in two ways:
+* From the https://github.com/cometd/cometd-javascript[CometD JavaScript] mirror repository.
+  This is a repository that only hosts the JavaScript files of the main CometD project.
+* From the Maven Central Repository by downloading artifact `cometd-javascript-common-<version>.war`.
+  The JavaScript files in the `/js/cometd` directory.
 
-. Download Dojo from https://dojotoolkit.org
-. Unpack the `dojo-release-<version>.tar.gz` file to a directory, for example `/tmp`, so that you have the `/tmp/dojo-release-<version>` directory, called `$DOJO` below.
-. Delete the `$DOJO/dojox/cometd.js` and `$DOJO/dojox/cometd.js.uncompressed.js` files that Dojo provides (these files are empty and just stubs for the real ones that you will put in place in a moment).
-. Delete the `$DOJO/dojox/cometd` directory that Dojo provides.
-. Copy the `dojox/cometd.js` file of the `cometd-javascript-dojo-<version>.war` into `$DOJO/`.
-. Copy the `dojox/cometd` directory of the `cometd-javascript-dojo-<version>.war` into `$DOJO/`.
-  The content of the `$DOJO/dojox/cometd` directory should be the following:
-+
+The server-side dependencies are typically the following:
 ----
-dojox/cometd
-|-- ack.js
-|-- main.js
-|-- reload.js
-|-- timestamp.js
-`-- timesync.js
-----
-. Add the `org` directory from the `cometd-javascript-dojo-<version>.war`, and all its content, at the same level of the `dojox` directory in `$DOJO/`.
+# CometD dependencies.
+cometd-java-api-common-<version>.jar
+cometd-java-api-server-<version>.jar
+cometd-java-java-common-<version>.jar
+cometd-java-java-server-common-<version>.jar
+cometd-java-java-server-http-jakarta-<version>.jar
+cometd-java-java-server-websocket-common-<version>.jar
+cometd-java-java-server-websocket-jakarta-<version>.jar
+slf4j-api-<version>.jar
 
-The final content, equivalent to that produced by the Maven way, should be like this:
+# Jetty dependencies.
+jetty-http-<version>.jar
+jetty-io-<version>.jar
+jetty-util-<version>.jar
+jetty-util-ajax-<version>.jar
 
-----
-.
-|-- dijit
-|-- dojo
-|-- dojox
-|   |-- cometd
-|   |   |-- ack.js
-|   |   |-- main.js
-|   |   |-- reload.js
-|   |   |-- timestamp.js
-|   |   `-- timesync.js
-|   `-- cometd.js
-|-- org
-|   |-- cometd
-|   |   |-- AckExtension.js
-|   |   |-- ReloadExtension.js
-|   |   |-- TimeStampExtension.js
-|   |   `-- TimeSyncExtension.js
-|   `-- cometd.js
-|-- WEB-INF
-|   |-- classes
-|   |   `-- org
-|   |       `-- cometd
-|   |           `-- primer
-|   |               |-- CometDInitializer.class
-|   |               `-- HelloService.class
-|   |-- lib
-|   |   |-- cometd-java-api-server-<version>.jar
-|   |   |-- cometd-java-common-<version>.jar
-|   |   |-- cometd-java-server-<version>.jar
-|   |   |-- cometd-java-server-websocket-common-<version>.jar
-|   |   |-- cometd-java-server-websocket-jakarta-<version>.jar
-|   |   |-- jetty-http-<version>.jar
-|   |   |-- jetty-io-<version>.jar
-|   |   |-- jetty-jmx-<version>.jar
-|   |   |-- jetty-ee10-servlets-<version>.jar
-|   |   |-- jetty-util-<version>.jar
-|   |   |-- jetty-util-ajax-<version>.jar
-|   |   |-- slf4j-api-<version>.jar
-|   |   `-- slf4j-simple-<version>.jar
-|   `-- web.xml
-|-- application.js
-`-- index.jsp
+# Optional Jetty dependency for CrossOriginFilter.
+jetty-ee10-servlets-<version>.jar
+
+# SLF4J logging implementation.
+jetty-slf4j-impl-<version>.jar
 ----
 
-The `org` directory contains the CometD implementation and extensions, while the correspondent files in the `dojox` directory are the Dojo _bindings_.
-Other bindings exist for the jQuery toolkit, but the CometD implementation is the same.
+You may have different dependencies if you choose to use different CometD or Jetty features.
 
-The second step is to configure the server side.
-If you use Java, this means that you have to set up the CometD servlet that responds to messages from clients.
 The details of the server side configuration and service development are explained in xref:_java_server[the Java server library section].
 
 The last step is to write a JSP (or HTML) file that downloads the JavaScript dependencies and the JavaScript application, as explained in the following section.
@@ -230,18 +192,18 @@ The last step is to write a JSP (or HTML) file that downloads the JavaScript dep
 [[_primer_setup_details]]
 ==== Setup Details
 
-The JSP file, `index.jsp`, contains the reference to the JavaScript toolkit dependencies and to the JavaScript application file:
+The JSP (or HTML) file `index.jsp` contains the reference to the JavaScript application file:
 
 [source,html]
 ----
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
-    <script data-dojo-config="async: true, deps: ['application.js'], tlmSiblingOfDojo: true"
-            src="${symbol_dollar}{pageContext.request.contextPath}/dojo/dojo.js.uncompressed.js"></script>
+    <title>CometD</title>
+    <script type="module" src="application.js"></script>
     <script type="text/javascript">
-      var config = {
-        contextPath: '${pageContext.request.contextPath}'
+      const config = {
+        contextPath: "${pageContext.request.contextPath}"
       };
     </script>
   </head>
@@ -251,25 +213,27 @@ The JSP file, `index.jsp`, contains the reference to the JavaScript toolkit depe
 </html>
 ----
 
-It also configures a JavaScript configuration object, `config`, with variables that the JavaScript application might need.
+The reason to use a JSP file rather than an HTML file is that JSP allows you to more easily obtain contextual information such as the web application context path, but it is not necessary.
+
+In the example above, the JSP file configures a JavaScript configuration object name `config`, with fields that the JavaScript application might need, for example `contextPath`.
 This is totally optional.
 
 The JavaScript application, contained in the `application.js` file, configures the `cometd` object and starts the application.
-The archetypes provide:
+The archetypes provide the following implementation, that you can use as inspiration to write your own:
 
 [source,javascript,indent=0]
 ----
-include::../../../../cometd-archetypes/cometd-archetype-dojo-jetty12/src/main/resources/archetype-resources/src/main/webapp/application.js[]
+include::../../../../cometd-archetypes/cometd-archetype-es6-jetty12/src/main/resources/archetype-resources/src/main/webapp/application.js[]
 ----
 
-Notice the following:
+Note the following:
 
-* The use of the `dojo/domReady!` dependency to wait for the document to load up before executing the `cometd` object initialization.
-* The use of `dojo.addOnUnload()` to disconnect when the page is refreshed or closed.
+* The use of the `DOMContentLoaded` event to wait for the document to load up before executing the `cometd` object initialization.
+* The use of the `onbeforeunload` to disconnect when the page is refreshed or closed (see also xref:_extensions_reload[here] for further information about page unloading handling).
 * The use of the function `+_metaHandshake()+` to set up the initial configuration on first contact with the server (or when the server has lost client information, for example because of a server restart).
-  This is totally optional, but highly recommended and it is the recommended way to perform subscriptions.
+  This is totally optional, but highly recommended, and it is the recommended way to perform subscriptions.
 * The use of the function `+_metaConnect()+` to detect when the communication has been successfully established (or re-established).
   This is totally optional, but highly recommended. +
-Be warned that the use of the `+_metaConnect()+` along with the `+_connected+` status variable can result in your code (that in this simple example sets the innerHTML property) to be called more than once if, for example, you experience temporary network failures or if the server restarts. +
-Therefore the code that you put in the `+_connectionEstablished()+` function must be https://en.wikipedia.org/wiki/Idempotent[idempotent].
+Be warned that the use of the `+_metaConnect()+` along with the `+_connected+` status variable can result in your code (that in this simple example sets the `innerHTML` property) to be called more than once if, for example, you experience temporary network failures or if the server restarts. +
+Therefore, the code that you put in the `+_connectionEstablished()+` function must be https://en.wikipedia.org/wiki/Idempotent[idempotent].
   In other words, make sure that if the `+_connectionEstablished()+` function is called more than one time, it will behave exactly as if it is called only once.

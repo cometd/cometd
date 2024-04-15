@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <archetype>
-  <id>cometd-archetype-jquery-jetty9</id>
+  <id>cometd-archetype-jquery-jetty</id>
   <sources>
     <source>src/main/java/CometDInitializer.java</source>
     <source>src/main/java/HelloService.java</source>
