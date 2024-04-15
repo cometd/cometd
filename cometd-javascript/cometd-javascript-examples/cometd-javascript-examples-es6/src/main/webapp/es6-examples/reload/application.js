@@ -42,7 +42,7 @@ window.addEventListener("DOMContentLoaded", () => {
     });
 
     // Initialize CometD.
-    const url = location.href.replace(/\/vanilla-examples\/.*$/, "") + "/cometd";
+    const url = location.href.replace(/\/es6-examples\/.*$/, "") + "/cometd";
     cometd.init({
         url: url,
         logLevel: "debug"

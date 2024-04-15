@@ -7,7 +7,7 @@
     <artifactId>cometd-javascript-examples</artifactId>
     <version>8.0.0-SNAPSHOT</version>
   </parent>
-  <artifactId>cometd-javascript-examples-vanilla</artifactId>
+  <artifactId>cometd-javascript-examples-es6</artifactId>
   <packaging>war</packaging>
-  <name>CometD :: JavaScript :: Examples :: Vanilla</name>
+  <name>CometD :: JavaScript :: Examples :: ES6</name>
 </project>

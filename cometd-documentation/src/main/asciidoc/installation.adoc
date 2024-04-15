@@ -32,7 +32,7 @@ $ cd cometd-<version>/
 
 The CometD Demos contain:
 
-* Four full chat applications (one developed with vanilla Javascript, on with Dojo, one with jQuery and one with Angular 1).
+* Two full chat applications (one developed with ES6 Javascript and one with jQuery).
 * Examples of extensions such as message acknowledgement, reload, timesync and timestamp.
 * An example of how to echo private messages to a particular client only.
 * A clustered auction demo (using the xref:_java_oort[Oort clustering]).

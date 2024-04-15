@@ -48,7 +48,7 @@
     </dependency>
     <dependency>
       <groupId>org.cometd.javascript</groupId>
-      <artifactId>cometd-javascript-examples-vanilla</artifactId>
+      <artifactId>cometd-javascript-examples-es6</artifactId>
       <version>${project.version}</version>
       <type>war</type>
     </dependency>
@@ -140,7 +140,7 @@
             </overlay>
             <overlay>
               <groupId>org.cometd.javascript</groupId>
-              <artifactId>cometd-javascript-examples-vanilla</artifactId>
+              <artifactId>cometd-javascript-examples-es6</artifactId>
               <excludes>
                 <exclude>META-INF/**</exclude>
                 <exclude>WEB-INF/web.xml</exclude>

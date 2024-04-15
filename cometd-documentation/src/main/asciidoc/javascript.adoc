@@ -13,7 +13,7 @@ Please refer to those sibling projects for further information if you need Comet
 
 In the documentation that follows, you will find information about the client-side JavaScript library to be used in browsers.
 
-The CometD JavaScript library is a portable JavaScript implementation with a _vanilla_ implementation, entirely based on pure EcmaScript 6 and the standard objects available in the browser environment.
+The CometD JavaScript library is a portable JavaScript implementation, entirely based on pure EcmaScript 6 and the standard objects available in the browser environment.
 This implementation is what most applications should use.
 
 [source,javascript]

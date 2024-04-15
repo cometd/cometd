@@ -100,7 +100,7 @@ It is clear that server-to-client message ordering comes at the small price of s
 
 ==== Demo
 
-There is an example of acknowledged messages in the vanilla chat demo that comes bundled with the CometD distribution, and instruction on how to run the CometD demos in xref:_installation_demos[the installation demos section].
+There is an example of acknowledged messages in the ES6 chat demo that comes bundled with the CometD distribution, and instruction on how to run the CometD demos in xref:_installation_demos[the installation demos section].
 
 To run the acknowledgement demo, follow these steps:
 
@@ -111,7 +111,7 @@ To run the acknowledgement demo, follow these steps:
 $ cd cometd-demo
 $ mvn jetty:run
 ----
-. Point your browser to `+http://localhost:8080/vanilla-examples/chat/+` and make
+. Point your browser to `+http://localhost:8080/es6-examples/chat/+` and make
   sure to check _Enable reliable messaging_
 . Use two different browser instances to begin a chat session, then briefly disconnect one browser from the network
 . While one browser is disconnected, type some chat in the other browser, which is received when the disconnected browser reconnects to the network.

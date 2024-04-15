@@ -260,7 +260,7 @@ Where before a CometD applications opened in multiple browser tabs only had one 
 
 ==== JavaScript Implementation Changes
 
-The JavaScript implementation now supports two more bindings, for https://angularjs.org/[Angular 1] (Angular 2 not supported yet) and for _vanilla_ JavaScript (i.e. plain JavaScript without frameworks or other libraries).
+The JavaScript implementation now supports two more bindings, for https://angularjs.org/[Angular 1] and for plain JavaScript (without frameworks or other libraries).
 
 The JavaScript implementation is now available via https://www.npmjs.com/[NPM] and https://bower.io/[Bower], and compatible with both CommonJS modules and AMD modules.
 

@@ -13,6 +13,6 @@
 
   <modules>
     <module>cometd-javascript-examples-jquery</module>
-    <module>cometd-javascript-examples-vanilla</module>
+    <module>cometd-javascript-examples-es6</module>
   </modules>
 </project>

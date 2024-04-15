@@ -46,7 +46,7 @@ Choose ES6 with Jetty, which in the example above is archetype number `1` (it ma
 Next, you have to choose the version of the archetype you want to use, typically the last version of the 8.0.x series:
 
 ----
-Choose org.cometd.archetypes:cometd-archetype-vanilla-jetty12 version:
+Choose org.cometd.archetypes:cometd-archetype-es6-jetty12 version:
 ...
 81: 8.0.0
 ...
@@ -56,7 +56,7 @@ The archetype generation requires that you define several properties and generat
 
 ----
 Define value for property 'groupId': : org.cometd.primer
-Define value for property 'artifactId': : vanilla-jetty12-primer
+Define value for property 'artifactId': : es6-jetty12-primer
 Define value for property 'version':  1.0-SNAPSHOT: :
 Define value for property 'package':  org.cometd.primer: :
 [INFO] Using property: cometd-version = 8.0.0
@@ -64,7 +64,7 @@ Define value for property 'package':  org.cometd.primer: :
 ...
 Confirm properties configuration:
 groupId: org.cometd.primer
-artifactId: vanilla-jetty12-primer
+artifactId: es6-jetty12-primer
 version: 1.0-SNAPSHOT
 package: org.cometd.primer
 cometd-version: 8.0.0
@@ -84,7 +84,7 @@ the application skeleton, since it can be easily changed afterwards.
 Then:
 
 ----
-$ cd vanilla-jetty12-primer/
+$ cd es6-jetty12-primer/
 ----
 
 The skeleton project now exists as follows:
@@ -117,7 +117,7 @@ $ mvn clean install
 $ mvn jetty:run
 ----
 
-Now point your browser at `+http://localhost:8080/vanilla-jetty12-primer+`, and you should see this message:
+Now point your browser at `+http://localhost:8080/es6-jetty12-primer+`, and you should see this message:
 
 ----
 Server Says: Hello, World
