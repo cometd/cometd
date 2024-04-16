@@ -21,10 +21,10 @@ The CometD source code is released under the Apache 2.0 License.
 ### Project Directory Layout
 
     cometd-archetypes    - The Maven archetypes for quick application development
-    cometd-demo          - Demo of the Java server and of the Dojo/jQuery clients
+    cometd-demo          - Demo of the Java server and of the ES6/jQuery clients
     cometd-documentation - The CometD documentation
     cometd-java          - The Java server and java client libraries
-    cometd-javascript    - The JavaScript (Dojo/jQuery) client libraries
+    cometd-javascript    - The JavaScript (ES6/jQuery) client libraries
 
 
 ### Running the CometD Demo

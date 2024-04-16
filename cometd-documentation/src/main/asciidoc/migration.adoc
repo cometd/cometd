@@ -846,4 +846,134 @@ The `Oort` and `Seti` classes independent of Jakarta EE 10 have been moved from 
 <2> `version` attribute changed from `5.0` to `6.0`
 |===
 
-// TODO: add a section to JavaScript changes
+==== JavaScript Implementation Changes
+
+The JavaScript implementation has been updated to use ES6 features, in particular classes and modules.
+
+The Dojo and Angular bindings have been removed, as they were obsolete.
+The jQuery binding has been retained.
+
+Applications should be changed accordingly:
+
+[cols="1a,1a", options="header"]
+|===
+| CometD 7.0.x
+| CometD 8.0.x
+
+|
+[source,html,subs=+quotes]
+.index.html
+----
+<!-- CometD 7.0.x. -->
+<script type="text/javascript" src="js/cometd/cometd.js"></script>
+<script type="**text/javascript**" src="application.js"></script>
+----
+|
+[source,html,subs=+quotes]
+.index.html
+----
+<!-- CometD 8.0.x. -->
+<script type="**module**" src="application.js"></script>
+----
+|===
+
+Note how in CometD 8 the `script` element for CometD is not necessary, since it will be imported by `application.js`:
+
+[cols="1a,1a", options="header"]
+|===
+| CometD 7.0.x
+| CometD 8.0.x
+
+|
+[source,javascript,subs=+quotes]
+.application.js
+----
+/// CometD and ReloadExtension symbols available under "org.cometd".
+const cometd = new org.cometd.CometD();
+cometd.registerExtension("reload", new org.cometd.ReloadExtension());
+----
+|
+[source,javascript,subs=+quotes]
+.application.js
+----
+/// CometD and ReloadExtension symbols available via standard ES6 module import.
+import {CometD} from "./js/cometd/cometd.js";
+import {ReloadExtension} from "./js/cometd/ReloadExtension.js";
+
+const cometd = new CometD();
+cometd.registerExtension("reload", new ReloadExtension());
+----
+|===
+
+jQuery applications should also be changed accordingly:
+
+[cols="1a,1a", options="header"]
+|===
+| CometD 7.0.x
+| CometD 8.0.x
+
+|
+[source,html,subs=+quotes]
+.index.html
+----
+<!-- CometD 7.0.x. -->
+<script type="text/javascript" src="https://code.jquery.com/jquery-3.7.1.js"></script>
+<script type="text/javascript" src="js/cometd/cometd.js"></script>
+<script type="text/javascript" src="js/jquery/jquery.cometd.js"></script>
+<script type="text/javascript" src="js/jquery/jquery.cometd-reload.js"></script>
+<script type="**text/javascript**" src="application.js"></script>
+----
+|
+[source,html,subs=+quotes]
+.index.html
+----
+<!-- CometD 8.0.x. -->
+<script type="importmap">
+  {
+    "imports": {
+      "jquery": "https://code.jquery.com/jquery-3.7.1.js",
+      "cometd/": "js/cometd/",
+      "jquery/cometd": "js/jquery/jquery.cometd.js"
+    }
+  }
+</script>
+<script type="**module**" src="application.js"></script>
+----
+|===
+
+Note how in CometD 8 there is a `<script type="importmap">` element that defines the path or URI of the relevant files.
+
+The `importmap` import `"cometd/"` is mandatory, since it is used by the `jquery.cometd.js` binding, and must point to the ES6 CometD directory.
+
+[cols="1a,1a", options="header"]
+|===
+| CometD 7.0.x
+| CometD 8.0.x
+
+|
+[source,javascript,subs=+quotes]
+.application.js
+----
+/// The default CometD object "$.cometd" is already available,
+/// and the reload extension already registered.
+$.cometd.configure({
+  url: "http://localhost:8080/cometd"
+});
+----
+|
+[source,javascript,subs=+quotes]
+.application.js
+----
+import "jquery"; // Imports jQuery so that "$" is available. Refers to the importmap.
+import {cometd} from "jquery/cometd"; // Imports the default cometd object. Refers to the importmap.
+/// import "jquery/cometd"; // Alternative to the import above if you want to use "$.cometd".
+import {ReloadExtension} from "cometd/ReloadExtension.js"; // Now must be explicitly imported. Refers to the importmap.
+
+/// ReloadExtension must now be explicitly registered.
+cometd.registerExtension("reload", new ReloadExtension());
+
+cometd.configure({
+  url: "http://localhost:8080/cometd"
+});
+----
+|===
