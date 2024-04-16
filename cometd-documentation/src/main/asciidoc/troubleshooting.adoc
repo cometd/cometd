@@ -22,8 +22,8 @@ To enable debug logging on the JavaScript client library (see also xref:_javascr
 [source,ecmascript6]
 ----
 cometd.configure({
-    url: 'http://localhost:8080/cometd',
-    logLevel: 'debug'
+    url: "http://localhost:8080/cometd",
+    logLevel: "debug"
 });
 ----
 

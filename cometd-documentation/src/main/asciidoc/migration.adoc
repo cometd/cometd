@@ -323,12 +323,12 @@ Applications should be changed accordingly:
 ----
 /// CometD 3.0.x with AMD.
 require({
-  baseUrl: 'js/jquery',
+  baseUrl: "js/jquery",
   paths: {
-    jquery: 'jquery-2.2.4',
-    *org: '../org'*
+    jquery: "jquery-2.2.4",
+    *org: "../org"*
   }
-}, ['jquery','jquery.cometd'], function($, cometd) {
+}, ["jquery","jquery.cometd"], function($, cometd) {
   ...
 });
 ----
@@ -343,7 +343,7 @@ require({
     jquery: "jquery-3.6.0",
     *cometd: "../cometd"*
   }
-}, ['jquery','jquery.cometd'], function($, cometd) {
+}, ["jquery","jquery.cometd"], function($, cometd) {
   ...
 });
 ----

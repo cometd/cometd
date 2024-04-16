@@ -28,7 +28,7 @@ It is possible to invoke the `handshake()` function passing as parameter a callb
 ----
 // Configure.
 cometd.configure({
-    url: 'http://localhost:8080/cometd'
+    url: "http://localhost:8080/cometd"
 });
 
 // Handshake with callback.
@@ -62,7 +62,7 @@ Since the `handshake()` call is asynchronous, it is not a good idea to write thi
 // WRONG CODE
 
 cometd.configure({
-    url: 'http://localhost:8080/cometd'
+    url: "http://localhost:8080/cometd"
 });
 
 // Handshake.
