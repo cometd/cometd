@@ -92,7 +92,7 @@ public class AuctionService {
             reply.put(Message.ERROR_FIELD, "invalid_user");
         } else {
             session.setAttribute("user", user);
-            }
+        }
     }
 
     @RemoteCall("auction/categories")

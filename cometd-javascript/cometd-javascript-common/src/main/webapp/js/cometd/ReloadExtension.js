@@ -79,6 +79,7 @@ export class ReloadExtension extends Extension {
     registered(name, cometd) {
         super.registered(name, cometd);
         this.cometd.reload = (config) => this.#reload(config);
+        this.cometd.addListener("/meta/handshake", (m) => this.#onHandshakeReply(m));
     };
 
     unregistered() {
@@ -95,12 +96,12 @@ export class ReloadExtension extends Extension {
 
                 const state = window.sessionStorage.getItem(this.#name);
                 this.cometd._debug("Reload extension found state", state);
-                // Is there a saved handshake response from a prior load ?
+                // Is there a saved handshake response from a prior load?
                 if (state) {
                     try {
                         const oldState = JSON.parse(state);
 
-                        // Remove the state, not needed anymore
+                        // Remove the state, not needed anymore.
                         window.sessionStorage.removeItem(this.#name);
 
                         if (oldState.handshakeResponse && this.#similarState(oldState)) {
@@ -143,7 +144,7 @@ export class ReloadExtension extends Extension {
                                 this.cometd.startBatch();
                             }
 
-                            // This handshake is aborted, as we will replay the prior handshake response
+                            // This handshake is aborted, as we will replay the prior handshake response.
                             return null;
                         } else {
                             this.cometd._debug("Reload extension could not restore state", oldState);
@@ -219,4 +220,12 @@ export class ReloadExtension extends Extension {
         }
         return message;
     };
+
+    #onHandshakeReply(message) {
+        // Unsuccessful handshakes should
+        // not be saved in case of reloads.
+        if (message.successful !== true) {
+            this.#state = {};
+        }
+    }
 }
