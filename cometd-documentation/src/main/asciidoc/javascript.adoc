@@ -16,7 +16,7 @@ In the documentation that follows, you will find information about the client-si
 The CometD JavaScript library is a portable JavaScript implementation, entirely based on pure EcmaScript 6 and the standard objects available in the browser environment.
 This implementation is what most applications should use.
 
-[source,javascript]
+[source,ecmascript6]
 ----
 import {CometD} from "cometd/cometd.js";
 
@@ -28,7 +28,7 @@ CometD also provides _bindings_ for JavaScript toolkits, currently https://jquer
 This means that the CometD JavaScript implementation is written in pure JavaScript with no dependencies on the toolkits, and that the toolkit bindings add the syntactic sugar that makes the CometD APIs feel like they are native to the toolkit.
 For example, it is possible to refer to a default `cometd` object when using jQuery, using the following notation:
 
-[source,javascript]
+[source,ecmascript6]
 ----
 // jQuery style.
 import "jquery/jquery.cometd.js";

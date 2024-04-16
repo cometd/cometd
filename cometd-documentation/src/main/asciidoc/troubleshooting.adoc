@@ -19,7 +19,7 @@ This is helpful because by reading the debug logs you get a better understanding
 
 To enable debug logging on the JavaScript client library (see also xref:_javascript[the JavaScript library section]) you must pass the `logLevel` field to the configuration of the `cometd` object, with value `'debug'` (see also xref:_javascript_configure[the JavaScript library configuration section] for other configuration options):
 
-[source,javascript]
+[source,ecmascript6]
 ----
 cometd.configure({
     url: 'http://localhost:8080/cometd',

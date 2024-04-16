@@ -19,9 +19,9 @@ This case is supported by using the `publishBinary()` and `remoteCallBinary()` v
 
 The `publish()` function allows you to publish data onto a certain channel:
 
-[source,javascript]
+[source,ecmascript6]
 ----
-cometd.publish('/mychannel', { mydata: { foo: 'bar' } });
+cometd.publish("/mychannel", { mydata: { foo: "bar" } });
 ----
 
 You cannot (and it makes no sense to) publish to a meta channel, but you can publish to a service or broadcast channel even if you are not subscribed to that channel.
@@ -37,10 +37,10 @@ For historical reasons, publish acknowledgments and failures are notified on the
 
 In order to be notified of publish acknowledgments or failures, is it recommended that you use this variant of the `publish()` function, passing a callback function:
 
-[source,javascript]
+[source,ecmascript6]
 ----
-cometd.publish('/mychannel', { mydata: { foo: 'bar' } }, function(publishAck) {
-    if (publishAck.successful) {
+cometd.publish("/mychannel", { mydata: { foo: "bar" } }, (publishReply) => {
+    if (publishReply.successful) {
         // The message reached the server
     }
 });
@@ -70,20 +70,20 @@ Remember that you must have the binary extension enabled as specified in xref:_e
 
 To publish binary data, you must first create or obtain a JavaScript typed array, a `DataView` or an `ArrayBuffer`, and then use the `publishBinary()` API:
 
-[source,javascript]
+[source,ecmascript6]
 ----
 // Create an ArrayBuffer.
-var buffer = new ArrayBuffer(4);
+const buffer = new ArrayBuffer(4);
 
 // Fill it with the bytes.
-var view = new DataView(buffer);
+const view = new DataView(buffer);
 view.setUint8(0, 0xCA);
 view.setUint8(1, 0xFE);
 view.setUint8(2, 0xBA);
 view.setUint8(3, 0xBE);
 
 // Send it.
-cometd.publishBinary('/binary', view, true, { prolog: 'java' });
+cometd.publishBinary("/binary", view, true, { prolog: "java" });
 ----
 
 In the example above, the binary data to send can be either the `buffer` or the `view`.
@@ -97,12 +97,12 @@ Like normal `publish()` calls, you can pass as last parameter to `publishBinary(
 
 When you need to just call the server to perform some action, such as retrieving data from a database, or updating some server state, you want to use a remote call:
 
-[source,javascript]
+[source,ecmascript6]
 ----
-cometd.remoteCall('target', { foo: 'bar' }, 5000, function(response) {
+cometd.remoteCall("target", { foo: "bar" }, 5000, (response) => {
     if (response.successful) {
-        // The action was performed
-        var data = response.data;
+        // The action was performed.
+        const data = response.data;
     }
 });
 ----
@@ -115,7 +115,7 @@ The second argument of `remoteCall()` is an object with the arguments of the rem
 You can think of it as the arguments of the remote method call, reified as an object, or you can think of it as the data needed to perform the action.
 
 The third, optional, argument of `remoteCall()` is the timeout, in milliseconds, for the remote call to complete.
-If the timeout expires, the callback function will be invoked with a response object whose `successful` field is set to `false`, and whose `error` field is set to `'406::timeout'`.
+If the timeout expires, the callback function will be invoked with a response object whose `successful` field is set to `false`, and whose `error` field is set to `"406::timeout"`.
 The default value of the timeout is the value specified by the `maxNetworkDelay` xref:_javascript_configure[parameter].
 A negative value or `0` disables the timeout.
 
@@ -146,7 +146,7 @@ The following table shows what response fields are present in the response objec
 | Timeout
 | `false`
 | N/A
-| `'406::timeout'`
+| `"406::timeout"`
 |===
 
 Internally, remote calls are translated to messages published to a service channel, and handled on the server side by means of an xref:_java_server_services_annotated[annotated service], in particular one with a `@RemoteCall` xref:_java_server_services_annotated_server_side_remote_call[annotation].
@@ -163,17 +163,17 @@ Remember that you must have the binary extension enabled in the client as specif
 
 Here is an example that sends an `ArrayBuffer`:
 
-[source,javascript]
+[source,ecmascript6]
 ----
 // Obtain an ArrayBuffer.
-var buffer = ...;
-var meta = {
+const buffer = ...;
+const meta = {
     contentType: "application/pdf"
 };
-cometd.remoteCallBinary('target', buffer, true, meta, 5000, function(response) {
+cometd.remoteCallBinary("target", buffer, true, meta, 5000, (response) => {
     if (response.successful) {
-        // The action was performed
-        var data = response.data;
+        // The action was performed.
+        const data = response.data;
     }
 });
 ----

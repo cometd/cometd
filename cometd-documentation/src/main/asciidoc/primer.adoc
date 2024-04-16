@@ -221,7 +221,7 @@ This is totally optional.
 The JavaScript application, contained in the `application.js` file, configures the `cometd` object and starts the application.
 The archetypes provide the following implementation, that you can use as inspiration to write your own:
 
-[source,javascript,indent=0]
+[source,ecmascript6,indent=0]
 ----
 include::../../../../cometd-archetypes/cometd-archetype-es6-jetty12/src/main/resources/archetype-resources/src/main/webapp/application.js[]
 ----

@@ -9,7 +9,7 @@ This extension requires only the client-side extension.
 
 `Reload.js` provides the client side extension implementation, and it is sufficient to import and register an instance with the CometD object:
 
-[source,javascript]
+[source,ecmascript6]
 ----
 import {ReloadExtension} from "cometd/ReloadExtension.js";
 
@@ -41,18 +41,18 @@ To reconfigure the reload extension:
 
 * Reconfigure the extension at startup:
 +
-[source,javascript]
+[source,ecmascript6]
 ----
-cometd.getExtension('reload').configure({
-    name: 'com.acme.Company.reload'
+cometd.getExtension("reload").configure({
+    name: "com.acme.Company.reload"
 });
 ----
 * Reconfigure the extension when the `cometd.reload()` function is invoked:
 +
-[source,javascript]
+[source,ecmascript6]
 ----
 cometd.reload({
-    name: 'com.acme.Company.reload'
+    name: "com.acme.Company.reload"
 });
 ----
 
@@ -105,7 +105,7 @@ Unfortunately the confusion about an _unload_ event is not completely cleared ye
 
 A simple example follows:
 
-[source,javascript]
+[source,ecmascript6]
 ----
 import {CometD} from "cometd/cometd.js";
 import {ReloadExtension} from "cometd/ReloadExtension.js";

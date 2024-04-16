@@ -24,7 +24,7 @@ Calling `handshake()` _does not_ mean that you have completed the handshake with
 
 It is possible to invoke the `handshake()` function passing as parameter a callback function that will be invoked when the handshake message reply from the server arrives to the client (or, in case the server does not reply, when the client detects a handshake failure):
 
-[source,javascript]
+[source,ecmascript6]
 ----
 // Configure.
 cometd.configure({
@@ -57,7 +57,7 @@ A corollary of this is that applications should usually only ever call `handshak
 
 Since the `handshake()` call is asynchronous, it is not a good idea to write this code:
 
-[source,javascript]
+[source,ecmascript6]
 ----
 // WRONG CODE
 
@@ -69,7 +69,7 @@ cometd.configure({
 cometd.handshake();
 
 // Publish to a channel.
-cometd.publish('/foo', { foo: 'bar' });
+cometd.publish("/foo", { foo: "bar" });
 ----
 
 It is not a good idea because there is no guarantee that the call to `publish()` (see xref:_javascript_publish[the javascript publish section]) can actually succeed in contacting the Bayeux server.
@@ -77,27 +77,27 @@ Since the API is asynchronous, you have no way of knowing synchronously (that is
 
 The correct way is the following:
 
-[source,javascript]
+[source,ecmascript6]
 ----
 cometd.configure({
-    url: 'http://localhost:8080/cometd'
+    url: "http://localhost:8080/cometd"
 });
 
 // Handshake.
-cometd.handshake(function(handshakeReply) {
+cometd.handshake((handshakeReply) => {
     if (handshakeReply.successful) {
         // Publish to a channel.
-        cometd.publish('/foo', { foo: 'bar' });
+        cometd.publish("/foo", { foo: "bar" });
     }
 });
 ----
 
 If you want to pass additional information to the handshake message (for example, authentication credentials) you can pass an additional object to the `handshake()` function:
 
-[source,javascript]
+[source,ecmascript6]
 ----
 cometd.configure({
-    url: 'http://localhost:8080/cometd'
+    url: "http://localhost:8080/cometd"
 });
 
 // Handshake with additional information.
@@ -107,7 +107,7 @@ var additional = {
         "token": "xyzsecretabc"
     }
 };
-cometd.handshake(additional, function(handshakeReply) {
+cometd.handshake(additional, (handshakeReply) => {
     if (handshakeReply.successful) {
         // Your logic here.
     }
@@ -116,14 +116,14 @@ cometd.handshake(additional, function(handshakeReply) {
 
 The additional object will be _merged_ into the handshake message.
 
-The server will be able to access the message (but not yet the session) from a `/meta/handshake` listener, for example using annotated services (see also xref:_java_server_services_annotated[the annotated services section]):
+The server will be able to access the message from a `/meta/handshake` listener, for example using annotated services (see also xref:_java_server_services_annotated[the annotated services section]):
 
 [source,java,indent=0]
 ----
 include::{doc_code}/server/ServerJavaScriptDocs.java[tags=handshakeService]
 ----
 
-For more advanced processing of the handshake message that require the availability of the `ServerSession`, see xref:_java_server_authentication[the authentication section].
+For more advanced processing of the handshake message, see xref:_java_server_authentication[the authentication section].
 
 The additional object must not be used to tamper the handshake message by using reserved fields defined by the Bayeux protocol (see also xref:_bayeux[the Bayeux protocol section]).
 Instead, you should use field names that are unique to your application, better yet when fully qualified like `com.acme.credentials`.

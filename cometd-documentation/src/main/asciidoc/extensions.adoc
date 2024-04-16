@@ -67,7 +67,7 @@ If they are present, the CometD implementation invokes them at the proper time.
 
 Writing an extension that logs and counts the long polls is quite easy: you need a reference to the `cometd` object that provides the logging functions (available from `Extension`), and you need only to override the `outgoing()` method:
 
-[source,javascript]
+[source,ecmascript6]
 ----
 import {Extension} from "cometd/Extension.js";
 
@@ -75,9 +75,9 @@ class LoggerExt extends Extension {
     #counter = 0;
 
     outgoing(message) {
-        if (message.channel === '/meta/connect') {
+        if (message.channel === "/meta/connect") {
             // Log the /meta/connect.
-            this.cometd._info('bayeux /meta/connect');
+            this.cometd._info("bayeux /meta/connect");
 
             // Count the long polls
             if (!message.ext) {
@@ -126,7 +126,7 @@ The JavaScript CometD API defines three functions to manage extensions:
 
 Following the example above, you can register the extension like this:
 
-[source,javascript]
+[source,ecmascript6]
 ----
 cometd.registerExtension("loggerExt", new LoggerExt());
 ----
@@ -135,7 +135,7 @@ From now on, the meta connect messages are modified to carry the counter from th
 
 Unregistering the extension is similar:
 
-[source,javascript]
+[source,ecmascript6]
 ----
 cometd.unregisterExtension("loggerExt");
 ----
@@ -148,7 +148,7 @@ It is not possible to register two extensions under the same name.
 While it is normally good practice to catch exceptions within extension functions, sometimes this is tedious to code, or there is no control about the quality of the extension (for example, it's a third party extension).
 The JavaScript CometD API provides a way to define the global extension exception handler that is invoked every time an extension throws an exception (for example, calling a function on an undefined object):
 
-[source,javascript]
+[source,ecmascript6]
 ----
 cometd.onExtensionException = (exception, extensionName, outgoing, message) => {
     // Uh-oh, something went wrong, disable this extension.

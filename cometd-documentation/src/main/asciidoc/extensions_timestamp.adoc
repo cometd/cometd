@@ -20,7 +20,7 @@ include::{doc_code}/ExtensionsDocs.java[tags=timestamp]
 
 `TimeStamp.js` provides the client-side extension implementation, and it is sufficient to import and register an instance with the CometD object:
 
-[source,javascript]
+[source,ecmascript6]
 ----
 import {TimeStampExtension} from "cometd/TimeStampExtension.js";
 

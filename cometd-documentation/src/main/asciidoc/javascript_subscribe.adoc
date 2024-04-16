@@ -51,7 +51,7 @@ The `subscribe()` function:
 * Must not be used to listen to meta channels messages (if attempted, the server returns an error).
 * May be used to listen to service channel messages.
 * Should be used to listen to broadcast channel messages.
-* Involves a communication with the Bayeux server and as such cannot be called before calling `handshake().`
+* Involves a communication with the Bayeux server and as such cannot be called before calling `handshake()`.
 * Is asynchronous: it returns immediately, well before the Bayeux server has received the subscription request.
 
 [NOTE]
@@ -61,9 +61,9 @@ Calling `subscribe()` _does not_ mean that you have completed the subscription w
 
 If you want to be certain that the server received your subscription request (or not), you can either register a `/meta/subscribe` listener, or pass a callback function to `subscribe()`:
 
-[source,javascript]
+[source,ecmascript6]
 ----
-cometd.subscribe('/foo', function(message) { ... }, function(subscribeReply) {
+cometd.subscribe("/foo", (message) => { ... }, (subscribeReply) => {
     if (subscribeReply.successful) {
         // The server successfully subscribed this client to the "/foo" channel.
     }
@@ -75,12 +75,12 @@ In both cases `/meta/subscribe` listener, or the callback function, will be invo
 
 You can pass additional information to the subscribe message by passing an additional object to the `subscribe()` function:
 
-[source,javascript]
+[source,ecmascript6]
 ----
 var additional = {
     "com.acme.priority": 10
 };
-cometd.subscribe('/foo', function(message) { ... }, additional, function(subscribeReply) {
+cometd.subscribe("/foo", (message) => { ... }, additional, (subscribeReply) => {
     // Your logic here.
 });
 ----
@@ -93,11 +93,11 @@ Both `addListener()` and `subscribe()` return a subscription object that is opaq
 
 The returned subscription object should be passed to, respectively, `removeListener()` and `unsubscribe()`:
 
-[source,javascript]
+[source,ecmascript6]
 ----
 // Some initialization code.
-var subscription1 = cometd.addListener('/meta/connect', function() { ... });
-var subscription2 = cometd.subscribe('/foo/bar/', function() { ... });
+var subscription1 = cometd.addListener("/meta/connect", (m) => { ... });
+var subscription2 = cometd.subscribe("/foo/bar/", (m) => { ... });
 
 // Some de-initialization code.
 cometd.unsubscribe(subscription2);
@@ -106,16 +106,16 @@ cometd.removeListener(subscription1);
 
 Function `unsubscribe()` can too take an additional object and a callback function as parameters:
 
-[source,javascript]
+[source,ecmascript6]
 ----
 // Some initialization code.
-var subscription1 = cometd.subscribe('/foo/bar/', function() { ... });
+var subscription1 = cometd.subscribe("/foo/bar/", () => { ... });
 
 // Some de-initialization code.
 var additional = {
     "com.acme.discard": true
 }
-cometd.unsubscribe(subscription1, additional, function(unsubscribeReply) {
+cometd.unsubscribe(subscription1, additional, (unsubscribeReply) => {
     // Your logic here.
 });
 ----
@@ -137,28 +137,28 @@ Applications do not need to unsubscribe in case of re-handshake; the CometD libr
 
 For the same reason, you should never add listeners inside a `/meta/handshake` function, because this will add another listener without removing the previous one, resulting in multiple notifications of the same messages.
 
-[source,javascript]
+[source,ecmascript6]
 ----
-var _reportListener;
-cometd.addListener('/meta/handshake', function(message) {
+let _reportListener;
+cometd.addListener("/meta/handshake", (message) => {
     // Only subscribe if the handshake is successful.
     if (message.successful) {
         // Batch all subscriptions together.
-        cometd.batch(function() {
+        cometd.batch(() => {
             // Correct to subscribe to broadcast channels.
-            cometd.subscribe('/members', function(m) { ... });
+            cometd.subscribe("/members", (m) => { ... });
 
             // Correct to subscribe to service channels.
-            cometd.subscribe('/service/status', function(m) { ... });
+            cometd.subscribe("/service/status", (m) => { ... });
 
             // Messy to add listeners after removal, prefer using cometd.subscribe(...).
             if (_reportListener) {
                 cometd.removeListener(_reportListener);
-                _reportListener = cometd.addListener('/service/report', function(m) { ... });
+                _reportListener = cometd.addListener("/service/report", (m) => { ... });
             }
 
             // Wrong to add listeners without removal.
-            cometd.addListener('/service/notification', function(m) { ... });
+            cometd.addListener("/service/notification", (m) => { ... });
         });
     }
 });
@@ -177,22 +177,23 @@ In cases where the Bayeux server is not reachable (due to network failures or be
 Often times, applications need to perform dynamic subscriptions and unsubscriptions, for example when a user clicks on a user interface element, you want to subscribe to a certain channel.
 In this case the subscription object returned upon subscription is stored to be able to dynamically unsubscribe from the channel upon user demand:
 
-[source,javascript]
+[source,ecmascript6]
 ----
-var _subscription;
-function Controller() {
-    this.dynamicSubscribe = function() {
-       _subscription = cometd.subscribe('/dynamic', this.onEvent);
-    };
+class Controller {
+    #subscription = null;
 
-    this.onEvent = function(message) {
+    dynamicSubscribe() {
+       this.#subscription = cometd.subscribe("/dynamic", (m) => this.onEvent(m));
+    }
+
+    onEvent(message) {
         ...
-    };
+    }
 
-    this.dynamicUnsubscribe = function() {
-        if (_subscription) {
-            cometd.unsubscribe(_subscription);
-            _subscription = undefined;
+    dynamicUnsubscribe() {
+        if (this.#subscription) {
+            cometd.unsubscribe(this.#subscription);
+            this.#subscription = null;
         }
     }
 }
@@ -200,15 +201,15 @@ function Controller() {
 
 In case of a re-handshake, dynamic subscriptions are cleared (like any other subscription) and the application needs to figure out which dynamic subscription must be performed again.
 
-This information is already known to CometD at the moment `cometd.subscribe(...)` was called (above in function `dynamicSubscribe()`), so applications can just call `resubscribe()` using the subscription object obtained from `subscribe()`:
+This information is already known to CometD at the moment `cometd.subscribe(...)` was called (above in method `dynamicSubscribe()`), so applications can just call `resubscribe()` using the subscription object obtained from `subscribe()`:
 
-[source,javascript]
+[source,ecmascript6]
 ----
-cometd.addListener('/meta/handshake', function(message) {
+cometd.addListener("/meta/handshake", function(message) {
     if (message.successful) {
         cometd.batch(function() {
             // Static subscription, no need to remember the subscription handle
-            cometd.subscribe('/static', staticFunction);
+            cometd.subscribe("/static", staticFunction);
 
             // Dynamic re-subscription
             if (_subscription) {
@@ -225,15 +226,14 @@ cometd.addListener('/meta/handshake', function(message) {
 If a listener or subscriber function throws an exception (for example, calls a function on an undefined object), the error message is logged at level "debug".
 However, there is a way to intercept these errors by defining the global listener exception handler that is invoked every time a listener or subscriber throws an exception:
 
-[source,javascript]
+[source,ecmascript6]
 ----
-cometd.onListenerException = function(exception, subscriptionHandle, isListener, message) {
-    // Uh-oh, something went wrong, disable this listener/subscriber
-    // Object "this" points to the CometD object
+cometd.onListenerException = (exception, subscriptionHandle, isListener, message) => {
+    // Uh-oh, something went wrong, disable this listener/subscriber.
     if (isListener) {
-        this.removeListener(subscriptionHandle);
+        cometd.removeListener(subscriptionHandle);
     } else {
-        this.unsubscribe(subscriptionHandle);
+        cometd.unsubscribe(subscriptionHandle);
     }
 }
 ----
@@ -247,26 +247,26 @@ Notice that a similar mechanism exists for extensions, see also xref:_extensions
 
 It is possible to subscribe to several channels simultaneously using wildcards:
 
-[source,javascript]
+[source,ecmascript6]
 ----
-cometd.subscribe("/chatrooms/*", function(message) { ... });
+cometd.subscribe("/chatrooms/*", (message) => { ... });
 ----
 
 A single asterisk has the meaning of matching a single channel segment; in the example above it matches channels `/chatrooms/12` and `/chatrooms/15`, but not `/chatrooms/12/upload`.
 To match multiple channel segments, use the double asterisk:
 
-[source,javascript]
+[source,ecmascript6]
 ----
-cometd.subscribe("/events/**", function(message) { ... });
+cometd.subscribe("/events/**", (message) => { ... });
 ----
 
 With the double asterisk, the channels `/events/stock/FOO` and `/events/forex/EUR` match, as well as `/events/feed` and `/events/feed/2009/08/03`.
 
 The wildcard mechanism works also for listeners, so it is possible to listen to all meta channels as follows:
 
-[source,javascript]
+[source,ecmascript6]
 ----
-cometd.addListener("/meta/*", function(message) { ... });
+cometd.addListener("/meta/*", (message) => { ... });
 ----
 
 [[_javascript_meta_channels]]
@@ -290,16 +290,16 @@ In combination with `/meta/disconnect`, you can use it, for example, to display 
 
 Here is a common pattern using the `/meta/connect` and `/meta/disconnect` channels:
 
-[source,javascript]
+[source,ecmascript6]
 ----
-var _connected = false;
+let _connected = false;
 
-cometd.addListener('/meta/connect', function(message) {
+cometd.addListener("/meta/connect", (message) => {
     if (cometd.isDisconnected()) {
         return;
     }
 
-    var wasConnected = _connected;
+    const wasConnected = _connected;
     _connected = message.successful;
     if (!wasConnected && _connected) {
         // Reconnected
@@ -308,7 +308,7 @@ cometd.addListener('/meta/connect', function(message) {
     }
 });
 
-cometd.addListener('/meta/disconnect', function(message) {
+cometd.addListener("/meta/disconnect", (message) => {
     if (message.successful) {
         _connected = false;
     }

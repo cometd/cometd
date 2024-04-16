@@ -133,7 +133,7 @@ Sometimes it is very useful to be able to obtain objects of application classes 
 You can easily achieve this with the Jetty JSON library.
 It is enough that the client formats the JSON object by adding a `class` field whose value is the fully qualified class name that you want to convert the JSON to:
 
-[source,javascript]
+[source,ecmascript6]
 ----
 cometd.publish("/echo", {
     class: "org.cometd.example.EchoInfo",

@@ -18,9 +18,9 @@ To stop those attempts,  you can type `cometd.disconnect()` in the debugger cons
 
 In case you really want to know whether the server received the disconnect request, you can pass a callback function to the `disconnect()` function:
 
-[source,javascript]
+[source,ecmascript6]
 ----
-cometd.disconnect(function(disconnectReply) {
+cometd.disconnect((disconnectReply) => {
     if (disconnectReply.successful) {
         // Server truly received the disconnect request.
     }
@@ -29,12 +29,12 @@ cometd.disconnect(function(disconnectReply) {
 
 Like other APIs, also `disconnect()` may take an additional object that is sent to the server:
 
-[source,javascript]
+[source,ecmascript6]
 ----
 var additional = {
     "com.acme.reset": false
 };
-cometd.disconnect(additional, function(disconnectReply) {
+cometd.disconnect(additional, (disconnectReply) => {
     // Your logic here.
 });
 ----

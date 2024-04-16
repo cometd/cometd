@@ -9,28 +9,28 @@ The recommended way to perform authentication in CometD is to pass the authentic
 
 Both the xref:_javascript_handshake[JavaScript handshake API] and the xref:_java_client_handshake[Java Client handshake API] allow an application to pass an additional object that will be merged into the handshake message and sent to the server:
 
-[source,javascript]
+[source,ecmascript6]
 ----
 cometd.configure({
-    url: 'http://localhost:8080/myapp/cometd'
+    url: "http://localhost:8080/myapp/cometd"
 });
 
 // Register a listener to be notified of authentication success or failure
-cometd.addListener('/meta/handshake', function(message) {
-    var authn = message.ext && message.ext['com.myapp.authn'];
+cometd.addListener("/meta/handshake", function(message) {
+    var authn = message.ext && message.ext["com.myapp.authn"];
     if (authn && authn.failed === true) {
         // Authentication failed, tell the user
-        window.alert('Authentication failed!');
+        window.alert("Authentication failed!");
     }
 });
 
-var username = 'foo';
-var password = 'bar';
+var username = "foo";
+var password = "bar";
 
 // Send the authentication information.
 cometd.handshake({
     ext: {
-        'com.myapp.authn': {
+        "com.myapp.authn": {
             user: username,
             credentials: password
         }

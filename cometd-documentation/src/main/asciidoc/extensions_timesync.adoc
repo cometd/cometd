@@ -20,7 +20,7 @@ include::{doc_code}/ExtensionsDocs.java[tags=timesync]
 
 `TimeSync.js` provides the client-side extension implementation, and it is sufficient to import and register an instance with the CometD object:
 
-[source,javascript]
+[source,ecmascript6]
 ----
 import {TimeSyncExtension} from "cometd/TimeSyncExtension.js";
 
@@ -36,7 +36,7 @@ The algorithm used is very similar to the https://en.wikipedia.org/wiki/Network_
 
 With each handshake or connect, the extension sends timestamps within the ext field, for example:
 
-[source,javascript]
+[source,ecmascript6]
 ----
 {ext:{timesync:{tc:12345567890,l:23,o:4567},...},...}
 ----
@@ -52,7 +52,7 @@ A Bayeux server that supports timesync should respond only if the measured accur
 
 The response is an `ext` field, for example:
 
-[source,javascript]
+[source,ecmascript6]
 ----
 {ext:{timesync:{tc:12345567890,ts:1234567900,p:123,a:3},...},...}
 ----
@@ -73,10 +73,10 @@ Thus:
 To smooth over any transient fluctuations, the extension keeps a sliding average of the offsets received.
 By default, this is over ten messages, but you can change this value by passing a configuration object during the creation of the extension:
 
-[source,javascript]
+[source,ecmascript6]
 ----
 // Register with custom configuration
-cometd.registerExtension('timesync', new org.cometd.TimeSyncExtension({ maxSamples: 20 }));
+cometd.registerExtension("timesync", new org.cometd.TimeSyncExtension({ maxSamples: 20 }));
 ----
 
 The client-side timesync extension also exposes several functions to deal with the result of the time synchronization:

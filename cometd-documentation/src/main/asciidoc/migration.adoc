@@ -318,7 +318,7 @@ Applications should be changed accordingly:
 ----
 
 |
-[source,javascript,subs=+quotes]
+[source,ecmascript6,subs=+quotes]
 .application.js
 ----
 /// CometD 3.0.x with AMD.
@@ -333,7 +333,7 @@ require({
 });
 ----
 |
-[source,javascript,subs=+quotes]
+[source,ecmascript6,subs=+quotes]
 .application.js
 ----
 /// CometD 3.1.x with AMD.
@@ -885,7 +885,7 @@ Note how in CometD 8 the `script` element for CometD is not necessary, since it 
 | CometD 8.0.x
 
 |
-[source,javascript,subs=+quotes]
+[source,ecmascript6,subs=+quotes]
 .application.js
 ----
 /// CometD and ReloadExtension symbols available under "org.cometd".
@@ -893,7 +893,7 @@ const cometd = new org.cometd.CometD();
 cometd.registerExtension("reload", new org.cometd.ReloadExtension());
 ----
 |
-[source,javascript,subs=+quotes]
+[source,ecmascript6,subs=+quotes]
 .application.js
 ----
 /// CometD and ReloadExtension symbols available via standard ES6 module import.
@@ -951,7 +951,7 @@ The `importmap` import `"cometd/"` is mandatory, since it is used by the `jquery
 | CometD 8.0.x
 
 |
-[source,javascript,subs=+quotes]
+[source,ecmascript6,subs=+quotes]
 .application.js
 ----
 /// The default CometD object "$.cometd" is already available,
@@ -961,7 +961,7 @@ $.cometd.configure({
 });
 ----
 |
-[source,javascript,subs=+quotes]
+[source,ecmascript6,subs=+quotes]
 .application.js
 ----
 import "jquery"; // Imports jQuery so that "$" is available. Refers to the importmap.

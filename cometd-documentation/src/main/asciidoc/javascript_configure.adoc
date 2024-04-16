@@ -19,18 +19,18 @@ If you need to connect to multiple Bayeux servers, see xref:_javascript_configur
 
 There are two ways of passing the URL parameter:
 
-[source,javascript]
+[source,ecmascript6]
 ----
 import {CometD} from "cometd/cometd.js";
 
 const cometd = new CometD();
 
 // First style: URL string.
-cometd.configure('http://localhost:8080/cometd');
+cometd.configure("http://localhost:8080/cometd");
 
 // Second style: configuration object.
 cometd.configure({
-    url: 'http://localhost:8080/cometd'
+    url: "http://localhost:8080/cometd"
 });
 ----
 
@@ -135,7 +135,7 @@ Sometimes there is the need to connect to multiple Bayeux servers.
 
 However, it is easy to create other `cometd` objects by simply creating more instances of the `CometD` class:
 
-[source,javascript]
+[source,ecmascript6]
 ----
 import {CometD} from "cometd/cometd.js";
 
@@ -143,8 +143,8 @@ const cometd1 = new CometD();
 const cometd2 = new CometD();
 
 // Configure and handshake.
-cometd1.init('http://host1:8080/cometd');
-cometd2.init('http://host2:9090/cometd');
+cometd1.init("http://host1:8080/cometd");
+cometd2.init("http://host2:9090/cometd");
 ----
 
 Note how the two `cometd` objects are initialized with different URLs.

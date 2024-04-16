@@ -27,7 +27,7 @@ The extension also maintains a list of unacknowledged messages and intercepts th
 
 `AckExtension.js` provides the client-side ack extension implementation, and it is sufficient to import and register an instance with the CometD object:
 
-[source,javascript]
+[source,ecmascript6]
 ----
 import {AckExtension} from "cometd/AckExtension.js";
 
@@ -38,7 +38,7 @@ The example above is valid also when using the jQuery binding.
 
 Furthermore, you can programmatically disable/enable the extension before initialization by setting the `ackEnabled` boolean field on the `cometd` object:
 
-[source,javascript]
+[source,ecmascript6]
 ----
 // Disables the ack extension.
 cometd.ackEnabled = false;

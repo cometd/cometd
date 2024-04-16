@@ -42,7 +42,7 @@ The WebSocket protocol is designed to be the bidirectional communication protoco
 
 The easiest way of enabling/disabling the `websocket` transport is to set a boolean variable _before_ performing the initial CometD handshake:
 
-[source,javascript]
+[source,ecmascript6]
 ----
 import {CometD} from "cometd/cometd.js";
 
@@ -52,7 +52,7 @@ const cometd = new CometD();
 cometd.websocketEnabled = false;
 
 // Initial handshake
-cometd.init('http://localhost:8080/cometd');
+cometd.init("http://localhost:8080/cometd");
 ----
 
 An alternative way of disabling the `websocket` transport is to unregister its transport, see also xref:_javascript_transports_unregistering[the transport unregistering section].
@@ -69,13 +69,13 @@ Follow xref:_java_server_transports[the server transports section] for configuri
 The CometD JavaScript API allows you to unregister transports, and this can be useful to force the use of only one transport (for example, for testing purposes), or to disable certain transports that might be unreliable.
 For example, it is possible to unregister the WebSocket transport by unregistering it with the following code:
 
-[source,javascript]
+[source,ecmascript6]
 ----
 import {CometD} from "cometd/cometd.js";
 
 const cometd = new CometD();
 
-cometd.unregisterTransport('websocket');
+cometd.unregisterTransport("websocket");
 ----
 
 [[_javascript_transports_cross_origin]]
