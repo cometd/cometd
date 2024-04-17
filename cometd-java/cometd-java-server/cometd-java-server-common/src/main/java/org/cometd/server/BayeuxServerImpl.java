@@ -42,7 +42,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletRequest;
-
 import org.cometd.bayeux.Bayeux;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
@@ -1615,7 +1614,7 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
                     long now = System.nanoTime();
                     sweeperInfo.transportSweepDuration = TimeUnit.NANOSECONDS.toMillis(now - previousNanoTime.getAndSet(now));
                     if (_logger.isDebugEnabled()) {
-                        _logger.debug("Swept transports, took {}ms", sweeperInfo.transportSweepDuration);
+                        _logger.debug("Swept transports in {}ms", sweeperInfo.transportSweepDuration);
                     }
                     return runAsync(_channels.values(), serverChannel -> {
                         if (serverChannel.sweep())

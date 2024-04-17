@@ -717,7 +717,6 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
      * <p>A {@link Scheduler} for HTTP-based transports.</p>
      */
     public interface HttpScheduler extends Scheduler {
-        public ServerMessage.Mutable getMessage();
     }
 
     protected abstract class LongPollScheduler implements Runnable, HttpScheduler, AsyncListener {
