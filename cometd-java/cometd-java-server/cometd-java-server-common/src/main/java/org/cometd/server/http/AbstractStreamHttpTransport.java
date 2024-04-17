@@ -78,6 +78,8 @@ public abstract class AbstractStreamHttpTransport extends AbstractHttpTransport 
         if (context == null) {
             process(new Context(request, response), promise);
         } else {
+            // We arrive here if we use blocking I/O (DispatchingLongPollScheduler).
+            // The call to asyncContext.dispatch() allows to start a new async cycle.
             ServerMessage.Mutable message = context.scheduler.getMessage();
             context.session.notifyResumed(message, (Boolean)request.getAttribute(HEARTBEAT_TIMEOUT_ATTRIBUTE));
             resume(context, message, Promise.from(y -> flush(context, promise), promise::fail));

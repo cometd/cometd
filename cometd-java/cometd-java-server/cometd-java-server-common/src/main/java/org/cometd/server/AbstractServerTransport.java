@@ -291,6 +291,12 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
      */
     public interface Scheduler {
         /**
+         * @return the message associated with this scheduler.
+         */
+        public default ServerMessage.Mutable getMessage() {
+            return null;
+        }
+        /**
          * @return the cycle number for suspended {@code /meta/connect}s.
          */
         public default long getMetaConnectCycle() {

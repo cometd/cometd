@@ -58,6 +58,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.cometd.bayeux.server.ConfigurableServerChannel.Initializer.Persistent;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
     @ParameterizedTest
@@ -1013,5 +1014,48 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest {
         Assertions.assertTrue(rcv.get().await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
+    }
+
+    @ParameterizedTest
+    @MethodSource("wsTypes")
+    public void testNoMetaConnectSweepsSession(String wsType) throws Exception {
+        long maxInterval = 2000;
+        Map<String, String> initParams = new HashMap<>();
+        initParams.put(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(maxInterval));
+        prepareAndStart(wsType, initParams);
+
+        BayeuxClient client = newBayeuxClient(wsType);
+
+        CountDownLatch subscribedLatch = new CountDownLatch(1);
+        bayeux.addListener(new BayeuxServer.SubscriptionListener() {
+            @Override
+            public void subscribed(ServerSession session, ServerChannel channel, ServerMessage message) {
+                subscribedLatch.countDown();
+            }
+        });
+        CountDownLatch removedLatch = new CountDownLatch(1);
+        bayeux.addListener(new BayeuxServer.SessionListener() {
+            @Override
+            public void sessionAdded(ServerSession session, ServerMessage message) {
+                session.addListener((ServerSession.RemovedListener)(s, m, t) -> removedLatch.countDown());
+            }
+        });
+
+        client.handshake(message -> {
+            assertTrue(message.isSuccessful());
+
+            try {
+                client.getChannel("/foo").subscribe((c, m) -> {});
+                // Wait here so the /meta/connect is not sent.
+                assertTrue(subscribedLatch.await(5, TimeUnit.SECONDS));
+                // Abort before sending the /meta/connect.
+                client.abort();
+            } catch (Throwable x) {
+                throw new RuntimeException(x);
+            }
+        });
+
+        bayeux.setDetailedDump(true);
+        assertTrue(removedLatch.await(2 * maxInterval, TimeUnit.MILLISECONDS), bayeux.dump());
     }
 }
