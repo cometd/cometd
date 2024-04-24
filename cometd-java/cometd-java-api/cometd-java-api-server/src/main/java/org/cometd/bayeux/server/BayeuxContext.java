@@ -91,6 +91,13 @@ public interface BayeuxContext {
     Object getRequestAttribute(String name);
 
     /**
+     * <p>Returns the HTTP session id, or {@code null} if there is no HTTP session.</p>
+     *
+     * @return the HTTP session id, or {@code null} if there is no HTTP session
+     */
+    String getSessionId();
+
+    /**
      * <p>Returns an HTTP session attribute value.</p>
      * <p>{@link ServerSession#getAttribute(String)} should be used to retrieve
      * attribute values in session scope.</p>

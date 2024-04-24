@@ -131,6 +131,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport {
     private static class JettyWebSocketContext extends AbstractBayeuxContext {
         private final Map<String, Object> contextAttributes;
         private final Map<String, Object> requestAttributes;
+        private final String sessionId;
         private final Map<String, Object> sessionAttributes;
 
         private JettyWebSocketContext(ServerUpgradeRequest request) {
@@ -141,6 +142,7 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport {
             this.contextAttributes = Map.copyOf(request.getContext().asAttributeMap());
             this.requestAttributes = Map.copyOf(request.asAttributeMap());
             Session session = request.getSession(false);
+            this.sessionId = session == null ? null : session.getId();
             this.sessionAttributes = session == null ? Map.of() : Map.copyOf(session.asAttributeMap());
         }
 
@@ -184,6 +186,11 @@ public class JettyWebSocketTransport extends AbstractWebSocketTransport {
         @Override
         public Object getRequestAttribute(String name) {
             return requestAttributes.get(name);
+        }
+
+        @Override
+        public String getSessionId() {
+            return sessionId;
         }
 
         @Override

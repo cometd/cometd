@@ -96,6 +96,12 @@ class JettyBayeuxContext implements BayeuxContext {
     }
 
     @Override
+    public String getSessionId() {
+        Session session = request.getSession(false);
+        return session == null ? null : session.getId();
+    }
+
+    @Override
     public Object getSessionAttribute(String name) {
         Session session = request.getSession(false);
         return session == null ? null : session.getAttribute(name);

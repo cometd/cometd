@@ -111,6 +111,7 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
     private static class JakartaWebSocketContext extends AbstractBayeuxContext {
         private final Map<String, Object> contextAttributes;
         private final Map<String, Object> requestAttributes;
+        private final String sessionId;
         private final Map<String, Object> sessionAttributes;
 
         private JakartaWebSocketContext(ServletContext context, HandshakeRequest request, Map<String, Object> userProperties) {
@@ -123,7 +124,9 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
                     WebSocketTransport.isSecure(request));
             contextAttributes = Map.copyOf(attributesToMap(context));
             requestAttributes = Map.of();
-            sessionAttributes = Map.copyOf(attributesToMap((HttpSession)request.getHttpSession()));
+            HttpSession httpSession = (HttpSession)request.getHttpSession();
+            sessionId = httpSession == null ? null : httpSession.getId();
+            sessionAttributes = Map.copyOf(attributesToMap(httpSession));
         }
 
         private static Map<String, Object> attributesToMap(ServletContext context) {
@@ -154,6 +157,11 @@ public class WebSocketTransport extends AbstractWebSocketTransport {
         @Override
         public Object getRequestAttribute(String name) {
             return requestAttributes.get(name);
+        }
+
+        @Override
+        public String getSessionId() {
+            return sessionId;
         }
 
         @Override

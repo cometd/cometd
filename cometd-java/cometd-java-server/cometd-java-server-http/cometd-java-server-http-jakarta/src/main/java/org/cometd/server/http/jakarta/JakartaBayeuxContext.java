@@ -99,6 +99,12 @@ class JakartaBayeuxContext implements BayeuxContext {
     }
 
     @Override
+    public String getSessionId() {
+        HttpSession session = request.getSession(false);
+        return session == null ? null : session.getId();
+    }
+
+    @Override
     public Object getSessionAttribute(String name) {
         HttpSession session = request.getSession(false);
         return session != null ? session.getAttribute(name) : null;

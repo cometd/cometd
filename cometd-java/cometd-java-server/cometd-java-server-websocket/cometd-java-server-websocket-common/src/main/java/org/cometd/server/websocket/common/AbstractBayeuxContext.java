@@ -139,6 +139,11 @@ public abstract class AbstractBayeuxContext implements BayeuxContext {
     }
 
     @Override
+    public String getSessionId() {
+        return null;
+    }
+
+    @Override
     public Object getSessionAttribute(String name) {
         return null;
     }
