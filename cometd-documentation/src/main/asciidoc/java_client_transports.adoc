@@ -57,7 +57,7 @@ Below you can find the parameters that are common to all transports, and those s
 a| `org.cometd.common.JettyJSONContextClient`
 a| The `JSONContext.Client` class name (see also xref:_java_json[the JSON section])
 
-| maxSendMessageSize
+| maxSendBayeuxMessageSize
 | no
 | 1048576
 | The maximum size of the JSON representation of an outgoing Bayeux message
