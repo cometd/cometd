@@ -20,6 +20,9 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+import jakarta.servlet.AsyncEvent;
+import jakarta.servlet.AsyncListener;
 import jakarta.servlet.ReadListener;
 import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.Cookie;
@@ -90,6 +93,11 @@ class JakartaCometDRequest implements CometDRequest {
     @Override
     public void setAttribute(String name, Object value) {
         request.setAttribute(name, value);
+    }
+
+    @Override
+    public void addFailureHandler(Consumer<Throwable> handler) {
+        request.getAsyncContext().addListener(new FailureListener(handler));
     }
 
     private static class JakartaCometDInput implements Input, ReadListener {
@@ -184,6 +192,25 @@ class JakartaCometDRequest implements CometDRequest {
             public String toString() {
                 return "%s@%x[last=%b,%s]".formatted(getClass().getSimpleName(), hashCode(), isLast(), byteBuffer());
             }
+        }
+    }
+
+    private record FailureListener(Consumer<Throwable> handler) implements AsyncListener {
+        @Override
+        public void onComplete(AsyncEvent event) {
+        }
+
+        @Override
+        public void onTimeout(AsyncEvent event) {
+        }
+
+        @Override
+        public void onError(AsyncEvent event) {
+            handler.accept(event.getThrowable());
+        }
+
+        @Override
+        public void onStartAsync(AsyncEvent event) {
         }
     }
 }

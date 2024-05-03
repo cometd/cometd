@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.List;
+import java.util.function.Consumer;
 import org.cometd.server.CometDRequest;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.io.Content;
@@ -87,6 +88,11 @@ class JettyCometDRequest implements CometDRequest {
     @Override
     public void setAttribute(String name, Object value) {
         request.setAttribute(name, value);
+    }
+
+    @Override
+    public void addFailureHandler(Consumer<Throwable> handler) {
+        request.addFailureListener(handler);
     }
 
     private static class JettyCometDInput implements Input {

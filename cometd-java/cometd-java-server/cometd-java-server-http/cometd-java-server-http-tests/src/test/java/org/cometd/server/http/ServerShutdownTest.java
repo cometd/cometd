@@ -17,11 +17,11 @@
 package org.cometd.server.http;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.client.CompletableResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -32,49 +32,49 @@ public class ServerShutdownTest extends AbstractBayeuxClientServerTest {
     public void testServerShutdown(Transport transport) throws Exception {
         startServer(transport, null);
 
-        Request handshake = newBayeuxRequest("" +
-                                             "[{" +
-                                             "\"channel\": \"/meta/handshake\"," +
-                                             "\"version\": \"1.0\"," +
-                                             "\"minimumVersion\": \"1.0\"," +
-                                             "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                                             "}]");
+        Request handshake = newBayeuxRequest("""
+                [{
+                "channel": "/meta/handshake",
+                "version": "1.0",
+                "minimumVersion": "1.0",
+                "supportedConnectionTypes": ["long-polling"]
+                }]
+                """);
         ContentResponse response = handshake.send();
         Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
-        Request connect = newBayeuxRequest("" +
-                                           "[{" +
-                                           "\"channel\": \"/meta/connect\"," +
-                                           "\"clientId\": \"" + clientId + "\"," +
-                                           "\"connectionType\": \"long-polling\"," +
-                                           "\"advice\": { \"timeout\": 0 }" +
-                                           "}]");
+        Request connect = newBayeuxRequest("""
+                [{
+                "channel": "/meta/connect",
+                "clientId": "%s",
+                "connectionType": "long-polling",
+                "advice": { "timeout": 0 }
+                }]
+                """.formatted(clientId));
         response = connect.send();
 
         Assertions.assertEquals(200, response.getStatus());
 
-        connect = newBayeuxRequest("" +
-                                   "[{" +
-                                   "\"channel\": \"/meta/connect\"," +
-                                   "\"clientId\": \"" + clientId + "\"," +
-                                   "\"connectionType\": \"long-polling\"" +
-                                   "}]");
+        connect = newBayeuxRequest("""
+                [{
+                "channel": "/meta/connect",
+                "clientId": "%s",
+                "connectionType": "long-polling"
+                }]
+                """.formatted(clientId));
         CompletableFuture<ContentResponse> futureResponse = new CompletableResponseListener(connect).send();
 
-        // Wait for the connect to arrive to the server
+        // Wait for the /meta/connect to arrive to the server.
         Thread.sleep(1000);
 
-        // Shutdown the server
+        // Shutdown the server.
         server.stop();
         server.join();
 
-        // Expect the connect to be back with an exception
-        try {
-            futureResponse.get(timeout * 2, TimeUnit.SECONDS);
-            Assertions.fail();
-        } catch (ExecutionException expected) {
-        }
+        // Expect the /meta/connect to be back with a 500.
+        response = futureResponse.get(timeout * 2, TimeUnit.SECONDS);
+        Assertions.assertEquals(HttpStatus.INTERNAL_SERVER_ERROR_500, response.getStatus());
     }
 }

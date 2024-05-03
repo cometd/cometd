@@ -19,6 +19,7 @@ package org.cometd.server;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * <p>An abstraction over HTTP requests.</p>
@@ -70,6 +71,14 @@ public interface CometDRequest {
      * @param value the attribute value
      */
     void setAttribute(String name, Object value);
+
+    /**
+     * <p>Adds the given handler function to be invoked
+     * when a failure is detected for this request.</p>
+     *
+     * @param handler the failure handler function
+     */
+    void addFailureHandler(Consumer<Throwable> handler);
 
     /**
      * <p>The source of the request body.</p>
