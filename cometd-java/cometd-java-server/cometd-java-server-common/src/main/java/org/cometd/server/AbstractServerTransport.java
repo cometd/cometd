@@ -19,6 +19,7 @@ package org.cometd.server;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.ServerMessage;
@@ -286,6 +287,10 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
          * that will trigger when the /meta/connect timeout fires.
          */
         public default void cancel() {
+            cancel(new TimeoutException());
+        }
+
+        public default void cancel(Throwable cause) {
         }
 
         /**

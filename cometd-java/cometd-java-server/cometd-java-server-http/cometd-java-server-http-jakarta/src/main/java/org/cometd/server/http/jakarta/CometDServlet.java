@@ -116,8 +116,13 @@ public class CometDServlet extends HttpServlet {
 
             @Override
             public void fail(Throwable failure) {
-                int code = failure instanceof HttpException http ? http.getCode() : HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
-                sendError(request, response, code, failure);
+                int code = HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
+                Throwable cause = failure;
+                if (failure instanceof HttpException http) {
+                    code = http.getCode();
+                    cause = http.getCause();
+                }
+                sendError(request, response, code, cause);
                 asyncContext.complete();
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("Handling failed", failure);

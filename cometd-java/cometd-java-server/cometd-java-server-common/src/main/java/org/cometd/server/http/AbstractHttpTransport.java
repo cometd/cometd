@@ -374,8 +374,7 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
                             HttpScheduler scheduler = suspend(context, promise, message, timeout);
                             // Setting the scheduler may resume the /meta/connect.
                             session.setScheduler(scheduler);
-                            // TODO pass failure to scheduler.cancel()?
-                            request.addFailureHandler(failure -> scheduler.cancel());
+                            request.addFailureHandler(scheduler::cancel);
                             proceed = false;
                         } else {
                             decBrowserId(session, isHTTP2(request));

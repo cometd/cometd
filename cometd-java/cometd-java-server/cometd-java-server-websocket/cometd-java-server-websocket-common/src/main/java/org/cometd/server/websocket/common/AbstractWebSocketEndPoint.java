@@ -16,6 +16,7 @@
 
 package org.cometd.server.websocket.common;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
@@ -50,7 +51,8 @@ public abstract class AbstractWebSocketEndPoint {
     private final AtomicBoolean _terminated = new AtomicBoolean();
     private final AbstractWebSocketTransport _transport;
     private final BayeuxContext _bayeuxContext;
-    private ServerSessionImpl _session;
+    private volatile ServerSessionImpl _session;
+    private volatile AbstractServerTransport.Scheduler _scheduler;
 
     protected AbstractWebSocketEndPoint(AbstractWebSocketTransport transport, BayeuxContext context) {
         this._transport = transport;
@@ -84,6 +86,7 @@ public abstract class AbstractWebSocketEndPoint {
             if (_logger.isDebugEnabled()) {
                 _logger.debug("Closing {}/{} - {} on {}", code, reason, session, this);
             }
+            failScheduler(new EOFException(reason));
             _transport.onClose(code, reason);
         }
     }
@@ -100,6 +103,14 @@ public abstract class AbstractWebSocketEndPoint {
                     _logger.debug("WebSocket failure, address {} on {}", address, this, failure);
                 }
             }
+            failScheduler(failure);
+        }
+    }
+
+    private void failScheduler(Throwable failure) {
+        AbstractServerTransport.Scheduler scheduler = _scheduler;
+        if (scheduler != null) {
+            scheduler.cancel(failure);
         }
     }
 
@@ -214,6 +225,7 @@ public abstract class AbstractWebSocketEndPoint {
                     if (timeout > 0 && wasConnected && session.isConnected()) {
                         AbstractServerTransport.Scheduler scheduler = suspend(context, message, timeout);
                         session.setScheduler(scheduler);
+                        _scheduler = scheduler;
                         proceed = false;
                     }
                 }
@@ -253,6 +265,7 @@ public abstract class AbstractWebSocketEndPoint {
     }
 
     private void resume(Context context, ServerMessage.Mutable message, Promise<Void> promise) {
+        _scheduler = null;
         ServerMessage.Mutable reply = message.getAssociated();
         ServerSessionImpl session = context.session;
         if (session != null) {
@@ -396,7 +409,7 @@ public abstract class AbstractWebSocketEndPoint {
         }
 
         @Override
-        public void cancel() {
+        public void cancel(Throwable cause) {
             if (cancelTimeout(true)) {
                 if (_logger.isDebugEnabled()) {
                     _logger.debug("Cancelling suspended {} for {} on {}", message, context.session, AbstractWebSocketEndPoint.this);

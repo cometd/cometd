@@ -171,6 +171,6 @@ public class CometDHandler extends Handler.Abstract {
     }
 
     protected void sendError(Request request, Response response, Callback callback, int code, Throwable failure) {
-        Response.writeError(request, response, callback, code);
+        Response.writeError(request, response, callback, code, null, failure);
     }
 }

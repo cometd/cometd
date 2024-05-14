@@ -16,7 +16,6 @@
 
 package org.cometd.server.http;
 
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.ServerMessage;
@@ -72,12 +71,12 @@ public abstract class AbstractHttpScheduler implements Runnable, AbstractHttpTra
     }
 
     @Override
-    public void cancel() {
+    public void cancel(Throwable cause) {
         if (cancelTimeout()) {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Cancelling suspended {} for {}", message, context.session());
             }
-            error(new TimeoutException());
+            error(cause);
         }
     }
 
@@ -117,6 +116,7 @@ public abstract class AbstractHttpScheduler implements Runnable, AbstractHttpTra
 
     protected void error(Throwable failure) {
         CometDRequest request = context.request();
+        transport.scheduleExpiration(context.session(), getMetaConnectCycle());
         transport.decBrowserId(context.session(), transport.isHTTP2(request));
         getPromise().fail(failure);
     }

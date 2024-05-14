@@ -1626,7 +1626,7 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
                         _lastSweepInfo = sweeperInfo;
                         if (_logger.isDebugEnabled()) {
                             _logger.debug("Swept server sessions, {} in {}ms", sweeperInfo.serverSessionSweepCount, sweeperInfo.serverSessionSweepDuration);
-                            _logger.debug("End of async sweep in {}ns at {}", sweeperInfo.sweepDurationNanos, Instant.now());
+                            _logger.debug("End of async sweep in {}ms at {}", TimeUnit.NANOSECONDS.toMillis(sweeperInfo.sweepDurationNanos), Instant.now());
                         }
                     });
         }

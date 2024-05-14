@@ -19,9 +19,6 @@ package org.cometd.tests;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import org.cometd.bayeux.Channel;
-import org.cometd.bayeux.server.BayeuxServer;
-import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
 import org.cometd.server.AbstractServerTransport;
@@ -50,18 +47,6 @@ public class MetaConnectFailureTest extends AbstractClientServerTest {
         // Wait for the /meta/connect to be held by the server.
         Thread.sleep(500);
 
-        // Verify that the /meta/connect reply is written.
-        CountDownLatch metaConnectReplyLatch = new CountDownLatch(1);
-        bayeuxServer.addExtension(new BayeuxServer.Extension() {
-            @Override
-            public boolean sendMeta(ServerSession session, ServerMessage.Mutable message) {
-                if (Channel.META_CONNECT.equals(message.getChannel())) {
-                    metaConnectReplyLatch.countDown();
-                }
-                return true;
-            }
-        });
-
         // Verify that the session is swept.
         CountDownLatch sessionRemovedLatch = new CountDownLatch(1);
         ServerSession session = bayeuxServer.getSession(client.getId());
@@ -69,17 +54,20 @@ public class MetaConnectFailureTest extends AbstractClientServerTest {
 
         // Stop the connector so the /meta/connect response cannot be sent,
         // and more /meta/connect from client will not arrive to the server.
-        // For HTTP transports, the /meta/connect is suspended and they will
-        // not notice the connection close. The /meta/connect will be resumed,
-        // the transport will try to write the /meta/connect reply and then
+        // For HTTP transports, the /meta/connect is suspended, they will
+        // notice the server-side connection close, respond to the suspended
+        // /meta/connect request with a 500 response (client-side connection
+        // closes will still not be noticed), cancel the scheduler, and
         // schedule the session expiration.
         // For WebSocket transports, they will notice that the connection has
-        // been closed, either via onClose() or onError(), and they must behave
-        // like the HTTP transports for consistency: write the /meta/connect
-        // reply and then schedule the session expiration.
+        // been closed, either via onClose() or onError(), cancel the scheduler,
+        // schedule the session expiration, and close the connection.
+        // In this way, both transports will not resume the /meta/connect,
+        // and they will behave in a similar way.
         connector.stop();
 
-        Assertions.assertTrue(metaConnectReplyLatch.await(timeout, TimeUnit.MILLISECONDS));
         Assertions.assertTrue(sessionRemovedLatch.await(timeout + maxInterval + 2 * sweepPeriod, TimeUnit.MILLISECONDS));
+
+        disconnectBayeuxClient(client);
     }
 }
