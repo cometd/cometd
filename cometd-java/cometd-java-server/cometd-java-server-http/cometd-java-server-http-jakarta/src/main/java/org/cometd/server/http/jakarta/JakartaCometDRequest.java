@@ -195,7 +195,13 @@ class JakartaCometDRequest implements CometDRequest {
         }
     }
 
-    private record FailureListener(Consumer<Throwable> handler) implements AsyncListener {
+    private static class FailureListener implements AsyncListener {
+        private final Consumer<Throwable> handler;
+
+        private FailureListener(Consumer<Throwable> handler) {
+            this.handler = handler;
+        }
+
         @Override
         public void onComplete(AsyncEvent event) {
         }

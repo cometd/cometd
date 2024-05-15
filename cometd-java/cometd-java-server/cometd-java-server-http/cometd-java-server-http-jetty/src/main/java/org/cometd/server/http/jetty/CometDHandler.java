@@ -139,8 +139,13 @@ public class CometDHandler extends Handler.Abstract {
 
             @Override
             public void fail(Throwable failure) {
-                int code = failure instanceof HttpException http ? http.getCode() : HttpStatus.INTERNAL_SERVER_ERROR_500;
-                sendError(request, response, callback, code, failure);
+                int code = HttpStatus.INTERNAL_SERVER_ERROR_500;
+                Throwable cause = failure;
+                if (failure instanceof HttpException http) {
+                    code = http.getCode();
+                    cause = http.getCause();
+                }
+                sendError(request, response, callback, code, cause);
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("Handling failed", failure);
                 }
