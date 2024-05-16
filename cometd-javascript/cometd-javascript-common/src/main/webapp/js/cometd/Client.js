@@ -965,12 +965,15 @@ export class CometD {
                 if (!failureInfo.transport) {
                     const failure = "Could not negotiate transport, client=[" + transportTypes + "], server=[" + message.supportedConnectionTypes + "]";
                     this._warn(failure);
-                    const transportType = this.getTransport().type;
-                    this.#notifyTransportException(transportType, null, {
-                        reason: failure,
-                        connectionType: transportType,
-                        transport: this.getTransport()
-                    });
+                    const transport = this.getTransport();
+                    if (transport) {
+                        const transportType = transport.type;
+                        this.#notifyTransportException(transportType, null, {
+                            reason: failure,
+                            connectionType: transportType,
+                            transport: transport
+                        });
+                    }
                 }
             }
         } else {
@@ -1083,7 +1086,7 @@ export class CometD {
                 });
                 return;
             } else if (this.#transport !== newTransport) {
-                this._debug("Transport", this.#transport.type, "->", newTransport.type);
+                this._debug("Transport", this.#transport && this.#transport.type, "->", newTransport.type);
                 this.#transport = newTransport;
             }
 
