@@ -61,7 +61,7 @@ export class Z85 {
             buffer = new Uint8Array(bytes).buffer;
         }
         if (buffer == null) {
-            throw "Cannot Z85 encode " + bytes;
+            throw new Error("Cannot Z85 encode " + bytes);
         }
 
         const length = buffer.byteLength;

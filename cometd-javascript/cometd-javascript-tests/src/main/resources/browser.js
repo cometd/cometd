@@ -129,7 +129,7 @@ window.console = (() => {
             case "function":
                 return object.name ? object.name + "()" : "anonymous()";
             default:
-                throw "Unknown object type " + (typeof object);
+                throw new Error("Unknown object type " + (typeof object));
         }
     }
 
@@ -887,7 +887,7 @@ window.screen = {};
 window.innerWidth = 0;
 window.assert = (condition, text) => {
     if (!condition) {
-        throw "ASSERTION FAILED" + (text ? ": " + text : "");
+        throw new Error("ASSERTION FAILED" + (text ? ": " + text : ""));
     }
 };
 
@@ -957,10 +957,10 @@ window.XMLHttpRequest = class {
     setRequestHeader(header, value) {
         const ready = this.readyState;
         if (ready !== window.XMLHttpRequest.OPENED) {
-            throw "INVALID_STATE_ERR: " + ready;
+            throw new Error("INVALID_STATE_ERR: " + ready);
         }
         if (!header) {
-            throw "SYNTAX_ERR";
+            throw new Error("SYNTAX_ERR");
         }
         if (value) {
             this.#exchange.addRequestHeader(header, value);
@@ -970,7 +970,7 @@ window.XMLHttpRequest = class {
     send(data) {
         const ready = this.readyState;
         if (ready !== window.XMLHttpRequest.OPENED) {
-            throw "INVALID_STATE_ERR";
+            throw new Error("INVALID_STATE_ERR");
         }
         const exchange = this.#exchange;
         if (exchange.getMethod() === "GET") {
@@ -992,7 +992,7 @@ window.XMLHttpRequest = class {
     getAllResponseHeaders() {
         const ready = this.readyState;
         if (ready === window.XMLHttpRequest.UNSENT || ready === window.XMLHttpRequest.OPENED) {
-            throw "INVALID_STATE_ERR";
+            throw new Error("INVALID_STATE_ERR");
         }
         return this.#exchange.getAllResponseHeaders();
     }
@@ -1000,7 +1000,7 @@ window.XMLHttpRequest = class {
     getResponseHeader(header) {
         const ready = this.readyState;
         if (ready === window.XMLHttpRequest.UNSENT || ready === window.XMLHttpRequest.OPENED) {
-            throw "INVALID_STATE_ERR";
+            throw new Error("INVALID_STATE_ERR");
         }
         return this.#exchange.getResponseHeader(header);
     }

@@ -108,7 +108,7 @@ export class RequestTransport extends Transport {
         const requestId = request.id;
         this.debug("Transport", this.type, "/meta/connect complete, request", requestId);
         if (this.#metaConnectRequest !== null && this.#metaConnectRequest.id !== requestId) {
-            throw "/meta/connect request mismatch, completing request " + requestId;
+            throw new Error("/meta/connect request mismatch, completing request " + requestId);
         }
         this.#metaConnectRequest = null;
     }
@@ -161,7 +161,7 @@ export class RequestTransport extends Transport {
      * @return {boolean} whether the send succeeded
      */
     transportSend(envelope, request) {
-        throw "Abstract";
+        throw new Error("Abstract");
     };
 
     transportSuccess(envelope, request, responses) {
@@ -190,7 +190,7 @@ export class RequestTransport extends Transport {
 
     #metaConnectSend(envelope) {
         if (this.#metaConnectRequest !== null) {
-            throw "Concurrent /meta/connect requests not allowed, request id=" + this.#metaConnectRequest.id + " not yet completed";
+            throw new Error("Concurrent /meta/connect requests not allowed, request id=" + this.#metaConnectRequest.id + " not yet completed");
         }
 
         const requestId = ++this.#requestIds;

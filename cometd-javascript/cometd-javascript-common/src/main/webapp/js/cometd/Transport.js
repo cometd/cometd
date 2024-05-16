@@ -94,7 +94,7 @@ export class Transport {
             const message = messages[i];
             const json = JSON.stringify(message);
             if (json.length > maxSize) {
-                throw "maxSendBayeuxMessageSize " + maxSize + " exceeded";
+                throw new Error("maxSendBayeuxMessageSize " + maxSize + " exceeded");
             }
             result += json;
         }
@@ -125,7 +125,7 @@ export class Transport {
         if (response instanceof Object) {
             return [response];
         }
-        throw "Conversion Error " + response + ", typeof " + typeof response;
+        throw new Error("Conversion Error " + response + ", typeof " + typeof response);
     };
 
     /**
@@ -137,7 +137,7 @@ export class Transport {
      * false otherwise
      */
     accept(version, crossDomain, url) {
-        throw "Abstract";
+        throw new Error("Abstract");
     };
 
     /**
@@ -157,7 +157,7 @@ export class Transport {
     };
 
     send(envelope, metaConnect) {
-        throw "Abstract";
+        throw new Error("Abstract");
     };
 
     reset(init) {

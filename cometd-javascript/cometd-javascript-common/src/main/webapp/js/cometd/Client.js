@@ -67,7 +67,7 @@ function WorkerScheduler() {
                 }
                 break;
             default:
-                throw "Unknown command " + cmd.type;
+                throw new Error("Unknown command " + cmd.type);
         }
     };
 }
@@ -351,7 +351,7 @@ export class CometD {
 
         const url = this.getURL();
         if (!url) {
-            throw "Missing required configuration parameter 'url' specifying the Bayeux server URL";
+            throw new Error("Missing required configuration parameter 'url' specifying the Bayeux server URL");
         }
 
         // Check if we're cross domain.
@@ -710,7 +710,7 @@ export class CometD {
         --this.#batch;
         this._debug("Ending batch, depth", this.#batch);
         if (this.#batch < 0) {
-            throw "Calls to startBatch() and endBatch() are not paired";
+            throw new Error("Calls to startBatch() and endBatch() are not paired");
         }
 
         if (this.#batch === 0 && !this.isDisconnected() && !this.#internalBatch) {
@@ -1052,7 +1052,7 @@ export class CometD {
                 this.#disconnect(true);
                 break;
             default:
-                throw "Unknown action " + action;
+                throw new Error("Unknown action " + action);
         }
     }
 
@@ -1119,7 +1119,7 @@ export class CometD {
                     this.#disconnect(true);
                     break;
                 default:
-                    throw "Unrecognized advice action " + action;
+                    throw new Error("Unrecognized advice action " + action);
             }
         } else {
             this.#failHandshake(message, {
@@ -1182,7 +1182,7 @@ export class CometD {
                         this.#disconnect(false);
                         break;
                     default:
-                        throw "Unrecognized advice action " + action;
+                        throw new Error("Unrecognized advice action " + action);
                 }
             } else {
                 this.#failConnect(message, {
@@ -1433,14 +1433,14 @@ export class CometD {
         } else {
             if (CometD.#isString(callback)) {
                 if (!scope) {
-                    throw "Invalid scope " + scope;
+                    throw new Error("Invalid scope " + scope);
                 }
                 delegate.method = scope[callback];
                 if (!CometD.#isFunction(delegate.method)) {
-                    throw "Invalid callback " + callback + " for scope " + scope;
+                    throw new Error("Invalid callback " + callback + " for scope " + scope);
                 }
             } else if (!CometD.#isFunction(callback)) {
-                throw "Invalid callback " + callback;
+                throw new Error("Invalid callback " + callback);
             }
         }
         return delegate;
@@ -1572,7 +1572,7 @@ export class CometD {
     handshake(handshakeProps, handshakeCallback) {
         const status = this.getStatus();
         if (status !== "disconnected") {
-            throw "Illegal state: " + status;
+            throw new Error("Illegal state: " + status);
         }
         this.#handshake(handshakeProps, handshakeCallback);
     };
@@ -1663,7 +1663,7 @@ export class CometD {
      */
     addTransportListener(event, callback) {
         if (event !== "timeout") {
-            throw "Unsupported event " + event;
+            throw new Error("Unsupported event " + event);
         }
         let callbacks = this.#transportListeners[event];
         if (!callbacks) {
@@ -1704,10 +1704,10 @@ export class CometD {
      */
     addListener(channel, scope, callback) {
         if (arguments.length < 2) {
-            throw "Illegal arguments number: required 2, got " + arguments.length;
+            throw new Error("Illegal arguments number: required 2, got " + arguments.length);
         }
         if (!CometD.#isString(channel)) {
-            throw "Illegal argument type: channel must be a string";
+            throw new Error("Illegal argument type: channel must be a string");
         }
 
         return this.#addListener(channel, scope, callback, true);
@@ -1720,7 +1720,7 @@ export class CometD {
     removeListener(subscription) {
         // Beware of subscription.id == 0, which is falsy => cannot use !subscription.id
         if (!subscription || !subscription.channel || !("id" in subscription)) {
-            throw "Invalid argument: expected subscription, not " + subscription;
+            throw new Error("Invalid argument: expected subscription, not " + subscription);
         }
 
         this.#removeListener(subscription);
@@ -1746,13 +1746,13 @@ export class CometD {
      */
     subscribe(channel, scope, callback, subscribeProps, subscribeCallback) {
         if (arguments.length < 2) {
-            throw "Illegal arguments number: required 2, got " + arguments.length;
+            throw new Error("Illegal arguments number: required 2, got " + arguments.length);
         }
         if (!CometD.#isValidChannel(channel)) {
-            throw "Illegal argument: invalid channel " + channel;
+            throw new Error("Illegal argument: invalid channel " + channel);
         }
         if (this.isDisconnected()) {
-            throw "Illegal state: disconnected";
+            throw new Error("Illegal state: disconnected");
         }
 
         // Normalize arguments
@@ -1813,10 +1813,10 @@ export class CometD {
      */
     unsubscribe(subscription, unsubscribeProps, unsubscribeCallback) {
         if (arguments.length < 1) {
-            throw "Illegal arguments number: required 1, got " + arguments.length;
+            throw new Error("Illegal arguments number: required 1, got " + arguments.length);
         }
         if (this.isDisconnected()) {
-            throw "Illegal state: disconnected";
+            throw new Error("Illegal state: disconnected");
         }
 
         if (CometD.#isFunction(unsubscribeProps)) {
@@ -1883,16 +1883,16 @@ export class CometD {
      */
     publish(channel, content, publishProps, publishCallback) {
         if (arguments.length < 1) {
-            throw "Illegal arguments number: required 1, got " + arguments.length;
+            throw new Error("Illegal arguments number: required 1, got " + arguments.length);
         }
         if (!CometD.#isValidChannel(channel)) {
-            throw "Illegal argument: invalid channel " + channel;
+            throw new Error("Illegal argument: invalid channel " + channel);
         }
         if (/^\/meta\//.test(channel)) {
-            throw "Illegal argument: cannot publish to meta channels";
+            throw new Error("Illegal argument: cannot publish to meta channels");
         }
         if (this.isDisconnected()) {
-            throw "Illegal state: disconnected";
+            throw new Error("Illegal state: disconnected");
         }
 
         if (CometD.#isFunction(content)) {
@@ -1977,13 +1977,13 @@ export class CometD {
      */
     remoteCall(target, content, timeout, callProps, callback) {
         if (arguments.length < 1) {
-            throw "Illegal arguments number: required 1, got " + arguments.length;
+            throw new Error("Illegal arguments number: required 1, got " + arguments.length);
         }
         if (!CometD.#isString(target)) {
-            throw "Illegal argument type: target must be a string";
+            throw new Error("Illegal argument type: target must be a string");
         }
         if (this.isDisconnected()) {
-            throw "Illegal state: disconnected";
+            throw new Error("Illegal state: disconnected");
         }
 
         if (CometD.#isFunction(content)) {
@@ -2001,7 +2001,7 @@ export class CometD {
         }
 
         if (typeof timeout !== "number") {
-            throw "Illegal argument type: timeout must be a number";
+            throw new Error("Illegal argument type: timeout must be a number");
         }
 
         if (!target.match(/^\//)) {
@@ -2009,7 +2009,7 @@ export class CometD {
         }
         const channel = "/service" + target;
         if (!CometD.#isValidChannel(channel)) {
-            throw "Illegal argument: invalid target " + target;
+            throw new Error("Illegal argument: invalid target " + target);
         }
 
         const bayeuxMessage = {
@@ -2178,10 +2178,10 @@ export class CometD {
      */
     registerExtension(name, extension) {
         if (arguments.length < 2) {
-            throw "Illegal arguments number: required 2, got " + arguments.length;
+            throw new Error("Illegal arguments number: required 2, got " + arguments.length);
         }
         if (!CometD.#isString(name)) {
-            throw "Illegal argument type: extension name must be a string";
+            throw new Error("Illegal argument type: extension name must be a string");
         }
 
         let existing = false;
@@ -2219,7 +2219,7 @@ export class CometD {
      */
     unregisterExtension(name) {
         if (!CometD.#isString(name)) {
-            throw "Illegal argument type: extension name must be a string";
+            throw new Error("Illegal argument type: extension name must be a string");
         }
 
         let unregistered = false;
