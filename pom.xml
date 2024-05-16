@@ -100,7 +100,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <slf4j-version>2.0.13</slf4j-version>
     <spring-boot-version>2.7.18</spring-boot-version>
-    <spring-version>5.3.34</spring-version>
+    <spring-version>5.3.35</spring-version>
   </properties>
 
   <dependencyManagement>
