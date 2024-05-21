@@ -59,6 +59,7 @@ cat <<EOF > ${COMETD_JS_DIR}/package.json
   },
   "license": "Apache-2.0",
   "main": "cometd.js",
+  "type": "module",
   "types": "cometd.d.ts",
   "repository": {
     "type": "git",
