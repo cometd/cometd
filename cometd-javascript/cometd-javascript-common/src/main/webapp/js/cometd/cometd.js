@@ -14,4 +14,23 @@
  * limitations under the License.
  */
 
-export {CometD} from "./Client.js";
+// Export main APIs.
+export * from "./Client.js";
+
+// Export extensions to applications that want to
+// instantiate them, and/or implement custom ones.
+export * from "./Extension.js"
+export * from "./AckExtension.js"
+export * from "./BinaryExtension.js"
+export * from "./ReloadExtension.js"
+export * from "./TimeStampExtension.js"
+export * from "./TimeSyncExtension.js"
+
+// Export transports to application that want
+// to instantiate them explicitly, and/or
+// extend them, and/or implement custom ones.
+export * from "./Transport.js"
+export * from "./RequestTransport.js"
+export * from "./CallbackPollingTransport.js"
+export * from "./LongPollingTransport.js"
+export * from "./WebSocketTransport.js"
