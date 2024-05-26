@@ -30,7 +30,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.servlet.AsyncContext;
@@ -766,12 +765,12 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
         }
 
         @Override
-        public void cancel() {
+        public void cancel(Throwable cause) {
             if (cancelTimeout()) {
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("Cancelling suspended {} for {}", message, context.session);
                 }
-                error(new TimeoutException());
+                fail(cause);
             }
         }
 
@@ -821,13 +820,14 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
 
         @Override
         public void onError(AsyncEvent event) {
-            error(event.getThrowable());
+            cancel(event.getThrowable());
         }
 
         protected abstract void dispatch(boolean timeout);
 
-        private void error(Throwable failure) {
+        private void fail(Throwable failure) {
             HttpServletRequest request = context.request;
+            scheduleExpiration(context.session, getMetaConnectCycle());
             decBrowserId(context.session, isHTTP2(request));
             promise.fail(failure);
         }

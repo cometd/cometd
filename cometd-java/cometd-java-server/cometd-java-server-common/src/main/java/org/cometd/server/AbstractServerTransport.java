@@ -18,6 +18,7 @@ package org.cometd.server;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.text.ParseException;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import org.cometd.bayeux.Promise;
 import org.cometd.bayeux.server.ServerMessage;
@@ -296,6 +297,7 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
         public default ServerMessage.Mutable getMessage() {
             return null;
         }
+
         /**
          * @return the cycle number for suspended {@code /meta/connect}s.
          */
@@ -315,6 +317,15 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
          * that will trigger when the /meta/connect timeout fires.
          */
         public default void cancel() {
+            cancel(new TimeoutException());
+        }
+
+        /**
+         * Invoked when the transport wants to cancel with the given
+         * cause scheduled operations that will trigger when the
+         * /meta/connect timeout fires.
+         */
+        public default void cancel(Throwable cause) {
         }
 
         /**
