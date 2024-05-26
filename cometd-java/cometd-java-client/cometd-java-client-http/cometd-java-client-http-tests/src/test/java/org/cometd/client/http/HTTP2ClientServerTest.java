@@ -25,6 +25,8 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 
 public class HTTP2ClientServerTest extends ClientServerTest {
+    protected HTTP2Client http2Client;
+
     @Override
     protected void startServer(Map<String, String> initParams, ConnectionFactory... connectionFactories) throws Exception {
         HttpConfiguration httpConfig = new HttpConfiguration();
@@ -33,7 +35,8 @@ public class HTTP2ClientServerTest extends ClientServerTest {
 
     @Override
     protected void startClient() throws Exception {
-        httpClient = new HttpClient(new HttpClientTransportOverHTTP2(new HTTP2Client()), null);
+        http2Client = new HTTP2Client();
+        httpClient = new HttpClient(new HttpClientTransportOverHTTP2(http2Client), null);
         httpClient.start();
     }
 }

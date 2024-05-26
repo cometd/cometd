@@ -414,7 +414,7 @@ public abstract class AbstractWebSocketEndPoint {
         }
 
         @Override
-        public void cancel() {
+        public void cancel(Throwable cause) {
             if (cancelTimeout(true)) {
                 if (_logger.isDebugEnabled()) {
                     _logger.debug("Cancelling suspended {} for {} on {}", message, context.session, AbstractWebSocketEndPoint.this);
