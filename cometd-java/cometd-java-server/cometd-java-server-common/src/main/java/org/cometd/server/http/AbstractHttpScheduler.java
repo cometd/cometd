@@ -76,7 +76,7 @@ public abstract class AbstractHttpScheduler implements Runnable, AbstractHttpTra
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Cancelling suspended {} for {}", message, context.session());
             }
-            error(cause);
+            fail(cause);
         }
     }
 
@@ -114,7 +114,7 @@ public abstract class AbstractHttpScheduler implements Runnable, AbstractHttpTra
 
     protected abstract void dispatch(boolean timeout);
 
-    protected void error(Throwable failure) {
+    private void fail(Throwable failure) {
         CometDRequest request = context.request();
         transport.scheduleExpiration(context.session(), getMetaConnectCycle());
         transport.decBrowserId(context.session(), transport.isHTTP2(request));

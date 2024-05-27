@@ -268,6 +268,7 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
         public default ServerMessage.Mutable getMessage() {
             return null;
         }
+
         /**
          * @return the cycle number for suspended {@code /meta/connect}s.
          */
@@ -290,6 +291,11 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
             cancel(new TimeoutException());
         }
 
+        /**
+         * Invoked when the transport wants to cancel with the given
+         * cause scheduled operations that will trigger when the
+         * /meta/connect timeout fires.
+         */
         public default void cancel(Throwable cause) {
         }
 
