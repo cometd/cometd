@@ -225,7 +225,8 @@ public class AsyncFoldLeft {
                             promise.fail(failure.get());
                             return;
                         default:
-                            throw new IllegalStateException("Could not run loop in state " + current);
+                            promise.fail(new IllegalStateException("Could not run loop in state " + current));
+                            return;
                     }
                 }
             }
@@ -250,8 +251,14 @@ public class AsyncFoldLeft {
                             return;
                         }
                         break;
+                    case FAIL:
+                        return;
                     default:
-                        throw new IllegalStateException("Could not proceed loop in state " + current);
+                        failure.compareAndSet(null, new IllegalStateException("Could not proceed loop in state " + current));
+                        if (state.compareAndSet(current, State.FAIL)) {
+                            return;
+                        }
+                        break;
                 }
             }
         }
@@ -273,8 +280,14 @@ public class AsyncFoldLeft {
                             return;
                         }
                         break;
+                    case FAIL:
+                        return;
                     default:
-                        throw new IllegalStateException("Could not leave loop in state " + current);
+                        failure.compareAndSet(null, new IllegalStateException("Could not leave loop in state " + current));
+                        if (state.compareAndSet(current, State.FAIL)) {
+                            return;
+                        }
+                        break;
                 }
             }
         }
@@ -286,6 +299,8 @@ public class AsyncFoldLeft {
                 State current = state.get();
                 switch (current) {
                     case LOOP:
+                    case PROCEED:
+                    case LEAVE:
                         if (state.compareAndSet(current, State.FAIL)) {
                             return;
                         }
@@ -296,13 +311,12 @@ public class AsyncFoldLeft {
                             return;
                         }
                         break;
-                    default:
-                        throw new IllegalStateException("Could not fail loop in state " + current);
+                    case FAIL:
+                        return;
                 }
             }
         }
     }
-
 
     private static class IndexedLoop<T, R> extends AbstractLoop<T, R> {
         private final IntFunction<T> element;
