@@ -16,10 +16,13 @@
 
 package org.cometd.common;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.cometd.bayeux.Promise;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -60,7 +63,7 @@ public class AsyncFoldLeftTest {
         String[] elements = expected.split("");
         Promise.Completable<String> promise = new Promise.Completable<>();
         AsyncFoldLeft.run(elements, "", (result, element, loop) -> new Thread(() -> {
-            sleep(250);
+            sleep(500);
             loop.proceed(result + element);
         }).start(), promise);
         String result = promise.get();
@@ -72,7 +75,7 @@ public class AsyncFoldLeftTest {
         Collection<String> elements = List.of("1", "2", "3");
         Promise.Completable<String> promise = new Promise.Completable<>();
         AsyncFoldLeft.run(elements, "", (result, element, loop) -> {
-            if (result.length() > 0) {
+            if (!result.isEmpty()) {
                 loop.leave(result);
             } else {
                 loop.proceed(result + element);
@@ -87,9 +90,9 @@ public class AsyncFoldLeftTest {
         List<String> elements = List.of("1", "2", "3");
         Promise.Completable<String> promise = new Promise.Completable<>();
         AsyncFoldLeft.run(elements, "", (result, element, loop) -> {
-            if (result.length() > 0) {
+            if (!result.isEmpty()) {
                 new Thread(() -> {
-                    sleep(333);
+                    sleep(500);
                     loop.leave(result);
                 }).start();
             } else {
@@ -106,7 +109,7 @@ public class AsyncFoldLeftTest {
         List<String> elements = List.of("1", "2", "3");
         Promise.Completable<String> promise = new Promise.Completable<>();
         AsyncFoldLeft.run(elements, "", (result, element, loop) -> {
-            if (result.length() > 0) {
+            if (!result.isEmpty()) {
                 loop.fail(failure);
             } else {
                 loop.proceed(result + element);
@@ -126,9 +129,9 @@ public class AsyncFoldLeftTest {
         List<String> elements = List.of("1", "2", "3");
         Promise.Completable<String> promise = new Promise.Completable<>();
         AsyncFoldLeft.run(elements, "", (result, element, loop) -> {
-            if (result.length() > 0) {
+            if (!result.isEmpty()) {
                 new Thread(() -> {
-                    sleep(291);
+                    sleep(500);
                     loop.fail(failure);
                 }).start();
             } else {
@@ -141,6 +144,66 @@ public class AsyncFoldLeftTest {
         } catch (ExecutionException x) {
             Assertions.assertSame(failure, x.getCause());
         }
+    }
+
+    @Test
+    public void testSyncFailThenProceed() throws Exception {
+        Throwable failure = new Throwable();
+        List<String> elements = Arrays.asList("1", "2", "3");
+        Promise.Completable<String> resultPromise = new Promise.Completable<>();
+        Promise.Completable<String> proceedPromise = new Promise.Completable<>();
+        Promise.Completable<String> failurePromise = new Promise.Completable<>();
+        AsyncFoldLeft.run(elements, "", (result, element, loop) -> {
+            if ("1".equals(element)) {
+                loop.proceed(result + element);
+            } else if ("2".equals(element)) {
+                loop.fail(failure);
+                try {
+                    loop.proceed(result + element);
+                    proceedPromise.succeed(null);
+                } catch (Throwable x) {
+                    proceedPromise.fail(x);
+                }
+            } else {
+                failurePromise.succeed(null);
+            }
+        }, resultPromise);
+        ExecutionException x = Assertions.assertThrows(ExecutionException.class, resultPromise::get);
+        Assertions.assertSame(failure, x.getCause());
+        // The proceed() after the fail() must not throw.
+        proceedPromise.get(5, TimeUnit.SECONDS);
+        // Must not continue the loop after failure.
+        Assertions.assertThrows(TimeoutException.class, () -> failurePromise.get(1, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testSyncFailThenLeave() throws Exception {
+        Throwable failure = new Throwable();
+        List<String> elements = Arrays.asList("1", "2", "3");
+        Promise.Completable<String> resultPromise = new Promise.Completable<>();
+        Promise.Completable<String> leavePromise = new Promise.Completable<>();
+        Promise.Completable<String> failurePromise = new Promise.Completable<>();
+        AsyncFoldLeft.run(elements, "", (result, element, loop) -> {
+            if ("1".equals(element)) {
+                loop.proceed(result + element);
+            } else if ("2".equals(element)) {
+                loop.fail(failure);
+                try {
+                    loop.leave(result + element);
+                    leavePromise.succeed(null);
+                } catch (Throwable x) {
+                    leavePromise.fail(x);
+                }
+            } else {
+                failurePromise.succeed(null);
+            }
+        }, resultPromise);
+        ExecutionException x = Assertions.assertThrows(ExecutionException.class, resultPromise::get);
+        Assertions.assertSame(failure, x.getCause());
+        // The leave() after the fail() must not throw.
+        leavePromise.get(5, TimeUnit.SECONDS);
+        // Must not continue the loop after failure.
+        Assertions.assertThrows(TimeoutException.class, () -> failurePromise.get(1, TimeUnit.SECONDS));
     }
 
     private void sleep(long time) {
