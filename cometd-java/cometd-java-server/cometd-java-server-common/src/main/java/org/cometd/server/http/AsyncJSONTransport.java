@@ -172,6 +172,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
         private final Context context;
         private final Promise<Void> promise;
         private int total;
+        private boolean eof;
 
         protected AbstractReader(Context context, Promise<Void> promise) {
             this.context = context;
@@ -210,6 +211,11 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
             }
         }
 
+        @Override
+        public void onAllDataRead() throws IOException {
+            eof = true;
+        }
+
         protected abstract void append(byte[] buffer, int offset, int length);
 
         protected void finish(List<ServerMessage.Mutable> messages) throws IOException {
@@ -228,6 +234,28 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
 
         @Override
         public void onError(Throwable failure) {
+            // Some implementations report HTTP/2 RST_STREAM to
+            // the ReadListener, rather than to the AsyncListener,
+            // even after the request content has been fully read.
+            // Make sure we fail the scheduler if a /meta/connect
+            // is suspended, so that the session can be swept.
+            Scheduler scheduler = context.scheduler;
+            if (scheduler != null) {
+                scheduler.cancel(failure);
+                return;
+            }
+
+            // A failure after having read the request content
+            // is ignored, since the request is currently being
+            // processed and will notice the failure when writing
+            // the reply, which will schedule session expiration
+            // if the request is a non-suspended /meta/connect.
+            if (eof) {
+                return;
+            }
+
+            // Otherwise, the failure is during the read,
+            // therefore we must fail the current promise.
             promise.fail(failure);
         }
     }
@@ -252,6 +280,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
 
         @Override
         public void onAllDataRead() throws IOException {
+            super.onAllDataRead();
             List<ServerMessage.Mutable> messages = parser.complete();
             finish(messages);
         }
@@ -291,6 +320,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
 
         @Override
         public void onAllDataRead() throws IOException {
+            super.onAllDataRead();
             finish(new String(content, 0, count, charset));
         }
     }
@@ -375,7 +405,7 @@ public class AsyncJSONTransport extends AbstractHttpTransport {
 
         private boolean writeHandshakeReply(ServletOutputStream output) throws IOException {
             List<ServerMessage.Mutable> replies = context.replies;
-            if (replies.size() > 0) {
+            if (!replies.isEmpty()) {
                 ServerMessage.Mutable reply = replies.get(0);
                 if (Channel.META_HANDSHAKE.equals(reply.getChannel())) {
                     if (allowMessageDeliveryDuringHandshake(context.session) && !messages.isEmpty()) {
