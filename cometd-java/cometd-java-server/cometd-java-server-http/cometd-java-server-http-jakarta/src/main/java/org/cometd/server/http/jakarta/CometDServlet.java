@@ -42,41 +42,41 @@ import org.slf4j.LoggerFactory;
 /**
  * <p>The CometD Servlet maps HTTP requests to the {@link AbstractHttpTransport}
  * of a {@link BayeuxServer} instance.</p>
- * <p>The {@link BayeuxServer} instance is searched in the servlet context under the {@link BayeuxServer#ATTRIBUTE}
- * attribute; if it is found then it is used without further configuration, otherwise a new {@link BayeuxServer}
- * instance is created and configured using the init parameters of this servlet.</p>
+ * <p>The {@link BayeuxServer} instance is searched in the Servlet context under the
+ * name specified by the {@value BayeuxServerImpl#CONTEXT_ATTRIBUTE_NAME_OPTION} option,
+ * whose default is {@value BayeuxServer#ATTRIBUTE}.</p>
+ * <p>If a {@link BayeuxServer} instance is found, then it is used without further
+ * configuration, otherwise a new {@link BayeuxServer} instance is created and
+ * configured using the init parameters of this Servlet.</p>
  */
 public class CometDServlet extends HttpServlet {
     private static final Logger LOGGER = LoggerFactory.getLogger(CometDServlet.class);
 
     private BayeuxServer bayeuxServer;
+    private boolean exported;
 
     @Override
     public void init() throws ServletException {
-        try {
-            bayeuxServer = (BayeuxServer)getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
+        String bayeuxServerContextAttributeName = getBayeuxServerContextAttributeName();
+        bayeuxServer = (BayeuxServer)getServletContext().getAttribute(bayeuxServerContextAttributeName);
 
-            boolean export = false;
-            if (bayeuxServer == null) {
-                export = true;
-                bayeuxServer = newBayeuxServer();
+        if (bayeuxServer == null) {
+            bayeuxServer = newBayeuxServer();
+            exported = true;
 
-                // Transfer all servlet init parameters to the BayeuxServer implementation.
-                for (String initParamName : Collections.list(getInitParameterNames())) {
-                    bayeuxServer.setOption(initParamName, getInitParameter(initParamName));
-                }
+            // Transfer all servlet init parameters to the BayeuxServer implementation.
+            for (String initParamName : Collections.list(getInitParameterNames())) {
+                bayeuxServer.setOption(initParamName, getInitParameter(initParamName));
             }
+        }
 
-            // Add the ServletContext to the options.
-            bayeuxServer.setOption(ServletContext.class.getName(), getServletContext());
+        // Add the ServletContext to the options.
+        bayeuxServer.setOption(ServletContext.class.getName(), getServletContext());
 
-            LifeCycle.start(bayeuxServer);
+        LifeCycle.start(bayeuxServer);
 
-            if (export) {
-                getServletContext().setAttribute(BayeuxServer.ATTRIBUTE, bayeuxServer);
-            }
-        } catch (Exception x) {
-            throw new ServletException(x);
+        if (exported) {
+            getServletContext().setAttribute(bayeuxServerContextAttributeName, bayeuxServer);
         }
     }
 
@@ -174,7 +174,14 @@ public class CometDServlet extends HttpServlet {
             }
         } finally {
             bayeuxServer = null;
-            getServletContext().removeAttribute(BayeuxServer.ATTRIBUTE);
+            if (exported) {
+                getServletContext().removeAttribute(getBayeuxServerContextAttributeName());
+            }
         }
+    }
+
+    private String getBayeuxServerContextAttributeName() {
+        String name = getServletConfig().getInitParameter(BayeuxServerImpl.CONTEXT_ATTRIBUTE_NAME_OPTION);
+        return name != null ? name : BayeuxServer.ATTRIBUTE;
     }
 }

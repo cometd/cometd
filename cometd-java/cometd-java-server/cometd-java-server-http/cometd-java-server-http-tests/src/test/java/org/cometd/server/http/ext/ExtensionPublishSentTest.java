@@ -23,6 +23,7 @@ import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.http.AbstractBayeuxClientServerTest;
+import org.cometd.server.http.Transport;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Request;
 import org.junit.jupiter.api.Assertions;

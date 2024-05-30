@@ -35,20 +35,34 @@ import org.cometd.oort.Seti;
  * @see OortMulticastConfigServlet
  */
 public class SetiServlet extends HttpServlet {
+    public static final String SETI_CONTEXT_ATTRIBUTE_NAME_PARAM = "setiContextAttributeName";
+
+    private boolean exported;
+
     @Override
     public void init(ServletConfig config) throws ServletException {
         super.init(config);
 
+        String oortContextAttributeName = getOortContextAttributeName();
         ServletContext servletContext = config.getServletContext();
-        Oort oort = (Oort)servletContext.getAttribute(Oort.OORT_ATTRIBUTE);
+        Oort oort = (Oort)servletContext.getAttribute(oortContextAttributeName);
         if (oort == null) {
-            throw new UnavailableException("Missing " + Oort.OORT_ATTRIBUTE + " attribute");
+            throw new UnavailableException("Missing " + oortContextAttributeName + " attribute");
         }
 
         try {
-            Seti seti = newSeti(oort);
+            String setiContextAttributeName = getSetiContextAttributeName();
+            Seti seti = (Seti)servletContext.getAttribute(setiContextAttributeName);
+            if (seti == null) {
+                exported = true;
+                seti = newSeti(oort);
+            }
+
             seti.start();
-            servletContext.setAttribute(Seti.SETI_ATTRIBUTE, seti);
+
+            if (exported) {
+                servletContext.setAttribute(setiContextAttributeName, seti);
+            }
         } catch (Exception x) {
             throw new ServletException(x);
         }
@@ -61,14 +75,27 @@ public class SetiServlet extends HttpServlet {
     @Override
     public void destroy() {
         try {
+            String setiContextAttributeName = getSetiContextAttributeName();
             ServletContext servletContext = getServletConfig().getServletContext();
-            Seti seti = (Seti)servletContext.getAttribute(Seti.SETI_ATTRIBUTE);
-            servletContext.removeAttribute(Seti.SETI_ATTRIBUTE);
+            Seti seti = (Seti)servletContext.getAttribute(setiContextAttributeName);
             if (seti != null) {
                 seti.stop();
+            }
+            if (exported) {
+                servletContext.removeAttribute(setiContextAttributeName);
             }
         } catch (Exception x) {
             throw new RuntimeException(x);
         }
+    }
+
+    private String getOortContextAttributeName() {
+        String name = getServletConfig().getInitParameter(OortConfigServlet.OORT_CONTEXT_ATTRIBUTE_NAME_PARAM);
+        return name != null ? name : Oort.OORT_ATTRIBUTE;
+    }
+
+    private String getSetiContextAttributeName() {
+        String name = getServletConfig().getInitParameter(SETI_CONTEXT_ATTRIBUTE_NAME_PARAM);
+        return name != null ? name : Seti.SETI_ATTRIBUTE;
     }
 }

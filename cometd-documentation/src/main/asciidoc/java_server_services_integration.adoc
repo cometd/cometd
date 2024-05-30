@@ -42,8 +42,8 @@ Here is a sample `web.xml`:
 
 Notice that the `web.xml` file specifies `<load-on-startup>` to be:
 
-* 1 for the CometD servlet -- so that the Bayeux object gets created and put in the `ServletContext`.
-* 2 for the configuration servlet -- so that it will be initialized only after the CometD servlet has been initialized and hence the BayeuxServer object is available.
+* 1 for the `CometDServlet` -- so that the `BayeuxServer` object gets created and put in the `ServletContext`.
+* 2 for the configuration servlet -- so that it will be initialized only after the CometD servlet has been initialized and hence the `BayeuxServer` object is available.
 
 This is the code for the `ConfigurationServlet`:
 
@@ -51,6 +51,43 @@ This is the code for the `ConfigurationServlet`:
 ----
 include::{doc_code}/server/ServerServiceIntegrationDocs.java[tags=configServlet]
 ----
+
+Note that the `BayeuxServer` object can be retrieved from the `ServletContext` under the attribute name `BayeuxServer.ATTRIBUTE`.
+The attribute name is configurable via an `init-param` of the `CometDServlet`:
+
+[source,xml,subs=+quotes]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
+         version="6.0">
+
+  <servlet>
+    <servlet-name>cometd</servlet-name>
+    <servlet-class>org.cometd.server.http.jakarta.CometDServlet</servlet-class>
+    #<init-param>#
+      #<param-name>bayeuxServerContextAttributeName</param-name>#
+      #<param-value>myBayeuxServer</param-value>#
+    #</init-param>#
+    <load-on-startup>1</load-on-startup>
+    <async-supported>true</async-supported>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>cometd</servlet-name>
+    <url-pattern>/cometd/*</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
+    <servlet-name>configuration</servlet-name>
+    <servlet-class>com.acme.cometd.ConfigurationServlet</servlet-class>
+    <load-on-startup>2</load-on-startup>
+  </servlet>
+
+</web-app>
+----
+
+In the `ConfigurationServlet` you can now retrieve the `BayeuxServer` object using the attribute name `myBayeuxServer`.
 
 See also xref:_java_server_services_inherited[this section] about the `EchoService`.
 

@@ -11,7 +11,22 @@ Keep the following points in mind when configuring Seti:
 * You must configure an `org.cometd.oort.Seti` instance with an associated `org.cometd.oort.Oort` instance, either via code or by configuring an `org.cometd.oort.SetiServlet` in `web.xml`.
 * There may be only one instance of `Seti` for each `Oort`.
 * The `load-on-startup` parameter of the `SetiServlet` must be greater than that of the Oort configuration Servlet.
-* `SetiServlet` does not have any configuration init parameter.
+
+`SetiServlet` has the following configuration init parameters:
+
+.Seti Configuration Parameters
+[cols="<5a,^1a,<5a,<8a", options="header"]
+|===
+| Parameter Name
+| Required
+| Default Value
+| Parameter Description
+
+| setiContextAttributeName
+| no
+| org.cometd.oort.Seti
+| The context attribute name under which the `Seti` object is stored, for web applications to retrieve.
+|===
 
 A configuration example follows:
 
@@ -46,7 +61,7 @@ A configuration example follows:
 
     <servlet>
         <servlet-name>seti</servlet-name>
-        <servlet-class>org.cometd.oort.jakarta.SetiServletorg.cometd.oort.jakarta.SetiServlet</servlet-class>
+        <servlet-class>org.cometd.oort.jakarta.SetiServlet</servlet-class>
         <load-on-startup>3</load-on-startup>
     </servlet>
 </web-app>

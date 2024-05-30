@@ -52,6 +52,7 @@ public class CometDHandler extends Handler.Abstract {
 
     private Map<String, String> options = Map.of();
     private BayeuxServer bayeuxServer;
+    private boolean exported;
 
     public CometDHandler() {
         this(InvocationType.BLOCKING);
@@ -71,13 +72,13 @@ public class CometDHandler extends Handler.Abstract {
 
     @Override
     protected void doStart() throws Exception {
+        String bayeuxServerContextAttributeName = getBayeuxServerContextAttributeName();
         Context context = ContextHandler.getCurrentContext(getServer());
-        bayeuxServer = (BayeuxServer)context.getAttribute(BayeuxServer.ATTRIBUTE);
+        bayeuxServer = (BayeuxServer)context.getAttribute(bayeuxServerContextAttributeName);
 
-        boolean export = false;
         if (bayeuxServer == null) {
-            export = true;
             bayeuxServer = newBayeuxServer();
+            exported = true;
 
             String transports = JSONHttpTransport.class.getName() + ",org.cometd.server.websocket.jetty.JettyWebSocketTransport";
             bayeuxServer.setOption(BayeuxServerImpl.TRANSPORTS_OPTION, transports);
@@ -90,8 +91,8 @@ public class CometDHandler extends Handler.Abstract {
 
         addBean(bayeuxServer);
 
-        if (export) {
-            context.setAttribute(BayeuxServer.ATTRIBUTE, bayeuxServer);
+        if (exported) {
+            context.setAttribute(bayeuxServerContextAttributeName, bayeuxServer);
         }
 
         super.doStart();
@@ -105,8 +106,10 @@ public class CometDHandler extends Handler.Abstract {
         super.doStop();
         removeBean(bayeuxServer);
         bayeuxServer = null;
-        Context context = ContextHandler.getCurrentContext(getServer());
-        context.removeAttribute(BayeuxServer.ATTRIBUTE);
+        if (exported) {
+            Context context = ContextHandler.getCurrentContext(getServer());
+            context.removeAttribute(getBayeuxServerContextAttributeName());
+        }
     }
 
     public BayeuxServer getBayeuxServer() {
@@ -177,5 +180,10 @@ public class CometDHandler extends Handler.Abstract {
 
     protected void sendError(Request request, Response response, Callback callback, int code, Throwable failure) {
         Response.writeError(request, response, callback, code, null, failure);
+    }
+
+    private String getBayeuxServerContextAttributeName() {
+        String name = getOptions().get(BayeuxServerImpl.CONTEXT_ATTRIBUTE_NAME_OPTION);
+        return name != null ? name : BayeuxServer.ATTRIBUTE;
     }
 }

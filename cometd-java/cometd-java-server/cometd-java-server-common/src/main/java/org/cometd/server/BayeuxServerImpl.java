@@ -84,6 +84,7 @@ public class BayeuxServerImpl extends ContainerLifeCycle implements BayeuxServer
     public static final String BROADCAST_TO_PUBLISHER_OPTION = "broadcastToPublisher";
     public static final String SCHEDULER_THREADS = "schedulerThreads";
     public static final String EXECUTOR_MAX_THREADS = "executorMaxThreads";
+    public static final String CONTEXT_ATTRIBUTE_NAME_OPTION = "bayeuxServerContextAttributeName";
     private static final long DEFAULT_SWEEP_PERIOD = 997;
     private static final int DEFAULT_SWEEP_THREADS = 2;
 

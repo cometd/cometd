@@ -102,8 +102,4 @@ public abstract class AbstractBayeuxServerTest {
             server.stop();
         }
     }
-
-    public enum Transport {
-        JAKARTA, JETTY
-    }
 }

@@ -27,6 +27,7 @@ import org.cometd.common.JSONContext;
 import org.cometd.common.JettyJSONContextClient;
 import org.cometd.server.authorizer.GrantAuthorizer;
 import org.cometd.server.http.AbstractBayeuxClientServerTest;
+import org.cometd.server.http.Transport;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Request;
 import org.junit.jupiter.api.Assertions;

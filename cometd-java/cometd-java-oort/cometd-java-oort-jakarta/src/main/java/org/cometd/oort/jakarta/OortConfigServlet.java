@@ -30,6 +30,7 @@ import org.cometd.client.transport.ClientTransport;
 import org.cometd.common.JSONContext;
 import org.cometd.oort.Oort;
 import org.cometd.oort.OortComet;
+import org.cometd.server.BayeuxServerImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,16 +60,20 @@ public abstract class OortConfigServlet extends HttpServlet {
     public static final String OORT_ENABLE_BINARY_EXTENSION_PARAM = "enableBinaryExtension";
     public static final String OORT_JSON_CONTEXT_PARAM = "jsonContext";
     public static final String OORT_CLIENT_TRANSPORT_FACTORIES_PARAM = "clientTransportFactories";
+    public static final String OORT_CONTEXT_ATTRIBUTE_NAME_PARAM = "oortContextAttributeName";
     private static final Logger LOGGER = LoggerFactory.getLogger(OortConfigServlet.class);
+
+    private boolean exported;
 
     @Override
     public void init(ServletConfig config) throws ServletException {
         super.init(config);
 
+        String bayeuxServerContextAttributeName = getBayeuxServerContextAttributeName();
         ServletContext servletContext = config.getServletContext();
-        BayeuxServer bayeux = (BayeuxServer)servletContext.getAttribute(BayeuxServer.ATTRIBUTE);
+        BayeuxServer bayeux = (BayeuxServer)servletContext.getAttribute(bayeuxServerContextAttributeName);
         if (bayeux == null) {
-            throw new UnavailableException("Missing " + BayeuxServer.ATTRIBUTE + " attribute");
+            throw new UnavailableException("Missing " + bayeuxServerContextAttributeName + " attribute");
         }
 
         String url = provideOortURL();
@@ -76,17 +81,26 @@ public abstract class OortConfigServlet extends HttpServlet {
             throw new UnavailableException("Missing " + OORT_URL_PARAM + " init parameter");
         }
 
+        String oortContextAttributeName = getOortContextAttributeName();
+        Oort oort = (Oort)servletContext.getAttribute(oortContextAttributeName);
+
         try {
-            Oort oort = newOort(bayeux, url);
-            configureOort(config, oort);
+            if (oort == null) {
+                exported = true;
+                oort = newOort(bayeux, url);
+                configureOort(config, oort);
+            }
 
             oort.start();
-            servletContext.setAttribute(Oort.OORT_ATTRIBUTE, oort);
 
-            new Thread(new Starter(config, oort)).start();
+            if (exported) {
+                servletContext.setAttribute(oortContextAttributeName, oort);
+            }
         } catch (Exception x) {
             throw new ServletException(x);
         }
+
+        new Thread(new Starter(config, oort)).start();
     }
 
     /**
@@ -167,14 +181,27 @@ public abstract class OortConfigServlet extends HttpServlet {
     public void destroy() {
         try {
             ServletContext servletContext = getServletConfig().getServletContext();
-            Oort oort = (Oort)servletContext.getAttribute(Oort.OORT_ATTRIBUTE);
-            servletContext.removeAttribute(Oort.OORT_ATTRIBUTE);
+            String oortContextAttributeName = getOortContextAttributeName();
+            Oort oort = (Oort)servletContext.getAttribute(oortContextAttributeName);
             if (oort != null) {
                 oort.stop();
+            }
+            if (exported) {
+                servletContext.removeAttribute(oortContextAttributeName);
             }
         } catch (Exception x) {
             throw new RuntimeException(x);
         }
+    }
+
+    private String getBayeuxServerContextAttributeName() {
+        String name = getServletConfig().getInitParameter(BayeuxServerImpl.CONTEXT_ATTRIBUTE_NAME_OPTION);
+        return name != null ? name : BayeuxServer.ATTRIBUTE;
+    }
+
+    private String getOortContextAttributeName() {
+        String name = getServletConfig().getInitParameter(OORT_CONTEXT_ATTRIBUTE_NAME_PARAM);
+        return name != null ? name : Oort.OORT_ATTRIBUTE;
     }
 
     private class Starter implements Runnable {

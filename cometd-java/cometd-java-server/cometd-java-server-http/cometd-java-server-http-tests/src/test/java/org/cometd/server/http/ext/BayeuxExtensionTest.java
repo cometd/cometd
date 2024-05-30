@@ -30,6 +30,7 @@ import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.JSONContextServer;
 import org.cometd.server.JettyJSONContextServer;
 import org.cometd.server.http.AbstractBayeuxClientServerTest;
+import org.cometd.server.http.Transport;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Request;
 import org.junit.jupiter.api.Assertions;

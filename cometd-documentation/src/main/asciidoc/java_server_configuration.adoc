@@ -42,7 +42,7 @@ It is normally mapped to `+/cometd/*+`, but you can change the `url-pattern` map
 Here is the list of configuration init parameters that the `BayeuxServer` implementation accepts:
 
 .`BayeuxServer` Configuration Parameters
-[cols="^2,^3,<10"]
+[cols="<4a,^5a,<10a"]
 |===
 | Parameter Name
 | Default Value
@@ -59,7 +59,7 @@ Here is the list of configuration init parameters that the `BayeuxServer` implem
   This property can be overridden at the channel level and at the session level.
 
 | jsonContext
-| `org.cometd.server.JettyJSONContextServer`
+| org.cometd.server.JettyJSONContextServer
 | The full qualified name of a class implementing `org.cometd.server.JSONContextServer`.
   The class is loaded and instantiated using the default constructor.
 
@@ -88,6 +88,10 @@ Here is the list of configuration init parameters that the `BayeuxServer` implem
 | 128
 | The max number of executor threads that execute jobs.
   The scheduler is used by transports such as WebSocket that don't have threading support from the Servlet Container.
+
+| bayeuxServerContextAttributeName
+| org.cometd.bayeux
+| The context attribute name under which the `BayeuxServer` instance is stored, for web applications to retrieve.
 |===
 
 [[_java_server_configuration_transports]]

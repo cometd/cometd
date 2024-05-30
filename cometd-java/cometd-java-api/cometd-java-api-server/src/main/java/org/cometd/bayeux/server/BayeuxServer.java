@@ -25,9 +25,11 @@ import org.cometd.bayeux.client.ClientSessionChannel;
 
 /**
  * <p>The server-side Bayeux interface.</p>
- * <p>An instance of the {@link BayeuxServer} interface is available to
- * web applications via the "{@value #ATTRIBUTE}" attribute
- * of the {@code javax.servlet.ServletContext}.</p>
+ * <p>An instance of the {@link BayeuxServer} interface is available
+ * by default to web applications via the {@value #ATTRIBUTE} attribute
+ * of the web application context (for Servlet environments,
+ * the {@code javax.servlet.ServletContext}).
+ * The context attribute name can be configured as an option.</p>
  * <p>The {@link BayeuxServer} APIs give access to the
  * {@link ServerSession}s via the {@link #getSession(String)}
  * method.  It also allows new {@link LocalSession} to be
