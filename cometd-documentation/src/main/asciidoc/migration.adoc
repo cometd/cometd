@@ -781,17 +781,21 @@ Migration from CometD 6.0.x to CometD 7.0.x implies migrating from Jetty 10.0.x 
 ==== Package/Class Names Changes
 
 The most notable changes are the split of artifacts to separate Jakarta EE 10 Servlet classes.
+There are also renaming of CometD classes, especially for server-side transports, which are now always using non-blocking I/O (the blocking I/O versions have been removed).
 
 [cols="1a,1a", options="header"]
 |===
 | CometD 7.0.x | CometD 8.0.x
 | `org.cometd.**server**.CometDServlet` | `org.cometd.**server.http.jakarta**.CometDServlet`
 | `org.cometd.annotation.server.AnnotationCometDServlet` | `org.cometd.annotation.server.**jakarta**.AnnotationCometDServlet`
+| `org.cometd.server.http.**AsyncJSONTransport**` | `org.cometd.server.http.**JSONHttpTransport**`
+| `org.cometd.server.http.**JSONTransport**` | Not Available -- Replaced by `org.cometd.server.http.**JSONHttpTransport**`
+| `org.cometd.server.http.**JSONPTransport**` | `org.cometd.server.http.**JSONPHttpTransport**`
+| `org.cometd.server.websocket.**javax**.*` | `org.cometd.server.websocket.**jakarta**.*`
 | `org.cometd.oort.OortStaticConfigServlet` | `org.cometd.oort.**jakarta**.OortStaticConfigServlet`
 | `org.cometd.oort.OortMulticastConfigServlet` | `org.cometd.oort.**jakarta**.OortMulticastConfigServlet`
 | `org.cometd.oort.SetServlet` | `org.cometd.oort.**jakarta**.SetServlet`
 | `org.cometd.client.websocket.**javax**.*` | `org.cometd.client.websocket.**jakarta**.*`
-| `org.cometd.server.websocket.**javax**.*` | `org.cometd.server.websocket.**jakarta**.*`
 |===
 
 ==== Maven Artifacts Changes
