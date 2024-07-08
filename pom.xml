@@ -90,7 +90,7 @@
 
   <properties>
     <graalvm-version>24.0.1</graalvm-version>
-    <jackson-version>2.17.1</jackson-version>
+    <jackson-version>2.17.2</jackson-version>
     <jakarta-ee-version>10.0.0</jakarta-ee-version>
     <!-- tag::jetty-version[] -->
     <jetty-version>12.0.11</jetty-version>
