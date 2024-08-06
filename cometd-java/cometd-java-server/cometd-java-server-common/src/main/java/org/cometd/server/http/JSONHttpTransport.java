@@ -75,7 +75,7 @@ public class JSONHttpTransport extends AbstractHttpTransport {
             }
             process(context, messages == null ? List.of() : messages);
         } catch (ParseException x) {
-            LOGGER.warn("Could not parse JSON: " + x.getMessage(), x.getMessage());
+            LOGGER.warn("Could not parse JSON: {}", x.getMessage(), x);
             context.promise().fail(new HttpException(400, x.getCause()));
         } catch (Throwable x) {
             context.promise().fail(x);

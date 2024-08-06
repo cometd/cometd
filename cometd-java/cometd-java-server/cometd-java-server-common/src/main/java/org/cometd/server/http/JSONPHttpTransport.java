@@ -112,7 +112,7 @@ public class JSONPHttpTransport extends AbstractHttpTransport {
 
             processMessages(context, messages);
         } catch (ParseException x) {
-            LOGGER.warn("Could not parse JSON: " + x.getMessage(), x.getMessage());
+            LOGGER.warn("Could not parse JSON: {}", x.getMessage(), x);
             context.promise().fail(new HttpException(400, x.getCause()));
         } catch (Throwable x) {
             context.promise().fail(x);
@@ -123,8 +123,18 @@ public class JSONPHttpTransport extends AbstractHttpTransport {
     protected void writePrepare(TransportContext context, Promise<Void> promise) {
         CometDResponse response = context.response();
         response.setContentType("text/javascript;charset=UTF-8");
-        String callback = context.request().getParameterValues(getCallbackParameter()).get(0);
-        response.getOutput().write(false, callback.getBytes(StandardCharsets.UTF_8), promise);
+        response.getOutput().write(false, null, new Promise<>() {
+            @Override
+            public void succeed(Void result) {
+                String callback = context.request().getParameterValues(getCallbackParameter()).get(0);
+                response.getOutput().write(false, callback.getBytes(StandardCharsets.UTF_8), promise);
+            }
+
+            @Override
+            public void fail(Throwable failure) {
+                promise.fail(failure);
+            }
+        });
     }
 
     @Override

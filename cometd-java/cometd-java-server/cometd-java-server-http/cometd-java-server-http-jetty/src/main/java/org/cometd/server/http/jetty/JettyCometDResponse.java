@@ -59,17 +59,21 @@ class JettyCometDResponse implements CometDResponse {
 
         @Override
         public void write(boolean last, byte[] bytes, Promise<Void> promise) {
-            sink.write(last, ByteBuffer.wrap(bytes), new Callback() {
-                @Override
-                public void succeeded() {
-                    promise.succeed(null);
-                }
+            if (bytes != null) {
+                sink.write(last, ByteBuffer.wrap(bytes), new Callback() {
+                    @Override
+                    public void succeeded() {
+                        promise.succeed(null);
+                    }
 
-                @Override
-                public void failed(Throwable x) {
-                    promise.fail(x);
-                }
-            });
+                    @Override
+                    public void failed(Throwable x) {
+                        promise.fail(x);
+                    }
+                });
+            } else {
+                promise.succeed(null);
+            }
         }
     }
 }

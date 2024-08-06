@@ -588,8 +588,9 @@ public abstract class AbstractHttpTransport extends AbstractServerTransport {
     }
 
     protected void writePrepare(TransportContext context, Promise<Void> promise) {
-        context.response().setContentType("application/json");
-        promise.succeed(null);
+        CometDResponse response = context.response();
+        response.setContentType("application/json");
+        response.getOutput().write(false, null, promise);
     }
 
     protected void writeBegin(CometDResponse.Output output, Promise<Void> promise) {

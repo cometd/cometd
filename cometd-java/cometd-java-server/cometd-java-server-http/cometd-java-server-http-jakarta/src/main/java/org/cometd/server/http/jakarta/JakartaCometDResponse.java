@@ -86,17 +86,23 @@ class JakartaCometDResponse implements CometDResponse {
         @Override
         public void write(boolean last, byte[] bytes, Promise<Void> promise) {
             try {
-                outputStream.write(bytes);
-                if (outputStream.isReady()) {
-                    promise.succeed(null);
-                } else {
-                    // In a race with onWritePossible().
-                    Promise<Void> writeReady = state.getAndUpdate(existing -> existing == null ? promise : null);
-                    if (writeReady != null) {
-                        // Lost the race with onWritePossible(), but it
-                        // is possible to write, so succeed the promise.
+                if (bytes != null) {
+                    outputStream.write(bytes);
+                    if (outputStream.isReady()) {
                         promise.succeed(null);
+                        return;
                     }
+                }
+
+                // When bytes == null, store the callback and exit service()
+                // so that all the writes happen from onWritePossible().
+
+                // In a race with onWritePossible().
+                Promise<Void> writeReady = state.getAndUpdate(existing -> existing == null ? promise : null);
+                if (writeReady != null) {
+                    // Lost the race with onWritePossible(), but it
+                    // is possible to write, so succeed the promise.
+                    promise.succeed(null);
                 }
             } catch (Throwable x) {
                 promise.fail(x);
