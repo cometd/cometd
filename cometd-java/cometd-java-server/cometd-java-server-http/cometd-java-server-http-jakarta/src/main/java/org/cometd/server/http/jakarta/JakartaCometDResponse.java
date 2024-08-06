@@ -59,6 +59,7 @@ class JakartaCometDResponse implements CometDResponse {
 
         private final AtomicReference<Promise<Void>> state = new AtomicReference<>();
         private final ServletOutputStream outputStream;
+        private boolean firstWrite = true;
 
         private JakartaCometDOutput(HttpServletResponse response) throws IOException {
             this.outputStream = response.getOutputStream();
@@ -85,24 +86,41 @@ class JakartaCometDResponse implements CometDResponse {
 
         @Override
         public void write(boolean last, byte[] bytes, Promise<Void> promise) {
-            try {
-                if (bytes != null) {
-                    outputStream.write(bytes);
-                    if (outputStream.isReady()) {
-                        promise.succeed(null);
-                        return;
+            // The first write is initiated outside of onWritePossible(),
+            // and that may cause problems, so it is delayed until
+            // onWritePossible() is called for the first time, which
+            // happens because of the call to setWriteListener().
+            if (firstWrite) {
+                firstWrite = false;
+                state.set(new Promise<>() {
+                    @Override
+                    public void succeed(Void result) {
+                        asyncWrite(bytes, promise);
                     }
-                }
 
-                // When bytes == null, store the callback and exit service()
-                // so that all the writes happen from onWritePossible().
+                    @Override
+                    public void fail(Throwable failure) {
+                        promise.fail(failure);
+                    }
+                });
+            } else {
+                asyncWrite(bytes, promise);
+            }
+        }
 
-                // In a race with onWritePossible().
-                Promise<Void> writeReady = state.getAndUpdate(existing -> existing == null ? promise : null);
-                if (writeReady != null) {
-                    // Lost the race with onWritePossible(), but it
-                    // is possible to write, so succeed the promise.
+        private void asyncWrite(byte[] bytes, Promise<Void> promise) {
+            try {
+                outputStream.write(bytes);
+                if (outputStream.isReady()) {
                     promise.succeed(null);
+                } else {
+                    // In a race with onWritePossible().
+                    Promise<Void> writeReady = state.getAndUpdate(existing -> existing == null ? promise : null);
+                    if (writeReady != null) {
+                        // Lost the race with onWritePossible(), but it
+                        // is possible to write, so succeed the promise.
+                        promise.succeed(null);
+                    }
                 }
             } catch (Throwable x) {
                 promise.fail(x);

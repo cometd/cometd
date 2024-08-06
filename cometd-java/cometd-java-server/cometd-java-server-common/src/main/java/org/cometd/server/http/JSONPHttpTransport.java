@@ -123,18 +123,8 @@ public class JSONPHttpTransport extends AbstractHttpTransport {
     protected void writePrepare(TransportContext context, Promise<Void> promise) {
         CometDResponse response = context.response();
         response.setContentType("text/javascript;charset=UTF-8");
-        response.getOutput().write(false, null, new Promise<>() {
-            @Override
-            public void succeed(Void result) {
-                String callback = context.request().getParameterValues(getCallbackParameter()).get(0);
-                response.getOutput().write(false, callback.getBytes(StandardCharsets.UTF_8), promise);
-            }
-
-            @Override
-            public void fail(Throwable failure) {
-                promise.fail(failure);
-            }
-        });
+        String callback = context.request().getParameterValues(getCallbackParameter()).get(0);
+        response.getOutput().write(false, callback.getBytes(StandardCharsets.UTF_8), promise);
     }
 
     @Override
