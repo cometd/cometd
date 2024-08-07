@@ -99,7 +99,7 @@
     <maven-war-plugin-version>3.4.0</maven-war-plugin-version>
     <okhttp-version>4.12.0</okhttp-version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <slf4j-version>2.0.13</slf4j-version>
+    <slf4j-version>2.0.14</slf4j-version>
     <spring-boot-version>3.3.2</spring-boot-version>
     <spring-version>6.1.11</spring-version>
   </properties>
