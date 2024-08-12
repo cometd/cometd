@@ -92,7 +92,7 @@ class JakartaCometDResponse implements CometDResponse {
             // happens because of the call to setWriteListener().
             if (firstWrite) {
                 firstWrite = false;
-                state.set(new Promise<>() {
+                asyncWritePendingOrSucceed(new Promise<>() {
                     @Override
                     public void succeed(Void result) {
                         asyncWrite(bytes, promise);
@@ -114,16 +114,20 @@ class JakartaCometDResponse implements CometDResponse {
                 if (outputStream.isReady()) {
                     promise.succeed(null);
                 } else {
-                    // In a race with onWritePossible().
-                    Promise<Void> writeReady = state.getAndUpdate(existing -> existing == null ? promise : null);
-                    if (writeReady != null) {
-                        // Lost the race with onWritePossible(), but it
-                        // is possible to write, so succeed the promise.
-                        promise.succeed(null);
-                    }
+                    asyncWritePendingOrSucceed(promise);
                 }
             } catch (Throwable x) {
                 promise.fail(x);
+            }
+        }
+
+        private void asyncWritePendingOrSucceed(Promise<Void> promise) {
+            // In a race with onWritePossible().
+            Promise<Void> writeReady = state.getAndUpdate(existing -> existing == null ? promise : null);
+            if (writeReady != null) {
+                // Lost the race with onWritePossible(), but it
+                // is possible to write, so succeed the promise.
+                promise.succeed(null);
             }
         }
     }
