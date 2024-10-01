@@ -17,9 +17,6 @@ echo "Running release script with arguments" "$@"
 COMETD_DIR=$1
 VERSION=$2
 
-echo "Uploading distribution"
-dd status=progress if=${COMETD_DIR}/cometd-distribution/target/cometd-${VERSION}-distribution.tar.gz | ssh ubuntu@download.cometd.org "sudo -u www-data dd of=/var/www/download.cometd.org/cometd-${VERSION}-distribution.tar.gz"
-
 echo "Uploading javadocs"
 cd ${COMETD_DIR}/cometd-java
 mvn javadoc:aggregate-jar
