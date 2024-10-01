@@ -91,11 +91,11 @@
   <properties>
     <dojo-version>1.17.3</dojo-version>
     <graalvm-version>22.3.5</graalvm-version>
-    <jackson-version>2.17.2</jackson-version>
+    <jackson-version>2.18.0</jackson-version>
     <!-- tag::jetty-version[] -->
     <jetty-version>11.0.24</jetty-version>
     <!-- end::jetty-version[] -->
-    <log4j2-version>2.24.0</log4j2-version>
+    <log4j2-version>2.24.1</log4j2-version>
     <okhttp-version>4.12.0</okhttp-version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <slf4j-version>2.0.16</slf4j-version>
@@ -170,7 +170,7 @@
       <dependency>
         <groupId>org.junit.jupiter</groupId>
         <artifactId>junit-jupiter</artifactId>
-        <version>5.11.0</version>
+        <version>5.11.1</version>
         <scope>test</scope>
       </dependency>
       <dependency>
@@ -239,7 +239,7 @@
         <plugin>
           <groupId>com.mycila</groupId>
           <artifactId>license-maven-plugin</artifactId>
-          <version>4.5</version>
+          <version>4.6</version>
         </plugin>
         <plugin>
           <groupId>org.apache.felix</groupId>
@@ -254,7 +254,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-archetype-plugin</artifactId>
-          <version>3.2.1</version>
+          <version>3.3.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -292,7 +292,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-gpg-plugin</artifactId>
-          <version>3.2.5</version>
+          <version>3.2.7</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
