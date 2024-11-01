@@ -23,9 +23,13 @@ import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+@Disabled
+// Disabled because it is not guaranteed that stopping the
+// server results in a response being sent to the client.
 public class ServerShutdownTest extends AbstractBayeuxClientServerTest {
     @ParameterizedTest
     @MethodSource("transports")

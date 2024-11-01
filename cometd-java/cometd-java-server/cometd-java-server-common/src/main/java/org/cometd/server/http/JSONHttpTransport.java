@@ -29,6 +29,7 @@ import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometDRequest;
 import org.cometd.server.HttpException;
 import org.cometd.server.JSONContextServer;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,7 +65,7 @@ public class JSONHttpTransport extends AbstractHttpTransport {
             reader = new CharsetReader(context, charset);
         }
         CometDRequest.Input input = request.getInput();
-        input.demand(reader::read);
+        input.demand(reader);
     }
 
     private void process(TransportContext context, String json) {
@@ -90,11 +91,12 @@ public class JSONHttpTransport extends AbstractHttpTransport {
         }
     }
 
-    private abstract class AbstractReader {
+    private abstract class AbstractReader extends Invocable.Task.Abstract {
         private final TransportContext context;
         private int total;
 
         private AbstractReader(TransportContext context) {
+            super(InvocationType.NON_BLOCKING);
             this.context = context;
         }
 
@@ -102,7 +104,8 @@ public class JSONHttpTransport extends AbstractHttpTransport {
             return context;
         }
 
-        private void read() {
+        @Override
+        public void run() {
             try {
                 onDataAvailable();
             } catch (Throwable x) {
@@ -119,7 +122,7 @@ public class JSONHttpTransport extends AbstractHttpTransport {
             while (true) {
                 CometDRequest.Input.Chunk chunk = input.read();
                 if (chunk == null) {
-                    input.demand(this::read);
+                    input.demand(this);
                     return;
                 }
                 if (LOGGER.isDebugEnabled()) {
