@@ -19,7 +19,7 @@ pipeline {
         }
         stages {
           stage('Build CometD') {
-            agent { node { label 'linux' } }
+            agent { node { label 'linux-light' } }
             steps {
               timeout(time: 1, unit: 'HOURS') {
                 mavenBuild("${env.JDK}", "clean install")
