@@ -405,11 +405,6 @@
         </executions>
       </plugin>
       <plugin>
-        <groupId>io.github.olamy.maven.plugins</groupId>
-        <artifactId>jacoco-aggregator-maven-plugin</artifactId>
-        <version>1.0.0</version>
-      </plugin>
-      <plugin>
         <groupId>com.mycila</groupId>
         <artifactId>license-maven-plugin</artifactId>
         <inherited>false</inherited>
@@ -445,6 +440,11 @@
             <phase>verify</phase>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>io.github.olamy.maven.plugins</groupId>
+        <artifactId>jacoco-aggregator-maven-plugin</artifactId>
+        <version>1.0.0</version>
       </plugin>
       <plugin>
         <groupId>org.apache.felix</groupId>
