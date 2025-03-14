@@ -52,7 +52,7 @@ def mavenBuild(jdk, cmdline) {
                "PATH+MAVEN=${env.JAVA_HOME}/bin:${tool "maven3"}/bin",
                "MAVEN_OPTS=-Xms2g -Xmx4g -Djava.awt.headless=true"]) {
         configFileProvider([configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS')]) {
-          sh "mvn -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -V -B -e $cmdline jacoco:report-aggregate-all"
+          sh "mvn -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -V -B -e $cmdline jacoco-aggregator:report-aggregate-all"
         }
       }
     }
