@@ -360,6 +360,11 @@
           <groupId>org.jacoco</groupId>
           <artifactId>jacoco-maven-plugin</artifactId>
           <version>0.8.12</version>
+          <configuration>
+            <includes>
+              <include>org/cometd/**/*</include>
+            </includes>
+          </configuration>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -435,6 +440,11 @@
             <phase>verify</phase>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>io.github.olamy.maven.plugins</groupId>
+        <artifactId>jacoco-aggregator-maven-plugin</artifactId>
+        <version>1.0.0</version>
       </plugin>
       <plugin>
         <groupId>org.apache.felix</groupId>
@@ -544,13 +554,6 @@
               <goal>prepare-agent</goal>
             </goals>
             <phase>initialize</phase>
-          </execution>
-          <execution>
-            <id>jacoco-report</id>
-            <goals>
-              <goal>report</goal>
-            </goals>
-            <phase>package</phase>
           </execution>
         </executions>
       </plugin>
