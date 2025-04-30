@@ -100,7 +100,7 @@
     <okhttp-version>4.12.0</okhttp-version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <slf4j-version>2.0.17</slf4j-version>
-    <spring-boot-version>3.4.4</spring-boot-version>
+    <spring-boot-version>3.4.5</spring-boot-version>
     <spring-version>6.2.6</spring-version>
   </properties>
 
