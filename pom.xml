@@ -76,8 +76,12 @@
   </issueManagement>
 
   <distributionManagement>
+    <repository>
+      <id>sonatype-cp</id>
+      <url>https://jetty.org</url>
+    </repository>
     <snapshotRepository>
-      <id>central</id>
+      <id>sonatype-cp</id>
       <url>https://central.sonatype.com/repository/maven-snapshots</url>
     </snapshotRepository>
   </distributionManagement>
@@ -91,6 +95,7 @@
     <!-- end::jetty-version[] -->
     <maven-compiler-plugin-version>3.14.0</maven-compiler-plugin-version>
     <maven-war-plugin-version>3.4.0</maven-war-plugin-version>
+    <njord.autoPublish>true</njord.autoPublish>
     <okhttp-version>4.12.0</okhttp-version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <slf4j-version>2.0.17</slf4j-version>
@@ -503,38 +508,14 @@
           </execution>
         </executions>
       </plugin>
-      <plugin>
-        <groupId>org.sonatype.central</groupId>
-        <artifactId>central-publishing-maven-plugin</artifactId>
-        <version>0.7.0</version>
-        <extensions>true</extensions>
-        <configuration>
-          <deploymentName>${project.groupId}:${project.artifactId}:${project.version}</deploymentName>
-          <publishingServerId>central</publishingServerId>
-          <autoPublish>false</autoPublish>
-          <waitUntil>validated</waitUntil>
-          <excludeArtifacts>
-            <excludeArtifact>cometd-documentation</excludeArtifact>
-            <excludeArtifact>cometd-java-annotation-tests</excludeArtifact>
-            <excludeArtifact>cometd-java-benchmark</excludeArtifact>
-            <excludeArtifact>cometd-java-benchmark-client</excludeArtifact>
-            <excludeArtifact>cometd-java-benchmark-common</excludeArtifact>
-            <excludeArtifact>cometd-java-benchmark-server</excludeArtifact>
-            <excludeArtifact>cometd-java-examples</excludeArtifact>
-            <excludeArtifact>cometd-java-examples-embedded</excludeArtifact>
-            <excludeArtifact>cometd-java-examples-springboot</excludeArtifact>
-            <excludeArtifact>cometd-java-client-http-tests</excludeArtifact>
-            <excludeArtifact>cometd-java-server-http-tests</excludeArtifact>
-            <excludeArtifact>cometd-java-server-websocket-tests</excludeArtifact>
-            <excludeArtifact>cometd-java-tests</excludeArtifact>
-            <excludeArtifact>cometd-java-tests-common</excludeArtifact>
-            <excludeArtifact>cometd-java-tests-oort</excludeArtifact>
-            <excludeArtifact>cometd-java-tests-spring</excludeArtifact>
-            <excludeArtifact>cometd-javascript-tests</excludeArtifact>
-          </excludeArtifacts>
-        </configuration>
-      </plugin>
     </plugins>
+    <extensions>
+      <extension>
+        <groupId>eu.maveniverse.maven.njord</groupId>
+        <artifactId>extension</artifactId>
+        <version>0.5.3</version>
+      </extension>
+    </extensions>
   </build>
 
   <profiles>
