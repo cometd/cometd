@@ -11,6 +11,14 @@ pipeline {
   stages {
     stage("CometD Builds") {
       parallel {
+        stage("Javadocs") {
+          agent { node { label "linux-light" } }
+          steps {
+            timeout(time: 15, unit: "MINUTES") {
+              mavenBuild("jdk24", "javadoc:javadoc")
+            }
+          }
+        }
         stage("Java 24") {
           agent { node { label "linux-light" } }
           steps {
@@ -52,14 +60,6 @@ pipeline {
           steps {
             timeout(time: 1, unit: "HOURS") {
               mavenBuild("jdk8", "clean install")
-            }
-          }
-        }
-        stage("Javadocs") {
-          agent { node { label "linux-light" } }
-          steps {
-            timeout(time: 15, unit: "MINUTES") {
-              mavenBuild("${env.JDK}", "javadoc:javadoc")
             }
           }
         }
