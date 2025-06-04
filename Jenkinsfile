@@ -11,6 +11,14 @@ pipeline {
   stages {
     stage("CometD Builds") {
       parallel {
+        stage("Javadocs") {
+          agent { node { label "linux-light" } }
+          steps {
+            timeout(time: 15, unit: "MINUTES") {
+              mavenBuild("jdk21", "clean compile javadoc:javadoc")
+            }
+          }
+        }
         stage("Java 21") {
           agent { node { label "linux-light" } }
           steps {
@@ -20,9 +28,6 @@ pipeline {
                       tools: [mavenConsole(), java(), checkStyle(), javaDoc()], skipPublishingChecks: true, skipBlames: true
               recordCoverage name: "Coverage", id: "coverage", tools: [[parser: "JACOCO"]], sourceCodeRetention: "LAST_BUILD",
                       sourceDirectories: [[path: "src/main/java"]]
-            }
-            timeout(time: 15, unit: "MINUTES") {
-              mavenBuild("jdk21", "clean compile javadoc:javadoc")
             }
           }
         }
