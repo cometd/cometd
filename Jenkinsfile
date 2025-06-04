@@ -11,11 +11,6 @@ pipeline {
   stages {
     stage("CometD Builds") {
       parallel {
-        stage("Javadocs") {
-          agent { node { label "linux-light" } }
-          steps {
-          }
-        }
         stage("Java 21") {
           agent { node { label "linux-light" } }
           steps {
