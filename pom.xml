@@ -96,7 +96,7 @@
     <maven-compiler-plugin-version>3.14.0</maven-compiler-plugin-version>
     <maven-war-plugin-version>3.4.0</maven-war-plugin-version>
     <njord.autoPublish>true</njord.autoPublish>
-    <njord.version>0.7.1</njord.version>
+    <njord.version>0.7.5</njord.version>
     <okhttp-version>4.12.0</okhttp-version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <slf4j-version>2.0.17</slf4j-version>
