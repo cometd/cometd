@@ -88,7 +88,7 @@
 
   <properties>
     <graalvm-version>24.2.1</graalvm-version>
-    <jackson-version>2.19.0</jackson-version>
+    <jackson-version>2.19.1</jackson-version>
     <jakarta-ee-version>10.0.0</jakarta-ee-version>
     <!-- tag::jetty-version[] -->
     <jetty-version>12.0.22</jetty-version>
