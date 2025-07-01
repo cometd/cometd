@@ -148,3 +148,31 @@ However, it will have `+Origin: https://evilbob.com+` and not the expected `+Ori
 As with the CSRF attack, the application at `cometd-chat.com` can install the cross-origin filter and configure it to allow requests only from the `cometd-chat.com` origin, effectively blocking Bob's CSWSH attack.
 
 In this case, the cross-origin filter must be installed _before_ the WebSocket upgrade mechanism takes place, or the WebSocket upgrade mechanism must have a way to test against a configured list of allowed origins and reject the WebSocket connection attempt if the origin is not allowed.
+
+[[_security_memory]]
+=== Limiting the Server Memory Usage
+
+Server-side CometD applications create a xref:concepts.adoc#_concepts_sessions[server session] for each remote client, and each server session has a message queue, where the server enqueues messages destined to that particular remote client.
+
+If the communication between the remote client and the server is faulty, for example due to network issues, the server maintains the server session around for a short period of time (configurable via the `maxInterval` parameter, see xref:java_server_configuration.adoc#_java_server_configuration_transports[this section] for more details), in case the communication can be restored.
+If the communication cannot be restored within `maxInterval`, the server expires the server session, which is discarded along with its queue of messages.
+
+During these short communication outages, messages are still enqueued in the message queue of the server sessions, but they likely cannot be sent, so the message queue continues to grow.
+If this situation happens for a large number of sessions, the server memory usage may grow beyond limits and possibly cause ``OutOfMemoryError``s or other server-wide outages.
+
+Server-side CometD applications can register a `ServerSession.QueueMaxedListener` to be notified when the server session queue size exceeds the value configured with the `maxQueue` parameter (see xref:java_server_configuration.adoc#_java_server_configuration[this section] for more details).
+
+Similarly, Server-side CometD applications that use the xref:extensions_acknowledge.adoc[acknowledgement extension] can register a `AcknowledgedMessagesExtension.Listener` to be notified when the unacknowledged message queue exceeds the value configured via `AcknowledgedMessagesExtension.setMaxQueueSize(int)`.
+
+These "queue maxed" listeners can implement different strategies to cope with the growth of the queue, for example:
+
+* Clear the queue and disconnect the server session.
+* Allow a dynamic queue size, perhaps depending on the current load, or on a particular server session, by allowing few more messages to be queued.
+* Drain the queue and save the messages in an external storage, if the messages cannot be lost.
+
+Below you can find a code example for the first case, clear and disconnect:
+
+[source,java,indent=0]
+----
+include::{doc_code}/SecurityDocs.java[tags=queueMaxed]
+----

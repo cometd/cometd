@@ -17,20 +17,32 @@
 package org.cometd.server.http;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Promise;
+import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
+import org.cometd.common.JettyJSONContextClient;
 import org.cometd.server.AbstractServerTransport;
+import org.eclipse.jetty.client.CompletableResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Request;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 public class MaxQueuedTest extends AbstractBayeuxClientServerTest {
     @ParameterizedTest
     @MethodSource("transports")
-    public void testMaxQueued(Transport transport) throws Exception {
+    public void testMaxQueuedThenServerSideRemoveSession(Transport transport) throws Exception {
         int maxQueue = 2;
         Map<String, String> options = new HashMap<>();
         options.put(AbstractServerTransport.MAX_QUEUE_OPTION, String.valueOf(maxQueue));
@@ -38,33 +50,37 @@ public class MaxQueuedTest extends AbstractBayeuxClientServerTest {
         options.put(AbstractServerTransport.META_CONNECT_DELIVERY_OPTION, String.valueOf(true));
         startServer(transport, options);
 
-        Request handshake = newBayeuxRequest("[{" +
-                                             "\"channel\": \"/meta/handshake\"," +
-                                             "\"version\": \"1.0\"," +
-                                             "\"minimumVersion\": \"1.0\"," +
-                                             "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                                             "}]");
+        Request handshake = newBayeuxRequest("""
+                [{
+                "channel": "/meta/handshake",
+                "version": "1.0",
+                "minimumVersion": "1.0",
+                "supportedConnectionTypes": ["long-polling"]
+                }]""");
         ContentResponse response = handshake.send();
         Assertions.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
-        Request connect1 = newBayeuxRequest("[{" +
-                                            "\"channel\": \"/meta/connect\"," +
-                                            "\"clientId\": \"" + clientId + "\"," +
-                                            "\"connectionType\": \"long-polling\"" +
-                                            "}]");
+        Request connect1 = newBayeuxRequest("""
+                [{
+                "channel": "/meta/connect",
+                "clientId": "%s",
+                "connectionType": "long-polling"
+                }]""".formatted(clientId));
         response = connect1.send();
         Assertions.assertEquals(200, response.getStatus());
 
         ServerSession serverSession = bayeux.getSession(clientId);
-        Assertions.assertNotNull(serverSession);
+        assertNotNull(serverSession);
 
         serverSession.addListener((ServerSession.QueueMaxedListener)(session, queue, sender, message) -> {
             // Cannot use session.disconnect(), because it will queue the
-            // disconnect message and invoke this method again, causing a loop.
+            // disconnect message and invoke this method again, because
+            // the queue has not been cleared, causing a loop.
             bayeux.removeSession(session);
-            return false;
+            // For this test, accept the overflowing message.
+            return true;
         });
 
         // Overflow the message queue.
@@ -73,6 +89,86 @@ public class MaxQueuedTest extends AbstractBayeuxClientServerTest {
         }
 
         // Session should be gone.
+        Assertions.assertNull(bayeux.getSession(clientId));
+    }
+
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testMaxQueuedThenServerSideDisconnect(Transport transport) throws Exception {
+        int maxQueue = 2;
+        Map<String, String> options = new HashMap<>();
+        options.put(AbstractServerTransport.MAX_QUEUE_OPTION, String.valueOf(maxQueue));
+        // Makes the test simpler: publishes are only sent via /meta/connect.
+        options.put(AbstractServerTransport.META_CONNECT_DELIVERY_OPTION, String.valueOf(true));
+        startServer(transport, options);
+
+        Request handshake = newBayeuxRequest("""
+                [{
+                "channel": "/meta/handshake",
+                "version": "1.0",
+                "minimumVersion": "1.0",
+                "supportedConnectionTypes": ["long-polling"]
+                }]""");
+        ContentResponse response = handshake.send();
+        Assertions.assertEquals(200, response.getStatus());
+
+        String clientId = extractClientId(response);
+
+        ServerSession serverSession = bayeux.getSession(clientId);
+        assertNotNull(serverSession);
+        CountDownLatch suspendedLatch = new CountDownLatch(1);
+        serverSession.addListener(new ServerSession.HeartBeatListener() {
+            @Override
+            public void onSuspended(ServerSession session, ServerMessage message, long timeout) {
+                suspendedLatch.countDown();
+            }
+        });
+
+        Request connect1 = newBayeuxRequest("""
+                [{
+                "channel": "/meta/connect",
+                "clientId": "%s",
+                "connectionType": "long-polling"
+                "advice": { "timeout": 0 }
+                }]""".formatted(clientId));
+        response = connect1.send();
+        Assertions.assertEquals(200, response.getStatus());
+
+        // This /meta/connect should be suspended.
+        Request connect2 = newBayeuxRequest("""
+                [{
+                "channel": "/meta/connect",
+                "clientId": "%s",
+                "connectionType": "long-polling"
+                }]""".formatted(clientId));
+        CompletableFuture<ContentResponse> response2Completable = new CompletableResponseListener(connect2).send();
+        assertTrue(suspendedLatch.await(5, TimeUnit.SECONDS));
+
+        serverSession.addListener((ServerSession.QueueMaxedListener)(session, queue, sender, message) -> {
+            // Clear to queue to allow the disconnect
+            // message to be queued without maxing.
+            queue.clear();
+            session.disconnect();
+            return false;
+        });
+
+        // Overflow the message queue in a batch,
+        // so that the suspended /meta/connect is not resumed
+        // when the first message is delivered.
+        serverSession.batch(() -> {
+            for (int i = 0; i < maxQueue + 1; ++i) {
+                serverSession.deliver(null, "/max_queue", "message_" + i, Promise.noop());
+            }
+        });
+
+        ContentResponse response2 = response2Completable.get(5, TimeUnit.SECONDS);
+        Assertions.assertEquals(200, response2.getStatus());
+
+        // Must have received the /meta/disconnect from the server.
+        List<Message.Mutable> messages = new JettyJSONContextClient().parse(response2.getContentAsString());
+        assertTrue(messages.stream().anyMatch(m -> Channel.META_DISCONNECT.equals(m.getChannel())));
+
+        // Session should be gone on server.
         Assertions.assertNull(bayeux.getSession(clientId));
     }
 }

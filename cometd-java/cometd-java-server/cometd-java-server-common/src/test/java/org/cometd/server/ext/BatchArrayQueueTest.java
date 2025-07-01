@@ -19,12 +19,15 @@ package org.cometd.server.ext;
 import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.locks.ReentrantLock;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class BatchArrayQueueTest {
     @Test
-    public void test_Offer_Next_Offer_Export_Clear() {
+    public void testOfferNextOfferExportClear() {
         BatchArrayQueue<String> queue = new BatchArrayQueue<>(16, new ReentrantLock());
 
         queue.offer("A");
@@ -36,21 +39,21 @@ public class BatchArrayQueueTest {
         Queue<String> target = new ArrayDeque<>();
         queue.exportMessagesToBatch(target, batch);
 
-        Assertions.assertEquals(1, target.size());
+        assertEquals(1, target.size());
         String targetItem = target.peek();
-        Assertions.assertNotNull(targetItem);
-        Assertions.assertTrue(targetItem.startsWith("A"));
+        assertNotNull(targetItem);
+        assertTrue(targetItem.startsWith("A"));
 
         queue.clearToBatch(batch);
 
-        Assertions.assertEquals(1, queue.size());
+        assertEquals(1, queue.size());
         String queueItem = queue.peek();
-        Assertions.assertNotNull(queueItem);
-        Assertions.assertTrue(queueItem.startsWith("B"));
+        assertNotNull(queueItem);
+        assertTrue(queueItem.startsWith("B"));
     }
 
     @Test
-    public void test_Offer_Grow_Poll_Offer() {
+    public void testOfferGrowPollOffer() {
         BatchArrayQueue<String> queue = new BatchArrayQueue<>(2, new ReentrantLock());
 
         queue.offer("A1");
@@ -63,22 +66,22 @@ public class BatchArrayQueueTest {
 
         queue.offer("B1");
 
-        Assertions.assertEquals(batch, queue.batchOf(0));
-        Assertions.assertEquals(batch, queue.batchOf(1));
-        Assertions.assertEquals(batch, queue.batchOf(2));
-        Assertions.assertEquals(nextBatch, queue.batchOf(3));
+        assertEquals(batch, queue.batchOf(0));
+        assertEquals(batch, queue.batchOf(1));
+        assertEquals(batch, queue.batchOf(2));
+        assertEquals(nextBatch, queue.batchOf(3));
 
         queue.poll();
         queue.offer("B2");
 
-        Assertions.assertEquals(batch, queue.batchOf(0));
-        Assertions.assertEquals(batch, queue.batchOf(1));
-        Assertions.assertEquals(nextBatch, queue.batchOf(2));
-        Assertions.assertEquals(nextBatch, queue.batchOf(3));
+        assertEquals(batch, queue.batchOf(0));
+        assertEquals(batch, queue.batchOf(1));
+        assertEquals(nextBatch, queue.batchOf(2));
+        assertEquals(nextBatch, queue.batchOf(3));
     }
 
     @Test
-    public void test_Offer_Grow_Next_Offer_Grow_Export_Clear() {
+    public void testOfferGrowNextOfferGrowExportClear() {
         BatchArrayQueue<String> queue = new BatchArrayQueue<>(2, new ReentrantLock());
 
         queue.offer("A1");
@@ -94,15 +97,34 @@ public class BatchArrayQueueTest {
         Queue<String> target = new ArrayDeque<>();
         queue.exportMessagesToBatch(target, batch);
 
-        Assertions.assertEquals(3, target.size());
+        assertEquals(3, target.size());
         for (String element : target) {
-            Assertions.assertTrue(element.startsWith("A"));
+            assertTrue(element.startsWith("A"));
         }
 
         queue.clearToBatch(batch);
 
         for (String element : queue) {
-            Assertions.assertTrue(element.startsWith("B"));
+            assertTrue(element.startsWith("B"));
         }
+    }
+
+    @Test
+    public void testOfferNextOfferClearToCurrent() {
+        BatchArrayQueue<String> queue = new BatchArrayQueue<>(16, new ReentrantLock());
+
+        queue.offer("A");
+        queue.nextBatch();
+        queue.offer("B");
+        long batch = queue.getBatch();
+        queue.clearToBatch(batch);
+        assertEquals(0, queue.size());
+        assertEquals(batch, queue.getBatch());
+
+        queue.nextBatch();
+        queue.offer("C");
+        queue.clear();
+        assertEquals(0, queue.size());
+        assertEquals(1, queue.getBatch());
     }
 }

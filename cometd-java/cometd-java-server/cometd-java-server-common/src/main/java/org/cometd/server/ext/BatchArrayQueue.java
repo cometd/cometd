@@ -401,6 +401,36 @@ public class BatchArrayQueue<T> implements Queue<T> {
         }
     }
 
+    /**
+     * <p>Copies the elements of this queue into the given queue,
+     * up to the given batch number.</p>
+     * <p>For example, given:</p>
+     * <pre>{@code
+     * this queue:
+     *           head             tail
+     *             |               |
+     * elements: [E1, E2, E3, E4, E5]
+     * batches : [ 1,  1,  2,  3,  3]
+     *
+     * target queue: []
+     * }</pre>
+     * <p>then calling {@code exportMessagesToBatch(2)} would copy
+     * the elements belonging to batches up to {@code 2} into the
+     * target queue, leaving this queue unchanged:</p>
+     * <pre>{@code
+     * this queue:
+     *           head             tail
+     *             |               |
+     * elements: [E1, E2, E3, E4, E5]
+     * batches : [ 1,  1,  2,  3,  3]
+     *
+     * target queue: [E1, E2, E3]
+     * }</pre>
+     *
+     * @param target the target queue
+     * @param batch  the batch number
+     * @see #clearToBatch(long)
+     */
     public void exportMessagesToBatch(Queue<T> target, long batch) {
         lock.lock();
         try {

@@ -18,6 +18,7 @@ package org.cometd.server.ext;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -39,6 +40,7 @@ import org.slf4j.LoggerFactory;
 public class AcknowledgedMessagesExtension implements Extension {
     private final Logger _logger = LoggerFactory.getLogger(getClass().getName());
     private final List<Listener> _listeners = new CopyOnWriteArrayList<>();
+    private int _maxQueueSize = -1;
 
     public void addListener(Listener listener) {
         _listeners.add(listener);
@@ -46,6 +48,14 @@ public class AcknowledgedMessagesExtension implements Extension {
 
     public void removeListener(Listener listener) {
         _listeners.remove(listener);
+    }
+
+    public int getMaxQueueSize() {
+        return _maxQueueSize;
+    }
+
+    public void setMaxQueueSize(int maxQueueSize) {
+        _maxQueueSize = maxQueueSize;
     }
 
     @Override
@@ -61,6 +71,7 @@ public class AcknowledgedMessagesExtension implements Extension {
 
                 AcknowledgedMessagesSessionExtension extension = newSessionExtension(remote);
                 extension.addListeners(_listeners);
+                extension.setMaxQueueSize(getMaxQueueSize());
 
                 // Make sure that adding the extension and importing the queue is atomic.
                 ServerSessionImpl session = (ServerSessionImpl)remote;
@@ -108,6 +119,16 @@ public class AcknowledgedMessagesExtension implements Extension {
          * @param batch   the batch number
          */
         default void onBatchReceive(ServerSession session, long batch) {
+        }
+
+        /**
+         * <p>Callback method invoked when the unacknowledged message queue
+         * size exceeds the value returned by {@link #getMaxQueueSize()}.</p>
+         *
+         * @param session the session
+         * @param queue   the unacknowledged message queue
+         */
+        default void onBatchQueueMaxed(ServerSession session, Queue<ServerMessage> queue) {
         }
     }
 }
