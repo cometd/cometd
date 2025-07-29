@@ -95,6 +95,7 @@ public class CometDLoadServer {
     private boolean tls = false;
     private int selectors = Runtime.getRuntime().availableProcessors();
     private int maxThreads = 256;
+    private int reservedThreads = -1;
     private String transport = "jakarta";
     private boolean perMessageDeflate = false;
     private boolean statistics = true;
@@ -119,6 +120,8 @@ public class CometDLoadServer {
                 server.tls = true;
             } else if (arg.startsWith("--selectors=")) {
                 server.selectors = Integer.parseInt(arg.substring("--selectors=".length()));
+            } else if (arg.startsWith("--reservedThreads=")) {
+                server.reservedThreads = Integer.parseInt(arg.substring("--reservedThreads=".length()));
             } else if (arg.startsWith("--maxThreads=")) {
                 server.maxThreads = Integer.parseInt(arg.substring("--maxThreads=".length()));
             } else if (arg.startsWith("--transports=")) {
@@ -180,6 +183,17 @@ public class CometDLoadServer {
         }
         jettyThreadPool.setMaxThreads(maxThreads);
         cometdThreadPool.setMaxThreads(maxThreads);
+
+        int reservedThreads = this.reservedThreads;
+        if (interactive) {
+            System.err.printf("reserved threads [%d]: ", reservedThreads);
+            String value = console.readLine().trim();
+            if (value.isEmpty()) {
+                value = String.valueOf(reservedThreads);
+            }
+            reservedThreads = Integer.parseInt(value);
+        }
+        jettyThreadPool.setReservedThreads(reservedThreads);
         // The BayeuxServer executor uses PEC mode only.
         cometdThreadPool.setReservedThreads(0);
 
