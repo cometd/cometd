@@ -77,14 +77,12 @@
 
   <distributionManagement>
     <repository>
-      <id>oss.sonatype.org</id>
-      <name>CometD Maven2 Repository</name>
-      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>
+      <id>sonatype-cp</id>
+      <url>https://repo.maven.apache.org/maven2</url>
     </repository>
     <snapshotRepository>
-      <id>oss.sonatype.org</id>
-      <name>CometD Maven2 Snapshot Repository</name>
-      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+      <id>sonatype-cp</id>
+      <url>https://central.sonatype.com/repository/maven-snapshots</url>
     </snapshotRepository>
   </distributionManagement>
 
@@ -96,6 +94,8 @@
     <jetty-version>10.0.25</jetty-version>
     <!-- end::jetty-version[] -->
     <log4j2-version>2.25.1</log4j2-version>
+    <njord.autoPublish>true</njord.autoPublish>
+    <njord.version>0.8.3</njord.version>
     <okhttp-version>4.12.0</okhttp-version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <slf4j-version>2.0.17</slf4j-version>
@@ -182,51 +182,6 @@
     </dependencies>
   </dependencyManagement>
 
-  <repositories>
-    <repository>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-      <id>jetty-snapshot</id>
-      <url>https://oss.sonatype.org/content/repositories/jetty-snapshots</url>
-    </repository>
-    <repository>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-      <id>jetty-staging</id>
-      <url>https://oss.sonatype.org/content/groups/jetty-with-staging</url>
-    </repository>
-  </repositories>
-  <pluginRepositories>
-    <pluginRepository>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-      <id>jetty-snapshot</id>
-      <url>https://oss.sonatype.org/content/repositories/jetty-snapshots</url>
-    </pluginRepository>
-    <pluginRepository>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-      <id>jetty-staging</id>
-      <url>https://oss.sonatype.org/content/groups/jetty-with-staging</url>
-    </pluginRepository>
-  </pluginRepositories>
-
   <build>
     <defaultGoal>install</defaultGoal>
     <pluginManagement>
@@ -240,6 +195,11 @@
           <groupId>com.mycila</groupId>
           <artifactId>license-maven-plugin</artifactId>
           <version>5.0.0</version>
+        </plugin>
+        <plugin>
+          <groupId>eu.maveniverse.maven.plugins</groupId>
+          <artifactId>njord</artifactId>
+          <version>${njord.version}</version>
         </plugin>
         <plugin>
           <groupId>org.apache.felix</groupId>
@@ -572,6 +532,13 @@
         </executions>
       </plugin>
     </plugins>
+    <extensions>
+      <extension>
+        <groupId>eu.maveniverse.maven.njord</groupId>
+        <artifactId>extension3</artifactId>
+        <version>${njord.version}</version>
+      </extension>
+    </extensions>
   </build>
 
   <profiles>
