@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.cometd.java</groupId>
     <artifactId>cometd-java-benchmark</artifactId>
     <version>5.0.22-SNAPSHOT</version>
   </parent>
-
-  <modelVersion>4.0.0</modelVersion>
   <artifactId>cometd-java-benchmark-client</artifactId>
   <name>CometD :: Java :: Benchmark :: Client</name>
 
@@ -14,16 +14,120 @@
     <mainClass>org.cometd.benchmark.client.CometDLoadClient</mainClass>
   </properties>
 
+  <dependencies>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>${jackson-version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.cometd.java</groupId>
+      <artifactId>cometd-java-api-client</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.cometd.java</groupId>
+      <artifactId>cometd-java-benchmark-common</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.cometd.java</groupId>
+      <artifactId>cometd-java-client-http-jetty</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.cometd.java</groupId>
+      <artifactId>cometd-java-client-websocket-javax</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.cometd.java</groupId>
+      <artifactId>cometd-java-client-websocket-jetty</artifactId>
+      <version>${project.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.eclipse.jetty.websocket</groupId>
+          <artifactId>websocket-client</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-alpn-client</artifactId>
+      <version>${jetty-version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-alpn-java-client</artifactId>
+      <version>${jetty-version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-client</artifactId>
+      <version>${jetty-version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-http</artifactId>
+      <version>${jetty-version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-io</artifactId>
+      <version>${jetty-version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-jmx</artifactId>
+      <version>${jetty-version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-util</artifactId>
+      <version>${jetty-version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-util-ajax</artifactId>
+      <version>${jetty-version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.http2</groupId>
+      <artifactId>http2-http-client-transport</artifactId>
+      <version>${jetty-version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.websocket</groupId>
+      <artifactId>javax-websocket-client-impl</artifactId>
+      <version>${jetty-version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.websocket</groupId>
+      <artifactId>websocket-api</artifactId>
+      <version>${jetty-version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-slf4j2-impl</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+  </dependencies>
+
   <build>
     <plugins>
       <plugin>
         <artifactId>maven-shade-plugin</artifactId>
         <executions>
           <execution>
-            <phase>package</phase>
             <goals>
               <goal>shade</goal>
             </goals>
+            <phase>package</phase>
             <configuration>
               <createDependencyReducedPom>false</createDependencyReducedPom>
               <shadedArtifactAttached>true</shadedArtifactAttached>
@@ -57,108 +161,4 @@
       </plugin>
     </plugins>
   </build>
-
-  <dependencies>
-    <dependency>
-      <groupId>org.cometd.java</groupId>
-      <artifactId>cometd-java-api-client</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.cometd.java</groupId>
-      <artifactId>cometd-java-client-http-jetty</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.cometd.java</groupId>
-      <artifactId>cometd-java-benchmark-common</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.cometd.java</groupId>
-      <artifactId>cometd-java-client-websocket-javax</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.cometd.java</groupId>
-      <artifactId>cometd-java-client-websocket-jetty</artifactId>
-      <version>${project.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.eclipse.jetty.websocket</groupId>
-          <artifactId>websocket-client</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-client</artifactId>
-      <version>${jetty-version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.http2</groupId>
-      <artifactId>http2-http-client-transport</artifactId>
-      <version>${jetty-version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-alpn-client</artifactId>
-      <version>${jetty-version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-alpn-java-client</artifactId>
-      <version>${jetty-version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-http</artifactId>
-      <version>${jetty-version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-io</artifactId>
-      <version>${jetty-version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-jmx</artifactId>
-      <version>${jetty-version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-util</artifactId>
-      <version>${jetty-version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-util-ajax</artifactId>
-      <version>${jetty-version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>javax-websocket-client-impl</artifactId>
-      <version>${jetty-version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>websocket-api</artifactId>
-      <version>${jetty-version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-databind</artifactId>
-      <version>${jackson-version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-core</artifactId>
-      <scope>runtime</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-slf4j2-impl</artifactId>
-      <scope>runtime</scope>
-    </dependency>
-  </dependencies>
 </project>

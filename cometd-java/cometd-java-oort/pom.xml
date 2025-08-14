@@ -1,30 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.cometd.java</groupId>
     <artifactId>cometd-java</artifactId>
     <version>5.0.22-SNAPSHOT</version>
   </parent>
-
-  <modelVersion>4.0.0</modelVersion>
   <artifactId>cometd-java-oort</artifactId>
   <packaging>jar</packaging>
   <name>CometD :: Java :: Oort</name>
-
-  <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-jar-plugin</artifactId>
-        <configuration>
-          <archive>
-            <manifestEntries>
-              <Automatic-Module-Name>org.cometd.oort</Automatic-Module-Name>
-            </manifestEntries>
-          </archive>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
 
   <dependencies>
     <dependency>
@@ -32,14 +17,12 @@
       <artifactId>javax.servlet-api</artifactId>
     </dependency>
     <dependency>
-      <groupId>javax.websocket</groupId>
-      <artifactId>javax.websocket-client-api</artifactId>
-      <scope>provided</scope>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.cometd.java</groupId>
-      <artifactId>cometd-java-server-common</artifactId>
-      <version>${project.version}</version>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-slf4j2-impl</artifactId>
     </dependency>
     <dependency>
       <groupId>org.cometd.java</groupId>
@@ -58,14 +41,15 @@
       </exclusions>
     </dependency>
     <dependency>
+      <groupId>org.cometd.java</groupId>
+      <artifactId>cometd-java-server-common</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jmx</artifactId>
       <version>${jetty-version}</version>
       <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
     </dependency>
 
     <dependency>
@@ -73,28 +57,23 @@
       <artifactId>junit-jupiter</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-core</artifactId>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-slf4j2-impl</artifactId>
+      <groupId>javax.websocket</groupId>
+      <artifactId>javax.websocket-client-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>${jackson-version}</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.cometd.java</groupId>
       <artifactId>cometd-java-annotation-server</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.cometd.java</groupId>
-      <artifactId>cometd-java-server-websocket-javax</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.cometd.java</groupId>
-      <artifactId>cometd-java-server-websocket-jetty</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
@@ -107,6 +86,18 @@
     <dependency>
       <groupId>org.cometd.java</groupId>
       <artifactId>cometd-java-client-websocket-okhttp</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.cometd.java</groupId>
+      <artifactId>cometd-java-server-websocket-javax</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.cometd.java</groupId>
+      <artifactId>cometd-java-server-websocket-jetty</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
@@ -134,11 +125,20 @@
       <version>${jetty-version}</version>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-databind</artifactId>
-      <version>${jackson-version}</version>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifestEntries>
+              <Automatic-Module-Name>org.cometd.oort</Automatic-Module-Name>
+            </manifestEntries>
+          </archive>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>

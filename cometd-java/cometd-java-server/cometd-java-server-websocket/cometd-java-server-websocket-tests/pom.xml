@@ -1,20 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.cometd.java</groupId>
     <artifactId>cometd-java-server-websocket</artifactId>
     <version>5.0.22-SNAPSHOT</version>
   </parent>
-
-  <modelVersion>4.0.0</modelVersion>
   <artifactId>cometd-java-server-websocket-tests</artifactId>
   <name>CometD :: Java :: Server :: WebSocket :: Tests</name>
 
   <dependencies>
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter</artifactId>
-    </dependency>
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-core</artifactId>
@@ -22,6 +18,10 @@
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-slf4j2-impl</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
     </dependency>
     <dependency>
       <groupId>javax.servlet</groupId>
@@ -95,6 +95,12 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
+      <artifactId>javax-websocket-server-impl</artifactId>
+      <version>${jetty-version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>websocket-client</artifactId>
       <version>${jetty-version}</version>
       <scope>test</scope>
@@ -102,12 +108,6 @@
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>websocket-server</artifactId>
-      <version>${jetty-version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>javax-websocket-server-impl</artifactId>
       <version>${jetty-version}</version>
       <scope>test</scope>
     </dependency>
