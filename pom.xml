@@ -86,12 +86,12 @@
 
   <properties>
     <dojo-version>1.17.3</dojo-version>
-    <!-- end::jetty-version[] -->
     <!-- Last GraalVM version to support Java 8 -->
     <graalvm-version>21.3.2.1</graalvm-version>
     <jackson-version>2.19.2</jackson-version>
     <!-- tag::jetty-version[] -->
-    <jetty-version>9.4.57.v20241219</jetty-version>
+    <jetty-version>9.4.58.v20250814</jetty-version>
+    <!-- end::jetty-version[] -->
     <log4j2-version>2.25.1</log4j2-version>
     <njord.autoPublish>true</njord.autoPublish>
     <njord.version>0.7.5</njord.version>
@@ -194,6 +194,7 @@
         <plugin>
           <groupId>com.diffplug.spotless</groupId>
           <artifactId>spotless-maven-plugin</artifactId>
+          <!-- Last version to support Java 8 -->
           <version>2.30.0</version>
         </plugin>
         <plugin>
