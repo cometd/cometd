@@ -91,7 +91,7 @@
     <graalvm-version>22.3.5</graalvm-version>
     <jackson-version>2.19.2</jackson-version>
     <!-- tag::jetty-version[] -->
-    <jetty-version>11.0.25</jetty-version>
+    <jetty-version>11.0.26</jetty-version>
     <!-- end::jetty-version[] -->
     <log4j2-version>2.25.1</log4j2-version>
     <njord.autoPublish>true</njord.autoPublish>
@@ -108,13 +108,14 @@
       <dependency>
         <groupId>com.google.javascript</groupId>
         <artifactId>closure-compiler</artifactId>
-        <version>v20250706</version>
+        <!-- Last version to support Java 11 -->
+        <version>v20240317</version>
       </dependency>
       <dependency>
         <groupId>jakarta.annotation</groupId>
         <artifactId>jakarta.annotation-api</artifactId>
         <!-- Must stay at 2.0.x for Jakarta EE 9 -->
-        <version>2.1.1</version>
+        <version>2.0.0</version>
       </dependency>
       <dependency>
         <groupId>jakarta.inject</groupId>
