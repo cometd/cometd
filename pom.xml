@@ -108,7 +108,8 @@
       <dependency>
         <groupId>com.google.javascript</groupId>
         <artifactId>closure-compiler</artifactId>
-        <version>v20250706</version>
+        <!-- Last version to support Java 11 -->
+        <version>v20240317</version>
       </dependency>
       <dependency>
         <groupId>com.jwebmp</groupId>
