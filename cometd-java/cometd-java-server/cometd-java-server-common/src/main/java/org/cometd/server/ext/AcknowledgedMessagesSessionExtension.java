@@ -43,6 +43,7 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
     private final ServerSessionImpl _session;
     private final BatchArrayQueue<ServerMessage> _queue;
     private long _lastBatch;
+    private int _maxQueueSize;
 
     public AcknowledgedMessagesSessionExtension(ServerSession session) {
         _session = (ServerSessionImpl)session;
@@ -61,6 +62,14 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
 
     public void removeListener(AcknowledgedMessagesExtension.Listener listener) {
         _listeners.remove(listener);
+    }
+
+    public int getMaxQueueSize() {
+        return _maxQueueSize;
+    }
+
+    public void setMaxQueueSize(int maxQueueSize) {
+        _maxQueueSize = maxQueueSize;
     }
 
     @Override
@@ -124,6 +133,10 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
             if (_logger.isDebugEnabled()) {
                 _logger.debug("Stored at batch {} {} for {}", _queue.getBatch(), message, _session);
             }
+            int maxQueueSize = getMaxQueueSize();
+            if (maxQueueSize > 0 && _queue.size() > maxQueueSize) {
+                notifyBatchQueueMaxed(_session, _queue);
+            }
         }
     }
 
@@ -174,8 +187,8 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
             }
         }
         if (reply != null) {
-            long batch = _batches.remove(reply.getId());
             synchronized (_session.getLock()) {
+                long batch = _batches.remove(reply.getId());
                 if (_logger.isDebugEnabled()) {
                     _logger.debug("Dequeuing {}/{} messages until batch {} for {} on {}", queue.size(), _queue.size(), batch, reply, _session);
                 }
@@ -205,7 +218,7 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
             try {
                 listener.onBatchSend(session, messages, batch);
             } catch (Throwable x) {
-                _logger.info("Exception while invoking listener " + listener, x);
+                _logger.info("Exception while invoking listener {}", listener, x);
             }
         }
     }
@@ -215,7 +228,17 @@ public class AcknowledgedMessagesSessionExtension implements Extension, ServerSe
             try {
                 listener.onBatchReceive(session, batch);
             } catch (Throwable x) {
-                _logger.info("Exception while invoking listener " + listener, x);
+                _logger.info("Exception while invoking listener {}", listener, x);
+            }
+        }
+    }
+
+    private void notifyBatchQueueMaxed(ServerSession session, Queue<ServerMessage> queue) {
+        for (AcknowledgedMessagesExtension.Listener listener : _listeners) {
+            try {
+                listener.onBatchQueueMaxed(session, queue);
+            } catch (Throwable x) {
+                _logger.info("Exception while invoking listener {}", listener, x);
             }
         }
     }
