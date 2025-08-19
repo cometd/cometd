@@ -138,11 +138,12 @@ public class WebAppTest {
         Path convertorPath = classes.resolve(convertorClass);
         Files.copy(testClasses.resolve(convertorClass), convertorPath);
 
-        // Setup the server classpath, so that it does not conflict with the test classpath,
+        // Set up the server classpath, so that it does not conflict with the test classpath,
         // which has all dependencies that may confuse with the server (e.g. ServiceLoader).
         Collection<URL> serverClassPath = new HashSet<>();
         addServerDependency(javax.servlet.Servlet.class, serverClassPath);
         addServerDependency(javax.websocket.Session.class, serverClassPath);
+        addServerDependency(javax.websocket.server.ServerContainer.class, serverClassPath);
         addServerDependency(javax.annotation.Resources.class, serverClassPath);
         addServerDependency(javax.annotation.security.RunAs.class, serverClassPath);
         addServerDependency(org.eclipse.jetty.annotations.AnnotationConfiguration.class, serverClassPath);
