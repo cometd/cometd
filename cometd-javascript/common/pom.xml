@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.cometd.javascript</groupId>
     <artifactId>cometd-javascript</artifactId>
-    <version>5.0.23</version>
+    <version>5.0.24-SNAPSHOT</version>
   </parent>
   <artifactId>cometd-javascript-common</artifactId>
   <packaging>war</packaging>
