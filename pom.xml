@@ -85,6 +85,8 @@
   </distributionManagement>
 
   <properties>
+    <!-- javadoc option only useful for Maven site build and slow down build -->
+    <detectOfflineLinks>false</detectOfflineLinks>
     <dojo-version>1.17.3</dojo-version>
     <!-- Last GraalVM version to support Java 8 -->
     <graalvm-version>21.3.2.1</graalvm-version>
