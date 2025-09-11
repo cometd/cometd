@@ -95,7 +95,7 @@
     <!-- end::jetty-version[] -->
     <log4j2-version>2.25.1</log4j2-version>
     <njord.autoPublish>true</njord.autoPublish>
-    <njord.version>0.8.3</njord.version>
+    <njord.version>0.8.4</njord.version>
     <okhttp-version>4.12.0</okhttp-version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <slf4j-version>2.0.17</slf4j-version>
