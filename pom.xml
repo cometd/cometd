@@ -87,6 +87,7 @@
   </distributionManagement>
 
   <properties>
+    <detectOfflineLinks>false</detectOfflineLinks>
     <dojo-version>1.17.3</dojo-version>
     <graalvm-version>22.3.5</graalvm-version>
     <jackson-version>2.20.0</jackson-version>
