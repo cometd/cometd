@@ -95,7 +95,7 @@
     <jetty-version>12.0.28</jetty-version>
     <!-- end::jetty-version[] -->
     <maven-compiler-plugin-version>3.14.1</maven-compiler-plugin-version>
-    <maven-war-plugin-version>3.4.0</maven-war-plugin-version>
+    <maven-war-plugin-version>3.5.1</maven-war-plugin-version>
     <njord.autoPublish>true</njord.autoPublish>
     <njord.version>0.8.4</njord.version>
     <okhttp-version>5.2.1</okhttp-version>
