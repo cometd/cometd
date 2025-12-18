@@ -22,12 +22,12 @@ import {Extension} from "./Extension.js";
  * therefore resuming the existing CometD connection.
  *
  * When the reload() method is called, the state of the CometD
- * connection is stored in the window.sessionStorage object.
+ * connection is stored in the globalThis.sessionStorage object.
  * The reload() method must therefore be called by page unload
  * handlers, often provided by JavaScript toolkits.
  *
  * When the page is (re)loaded, this extension checks the
- * window.sessionStorage and restores the CometD connection,
+ * globalThis.sessionStorage and restores the CometD connection,
  * maintaining the same CometD clientId.
  */
 export class ReloadExtension extends Extension {
@@ -51,7 +51,7 @@ export class ReloadExtension extends Extension {
             this.configure(config);
             const state = JSON.stringify(this.#state);
             this.cometd._debug("Reload extension saving state", state);
-            window.sessionStorage.setItem(this.#name, state);
+            globalThis.sessionStorage.setItem(this.#name, state);
         }
     }
 
@@ -94,7 +94,7 @@ export class ReloadExtension extends Extension {
                     url: this.cometd.getURL()
                 };
 
-                const state = window.sessionStorage.getItem(this.#name);
+                const state = globalThis.sessionStorage.getItem(this.#name);
                 this.cometd._debug("Reload extension found state", state);
                 // Is there a saved handshake response from a prior load?
                 if (state) {
@@ -102,7 +102,7 @@ export class ReloadExtension extends Extension {
                         const oldState = JSON.parse(state);
 
                         // Remove the state, not needed anymore.
-                        window.sessionStorage.removeItem(this.#name);
+                        globalThis.sessionStorage.removeItem(this.#name);
 
                         if (oldState.handshakeResponse && this.#similarState(oldState)) {
                             this.cometd._debug("Reload extension restoring state", oldState);

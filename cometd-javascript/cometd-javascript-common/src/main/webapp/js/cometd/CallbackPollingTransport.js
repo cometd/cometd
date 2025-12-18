@@ -24,13 +24,13 @@ export class CallbackPollingTransport extends RequestTransport {
     }
 
     jsonpSend(packet) {
-        const head = window.document.getElementsByTagName("head")[0];
-        const script = window.document.createElement("script");
+        const head = globalThis.document.getElementsByTagName("head")[0];
+        const script = globalThis.document.createElement("script");
 
         const callbackName = "_cometd_jsonp_" + this.#jsonp++;
-        window[callbackName] = (responseText) => {
+        globalThis[callbackName] = (responseText) => {
             head.removeChild(script);
-            delete window[callbackName];
+            delete globalThis[callbackName];
             packet.onSuccess(responseText);
         };
 

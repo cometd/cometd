@@ -249,7 +249,7 @@ export class RequestTransport extends Transport {
             try {
                 const state = xhr.readyState;
                 xhr.abort();
-                return state !== window.XMLHttpRequest.UNSENT;
+                return state !== globalThis.XMLHttpRequest.UNSENT;
             } catch (x) {
                 this.debug(x);
             }

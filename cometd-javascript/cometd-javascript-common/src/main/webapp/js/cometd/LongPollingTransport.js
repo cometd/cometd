@@ -25,7 +25,7 @@ export class LongPollingTransport extends RequestTransport {
     }
 
     #newXMLHttpRequest() {
-        return new window.XMLHttpRequest();
+        return new globalThis.XMLHttpRequest();
     }
 
     #copyContext(xhr) {
