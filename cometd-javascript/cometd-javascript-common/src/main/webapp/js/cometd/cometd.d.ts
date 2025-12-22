@@ -66,6 +66,7 @@ export type LogLevel = "warn" | "info" | "debug";
 export interface Configuration {
     url: string;
     logLevel?: LogLevel;
+    logger?: (level: LogLevel, arguments: string[]) => void;
     useWorkerScheduler?: boolean;
     protocol?: string;
     stickyReconnect?: boolean;

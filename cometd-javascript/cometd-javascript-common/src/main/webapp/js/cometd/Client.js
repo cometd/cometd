@@ -114,6 +114,7 @@ export class CometD {
         backoffIncrement: 1000,
         maxBackoff: 60000,
         logLevel: "info",
+        logger: null,
         maxNetworkDelay: 10000,
         requestHeaders: {},
         appendMessageTypeToURL: true,
@@ -277,7 +278,9 @@ export class CometD {
     }
 
     #log(level, args) {
-        if (window.console) {
+        if (this.#config.logger) {
+            this.#config.logger(level, args)
+        } else if (window.console) {
             const logger = window.console[level];
             if (CometD.#isFunction(logger)) {
                 const now = new Date();
