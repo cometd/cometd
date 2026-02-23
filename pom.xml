@@ -89,7 +89,7 @@
   <properties>
     <detectOfflineLinks>false</detectOfflineLinks>
     <graalvm-version>25.0.1</graalvm-version>
-    <jackson-version>2.20.1</jackson-version>
+    <jackson-version>2.21.1</jackson-version>
     <jakarta-ee-version>10.0.0</jakarta-ee-version>
     <!-- tag::jetty-version[] -->
     <jetty-version>12.0.31</jetty-version>
