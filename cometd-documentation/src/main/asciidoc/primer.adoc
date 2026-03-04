@@ -45,12 +45,12 @@ Choose a number:
 As you can see, there are archetypes available that build a skeleton application using plain ES6 or using http://jquery.com[jQuery], both with the choice of using Jetty and/or Spring.
 Choose ES6 with Jetty, which in the example above is archetype number `1` (it may have a different number for you).
 
-Next, you have to choose the version of the archetype you want to use, typically the last version of the 8.0.x series:
+Next, you have to choose the version of the archetype you want to use, typically the last version of the 9.0.x series:
 
 ----
 Choose org.cometd.archetypes:cometd-archetype-es6-jetty12 version:
 ...
-3: 8.0.0
+3: 9.0.0
 ...
 ----
 
