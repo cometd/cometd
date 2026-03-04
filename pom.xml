@@ -175,7 +175,7 @@
   <repositories>
     <repository>
       <id>staging</id>
-      <url>http://localhost:8081/repository/release-staging/</url>
+      <url>https://repository.webtide.net/repository/release-staging/</url>
     </repository>
   </repositories>
 
