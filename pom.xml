@@ -172,13 +172,6 @@
     </dependency>
   </dependencies>
 
-  <repositories>
-    <repository>
-      <id>staging</id>
-      <url>https://repository.webtide.net/repository/release-staging/</url>
-    </repository>
-  </repositories>
-
   <build>
     <defaultGoal>install</defaultGoal>
     <pluginManagement>
