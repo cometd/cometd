@@ -89,7 +89,7 @@
   <properties>
     <detectOfflineLinks>false</detectOfflineLinks>
     <graalvm-version>25.0.2</graalvm-version>
-    <jackson-version>2.21.1</jackson-version>
+    <jackson-version>2.21.2</jackson-version>
     <jakarta-ee-version>10.0.0</jakarta-ee-version>
     <!-- tag::jetty-version[] -->
     <jetty-version>12.0.33</jetty-version>
@@ -101,8 +101,8 @@
     <okhttp-version>5.3.2</okhttp-version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <slf4j-version>2.0.17</slf4j-version>
-    <spring-boot-version>3.5.11</spring-boot-version>
-    <spring-version>6.2.16</spring-version>
+    <spring-boot-version>3.5.13</spring-boot-version>
+    <spring-version>6.2.17</spring-version>
   </properties>
 
   <dependencyManagement>
@@ -179,7 +179,7 @@
         <plugin>
           <groupId>com.diffplug.spotless</groupId>
           <artifactId>spotless-maven-plugin</artifactId>
-          <version>3.3.0</version>
+          <version>3.4.0</version>
         </plugin>
         <plugin>
           <groupId>com.mycila</groupId>
@@ -267,7 +267,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-resources-plugin</artifactId>
-          <version>3.4.0</version>
+          <version>3.5.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -277,7 +277,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
-          <version>3.6.1</version>
+          <version>3.6.2</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
