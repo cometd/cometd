@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.cometd.javascript</groupId>
     <artifactId>cometd-javascript</artifactId>
-    <version>9.0.1</version>
+    <version>9.0.2-SNAPSHOT</version>
   </parent>
   <artifactId>cometd-javascript-examples</artifactId>
   <packaging>pom</packaging>
