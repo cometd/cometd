@@ -88,21 +88,21 @@
 
   <properties>
     <detectOfflineLinks>false</detectOfflineLinks>
-    <graalvm-version>25.0.2</graalvm-version>
-    <jackson-version>2.21.2</jackson-version>
+    <graalvm-version>25.0.3</graalvm-version>
+    <jackson-version>2.22.0</jackson-version>
     <jakarta-ee-version>10.0.0</jakarta-ee-version>
     <!-- tag::jetty-version[] -->
-    <jetty-version>12.0.33</jetty-version>
+    <jetty-version>12.0.36</jetty-version>
     <!-- end::jetty-version[] -->
     <maven-compiler-plugin-version>3.15.0</maven-compiler-plugin-version>
     <maven-war-plugin-version>3.5.1</maven-war-plugin-version>
     <njord.autoPublish>true</njord.autoPublish>
-    <njord.version>0.9.4</njord.version>
-    <okhttp-version>5.3.2</okhttp-version>
+    <njord.version>0.9.7</njord.version>
+    <okhttp-version>5.4.0</okhttp-version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <slf4j-version>2.0.17</slf4j-version>
-    <spring-boot-version>3.5.13</spring-boot-version>
-    <spring-version>6.2.17</spring-version>
+    <slf4j-version>2.0.18</slf4j-version>
+    <spring-boot-version>3.5.14</spring-boot-version>
+    <spring-version>6.2.19</spring-version>
   </properties>
 
   <dependencyManagement>
@@ -145,7 +145,7 @@
       <dependency>
         <groupId>org.junit.jupiter</groupId>
         <artifactId>junit-jupiter</artifactId>
-        <version>6.0.3</version>
+        <version>6.1.0</version>
         <scope>test</scope>
       </dependency>
       <dependency>
@@ -179,7 +179,7 @@
         <plugin>
           <groupId>com.diffplug.spotless</groupId>
           <artifactId>spotless-maven-plugin</artifactId>
-          <version>3.4.0</version>
+          <version>3.6.0</version>
         </plugin>
         <plugin>
           <groupId>com.mycila</groupId>
@@ -224,7 +224,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-dependency-plugin</artifactId>
-          <version>3.10.0</version>
+          <version>3.11.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -237,7 +237,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-enforcer-plugin</artifactId>
-          <version>3.6.2</version>
+          <version>3.6.3</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -282,7 +282,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-site-plugin</artifactId>
-          <version>3.21.0</version>
+          <version>3.22.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -292,7 +292,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>3.5.5</version>
+          <version>3.5.6</version>
           <configuration>
             <argLine>@{argLine} -showversion -Xmx1g -Xms1g -Xlog:gc* -XX:+PrintCommandLineFlags</argLine>
           </configuration>
@@ -320,7 +320,7 @@
         <plugin>
           <groupId>org.jacoco</groupId>
           <artifactId>jacoco-maven-plugin</artifactId>
-          <version>0.8.14</version>
+          <version>0.8.15</version>
         </plugin>
       </plugins>
     </pluginManagement>
