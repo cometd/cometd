@@ -75,6 +75,7 @@ export interface Configuration {
     backoffIncrement?: number;
     maxBackoff?: number;
     maxNetworkDelay?: number;
+    rearmNetworkDelayAfterMessage?: boolean;
     requestHeaders?: object;
     appendMessageTypeToURL?: boolean;
     autoBatch?: boolean;

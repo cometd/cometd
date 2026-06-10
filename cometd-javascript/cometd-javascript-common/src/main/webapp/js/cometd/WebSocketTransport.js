@@ -190,11 +190,27 @@ export class WebSocketTransport extends Transport {
         this.debug("Transport", this.type, "configured callbacks on", context);
     }
 
+    #createRearmableTimeout(handler, delay) {
+        let timeout = { };
+        timeout.clear = () => {
+            timeout.timeout && this.clearTimeout(timeout.timeout);
+            timeout.timeout = null;
+        };
+        timeout.rearm = () => {
+            timeout.clear();
+            timeout.timeout = this.setTimeout(() => {
+                handler();
+            }, delay);
+        };
+        timeout.rearm();
+        return timeout;
+    }
+
     #onTransportTimeout(context, message, delay) {
         const result = this.notifyTransportTimeout([message]);
         if (result > 0) {
             this.debug("Transport", this.type, "extended waiting for message replies:", result, "ms");
-            context.timeouts[message.id] = this.setTimeout(() => {
+            context.timeouts[message.id] = this.#createRearmableTimeout(() => {
                 this.#onTransportTimeout(context, message, delay + result);
             }, result);
         } else {
@@ -242,7 +258,7 @@ export class WebSocketTransport extends Transport {
             const message = envelope.messages[i];
             if (message.id) {
                 messageIds.push(message.id);
-                context.timeouts[message.id] = this.setTimeout(() => {
+                context.timeouts[message.id] = this.#createRearmableTimeout(() => {
                     this.#onTransportTimeout(context, message, delay);
                 }, delay);
             }
@@ -303,6 +319,19 @@ export class WebSocketTransport extends Transport {
     #onMessage(context, wsMessage) {
         this.debug("Transport", this.type, "received websocket message", wsMessage, context);
 
+        if (this.configuration.rearmNetworkDelayAfterMessage) {
+            let now = (new Date()).getTime();
+            // Max 1 rearm per seconds for performance reasons
+            if (!context._lastRearm || (now - context._lastRearm) > 1000) {
+                context._lastRearm = now;
+                for (let id in context.timeouts) {
+                    if (context.timeouts.hasOwnProperty(id)) {
+                        context.timeouts[id].rearm();
+                    }
+                }
+            }
+        }
+
         let close = false;
         const messages = this.convertToMessages(wsMessage.data);
         const messageIds = [];
@@ -318,7 +347,7 @@ export class WebSocketTransport extends Transport {
 
                     const timeout = context.timeouts[message.id];
                     if (timeout) {
-                        this.clearTimeout(timeout);
+                        timeout.clear();
                         delete context.timeouts[message.id];
                         this.debug("Transport", this.type, "removed timeout for message", message.id, ", timeouts", context.timeouts);
                     }
@@ -359,7 +388,7 @@ export class WebSocketTransport extends Transport {
         context.timeouts = {};
         for (let id in timeouts) {
             if (timeouts.hasOwnProperty(id)) {
-                this.clearTimeout(timeouts[id]);
+                timeouts[id].clear();
             }
         }
 
