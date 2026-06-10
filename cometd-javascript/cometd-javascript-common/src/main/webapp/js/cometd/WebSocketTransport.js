@@ -156,11 +156,13 @@ export class WebSocketTransport extends Transport {
             }
         };
 
+        let closeReceived = false;
         // This callback is invoked when the server sends the close frame.
         // The close frame for a connection may arrive *after* another
         // connection has been opened, so we must make sure that actions
         // are performed only if it's the same connection.
         const onclose = (event) => {
+            closeReceived = true;
             event = event || {code: 1000};
             this.debug("Transport", this.type, "onclose", context, event, "connecting", this.#connecting, "current", this.#context);
 
@@ -179,11 +181,15 @@ export class WebSocketTransport extends Transport {
         context.webSocket.onopen = onopen;
         context.webSocket.onclose = onclose;
         context.webSocket.onerror = () => {
-            // Clients should call onclose(), but if they do not we do it here for safety.
-            onclose({
-                code: 1000,
-                reason: "Error"
-            });
+            setTimeout(() => {
+                if (!closeReceived) {
+                    // Clients should call onclose(), but if they do not we do it here for safety.
+                    onclose({
+                        code: 1000,
+                        reason: "Error"
+                    });
+                }
+            }, 0);
         };
         context.webSocket.onmessage = onmessage;
 
