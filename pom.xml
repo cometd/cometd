@@ -92,7 +92,7 @@
     <jackson-version>2.22.0</jackson-version>
     <jakarta-ee-version>10.0.0</jakarta-ee-version>
     <!-- tag::jetty-version[] -->
-    <jetty-version>12.0.36</jetty-version>
+    <jetty-version>12.0.37</jetty-version>
     <!-- end::jetty-version[] -->
     <maven-compiler-plugin-version>3.15.0</maven-compiler-plugin-version>
     <maven-war-plugin-version>3.5.1</maven-war-plugin-version>
