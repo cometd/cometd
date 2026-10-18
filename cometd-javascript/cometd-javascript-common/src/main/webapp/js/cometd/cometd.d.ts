@@ -14,13 +14,11 @@
  * limitations under the License.
  */
 
-export interface Transport {
-    readonly type: string;
-    url: string;
+export * from "./Transport";
+export * from "./LongPollingTransport";
+export * from "./WebSocketTransport";
 
-    accept(version: string, crossDomain: boolean, url: string): boolean;
-    abort(): void;
-}
+import { Transport } from "./Transport";
 
 export interface TransportRegistry {
     getTransportTypes(): string[];
@@ -41,14 +39,22 @@ export interface Advice {
     hosts?: string[];
 }
 
-export interface Message {
+export interface Failure extends Advice {
+    connectionType?: string;
+    reason?: string;
+    httpCode?: string;
+    websocketCode?: string;
+}
+
+export interface Message<T = any> {
     advice?: Advice;
     channel: string;
     clientId?: string;
     connectionType?: string;
-    data?: any;
+    data?: T;
     error?: string;
     ext?: object;
+    failure?: Failure;
     id?: string;
     minimumVersion?: string;
     reestablish?: boolean;
@@ -59,7 +65,7 @@ export interface Message {
     version?: string;
 }
 
-export type Callback = (message: Message) => void;
+export type Callback<T = any> = (message: Message<T>) => void;
 
 export type LogLevel = "warn" | "info" | "debug";
 
@@ -116,45 +122,45 @@ export class CometD {
 
     configure(options: Configuration | string): void;
 
-    handshake(handshakeCallback?: Callback): void;
-    handshake(handshakeProps: object, handshakeCallback?: Callback): void;
+    handshake<T = any>(handshakeCallback?: Callback<T>): void;
+    handshake<T = any>(handshakeProps: object, handshakeCallback?: Callback<T>): void;
 
-    disconnect(disconnectCallback?: Callback): void;
-    disconnect(disconnectProps: object, disconnectCallback?: Callback): void;
+    disconnect<T = any>(disconnectCallback?: Callback<T>): void;
+    disconnect<T = any>(disconnectProps: object, disconnectCallback?: Callback<T>): void;
 
     batch(group: () => void): void;
 
-    addListener(channel: string, messageCallback: Callback): ListenerHandle;
+    addListener<T = any>(channel: string, messageCallback: Callback<T>): ListenerHandle;
 
     removeListener(handle: ListenerHandle): void;
 
     clearListeners(): void;
 
-    subscribe(channel: string, messageCallback: Callback, subscribeCallback?: Callback): SubscriptionHandle;
-    subscribe(channel: string, messageCallback: Callback, subscribeProps: object, subscribeCallback?: Callback): SubscriptionHandle;
+    subscribe<T = any>(channel: string, messageCallback: Callback<T>, subscribeCallback?: Callback<T>): SubscriptionHandle;
+    subscribe<T = any>(channel: string, messageCallback: Callback<T>, subscribeProps: object, subscribeCallback?: Callback<T>): SubscriptionHandle;
 
-    unsubscribe(handle: SubscriptionHandle, unsubscribeCallback?: Callback): void;
-    unsubscribe(handle: SubscriptionHandle, unsubscribeProps: object, unsubscribeCallback?: Callback): void;
+    unsubscribe<T = any>(handle: SubscriptionHandle, unsubscribeCallback?: Callback<T>): void;
+    unsubscribe<T = any>(handle: SubscriptionHandle, unsubscribeProps: object, unsubscribeCallback?: Callback<T>): void;
 
     resubscribe(handle: SubscriptionHandle, subscribeProps?: object): SubscriptionHandle;
 
     clearSubscriptions(): void;
 
-    publish(channel: string, content: any, publishCallback?: Callback): void;
-    publish(channel: string, content: any, publishProps: object, publishCallback?: Callback): void;
+    publish<T = any>(channel: string, content: any, publishCallback?: Callback<T>): void;
+    publish<T = any>(channel: string, content: any, publishProps: object, publishCallback?: Callback<T>): void;
 
-    publishBinary(channel: string, data: any, last: boolean, publishCallback?: Callback): void;
-    publishBinary(channel: string, data: any, last: boolean, meta: object, publishCallback?: Callback): void;
-    publishBinary(channel: string, data: any, last: boolean, meta: object, publishProps: object, publishCallback?: Callback): void;
+    publishBinary<T = any>(channel: string, data: any, last: boolean, publishCallback?: Callback<T>): void;
+    publishBinary<T = any>(channel: string, data: any, last: boolean, meta: object, publishCallback?: Callback<T>): void;
+    publishBinary<T = any>(channel: string, data: any, last: boolean, meta: object, publishProps: object, publishCallback?: Callback<T>): void;
 
-    remoteCall(target: string, content: any, callback?: Callback): void;
-    remoteCall(target: string, content: any, timeout: number, callback?: Callback): void;
-    remoteCall(target: string, content: any, timeout: number, callProps: object, callback?: Callback): void;
+    remoteCall<T = any>(target: string, content: any, callback?: Callback<T>): void;
+    remoteCall<T = any>(target: string, content: any, timeout: number, callback?: Callback<T>): void;
+    remoteCall<T = any>(target: string, content: any, timeout: number, callProps: object, callback?: Callback<T>): void;
 
-    remoteCallBinary(target: string, data: any, last: boolean, callback?: Callback): void;
-    remoteCallBinary(target: string, data: any, last: boolean, meta: object, callback?: Callback): void;
-    remoteCallBinary(target: string, data: any, last: boolean, meta: object, timeout: number, callback?: Callback): void;
-    remoteCallBinary(target: string, data: any, last: boolean, meta: object, timeout: number, callProps: object, callback?: Callback): void;
+    remoteCallBinary<T = any>(target: string, data: any, last: boolean, callback?: Callback<T>): void;
+    remoteCallBinary<T = any>(target: string, data: any, last: boolean, meta: object, callback?: Callback<T>): void;
+    remoteCallBinary<T = any>(target: string, data: any, last: boolean, meta: object, timeout: number, callback?: Callback<T>): void;
+    remoteCallBinary<T = any>(target: string, data: any, last: boolean, meta: object, timeout: number, callProps: object, callback?: Callback<T>): void;
 
     getStatus(): Status;
 
@@ -193,6 +199,8 @@ export class CometD {
     reload?(): void;
 
     websocketEnabled?: boolean;
+
+    onListenerException?: (error: Error, subscription: unknown, listener: SubscriptionHandle, message: Message) => void;
 }
 
 export type Bytes = number[] | ArrayBuffer | DataView |
