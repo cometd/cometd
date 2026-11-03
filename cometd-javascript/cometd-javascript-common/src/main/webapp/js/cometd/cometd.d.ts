@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+export * from "./WebSocketTransport";
+
 export interface Transport {
     readonly type: string;
     url: string;

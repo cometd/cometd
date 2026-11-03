@@ -97,6 +97,10 @@ export class WebSocketTransport extends Transport {
         }
     }
 
+    createWebSocket(url, protocol) {
+        return protocol ? new window.WebSocket(url, protocol) : new window.WebSocket(url);
+    }
+
     #websocketConnect(context) {
         // We may have multiple attempts to open a WebSocket
         // connection, for example a /meta/connect request that
@@ -112,7 +116,7 @@ export class WebSocketTransport extends Transport {
 
         try {
             const protocol = this.configuration.protocol;
-            context.webSocket = protocol ? new window.WebSocket(url, protocol) : new window.WebSocket(url);
+            context.webSocket = this.createWebSocket(url, protocol);
             this.#connecting = context;
         } catch (x) {
             this.#webSocketSupported = false;
