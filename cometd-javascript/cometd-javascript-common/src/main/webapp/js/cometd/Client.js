@@ -116,6 +116,7 @@ export class CometD {
         logLevel: "info",
         logger: null,
         maxNetworkDelay: 10000,
+        rearmNetworkDelayAfterMessage: false,
         requestHeaders: {},
         appendMessageTypeToURL: true,
         autoBatch: false,
