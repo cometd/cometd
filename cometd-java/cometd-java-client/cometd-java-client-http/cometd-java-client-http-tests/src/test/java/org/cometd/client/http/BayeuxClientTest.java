@@ -203,6 +203,64 @@ public class BayeuxClientTest extends ClientServerTest {
     }
 
     @Test
+    public void testHandshakeWhenTransportBecomesUnavailable() throws Exception {
+        ClientTransport transport = new ClientTransport("failing", null, new HashMap<>(), null) {
+            private boolean accepting = true;
+
+            @Override
+            public void abort(Throwable failure) {
+            }
+
+            @Override
+            public boolean accept(String version) {
+                return accepting;
+            }
+
+            @Override
+            public void send(TransportListener listener, List<Message.Mutable> messages) {
+                accepting = false;
+                listener.onFailure(new IOException("Simulated transport failure"), messages);
+            }
+        };
+        TestBayeuxClient client = new TestBayeuxClient(transport);
+
+        client.handshake();
+        Assertions.assertTrue(client.waitFor(5000, State.DISCONNECTED));
+
+        CountDownLatch failureLatch = new CountDownLatch(1);
+        AtomicReference<Message> failure = new AtomicReference<>();
+        client.handshake(message -> {
+            failure.set(message);
+            failureLatch.countDown();
+        });
+
+        Assertions.assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
+        Assertions.assertFalse(failure.get().isSuccessful());
+        Assertions.assertTrue(((String)failure.get().get(Message.ERROR_FIELD)).contains("no_transport"));
+        Assertions.assertEquals(State.DISCONNECTED, client.getState());
+
+        // The client remains usable for further lifecycle operations.
+        client.abort();
+        Assertions.assertTrue(client.waitFor(5000, State.DISCONNECTED));
+    }
+
+    @Test
+    public void testStateMachineProcessesActionsAfterActionFailure() {
+        TestBayeuxClient client = new TestBayeuxClient() {
+            @Override
+            protected void sendHandshake() {
+                throw new IllegalStateException("Simulated action failure");
+            }
+        };
+
+        Assertions.assertThrows(IllegalStateException.class, client::handshake);
+        Assertions.assertEquals(State.HANDSHAKING, client.getState());
+
+        client.abort();
+        Assertions.assertTrue(client.waitFor(5000, State.DISCONNECTED));
+    }
+
+    @Test
     public void testHandshakeRetries() throws Exception {
         context.stop();
         TestFilter filter = new TestFilter();
@@ -1046,6 +1104,10 @@ public class BayeuxClientTest extends ClientServerTest {
     private class TestBayeuxClient extends BayeuxClient {
         public TestBayeuxClient() {
             super(cometdURL, new JettyHttpClientTransport(null, httpClient));
+        }
+
+        public TestBayeuxClient(ClientTransport transport) {
+            super(cometdURL, transport);
         }
 
         // Overridden for visibility.

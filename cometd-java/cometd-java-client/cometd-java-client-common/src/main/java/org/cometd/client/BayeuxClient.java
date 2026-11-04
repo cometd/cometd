@@ -1386,12 +1386,30 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         }
 
         private void handshaking(Map<String, Object> handshakeFields, ClientSession.MessageListener handshakeCallback) {
+            if (getState() != State.DISCONNECTED) {
+                return;
+            }
+
+            List<String> allowedTransports = getAllowedTransports();
+            List<ClientTransport> transports = transportRegistry.negotiate(allowedTransports.toArray(), BAYEUX_VERSION);
+            if (transports.isEmpty()) {
+                Message.Mutable failed = newMessage();
+                String messageId = newMessageId();
+                failed.setId(messageId);
+                failed.setChannel(Channel.META_HANDSHAKE);
+                failed.setSuccessful(false);
+                failed.put(Message.ERROR_FIELD, String.format("405:c%s,s[]:no_transport", allowedTransports));
+                registerCallback(messageId, handshakeCallback);
+                receive(failed, Promise.from(r -> {
+                }, x -> logger.info("Failure while receiving " + failed, x)));
+                return;
+            }
+
             if (update(State.HANDSHAKING)) {
                 initialize();
 
-                List<String> allowedTransports = getAllowedTransports();
-                // Pick the first transport for the handshake, it will renegotiate if not right
-                ClientTransport transport = transportRegistry.negotiate(allowedTransports.toArray(), BAYEUX_VERSION).get(0);
+                // Pick the first transport for the handshake, it will renegotiate if not right.
+                ClientTransport transport = transports.get(0);
                 prepareTransport(null, transport);
                 if (logger.isDebugEnabled()) {
                     logger.debug("Using initial transport {} from {}", transport.getName(), allowedTransports);
@@ -1555,12 +1573,22 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
         }
 
         private void submit(Runnable action) {
-            boolean empty;
             try (AutoLock ignored = lock.lock()) {
-                empty = actions.isEmpty();
                 actions.offer(action);
             }
-            if (empty && process()) {
+            boolean processed;
+            try {
+                processed = process();
+            } catch (RuntimeException | Error x) {
+                try (AutoLock.WithCondition l = lock.lock()) {
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("Notifying threads in waitFor()", x);
+                    }
+                    l.signalAll();
+                }
+                throw x;
+            }
+            if (processed) {
                 try (AutoLock.WithCondition l = lock.lock()) {
                     if (logger.isDebugEnabled()) {
                         logger.debug("Notifying threads in waitFor()");
@@ -1572,6 +1600,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
 
         private boolean process() {
             boolean looping = false;
+            RuntimeException failure = null;
             while (true) {
                 Runnable action;
                 try (AutoLock ignored = lock.lock()) {
@@ -1582,13 +1611,29 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux {
                     action = actions.poll();
                     if (action == null) {
                         active = false;
+                        if (failure != null) {
+                            throw failure;
+                        }
                         return true;
                     }
                     if (!looping) {
                         active = looping = true;
                     }
                 }
-                action.run();
+                try {
+                    action.run();
+                } catch (RuntimeException x) {
+                    if (failure == null) {
+                        failure = x;
+                    } else if (failure != x) {
+                        failure.addSuppressed(x);
+                    }
+                } catch (Error x) {
+                    try (AutoLock ignored = lock.lock()) {
+                        active = false;
+                    }
+                    throw x;
+                }
             }
         }
 
